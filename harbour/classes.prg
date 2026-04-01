@@ -113,7 +113,7 @@ ENDCLASS
 METHOD New( oParent, cText, nLeft, nTop, nWidth, nHeight ) CLASS TLabel
 
    if nWidth == nil;  nWidth := 80; endif
-   if nHeight == nil; nHeight := 15; endif
+   if nHeight == nil; nHeight := 20; endif
 
    ::oParent := oParent
    ::hCpp := UI_LabelNew( oParent:hCpp, cText, nLeft, nTop, nWidth, nHeight )

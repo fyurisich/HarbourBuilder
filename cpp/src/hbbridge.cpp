@@ -869,11 +869,26 @@ HB_FUNC( UI_FORMSELECTCTRL )
       pForm->FOnSelChange = NULL;
 
       if( pCtrl && pCtrl != (TControl*)pForm )
+      {
          pForm->SelectControl( pCtrl, FALSE );
+         /* Bring selected control's HWND to top z-order */
+         if( pCtrl->FHandle )
+            SetWindowPos( pCtrl->FHandle, HWND_TOP, 0, 0, 0, 0,
+               SWP_NOMOVE | SWP_NOSIZE );
+      }
       else
          pForm->ClearSelection();
 
       pForm->FOnSelChange = pSaved;
+
+      /* Bring the design form to the foreground so handles are visible */
+      if( pForm->FHandle )
+      {
+         ShowWindow( pForm->FHandle, SW_SHOW );
+         SetWindowPos( pForm->FHandle, HWND_TOP, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE );
+         InvalidateRect( pForm->FHandle, NULL, TRUE );
+      }
    }
 }
 
