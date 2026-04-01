@@ -18,6 +18,8 @@
 class TObject;
 class TControl;
 class TForm;
+class TToolBar;
+class TComponentPalette;
 
 /* Control types */
 #define CT_FORM       0
@@ -29,12 +31,21 @@ class TForm;
 #define CT_GROUPBOX   6
 #define CT_LISTBOX    7
 #define CT_RADIO      8
+#define CT_TOOLBAR    9
+#define CT_TABCONTROL 10
+#define CT_STATUSBAR  11
 
 /* Max children per control */
 #define MAX_CHILDREN  256
 
 /* Max properties */
 #define MAX_PROPS     64
+
+/* Toolbar / Menu limits */
+#define MAX_TOOLBTNS      64
+#define MAX_MENUITEMS     128
+#define TOOLBAR_BTN_ID_BASE 100
+#define MENU_ID_BASE        1000
 
 /* Property types */
 #define PT_STRING     1
@@ -143,9 +154,24 @@ public:
    int          FGridW, FGridH;
    HWND         FOverlay;      /* transparent overlay for selection handles */
    BOOL         FCenter;
+   BOOL         FSizable;      /* resizable window */
+   BOOL         FAppBar;       /* thin top-bar style (IDE main window) */
    int          FModalResult;
    BOOL         FRunning;
+   BOOL         FMainWindow;   /* TRUE = this form owns the message loop */
    BOOL         FDesignMode;
+
+   /* Toolbar */
+   TToolBar *   FToolBar;
+   TComponentPalette * FPalette;
+   HWND         FStatusBar;
+   BOOL         FHasStatusBar;
+   int          FClientTop;    /* Y offset below toolbar */
+
+   /* Menu */
+   HMENU        FMenuBar;
+   PHB_ITEM     FMenuActions[MAX_MENUITEMS];
+   int          FMenuItemCount;
 
    /* Design mode state */
    TControl *   FSelected[MAX_CHILDREN];
@@ -166,11 +192,21 @@ public:
    LRESULT      HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam );
 
    void         Run();
+   void         Show();    /* Create + show without entering message loop */
    void         Close();
    void         Center();
 
    void         CreateAllChildren();
    void         SubclassChildren();
+
+   /* Toolbar */
+   void         AttachToolBar( TToolBar * pTB );
+
+   /* Menu */
+   void         CreateMenuBar();
+   HMENU        AddMenuPopup( const char * szText );
+   int          AddMenuItem( HMENU hPopup, const char * szText, PHB_ITEM pBlock );
+   void         AddMenuSeparator( HMENU hPopup );
 
    /* Design mode */
    void         SetDesignMode( BOOL bDesign );
@@ -268,6 +304,72 @@ class TGroupBox : public TControl
 public:
    TGroupBox();
    void CreateParams( DWORD * pdwStyle, DWORD * pdwExStyle, const char ** pszClass );
+   const PROPDESC * GetPropDescs( int * pnCount );
+};
+
+/*
+ * TToolBar - Toolbar control
+ */
+class TToolBar : public TControl
+{
+public:
+   struct ToolBtn {
+       char     szText[32];
+       char     szTooltip[128];
+       BOOL     bSeparator;
+       PHB_ITEM pOnClick;
+   };
+
+   ToolBtn  FBtns[MAX_TOOLBTNS];
+   int      FBtnCount;
+
+   TToolBar();
+   virtual ~TToolBar();
+   void CreateParams( DWORD * pdwStyle, DWORD * pdwExStyle, const char ** pszClass );
+   void CreateHandle( HWND hParent );
+   int  AddButton( const char * szText, const char * szTooltip );
+   void AddSeparator();
+   void SetBtnClick( int nIdx, PHB_ITEM pBlock );
+   void DoCommand( int nBtnIdx );
+   int  GetBarHeight();
+   const PROPDESC * GetPropDescs( int * pnCount );
+};
+
+/*
+ * TComponentPalette - Tab control with component buttons (IDE-specific)
+ */
+#define MAX_PALETTE_TABS    8
+#define MAX_PALETTE_BTNS    16
+
+class TComponentPalette : public TControl
+{
+public:
+   struct PaletteTab {
+       char     szName[32];
+       int      nBtnCount;
+       struct {
+           char szText[16];
+           char szTooltip[64];
+           int  nControlType;   /* CT_LABEL, CT_EDIT, etc. */
+       } btns[MAX_PALETTE_BTNS];
+   };
+
+   HWND         FTabCtrl;
+   HWND         FBtnPanel;     /* Panel to hold buttons for current tab */
+   HWND         FBtns[MAX_PALETTE_BTNS]; /* Button HWNDs */
+   PaletteTab   FTabs[MAX_PALETTE_TABS];
+   int          FTabCount;
+   int          FCurrentTab;
+   PHB_ITEM     FOnSelect;     /* callback when component selected */
+
+   TComponentPalette();
+   virtual ~TComponentPalette();
+   void CreateHandle( HWND hParent );
+   int  AddTab( const char * szName );
+   void AddComponent( int nTab, const char * szText, const char * szTooltip, int nCtrlType );
+   void ShowTab( int nTab );
+   void HandleTabChange();
+   int  GetBarHeight();
    const PROPDESC * GetPropDescs( int * pnCount );
 };
 

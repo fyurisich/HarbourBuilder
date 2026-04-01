@@ -51,7 +51,7 @@ HB_FUNC( _INSSETDATA ) { s_insData = (HB_PTRUINT) hb_parnint(1); }
 #include <string.h>
 
 #define MAX_ROWS 64
-#define COL_NAME_W 140
+#define COL_NAME_W 95
 
 typedef struct {
    char szName[32];
@@ -536,8 +536,9 @@ HB_FUNC( INS_CREATE )
       wc.lpszClassName = "HbIdeInspector"; RegisterClassA(&wc); bReg = TRUE;
    }
 
-   d->hWnd = CreateWindowExA( WS_EX_TOOLWINDOW, "HbIdeInspector", "Inspector",
-      WS_OVERLAPPEDWINDOW, CW_USEDEFAULT, CW_USEDEFAULT, 320, 450,
+   d->hWnd = CreateWindowExA( WS_EX_TOOLWINDOW, "HbIdeInspector", "Object Inspector",
+      WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_BORDER,
+      0, 130, 215, 500,
       NULL, NULL, GetModuleHandle(NULL), NULL );
 
    SetWindowLongPtr( d->hWnd, GWLP_USERDATA, (LONG_PTR) d );
@@ -547,16 +548,16 @@ HB_FUNC( INS_CREATE )
 
    d->hList = CreateWindowExA( 0, WC_LISTVIEWA, "",
       WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS | LVS_NOCOLUMNHEADER,
-      0, 0, 316, 420, d->hWnd, (HMENU)100, GetModuleHandle(NULL), NULL );
+      0, 0, 210, 470, d->hWnd, (HMENU)100, GetModuleHandle(NULL), NULL );
 
    SendMessage( d->hList, LVM_SETEXTENDEDLISTVIEWSTYLE, 0,
       LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER );
    SendMessage( d->hList, WM_SETFONT, (WPARAM) d->hFont, TRUE );
 
    lvc.mask = LVCF_TEXT | LVCF_WIDTH;
-   lvc.cx = COL_NAME_W; lvc.pszText = "Property";
+   lvc.cx = 95; lvc.pszText = "Property";
    SendMessageA( d->hList, LVM_INSERTCOLUMNA, 0, (LPARAM) &lvc );
-   lvc.cx = 160; lvc.pszText = "Value";
+   lvc.cx = 95; lvc.pszText = "Value";
    SendMessageA( d->hList, LVM_INSERTCOLUMNA, 1, (LPARAM) &lvc );
 
    ShowWindow( d->hWnd, SW_SHOW );

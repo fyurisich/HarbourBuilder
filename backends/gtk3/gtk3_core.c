@@ -24,6 +24,7 @@
 #define CT_CHECKBOX   4
 #define CT_COMBOBOX   5
 #define CT_GROUPBOX   6
+#define CT_TOOLBAR    9
 
 #define MAX_CHILDREN  256
 
@@ -92,6 +93,8 @@ struct _HBForm
    GtkWidget *  FFixed;      /* GtkFixed container for absolute positioning */
    char         FFormFontDesc[128];
    int          FCenter;
+   int          FSizable;
+   int          FAppBar;
    int          FModalResult;
    int          FRunning;
    int          FDesignMode;
@@ -102,6 +105,13 @@ struct _HBForm
    int          FDragStartX, FDragStartY;
    PHB_ITEM     FOnSelChange;
    GtkWidget *  FOverlay;    /* Drawing area for selection handles */
+   /* Toolbar */
+   HBControl *  FToolBar;
+   int          FClientTop;
+   /* Menu */
+   GtkWidget *  FMenuBar;
+   PHB_ITEM     FMenuActions[128];
+   int          FMenuItemCount;
 };
 
 /* ======================================================================
@@ -119,6 +129,20 @@ struct _HBComboBox {
    char FItems[32][64];
    int  FItemCount;
 };
+
+#define MAX_TOOLBTNS  64
+#define TOOLBAR_BTN_ID_BASE 100
+#define MENU_ID_BASE        1000
+
+typedef struct _HBToolBar {
+   HBControl base;
+   char     FBtnTexts[MAX_TOOLBTNS][32];
+   char     FBtnTooltips[MAX_TOOLBTNS][128];
+   int      FBtnSeparator[MAX_TOOLBTNS];
+   PHB_ITEM FBtnOnClick[MAX_TOOLBTNS];
+   int      FBtnCount;
+   GtkWidget * FToolBarWidget;
+} HBToolBar;
 
 /* ======================================================================
  * Object lifetime management
@@ -675,10 +699,32 @@ static void HBForm_Init( HBForm * form )
    form->FSelCount = 0; form->FDragging = 0; form->FResizing = 0;
    form->FResizeHandle = -1; form->FOnSelChange = NULL;
    form->FOverlay = NULL; form->FFixed = NULL; form->FWindow = NULL;
+   form->FToolBar = NULL; form->FClientTop = 0; form->FSizable = 0; form->FAppBar = 0;
+   form->FMenuBar = NULL; form->FMenuItemCount = 0;
    memset( form->FSelected, 0, sizeof(form->FSelected) );
+   memset( form->FMenuActions, 0, sizeof(form->FMenuActions) );
    form->base.FWidth = 470; form->base.FHeight = 400;
    strcpy( form->base.FText, "New Form" );
    form->base.FClrPane = 0x00F0F0F0;
+}
+
+/* Toolbar button callback */
+static void on_toolbar_btn_clicked( GtkToolButton * button, gpointer data )
+{
+   HBToolBar * tb = (HBToolBar *)data;
+   int idx = GPOINTER_TO_INT( g_object_get_data( G_OBJECT(button), "btn_idx" ) );
+   if( idx >= 0 && idx < tb->FBtnCount && tb->FBtnOnClick[idx] ) {
+      hb_vmPushEvalSym(); hb_vmPush( tb->FBtnOnClick[idx] ); hb_vmSend( 0 );
+   }
+}
+
+/* Menu item callback */
+static void on_menu_item_activated( GtkMenuItem * item, gpointer data )
+{
+   PHB_ITEM pBlock = (PHB_ITEM)data;
+   if( pBlock && HB_IS_BLOCK(pBlock) ) {
+      hb_vmPushEvalSym(); hb_vmPush(pBlock); hb_vmSend(0);
+   }
 }
 
 static void on_window_destroy( GtkWidget * widget, gpointer data )
@@ -722,7 +768,8 @@ static void HBForm_Run( HBForm * form )
    form->FWindow = gtk_window_new( GTK_WINDOW_TOPLEVEL );
    gtk_window_set_title( GTK_WINDOW(form->FWindow), form->base.FText );
    gtk_window_set_default_size( GTK_WINDOW(form->FWindow), form->base.FWidth, form->base.FHeight );
-   gtk_window_set_resizable( GTK_WINDOW(form->FWindow), FALSE );
+   gtk_window_set_resizable( GTK_WINDOW(form->FWindow),
+      (form->FSizable && !form->FAppBar) ? TRUE : FALSE );
    g_signal_connect( form->FWindow, "destroy", G_CALLBACK(on_window_destroy), form );
 
    /* Set background color via CSS */
@@ -739,9 +786,48 @@ static void HBForm_Run( HBForm * form )
       g_object_unref( provider );
    }
 
+   /* VBox: menubar + toolbar + overlay(fixed + design) */
+   GtkWidget * vbox = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
+   gtk_container_add( GTK_CONTAINER(form->FWindow), vbox );
+   gtk_widget_show( vbox );
+
+   /* Menu bar if created */
+   if( form->FMenuBar ) {
+      gtk_box_pack_start( GTK_BOX(vbox), form->FMenuBar, FALSE, FALSE, 0 );
+      gtk_widget_show_all( form->FMenuBar );
+   }
+
+   /* Toolbar if attached */
+   if( form->FToolBar ) {
+      HBToolBar * tb = (HBToolBar *)form->FToolBar;
+      GtkWidget * toolbar = gtk_toolbar_new();
+      gtk_toolbar_set_style( GTK_TOOLBAR(toolbar), GTK_TOOLBAR_TEXT );
+      gtk_toolbar_set_icon_size( GTK_TOOLBAR(toolbar), GTK_ICON_SIZE_SMALL_TOOLBAR );
+      tb->FToolBarWidget = toolbar;
+
+      for( int i = 0; i < tb->FBtnCount; i++ ) {
+         if( tb->FBtnSeparator[i] ) {
+            GtkToolItem * sep = gtk_separator_tool_item_new();
+            gtk_toolbar_insert( GTK_TOOLBAR(toolbar), sep, -1 );
+         } else {
+            GtkToolItem * btn = gtk_tool_button_new( NULL, tb->FBtnTexts[i] );
+            gtk_tool_item_set_tooltip_text( btn, tb->FBtnTooltips[i] );
+            /* Store index in data for callback */
+            g_object_set_data( G_OBJECT(btn), "btn_idx", GINT_TO_POINTER(i) );
+            g_object_set_data( G_OBJECT(btn), "toolbar", tb );
+            g_signal_connect( btn, "clicked", G_CALLBACK(on_toolbar_btn_clicked), tb );
+            gtk_toolbar_insert( GTK_TOOLBAR(toolbar), btn, -1 );
+         }
+      }
+      gtk_box_pack_start( GTK_BOX(vbox), toolbar, FALSE, FALSE, 0 );
+      gtk_widget_show_all( toolbar );
+      form->FClientTop = 0; /* GTK handles layout via box, no manual offset needed */
+   }
+
    /* Use GtkOverlay to layer the fixed container and the design overlay */
    GtkWidget * overlay = gtk_overlay_new();
-   gtk_container_add( GTK_CONTAINER(form->FWindow), overlay );
+   gtk_box_pack_start( GTK_BOX(vbox), overlay, TRUE, TRUE, 0 );
+   gtk_widget_show( overlay );
 
    form->FFixed = gtk_fixed_new();
    gtk_container_add( GTK_CONTAINER(overlay), form->FFixed );
@@ -783,6 +869,78 @@ static void HBForm_Run( HBForm * form )
    form->FRunning = 1;
    gtk_main();
    form->FRunning = 0;
+}
+
+/* Show() - create and show without entering gtk_main */
+static void HBForm_Show( HBForm * form )
+{
+   EnsureGTK();
+
+   form->FWindow = gtk_window_new( GTK_WINDOW_TOPLEVEL );
+   gtk_window_set_title( GTK_WINDOW(form->FWindow), form->base.FText );
+   gtk_window_set_default_size( GTK_WINDOW(form->FWindow), form->base.FWidth, form->base.FHeight );
+   gtk_window_set_resizable( GTK_WINDOW(form->FWindow),
+      (form->FSizable && !form->FAppBar) ? TRUE : FALSE );
+   g_signal_connect( form->FWindow, "destroy", G_CALLBACK(on_window_destroy), form );
+
+   /* Background color */
+   {
+      unsigned int clr = form->base.FClrPane;
+      int r = clr & 0xFF, g = (clr >> 8) & 0xFF, b = (clr >> 16) & 0xFF;
+      char css[128];
+      snprintf( css, sizeof(css), "window { background-color: #%02X%02X%02X; }", r, g, b );
+      GtkCssProvider * provider = gtk_css_provider_new();
+      gtk_css_provider_load_from_data( provider, css, -1, NULL );
+      GtkStyleContext * ctx = gtk_widget_get_style_context( form->FWindow );
+      gtk_style_context_add_provider( ctx, GTK_STYLE_PROVIDER(provider),
+         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+      g_object_unref( provider );
+   }
+
+   GtkWidget * vbox = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
+   gtk_container_add( GTK_CONTAINER(form->FWindow), vbox );
+   gtk_widget_show( vbox );
+
+   GtkWidget * overlay = gtk_overlay_new();
+   gtk_box_pack_start( GTK_BOX(vbox), overlay, TRUE, TRUE, 0 );
+   gtk_widget_show( overlay );
+
+   form->FFixed = gtk_fixed_new();
+   gtk_container_add( GTK_CONTAINER(overlay), form->FFixed );
+   gtk_widget_show( form->FFixed );
+
+   HBForm_CreateAllChildren( form );
+
+   if( form->FDesignMode )
+   {
+      GtkWidget * da = gtk_drawing_area_new();
+      gtk_widget_set_size_request( da, form->base.FWidth, form->base.FHeight );
+      gtk_overlay_add_overlay( GTK_OVERLAY(overlay), da );
+      gtk_widget_set_can_focus( da, TRUE );
+      gtk_widget_add_events( da, GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
+                                 GDK_POINTER_MOTION_MASK | GDK_KEY_PRESS_MASK );
+      g_signal_connect( da, "draw", G_CALLBACK(on_overlay_draw), form );
+      g_signal_connect( da, "button-press-event", G_CALLBACK(on_overlay_button_press), form );
+      g_signal_connect( da, "motion-notify-event", G_CALLBACK(on_overlay_motion), form );
+      g_signal_connect( da, "button-release-event", G_CALLBACK(on_overlay_button_release), form );
+      g_signal_connect( da, "key-press-event", G_CALLBACK(on_overlay_key_press), form );
+      gtk_widget_set_app_paintable( da, TRUE );
+      form->FOverlay = da;
+      gtk_widget_show( da );
+   }
+
+   if( form->FCenter )
+      gtk_window_set_position( GTK_WINDOW(form->FWindow), GTK_WIN_POS_CENTER );
+   else
+      gtk_window_move( GTK_WINDOW(form->FWindow), form->base.FLeft, form->base.FTop );
+
+   gtk_widget_show( form->FWindow );
+
+   if( form->FDesignMode && form->FOverlay )
+      gtk_widget_grab_focus( form->FOverlay );
+
+   form->FRunning = 1;
+   /* No gtk_main() - shares the main window's loop */
 }
 
 static void HBForm_Close( HBForm * form )
@@ -859,6 +1017,7 @@ HB_FUNC( UI_GETSELECTED )
 
 HB_FUNC( UI_FORMSETDESIGN ) { HBForm * p = GetForm(1); if( p ) HBForm_SetDesignMode( p, hb_parl(2) ); }
 HB_FUNC( UI_FORMRUN )       { HBForm * p = GetForm(1); if( p ) HBForm_Run( p ); }
+HB_FUNC( UI_FORMSHOW )      { HBForm * p = GetForm(1); if( p ) HBForm_Show( p ); }
 HB_FUNC( UI_FORMCLOSE )     { HBForm * p = GetForm(1); if( p ) HBForm_Close( p ); }
 HB_FUNC( UI_FORMDESTROY )   { HBForm * p = GetForm(1); if( p ) { HBControl_ReleaseEvents(&p->base); RemoveControl(&p->base); free(p); } }
 HB_FUNC( UI_FORMRESULT )    { HBForm * p = GetForm(1); hb_retni( p ? p->FModalResult : 0 ); }
@@ -1008,6 +1167,10 @@ HB_FUNC( UI_SETPROP )
    }
    else if( strcasecmp(szProp,"cName")==0 && HB_ISCHAR(3) )
       strncpy( p->FName, hb_parc(3), sizeof(p->FName)-1 );
+   else if( strcasecmp(szProp,"lSizable")==0 && p->FControlType == CT_FORM )
+      ((HBForm *)p)->FSizable = hb_parl(3);
+   else if( strcasecmp(szProp,"lAppBar")==0 && p->FControlType == CT_FORM )
+      ((HBForm *)p)->FAppBar = hb_parl(3);
    else if( strcasecmp(szProp,"nClrPane")==0 )
    {
       p->FClrPane = (unsigned int)hb_parnint(3);
@@ -1075,6 +1238,10 @@ HB_FUNC( UI_GETPROP )
       hb_retl( ((HBCheckBox *)p)->FChecked );
    else if( strcasecmp(szProp,"cName")==0 )      hb_retc( p->FName );
    else if( strcasecmp(szProp,"cClassName")==0 ) hb_retc( p->FClassName );
+   else if( strcasecmp(szProp,"lSizable")==0 && p->FControlType==CT_FORM )
+      hb_retl( ((HBForm *)p)->FSizable );
+   else if( strcasecmp(szProp,"lAppBar")==0 && p->FControlType==CT_FORM )
+      hb_retl( ((HBForm *)p)->FAppBar );
    else if( strcasecmp(szProp,"nItemIndex")==0 && p->FControlType==CT_COMBOBOX )
       hb_retni( ((HBComboBox *)p)->FItemIndex );
    else if( strcasecmp(szProp,"nClrPane")==0 )   hb_retnint( (HB_MAXINT)p->FClrPane );
@@ -1285,6 +1452,151 @@ HB_FUNC( UI_FORMTOJSON )
    ADDC("]}") buf[pos]=0;
    hb_retclen(buf,pos);
    #undef ADDC
+}
+
+/* ======================================================================
+ * Toolbar bridge
+ * ====================================================================== */
+
+HB_FUNC( UI_TOOLBARNEW )
+{
+   HBForm * pForm = GetForm(1);
+   HBToolBar * p = (HBToolBar *) calloc( 1, sizeof(HBToolBar) );
+   HBControl_Init( &p->base );
+   strcpy( p->base.FClassName, "TToolBar" );
+   p->base.FControlType = CT_TOOLBAR;
+   p->FBtnCount = 0;
+   p->FToolBarWidget = NULL;
+   memset( p->FBtnOnClick, 0, sizeof(p->FBtnOnClick) );
+   memset( p->FBtnSeparator, 0, sizeof(p->FBtnSeparator) );
+   KeepAlive( &p->base );
+   if( pForm ) { pForm->FToolBar = &p->base; p->base.FCtrlParent = &pForm->base; }
+   RetCtrl( &p->base );
+}
+
+HB_FUNC( UI_TOOLBTNADD )
+{
+   HBToolBar * p = (HBToolBar *) GetCtrl(1);
+   if( !p || p->base.FControlType != CT_TOOLBAR || p->FBtnCount >= MAX_TOOLBTNS )
+      { hb_retni(-1); return; }
+   int idx = p->FBtnCount++;
+   strncpy( p->FBtnTexts[idx], hb_parc(2), 31 ); p->FBtnTexts[idx][31] = 0;
+   strncpy( p->FBtnTooltips[idx], HB_ISCHAR(3)?hb_parc(3):"", 127 ); p->FBtnTooltips[idx][127] = 0;
+   p->FBtnSeparator[idx] = 0;
+   p->FBtnOnClick[idx] = NULL;
+   hb_retni( idx );
+}
+
+HB_FUNC( UI_TOOLBTNADDSEP )
+{
+   HBToolBar * p = (HBToolBar *) GetCtrl(1);
+   if( !p || p->base.FControlType != CT_TOOLBAR || p->FBtnCount >= MAX_TOOLBTNS ) return;
+   int idx = p->FBtnCount++;
+   p->FBtnSeparator[idx] = 1;
+   p->FBtnTexts[idx][0] = 0;
+   p->FBtnTooltips[idx][0] = 0;
+   p->FBtnOnClick[idx] = NULL;
+}
+
+HB_FUNC( UI_TOOLBTNONCLICK )
+{
+   HBToolBar * p = (HBToolBar *) GetCtrl(1);
+   int nIdx = hb_parni(2);
+   PHB_ITEM pBlock = hb_param(3, HB_IT_BLOCK);
+   if( p && p->base.FControlType == CT_TOOLBAR && pBlock && nIdx >= 0 && nIdx < p->FBtnCount )
+   {
+      if( p->FBtnOnClick[nIdx] ) hb_itemRelease( p->FBtnOnClick[nIdx] );
+      p->FBtnOnClick[nIdx] = hb_itemNew( pBlock );
+   }
+}
+
+/* ======================================================================
+ * Menu bridge
+ * ====================================================================== */
+
+HB_FUNC( UI_MENUBARCREATE )
+{
+   HBForm * p = GetForm(1);
+   EnsureGTK();
+   if( p && !p->FMenuBar )
+      p->FMenuBar = gtk_menu_bar_new();
+}
+
+HB_FUNC( UI_MENUPOPUPADD )
+{
+   HBForm * p = GetForm(1);
+   EnsureGTK();
+   if( !p || !HB_ISCHAR(2) ) { hb_retnint(0); return; }
+   if( !p->FMenuBar ) p->FMenuBar = gtk_menu_bar_new();
+
+   GtkWidget * menuItem = gtk_menu_item_new_with_mnemonic( hb_parc(2) );
+   GtkWidget * subMenu = gtk_menu_new();
+   gtk_menu_item_set_submenu( GTK_MENU_ITEM(menuItem), subMenu );
+   gtk_menu_shell_append( GTK_MENU_SHELL(p->FMenuBar), menuItem );
+   hb_retnint( (HB_PTRUINT) subMenu );
+}
+
+HB_FUNC( UI_MENUITEMADD ) { hb_retni( -1 ); } /* stub */
+
+HB_FUNC( UI_MENUITEMADDEX )
+{
+   HBForm * pForm = GetForm(1);
+   GtkWidget * popup = (GtkWidget *)(HB_PTRUINT)hb_parnint(2);
+   PHB_ITEM pBlock = hb_param(4, HB_IT_BLOCK);
+   EnsureGTK();
+
+   if( !pForm || !popup || !HB_ISCHAR(3) ) { hb_retni(-1); return; }
+
+   /* Convert & mnemonic to _ for GTK */
+   const char * text = hb_parc(3);
+   char label[128]; int j = 0;
+   for( int i = 0; text[i] && j < 126; i++ )
+      label[j++] = (text[i] == '&') ? '_' : text[i];
+   label[j] = 0;
+
+   GtkWidget * item = gtk_menu_item_new_with_mnemonic( label );
+   PHB_ITEM pCopy = pBlock ? hb_itemNew(pBlock) : NULL;
+   if( pCopy )
+      g_signal_connect( item, "activate", G_CALLBACK(on_menu_item_activated), pCopy );
+   gtk_menu_shell_append( GTK_MENU_SHELL(popup), item );
+
+   int idx = pForm->FMenuItemCount++;
+   if( pCopy ) pForm->FMenuActions[idx] = pCopy;
+   hb_retni( idx );
+}
+
+HB_FUNC( UI_MENUSEPADD )
+{
+   GtkWidget * popup = (GtkWidget *)(HB_PTRUINT)hb_parnint(2);
+   EnsureGTK();
+   if( popup ) {
+      GtkWidget * sep = gtk_separator_menu_item_new();
+      gtk_menu_shell_append( GTK_MENU_SHELL(popup), sep );
+   }
+}
+
+HB_FUNC( UI_FORMSETSIZABLE )
+{
+   HBForm * p = GetForm(1);
+   if( p ) p->FSizable = hb_parl(2);
+}
+
+HB_FUNC( UI_FORMSETAPPBAR )
+{
+   HBForm * p = GetForm(1);
+   if( p ) p->FAppBar = hb_parl(2);
+}
+
+HB_FUNC( UI_FORMSETPOS )
+{
+   HBForm * p = GetForm(1);
+   if( p ) {
+      p->base.FLeft = hb_parni(2);
+      p->base.FTop = hb_parni(3);
+      p->FCenter = 0;
+      if( p->FWindow )
+         gtk_window_move( GTK_WINDOW(p->FWindow), p->base.FLeft, p->base.FTop );
+   }
 }
 
 /* --- MsgBox --- */

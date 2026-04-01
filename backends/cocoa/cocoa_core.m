@@ -22,6 +22,7 @@
 #define CT_CHECKBOX   4
 #define CT_COMBOBOX   5
 #define CT_GROUPBOX   6
+#define CT_TOOLBAR    9
 
 #define MAX_CHILDREN  256
 
@@ -102,6 +103,8 @@ static void EnsureNSApp( void )
    NSWindow * FWindow;
    NSFont *   FFormFont;
    BOOL       FCenter;
+   BOOL       FSizable;
+   BOOL       FAppBar;
    int        FModalResult;
    BOOL       FRunning;
    BOOL       FDesignMode;
@@ -113,8 +116,15 @@ static void EnsureNSApp( void )
    PHB_ITEM   FOnSelChange;
    NSView *   FOverlayView;
    HBFlippedView * FContentView;
+   /* Toolbar */
+   HBToolBar * FToolBar;
+   int         FClientTop;
+   /* Menu */
+   PHB_ITEM    FMenuActions[MAX_MENUITEMS];
+   int         FMenuItemCount;
 }
 - (void)run;
+- (void)showOnly;  /* Create + show without entering run loop */
 - (void)close;
 - (void)center;
 - (void)createAllChildren;
@@ -171,6 +181,28 @@ static void EnsureNSApp( void )
 
 /* --- HBGroupBox --- */
 @interface HBGroupBox : HBControl
+@end
+
+/* --- HBToolBar --- */
+#define MAX_TOOLBTNS  64
+#define TOOLBAR_BTN_ID_BASE 100
+#define MENU_ID_BASE        1000
+#define MAX_MENUITEMS       128
+
+@interface HBToolBar : HBControl
+{
+@public
+   char     FBtnTexts[MAX_TOOLBTNS][32];
+   char     FBtnTooltips[MAX_TOOLBTNS][128];
+   BOOL     FBtnSeparator[MAX_TOOLBTNS];
+   PHB_ITEM FBtnOnClick[MAX_TOOLBTNS];
+   int      FBtnCount;
+}
+- (int)addButton:(const char *)text tooltip:(const char *)tooltip;
+- (void)addSeparator;
+- (void)setBtnClick:(int)idx block:(PHB_ITEM)block;
+- (void)doCommand:(int)idx;
+- (int)barHeight;
 @end
 
 /* --- HBOverlayView --- */
@@ -500,6 +532,113 @@ static void EnsureNSApp( void )
 
 @end
 
+/* --- HBToolBar implementation --- */
+
+@implementation HBToolBar
+
+- (instancetype)init
+{
+   self = [super init];
+   if( self ) {
+      strcpy( FClassName, "TToolBar" );
+      FControlType = CT_TOOLBAR; FBtnCount = 0;
+      memset( FBtnOnClick, 0, sizeof(FBtnOnClick) );
+   }
+   return self;
+}
+
+- (void)dealloc
+{
+   for( int i = 0; i < FBtnCount; i++ )
+      if( FBtnOnClick[i] ) hb_itemRelease( FBtnOnClick[i] );
+}
+
+- (void)createViewInParent:(NSView *)parentView
+{
+   /* Create a horizontal stack of buttons as a toolbar strip */
+   NSRect tbFrame = NSMakeRect( 0, 0, FWidth > 0 ? FWidth : 800, 30 );
+   NSView * toolbar = [[HBFlippedView alloc] initWithFrame:tbFrame];
+   [toolbar setAutoresizingMask:NSViewWidthSizable];
+
+   /* Light gray background */
+   toolbar.wantsLayer = YES;
+   toolbar.layer.backgroundColor = [[NSColor colorWithCalibratedWhite:0.92 alpha:1.0] CGColor];
+
+   int xPos = 4;
+   for( int i = 0; i < FBtnCount; i++ )
+   {
+      if( FBtnSeparator[i] ) {
+         /* Separator: small vertical line */
+         NSBox * sep = [[NSBox alloc] initWithFrame:NSMakeRect( xPos, 2, 1, 26 )];
+         [sep setBoxType:NSBoxSeparator];
+         [toolbar addSubview:sep];
+         xPos += 8;
+      } else {
+         NSButton * btn = [[NSButton alloc] initWithFrame:NSMakeRect( xPos, 2, 0, 26 )];
+         [btn setTitle:[NSString stringWithUTF8String:FBtnTexts[i]]];
+         [btn setToolTip:[NSString stringWithUTF8String:FBtnTooltips[i]]];
+         [btn setBezelStyle:NSBezelStyleTexturedRounded];
+         [btn setTarget:self];
+         [btn setAction:@selector(toolBtnClicked:)];
+         [btn setTag:i];
+         [btn sizeToFit];
+         NSRect f = [btn frame]; f.origin.x = xPos; f.origin.y = 2; [btn setFrame:f];
+         [toolbar addSubview:btn];
+         xPos += (int)f.size.width + 2;
+      }
+   }
+
+   [parentView addSubview:toolbar];
+   FView = toolbar;
+}
+
+- (void)toolBtnClicked:(id)sender
+{
+   int idx = (int)[sender tag];
+   [self doCommand:idx];
+}
+
+- (int)addButton:(const char *)text tooltip:(const char *)tooltip
+{
+   if( FBtnCount >= MAX_TOOLBTNS ) return -1;
+   int idx = FBtnCount++;
+   strncpy( FBtnTexts[idx], text, 31 ); FBtnTexts[idx][31] = 0;
+   strncpy( FBtnTooltips[idx], tooltip, 127 ); FBtnTooltips[idx][127] = 0;
+   FBtnSeparator[idx] = NO;
+   FBtnOnClick[idx] = NULL;
+   return idx;
+}
+
+- (void)addSeparator
+{
+   if( FBtnCount >= MAX_TOOLBTNS ) return;
+   FBtnSeparator[FBtnCount] = YES;
+   FBtnTexts[FBtnCount][0] = 0;
+   FBtnTooltips[FBtnCount][0] = 0;
+   FBtnOnClick[FBtnCount] = NULL;
+   FBtnCount++;
+}
+
+- (void)setBtnClick:(int)idx block:(PHB_ITEM)block
+{
+   if( idx < 0 || idx >= FBtnCount ) return;
+   if( FBtnOnClick[idx] ) hb_itemRelease( FBtnOnClick[idx] );
+   FBtnOnClick[idx] = hb_itemNew( block );
+}
+
+- (void)doCommand:(int)idx
+{
+   if( idx >= 0 && idx < FBtnCount && FBtnOnClick[idx] ) {
+      hb_vmPushEvalSym();
+      hb_vmPush( FBtnOnClick[idx] );
+      hb_vmSend( 0 );
+   }
+}
+
+- (int)barHeight { return 30; }
+
+@end
+
 /* --- HBOverlayView implementation --- */
 
 @implementation HBOverlayView
@@ -721,10 +860,12 @@ static void EnsureNSApp( void )
       FControlType = CT_FORM;
       FFormFont = [NSFont systemFontOfSize:12];
       FFont = FFormFont;
-      FCenter = YES; FModalResult = 0; FRunning = NO; FDesignMode = NO;
+      FCenter = YES; FSizable = NO; FAppBar = NO; FModalResult = 0; FRunning = NO; FDesignMode = NO;
       FSelCount = 0; FDragging = NO; FResizing = NO; FResizeHandle = -1;
       FOnSelChange = NULL; FOverlayView = nil; FContentView = nil;
+      FToolBar = nil; FClientTop = 0; FMenuItemCount = 0;
       memset( FSelected, 0, sizeof(FSelected) );
+      memset( FMenuActions, 0, sizeof(FMenuActions) );
       FWidth = 470; FHeight = 400;
       strcpy( FText, "New Form" );
       FClrPane = 0x00F0F0F0;
@@ -736,15 +877,29 @@ static void EnsureNSApp( void )
 - (void)dealloc
 {
    if( FOnSelChange ) { hb_itemRelease( FOnSelChange ); FOnSelChange = NULL; }
+   for( int i = 0; i < FMenuItemCount; i++ )
+      if( FMenuActions[i] ) { hb_itemRelease( FMenuActions[i] ); FMenuActions[i] = NULL; }
 }
 
 - (void)run
 {
    EnsureNSApp();
 
+   [self createWindowWithRunLoop:YES];
+}
+
+- (void)createWindowWithRunLoop:(BOOL)enterLoop
+{
+   EnsureNSApp();
+
    NSRect frame = NSMakeRect( 0, 0, FWidth, FHeight );
+   NSUInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
+   if( FAppBar )
+      style |= NSWindowStyleMaskMiniaturizable;  /* no resize for appbar */
+   else if( FSizable )
+      style |= NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable;
    FWindow = [[NSWindow alloc] initWithContentRect:frame
-      styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
+      styleMask:style
       backing:NSBackingStoreBuffered defer:NO];
    [FWindow setTitle:[NSString stringWithUTF8String:FText]];
    [FWindow setDelegate:self];
@@ -770,12 +925,26 @@ static void EnsureNSApp( void )
    }
 
    if( FCenter ) [self center];
+   else if( !FCenter ) {
+      NSRect screenFrame = [[NSScreen mainScreen] frame];
+      NSPoint origin;
+      origin.x = FLeft;
+      origin.y = screenFrame.size.height - FTop - FHeight;
+      [FWindow setFrameOrigin:origin];
+   }
    [FWindow makeKeyAndOrderFront:nil];
    [NSApp activateIgnoringOtherApps:YES];
 
    FRunning = YES;
-   [NSApp run];
-   FRunning = NO;
+   if( enterLoop ) {
+      [NSApp run];
+      FRunning = NO;
+   }
+}
+
+- (void)showOnly
+{
+   [self createWindowWithRunLoop:NO];
 }
 
 - (void)close
@@ -788,15 +957,25 @@ static void EnsureNSApp( void )
 
 - (void)createAllChildren
 {
+   /* Toolbar first */
+   if( FToolBar ) {
+      FToolBar->FWidth = FWidth;
+      [FToolBar createViewInParent:FContentView];
+      FClientTop = [FToolBar barHeight];
+   }
+
    /* GroupBoxes first */
    for( int i = 0; i < FChildCount; i++ )
       if( FChildren[i]->FControlType == CT_GROUPBOX ) {
          FChildren[i]->FFont = FFormFont;
+         FChildren[i]->FTop += FClientTop;
          [FChildren[i] createViewInParent:FContentView];
       }
    for( int i = 0; i < FChildCount; i++ )
-      if( FChildren[i]->FControlType != CT_GROUPBOX ) {
+      if( FChildren[i]->FControlType != CT_GROUPBOX &&
+          FChildren[i]->FControlType != CT_TOOLBAR ) {
          FChildren[i]->FFont = FFormFont;
+         FChildren[i]->FTop += FClientTop;
          [FChildren[i] createViewInParent:FContentView];
       }
 }
@@ -961,6 +1140,7 @@ HB_FUNC( UI_GETSELECTED )
 
 HB_FUNC( UI_FORMSETDESIGN ) { HBForm * p = GetForm(1); if( p ) [p setDesignMode:hb_parl(2)]; }
 HB_FUNC( UI_FORMRUN )       { HBForm * p = GetForm(1); if( p ) [p run]; }
+HB_FUNC( UI_FORMSHOW )      { HBForm * p = GetForm(1); if( p ) [p showOnly]; }
 HB_FUNC( UI_FORMCLOSE )     { HBForm * p = GetForm(1); if( p ) [p close]; }
 HB_FUNC( UI_FORMDESTROY )   { HBForm * p = GetForm(1); if( p ) [s_allControls removeObject:p]; }
 HB_FUNC( UI_FORMRESULT )    { HBForm * p = GetForm(1); hb_retni( p ? p->FModalResult : 0 ); }
@@ -1053,6 +1233,10 @@ HB_FUNC( UI_SETPROP )
       [(HBCheckBox *)p setChecked:hb_parl(3)];
    else if( strcasecmp(szProp,"cName")==0 && HB_ISCHAR(3) )
       strncpy( p->FName, hb_parc(3), sizeof(p->FName)-1 );
+   else if( strcasecmp(szProp,"lSizable")==0 && p->FControlType == CT_FORM )
+      ((HBForm *)p)->FSizable = hb_parl(3);
+   else if( strcasecmp(szProp,"lAppBar")==0 && p->FControlType == CT_FORM )
+      ((HBForm *)p)->FAppBar = hb_parl(3);
    else if( strcasecmp(szProp,"nClrPane")==0 ) {
       p->FClrPane = (unsigned int)hb_parnint(3);
       CGFloat r = (p->FClrPane & 0xFF)/255.0;
@@ -1097,6 +1281,10 @@ HB_FUNC( UI_GETPROP )
       hb_retl( ((HBCheckBox *)p)->FChecked );
    else if( strcasecmp(szProp,"cName")==0 )      hb_retc( p->FName );
    else if( strcasecmp(szProp,"cClassName")==0 ) hb_retc( p->FClassName );
+   else if( strcasecmp(szProp,"lSizable")==0 && p->FControlType==CT_FORM )
+      hb_retl( ((HBForm *)p)->FSizable );
+   else if( strcasecmp(szProp,"lAppBar")==0 && p->FControlType==CT_FORM )
+      hb_retl( ((HBForm *)p)->FAppBar );
    else if( strcasecmp(szProp,"nItemIndex")==0 && p->FControlType==CT_COMBOBOX )
       hb_retni( ((HBComboBox *)p)->FItemIndex );
    else if( strcasecmp(szProp,"nClrPane")==0 )   hb_retnint( (HB_MAXINT)p->FClrPane );
@@ -1248,6 +1436,152 @@ HB_FUNC( UI_FORMTOJSON )
    ADDC("]}") buf[pos]=0;
    hb_retclen(buf,pos);
    #undef ADDC
+}
+
+/* ======================================================================
+ * Toolbar bridge
+ * ====================================================================== */
+
+HB_FUNC( UI_TOOLBARNEW )
+{
+   HBForm * pForm = GetForm(1);
+   HBToolBar * p = [[HBToolBar alloc] init];
+   KeepAlive( (HBControl *)p );
+   if( pForm ) { pForm->FToolBar = p; p->FCtrlParent = (HBControl *)pForm; }
+   hb_retnint( (HB_PTRUINT) p );
+}
+
+HB_FUNC( UI_TOOLBTNADD )
+{
+   HBToolBar * p = (HBToolBar *)(HBControl *)(LONG_PTR)hb_parnint(1);
+   if( p && p->FControlType == CT_TOOLBAR )
+      hb_retni( [p addButton:hb_parc(2) tooltip:HB_ISCHAR(3)?hb_parc(3):""] );
+   else hb_retni( -1 );
+}
+
+HB_FUNC( UI_TOOLBTNADDSEP )
+{
+   HBToolBar * p = (HBToolBar *)(HBControl *)(LONG_PTR)hb_parnint(1);
+   if( p && p->FControlType == CT_TOOLBAR ) [p addSeparator];
+}
+
+HB_FUNC( UI_TOOLBTNONCLICK )
+{
+   HBToolBar * p = (HBToolBar *)(HBControl *)(LONG_PTR)hb_parnint(1);
+   PHB_ITEM pBlock = hb_param(3, HB_IT_BLOCK);
+   if( p && p->FControlType == CT_TOOLBAR && pBlock )
+      [p setBtnClick:hb_parni(2) block:pBlock];
+}
+
+/* ======================================================================
+ * Menu bridge
+ * ====================================================================== */
+
+/* Menu storage: use tag-based approach with NSMenu */
+static NSMenu * s_currentMenuBar = nil;
+
+HB_FUNC( UI_MENUBARCREATE )
+{
+   /* On macOS, we use the application menu bar */
+   EnsureNSApp();
+   NSMenu * menuBar = [[NSMenu alloc] init];
+   [NSApp setMainMenu:menuBar];
+   s_currentMenuBar = menuBar;
+}
+
+HB_FUNC( UI_MENUPOPUPADD )
+{
+   HBForm * pForm = GetForm(1);
+   EnsureNSApp();
+   NSMenu * menuBar = [NSApp mainMenu];
+   if( !menuBar ) { menuBar = [[NSMenu alloc] init]; [NSApp setMainMenu:menuBar]; }
+   NSMenuItem * item = [[NSMenuItem alloc] init];
+   NSMenu * popup = [[NSMenu alloc] initWithTitle:[NSString stringWithUTF8String:hb_parc(2)]];
+   [item setSubmenu:popup];
+   [menuBar addItem:item];
+   hb_retnint( (HB_PTRUINT) popup );
+}
+
+HB_FUNC( UI_MENUITEMADD ) { hb_retni( -1 ); }  /* Stub - use UI_MENUITEMADDEX */
+
+/* Helper target for menu actions */
+@interface HBMenuTarget : NSObject
+{ @public PHB_ITEM pAction; }
+- (void)menuAction:(id)sender;
+@end
+@implementation HBMenuTarget
+- (void)menuAction:(id)sender {
+   if( pAction && HB_IS_BLOCK(pAction) ) {
+      hb_vmPushEvalSym(); hb_vmPush(pAction); hb_vmSend(0);
+   }
+}
+@end
+
+static NSMutableArray * s_menuTargets = nil;
+
+HB_FUNC( UI_MENUITEMADDEX )
+{
+   HBForm * pForm = GetForm(1);
+   NSMenu * popup = (NSMenu *)(LONG_PTR)hb_parnint(2);
+   PHB_ITEM pBlock = hb_param(4, HB_IT_BLOCK);
+
+   if( !popup || !HB_ISCHAR(3) ) { hb_retni(-1); return; }
+
+   if( !s_menuTargets ) s_menuTargets = [[NSMutableArray alloc] init];
+
+   HBMenuTarget * target = [[HBMenuTarget alloc] init];
+   target->pAction = pBlock ? hb_itemNew(pBlock) : NULL;
+   [s_menuTargets addObject:target];
+
+   /* Parse accelerator from text (strip &) */
+   const char * text = hb_parc(3);
+   NSString * title = [NSString stringWithUTF8String:text];
+   title = [title stringByReplacingOccurrencesOfString:@"&" withString:@""];
+
+   NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:title
+      action:@selector(menuAction:) keyEquivalent:@""];
+   [item setTarget:target];
+   [popup addItem:item];
+
+   int idx = pForm ? pForm->FMenuItemCount++ : 0;
+   if( pForm && pBlock ) pForm->FMenuActions[idx] = hb_itemNew(pBlock);
+   hb_retni( idx );
+}
+
+HB_FUNC( UI_MENUSEPADD )
+{
+   NSMenu * popup = (NSMenu *)(LONG_PTR)hb_parnint(2);
+   if( popup ) [popup addItem:[NSMenuItem separatorItem]];
+}
+
+HB_FUNC( UI_FORMSETSIZABLE )
+{
+   HBForm * p = GetForm(1);
+   if( p ) p->FSizable = hb_parl(2);
+}
+
+HB_FUNC( UI_FORMSETAPPBAR )
+{
+   HBForm * p = GetForm(1);
+   if( p ) p->FAppBar = hb_parl(2);
+}
+
+HB_FUNC( UI_FORMSETPOS )
+{
+   HBForm * p = GetForm(1);
+   if( p ) {
+      p->FLeft = hb_parni(2);
+      p->FTop = hb_parni(3);
+      p->FCenter = NO;
+      if( p->FWindow ) {
+         /* macOS uses bottom-left origin, flip Y */
+         NSRect screenFrame = [[NSScreen mainScreen] frame];
+         NSPoint origin;
+         origin.x = p->FLeft;
+         origin.y = screenFrame.size.height - p->FTop - p->FHeight;
+         [p->FWindow setFrameOrigin:origin];
+      }
+   }
 }
 
 /* --- MsgBox --- */

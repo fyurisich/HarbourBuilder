@@ -86,11 +86,18 @@ HB_FUNC( UI_FORMSETDESIGN )
    if( p ) p->SetDesignMode( hb_parl(2) );
 }
 
-/* UI_FormRun( hForm ) */
+/* UI_FormRun( hForm ) - create, show, and enter message loop */
 HB_FUNC( UI_FORMRUN )
 {
    TForm * p = GetForm(1);
    if( p ) p->Run();
+}
+
+/* UI_FormShow( hForm ) - create and show without message loop */
+HB_FUNC( UI_FORMSHOW )
+{
+   TForm * p = GetForm(1);
+   if( p ) p->Show();
 }
 
 /* UI_FormClose( hForm ) */
@@ -253,6 +260,10 @@ HB_FUNC( UI_SETPROP )
       ((TCheckBox*)p)->SetChecked( hb_parl(3) );
    else if( lstrcmpi( szProp, "cName" ) == 0 && HB_ISCHAR(3) )
       lstrcpynA( p->FName, hb_parc(3), sizeof(p->FName) );
+   else if( lstrcmpi( szProp, "lSizable" ) == 0 && p->FControlType == CT_FORM )
+      ((TForm*)p)->FSizable = hb_parl(3);
+   else if( lstrcmpi( szProp, "lAppBar" ) == 0 && p->FControlType == CT_FORM )
+      ((TForm*)p)->FAppBar = hb_parl(3);
    else if( lstrcmpi( szProp, "nClrPane" ) == 0 )
    {
       p->FClrPane = (COLORREF) hb_parnint(3);
@@ -370,6 +381,8 @@ HB_FUNC( UI_GETPROP )
       hb_retc( p->FName );
    else if( lstrcmpi( szProp, "cClassName" ) == 0 )
       hb_retc( p->FClassName );
+   else if( lstrcmpi( szProp, "lSizable" ) == 0 && p->FControlType == CT_FORM )
+      hb_retl( ((TForm*)p)->FSizable );
    else if( lstrcmpi( szProp, "nItemIndex" ) == 0 && p->FControlType == CT_COMBOBOX )
       hb_retni( ((TComboBox*)p)->FItemIndex );
    else if( lstrcmpi( szProp, "nClrPane" ) == 0 )
@@ -653,4 +666,220 @@ HB_FUNC( UI_COMBOSETINDEX )
    TComboBox * p = (TComboBox *) GetCtrl(1);
    if( p && p->FControlType == CT_COMBOBOX )
       p->SetItemIndex( hb_parni(2) );
+}
+
+/* ======================================================================
+ * Toolbar
+ * ====================================================================== */
+
+/* UI_ToolBarNew( hForm ) --> hToolBar */
+HB_FUNC( UI_TOOLBARNEW )
+{
+   TForm * pForm = GetForm(1);
+   TToolBar * p = new TToolBar();
+
+   if( pForm )
+      pForm->AttachToolBar( p );
+
+   RetCtrl( p );
+}
+
+/* UI_ToolBtnAdd( hToolBar, cText, cTooltip ) --> nIndex */
+HB_FUNC( UI_TOOLBTNADD )
+{
+   TToolBar * p = (TToolBar *) GetCtrl(1);
+   if( p && p->FControlType == CT_TOOLBAR )
+      hb_retni( p->AddButton( hb_parc(2), HB_ISCHAR(3) ? hb_parc(3) : "" ) );
+   else
+      hb_retni( -1 );
+}
+
+/* UI_ToolBtnAddSep( hToolBar ) */
+HB_FUNC( UI_TOOLBTNADDSEP )
+{
+   TToolBar * p = (TToolBar *) GetCtrl(1);
+   if( p && p->FControlType == CT_TOOLBAR )
+      p->AddSeparator();
+}
+
+/* UI_ToolBarGetWidth( hToolBar ) --> nWidth */
+HB_FUNC( UI_TOOLBARGETWIDTH )
+{
+   TToolBar * p = (TToolBar *) GetCtrl(1);
+   if( p && p->FControlType == CT_TOOLBAR )
+      hb_retni( p->FWidth );
+   else
+      hb_retni( 0 );
+}
+
+/* UI_ToolBtnOnClick( hToolBar, nIndex, bBlock ) */
+HB_FUNC( UI_TOOLBTNONCLICK )
+{
+   TToolBar * p = (TToolBar *) GetCtrl(1);
+   int nIdx = hb_parni(2);
+   PHB_ITEM pBlock = hb_param(3, HB_IT_BLOCK);
+   if( p && p->FControlType == CT_TOOLBAR && pBlock )
+      p->SetBtnClick( nIdx, pBlock );
+}
+
+/* ======================================================================
+ * Menu
+ * ====================================================================== */
+
+/* UI_MenuBarCreate( hForm ) */
+HB_FUNC( UI_MENUBARCREATE )
+{
+   TForm * p = GetForm(1);
+   if( p ) p->CreateMenuBar();
+}
+
+/* UI_MenuPopupAdd( hForm, cText ) --> hPopup (as number) */
+HB_FUNC( UI_MENUPOPUPADD )
+{
+   TForm * p = GetForm(1);
+   if( p && HB_ISCHAR(2) )
+      hb_retnint( (HB_PTRUINT) p->AddMenuPopup( hb_parc(2) ) );
+   else
+      hb_retnint( 0 );
+}
+
+/* UI_MenuItemAdd( hPopup, cText, bBlock ) --> nIndex */
+HB_FUNC( UI_MENUITEMADD )
+{
+   HMENU hPopup = (HMENU) (LONG_PTR) hb_parnint(1);
+   PHB_ITEM pBlock = hb_param(3, HB_IT_BLOCK);
+   /* Need form reference to store action - find form from popup parent */
+   /* Walk open forms... For simplicity, pass form handle too */
+   /* Actually, let's use UI_MenuItemAddEx with form handle */
+   (void) hPopup; (void) pBlock;
+   hb_retni( -1 );
+}
+
+/* UI_MenuItemAddEx( hForm, hPopup, cText, bBlock ) --> nIndex */
+HB_FUNC( UI_MENUITEMADDEX )
+{
+   TForm * pForm = GetForm(1);
+   HMENU hPopup = (HMENU) (LONG_PTR) hb_parnint(2);
+   PHB_ITEM pBlock = hb_param(4, HB_IT_BLOCK);
+
+   if( pForm && hPopup && HB_ISCHAR(3) )
+      hb_retni( pForm->AddMenuItem( hPopup, hb_parc(3), pBlock ) );
+   else
+      hb_retni( -1 );
+}
+
+/* UI_MenuSepAdd( hForm, hPopup ) */
+HB_FUNC( UI_MENUSEPADD )
+{
+   TForm * pForm = GetForm(1);
+   HMENU hPopup = (HMENU) (LONG_PTR) hb_parnint(2);
+   if( pForm && hPopup )
+      pForm->AddMenuSeparator( hPopup );
+}
+
+/* ======================================================================
+ * Component Palette
+ * ====================================================================== */
+
+/* UI_PaletteNew( hForm ) --> hPalette */
+HB_FUNC( UI_PALETTENEW )
+{
+   TForm * pForm = GetForm(1);
+   TComponentPalette * p = new TComponentPalette();
+
+   if( pForm )
+   {
+      pForm->FPalette = p;
+      p->FCtrlParent = pForm;
+      p->FParent = pForm;
+   }
+
+   RetCtrl( p );
+}
+
+/* UI_PaletteAddTab( hPalette, cName ) --> nTabIndex */
+HB_FUNC( UI_PALETTEADDTAB )
+{
+   TComponentPalette * p = (TComponentPalette *) GetCtrl(1);
+   if( p && p->FControlType == CT_TABCONTROL && HB_ISCHAR(2) )
+      hb_retni( p->AddTab( hb_parc(2) ) );
+   else
+      hb_retni( -1 );
+}
+
+/* UI_PaletteAddComp( hPalette, nTab, cText, cTooltip, nCtrlType ) */
+HB_FUNC( UI_PALETTEADDCOMP )
+{
+   TComponentPalette * p = (TComponentPalette *) GetCtrl(1);
+   if( p && p->FControlType == CT_TABCONTROL )
+      p->AddComponent( hb_parni(2), hb_parc(3),
+         HB_ISCHAR(4) ? hb_parc(4) : "", hb_parni(5) );
+}
+
+/* UI_PaletteOnSelect( hPalette, bBlock ) */
+HB_FUNC( UI_PALETTEONSELECT )
+{
+   TComponentPalette * p = (TComponentPalette *) GetCtrl(1);
+   PHB_ITEM pBlock = hb_param(2, HB_IT_BLOCK);
+   if( p && p->FControlType == CT_TABCONTROL && pBlock )
+   {
+      if( p->FOnSelect ) hb_itemRelease( p->FOnSelect );
+      p->FOnSelect = hb_itemNew( pBlock );
+   }
+}
+
+/* ======================================================================
+ * StatusBar
+ * ====================================================================== */
+
+/* UI_StatusBarCreate( hForm ) - marks form to create a statusbar during Run/Show */
+HB_FUNC( UI_STATUSBARCREATE )
+{
+   TForm * p = GetForm(1);
+   if( p ) p->FHasStatusBar = TRUE;
+}
+
+/* UI_StatusBarSetText( hForm, nPanel, cText ) */
+HB_FUNC( UI_STATUSBARSETTEXT )
+{
+   TForm * p = GetForm(1);
+   int nPanel = hb_parni(2);
+   if( p && p->FStatusBar && HB_ISCHAR(3) )
+      SendMessageA( p->FStatusBar, SB_SETTEXTA, nPanel, (LPARAM) hb_parc(3) );
+}
+
+/* UI_FormSetSizable( hForm, lSizable ) */
+HB_FUNC( UI_FORMSETSIZABLE )
+{
+   TForm * p = GetForm(1);
+   if( p ) p->FSizable = hb_parl(2);
+}
+
+/* UI_FormSetAppBar( hForm, lAppBar ) */
+HB_FUNC( UI_FORMSETAPPBAR )
+{
+   TForm * p = GetForm(1);
+   if( p ) p->FAppBar = hb_parl(2);
+}
+
+/* UI_FormSetPos( hForm, nLeft, nTop ) - set screen position */
+HB_FUNC( UI_FORMSETPOS )
+{
+   TForm * p = GetForm(1);
+   if( p )
+   {
+      p->FLeft = hb_parni(2);
+      p->FTop = hb_parni(3);
+      p->FCenter = FALSE;
+      if( p->FHandle )
+         SetWindowPos( p->FHandle, NULL, p->FLeft, p->FTop, 0, 0,
+            SWP_NOSIZE | SWP_NOZORDER );
+   }
+}
+
+/* UI_FormGetHwnd( hForm ) --> nHwnd */
+HB_FUNC( UI_FORMGETHWND )
+{
+   TForm * p = GetForm(1);
+   hb_retnint( p && p->FHandle ? (HB_PTRUINT) p->FHandle : 0 );
 }

@@ -9,10 +9,14 @@
       [ TITLE <cTitle> ] ;
       [ SIZE <nWidth>, <nHeight> ] ;
       [ FONT <cFont> [, <nSize>] ] ;
+      [ <sizable: SIZABLE> ] ;
+      [ <appbar: APPBAR> ] ;
    => ;
       <oForm> := TForm():New( <cTitle>, <nWidth>, <nHeight> ) ;
       [; <oForm>:FontName := <cFont> ] ;
-      [; <oForm>:FontSize := <nSize> ]
+      [; <oForm>:FontSize := <nSize> ] ;
+      [; <oForm>:Sizable := <.sizable.> ] ;
+      [; <oForm>:AppBar := <.appbar.> ]
 
 #xcommand ACTIVATE FORM <oForm> [ <center: CENTERED> ] => ;
       <oForm>:Activate()
@@ -85,5 +89,35 @@
       SIZE <nWidth>, <nHeight> ;
    => ;
       TGroupBox():New( <oParent>, <cText>, <nLeft>, <nTop>, <nWidth>, <nHeight> )
+
+// Toolbar
+#xcommand DEFINE TOOLBAR <oTB> OF <oForm> => ;
+   <oTB> := TToolBar():New( <oForm> )
+
+#xcommand BUTTON <cText> [ OF <oTB> ] ;
+      [ TOOLTIP <cTip> ] ;
+      [ ACTION <action> ] ;
+   => ;
+      <oTB>:AddButton( <cText>, <cTip>, [ { || <action> } ] )
+
+#xcommand SEPARATOR OF <oTB> => ;
+   <oTB>:AddSeparator()
+
+// Component Palette
+#xcommand DEFINE PALETTE <oPal> OF <oForm> => ;
+   <oPal> := TComponentPalette():New( <oForm> )
+
+// Menu
+#xcommand DEFINE MENUBAR OF <oForm> => ;
+   <oForm>:CreateMenu()
+
+#xcommand DEFINE POPUP <oPopup> PROMPT <cText> OF <oForm> => ;
+   <oPopup> := <oForm>:AddPopup( <cText> )
+
+#xcommand MENUITEM <cText> OF <oPopup> ACTION <action> => ;
+   <oPopup>:AddItem( <cText>, { || <action> } )
+
+#xcommand MENUSEPARATOR OF <oPopup> => ;
+   <oPopup>:AddSeparator()
 
 #endif

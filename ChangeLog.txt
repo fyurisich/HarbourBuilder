@@ -3,6 +3,68 @@ hbcpp - C++ powered GUI for Harbour
 
 2026-04-01
 ----------
+- IDE main window with C++Builder-like layout (3 independent windows)
+  * Main IDE bar: thin top strip with menu bar, speedbar (toolbar),
+    component palette (TabControl with Standard/Additional tabs),
+    and status bar (position, Modified, form dimensions)
+  * Object Inspector: separate floating tool window positioned at left
+  * Design Form: separate floating window positioned at right
+  * All 3 windows are independent top-level windows sharing one message loop
+  * TForm:Show() creates/shows window without entering message loop
+  * TForm:Activate() enters the message loop (main window only)
+  * FMainWindow flag: only main window posts WM_QUIT on close
+  * Secondary windows hide on close instead of destroying
+
+- Added TToolBar control with compact speedbar layout
+  * Win32 TOOLBARCLASSNAME with CCS_NOPARENTALIGN | CCS_NORESIZE
+  * Auto-sized to content width (not full form width)
+  * Text buttons with tooltips: New, Open, Save, Cut, Copy, Paste, etc.
+  * Per-button OnClick callbacks via Harbour codeblocks
+  * Bridge: UI_ToolBarNew, UI_ToolBtnAdd, UI_ToolBtnAddSep, UI_ToolBtnOnClick
+  * Harbour class TToolBar + xBase commands DEFINE TOOLBAR / BUTTON / SEPARATOR
+
+- Added TComponentPalette with native TabControl
+  * Win32 WC_TABCONTROL positioned right of speedbar
+  * Multiple tabs (Standard, Additional) with component buttons
+  * Tab change via TCN_SELCHANGE notification
+  * Buttons represent control types (Label, Edit, Button, CheckBox, etc.)
+  * Bridge: UI_PaletteNew, UI_PaletteAddTab, UI_PaletteAddComp
+
+- Added menu bar support to TForm
+  * Win32 HMENU with popup menus and menu items
+  * Per-item OnClick callbacks via Harbour codeblocks
+  * Bridge: UI_MenuBarCreate, UI_MenuPopupAdd, UI_MenuItemAddEx, UI_MenuSepAdd
+  * Harbour class TMenuPopup + xBase commands DEFINE MENUBAR/POPUP/MENUITEM
+
+- Added StatusBar to TForm
+  * Win32 STATUSCLASSNAME with 3 panels (position, status, dimensions)
+  * Auto-created during CreateAllChildren when FHasStatusBar is set
+  * Bridge: UI_StatusBarCreate, UI_StatusBarSetText
+  * Live updates on selection change
+
+- Added form positioning and style properties
+  * UI_FormSetPos(hForm, nLeft, nTop) - screen position
+  * FSizable: WS_OVERLAPPEDWINDOW with resize borders
+  * FAppBar: WS_OVERLAPPED without thick resize border (IDE top bar)
+  * FCenter: CW_USEDEFAULT position when TRUE, explicit position when FALSE
+  * Harbour: TForm:Sizable, TForm:AppBar, commands SIZABLE/APPBAR
+
+- Updated all 3 backends (Win32, Cocoa, GTK3)
+  * Cocoa: HBToolBar with NSButton row, NSMenu/NSMenuItem for menus,
+    NSTabView-ready palette, FSizable/FAppBar window styles,
+    showOnly method (no [NSApp run]), UI_FormSetPos with Y-flip
+  * GTK3: HBToolBar with GtkToolbar, GtkMenuBar/GtkMenuItem for menus,
+    FSizable/FAppBar via gtk_window_set_resizable,
+    HBForm_Show (no gtk_main), UI_FormSetPos via gtk_window_move
+  * Same Harbour code (test_design.prg) works on all platforms
+
+- Design mode adjustments for toolbar offset
+  * FClientTop: vertical offset below toolbar/palette
+  * Grid dots start at FClientTop
+  * Mouse coordinates adjusted by -FClientTop for design operations
+  * SetWindowPos calls add +FClientTop for physical positioning
+  * PaintSelectionHandles adds FClientTop to Y coordinates
+
 - Added Linux GTK3 backend
   * gtk3_core.c: full reimplementation of C++ core using GTK3
     GtkWindow, GtkFixed for absolute positioning, all controls

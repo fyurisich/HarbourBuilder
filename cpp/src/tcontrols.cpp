@@ -294,6 +294,331 @@ const PROPDESC * TGroupBox::GetPropDescs( int * pnCount )
 }
 
 /* ======================================================================
+ * TToolBar
+ * ====================================================================== */
+
+TToolBar::TToolBar()
+{
+   lstrcpy( FClassName, "TToolBar" );
+   FControlType = CT_TOOLBAR;
+   FBtnCount = 0;
+   FTabStop = FALSE;
+   FHeight = 28;
+   memset( FBtns, 0, sizeof(FBtns) );
+}
+
+TToolBar::~TToolBar()
+{
+   int i;
+   for( i = 0; i < FBtnCount; i++ )
+      if( FBtns[i].pOnClick ) hb_itemRelease( FBtns[i].pOnClick );
+}
+
+void TToolBar::CreateParams( DWORD * pdwStyle, DWORD * pdwExStyle, const char ** pszClass )
+{
+   *pdwStyle = WS_CHILD | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | TBSTYLE_LIST | CCS_TOP;
+   *pdwExStyle = 0;
+   *pszClass = TOOLBARCLASSNAME;
+}
+
+void TToolBar::CreateHandle( HWND hParent )
+{
+   int i, btnIdx = 0;
+   TBBUTTON tbb;
+
+   FHandle = CreateWindowExA( 0, TOOLBARCLASSNAME, NULL,
+      WS_CHILD | WS_VISIBLE | TBSTYLE_FLAT | TBSTYLE_TOOLTIPS | TBSTYLE_LIST |
+      CCS_NOPARENTALIGN | CCS_NORESIZE | CCS_NODIVIDER,
+      0, 0, 0, 0,
+      hParent, NULL, GetModuleHandle(NULL), NULL );
+
+   if( !FHandle ) return;
+
+   SendMessage( FHandle, TB_BUTTONSTRUCTSIZE, sizeof(TBBUTTON), 0 );
+   SendMessage( FHandle, TB_SETEXTENDEDSTYLE, 0, TBSTYLE_EX_MIXEDBUTTONS );
+
+   /* Apply font from parent */
+   if( hParent )
+      SendMessage( FHandle, WM_SETFONT,
+         SendMessage( hParent, WM_GETFONT, 0, 0 ), TRUE );
+
+   /* Add all buttons */
+   for( i = 0; i < FBtnCount; i++ )
+   {
+      memset( &tbb, 0, sizeof(tbb) );
+
+      if( FBtns[i].bSeparator )
+      {
+         tbb.iBitmap = 0;
+         tbb.idCommand = 0;
+         tbb.fsState = 0;
+         tbb.fsStyle = BTNS_SEP;
+         tbb.iString = 0;
+      }
+      else
+      {
+         tbb.iBitmap = I_IMAGENONE;
+         tbb.idCommand = TOOLBAR_BTN_ID_BASE + i;
+         tbb.fsState = TBSTATE_ENABLED;
+         tbb.fsStyle = BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT;
+         tbb.iString = (INT_PTR) FBtns[i].szText;
+      }
+
+      SendMessage( FHandle, TB_ADDBUTTONS, 1, (LPARAM) &tbb );
+   }
+
+   /* Calculate ideal size and position toolbar */
+   {
+      SIZE sz = {0};
+      SendMessage( FHandle, TB_GETMAXSIZE, 0, (LPARAM) &sz );
+      FWidth = sz.cx + 8;
+      FHeight = sz.cy;
+      SetWindowPos( FHandle, NULL, 0, 0, FWidth, FHeight, SWP_NOZORDER );
+   }
+}
+
+int TToolBar::AddButton( const char * szText, const char * szTooltip )
+{
+   if( FBtnCount >= MAX_TOOLBTNS ) return -1;
+
+   int idx = FBtnCount++;
+   lstrcpynA( FBtns[idx].szText, szText, sizeof(FBtns[idx].szText) );
+   lstrcpynA( FBtns[idx].szTooltip, szTooltip, sizeof(FBtns[idx].szTooltip) );
+   FBtns[idx].bSeparator = FALSE;
+   FBtns[idx].pOnClick = NULL;
+
+   /* If toolbar already created, add button dynamically */
+   if( FHandle )
+   {
+      TBBUTTON tbb = {0};
+      tbb.iBitmap = I_IMAGENONE;
+      tbb.idCommand = TOOLBAR_BTN_ID_BASE + idx;
+      tbb.fsState = TBSTATE_ENABLED;
+      tbb.fsStyle = BTNS_BUTTON | BTNS_AUTOSIZE | BTNS_SHOWTEXT;
+      tbb.iString = (INT_PTR) FBtns[idx].szText;
+      SendMessage( FHandle, TB_ADDBUTTONS, 1, (LPARAM) &tbb );
+      SendMessage( FHandle, TB_AUTOSIZE, 0, 0 );
+   }
+
+   return idx;
+}
+
+void TToolBar::AddSeparator()
+{
+   if( FBtnCount >= MAX_TOOLBTNS ) return;
+
+   int idx = FBtnCount++;
+   FBtns[idx].bSeparator = TRUE;
+   FBtns[idx].pOnClick = NULL;
+   FBtns[idx].szText[0] = 0;
+   FBtns[idx].szTooltip[0] = 0;
+
+   if( FHandle )
+   {
+      TBBUTTON tbb = {0};
+      tbb.fsStyle = BTNS_SEP;
+      SendMessage( FHandle, TB_ADDBUTTONS, 1, (LPARAM) &tbb );
+      SendMessage( FHandle, TB_AUTOSIZE, 0, 0 );
+   }
+}
+
+void TToolBar::SetBtnClick( int nIdx, PHB_ITEM pBlock )
+{
+   if( nIdx < 0 || nIdx >= FBtnCount ) return;
+   if( FBtns[nIdx].pOnClick ) hb_itemRelease( FBtns[nIdx].pOnClick );
+   FBtns[nIdx].pOnClick = hb_itemNew( pBlock );
+}
+
+void TToolBar::DoCommand( int nBtnIdx )
+{
+   if( nBtnIdx >= 0 && nBtnIdx < FBtnCount && FBtns[nBtnIdx].pOnClick )
+   {
+      hb_vmPushEvalSym();
+      hb_vmPush( FBtns[nBtnIdx].pOnClick );
+      hb_vmSend( 0 );
+   }
+}
+
+int TToolBar::GetBarHeight()
+{
+   if( FHandle )
+   {
+      RECT rc;
+      GetWindowRect( FHandle, &rc );
+      return rc.bottom - rc.top + 2;  /* +2 for spacing below toolbar */
+   }
+   return 30;
+}
+
+const PROPDESC * TToolBar::GetPropDescs( int * pnCount )
+{
+   return TControl::GetPropDescs( pnCount );
+}
+
+/* ======================================================================
+ * TComponentPalette
+ * ====================================================================== */
+
+static LRESULT CALLBACK PaletteBtnProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
+
+TComponentPalette::TComponentPalette()
+{
+   lstrcpy( FClassName, "TComponentPalette" );
+   FControlType = CT_TABCONTROL;
+   FTabCtrl = NULL;
+   FBtnPanel = NULL;
+   FTabCount = 0;
+   FCurrentTab = 0;
+   FOnSelect = NULL;
+   FTabStop = FALSE;
+   memset( FTabs, 0, sizeof(FTabs) );
+   memset( FBtns, 0, sizeof(FBtns) );
+}
+
+TComponentPalette::~TComponentPalette()
+{
+   if( FOnSelect ) hb_itemRelease( FOnSelect );
+}
+
+void TComponentPalette::CreateHandle( HWND hParent )
+{
+   RECT rcParent;
+   int tbWidth;
+   TForm * pForm;
+
+   if( !hParent ) return;
+
+   /* Get parent form to find toolbar width */
+   pForm = (TForm *) GetWindowLongPtr( hParent, GWLP_USERDATA );
+   tbWidth = ( pForm && pForm->FToolBar ) ? pForm->FToolBar->FWidth + 4 : 0;
+
+   GetClientRect( hParent, &rcParent );
+
+   /* Create tab control to the right of the toolbar */
+   FTabCtrl = CreateWindowExA( 0, WC_TABCONTROLA, NULL,
+      WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | TCS_TABS,
+      tbWidth, 0,
+      rcParent.right - tbWidth, rcParent.bottom,
+      hParent, NULL, GetModuleHandle(NULL), NULL );
+
+   if( !FTabCtrl ) return;
+   FHandle = FTabCtrl;
+
+   /* Apply parent font */
+   SendMessage( FTabCtrl, WM_SETFONT,
+      SendMessage( hParent, WM_GETFONT, 0, 0 ), TRUE );
+
+   /* Add tabs */
+   {
+      int i;
+      TCITEMA tci;
+      for( i = 0; i < FTabCount; i++ )
+      {
+         memset( &tci, 0, sizeof(tci) );
+         tci.mask = TCIF_TEXT;
+         tci.pszText = FTabs[i].szName;
+         SendMessageA( FTabCtrl, TCM_INSERTITEMA, i, (LPARAM) &tci );
+      }
+   }
+
+   /* Show first tab's buttons */
+   ShowTab( 0 );
+}
+
+int TComponentPalette::AddTab( const char * szName )
+{
+   if( FTabCount >= MAX_PALETTE_TABS ) return -1;
+   int idx = FTabCount++;
+   lstrcpynA( FTabs[idx].szName, szName, sizeof(FTabs[idx].szName) );
+   FTabs[idx].nBtnCount = 0;
+   return idx;
+}
+
+void TComponentPalette::AddComponent( int nTab, const char * szText, const char * szTooltip, int nCtrlType )
+{
+   if( nTab < 0 || nTab >= FTabCount ) return;
+   PaletteTab * t = &FTabs[nTab];
+   if( t->nBtnCount >= MAX_PALETTE_BTNS ) return;
+   int idx = t->nBtnCount++;
+   lstrcpynA( t->btns[idx].szText, szText, sizeof(t->btns[idx].szText) );
+   lstrcpynA( t->btns[idx].szTooltip, szTooltip, sizeof(t->btns[idx].szTooltip) );
+   t->btns[idx].nControlType = nCtrlType;
+}
+
+void TComponentPalette::ShowTab( int nTab )
+{
+   int i, xPos = 4;
+   RECT rcTab;
+   HWND hToolTip;
+
+   if( nTab < 0 || nTab >= FTabCount ) return;
+   FCurrentTab = nTab;
+
+   /* Remove existing buttons */
+   for( i = 0; i < MAX_PALETTE_BTNS; i++ )
+   {
+      if( FBtns[i] ) { DestroyWindow( FBtns[i] ); FBtns[i] = NULL; }
+   }
+
+   /* Get the display area inside the tab control */
+   GetClientRect( FTabCtrl, &rcTab );
+   SendMessage( FTabCtrl, TCM_ADJUSTRECT, FALSE, (LPARAM) &rcTab );
+
+   /* Create buttons for this tab */
+   {
+      PaletteTab * t = &FTabs[nTab];
+      int y = rcTab.top + 2;
+      int btnH = rcTab.bottom - rcTab.top - 4;
+      if( btnH > 24 ) btnH = 24;
+      if( btnH < 16 ) btnH = 16;
+
+      xPos = rcTab.left + 4;
+      for( i = 0; i < t->nBtnCount; i++ )
+      {
+         int btnW = lstrlenA( t->btns[i].szText ) * 7 + 16;
+         if( btnW < 32 ) btnW = 32;
+
+         FBtns[i] = CreateWindowExA( 0, "BUTTON", t->btns[i].szText,
+            WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON | BS_FLAT,
+            xPos, y, btnW, btnH,
+            FTabCtrl, (HMENU)(LONG_PTR)(200 + i),
+            GetModuleHandle(NULL), NULL );
+
+         if( FBtns[i] )
+         {
+            SendMessage( FBtns[i], WM_SETFONT,
+               SendMessage( FTabCtrl, WM_GETFONT, 0, 0 ), TRUE );
+         }
+
+         xPos += btnW + 2;
+      }
+   }
+}
+
+void TComponentPalette::HandleTabChange()
+{
+   int sel = (int) SendMessage( FTabCtrl, TCM_GETCURSEL, 0, 0 );
+   if( sel >= 0 && sel < FTabCount )
+      ShowTab( sel );
+}
+
+int TComponentPalette::GetBarHeight()
+{
+   if( FTabCtrl )
+   {
+      RECT rc;
+      GetWindowRect( FTabCtrl, &rc );
+      return rc.bottom - rc.top;
+   }
+   return 40;
+}
+
+const PROPDESC * TComponentPalette::GetPropDescs( int * pnCount )
+{
+   return TControl::GetPropDescs( pnCount );
+}
+
+/* ======================================================================
  * Factory
  * ====================================================================== */
 
@@ -308,6 +633,7 @@ TControl * CreateControlByType( BYTE bType )
       case CT_CHECKBOX: return new TCheckBox();
       case CT_COMBOBOX: return new TComboBox();
       case CT_GROUPBOX: return new TGroupBox();
+      case CT_TOOLBAR:  return new TToolBar();
    }
    return NULL;
 }

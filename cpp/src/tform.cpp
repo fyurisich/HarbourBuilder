@@ -9,6 +9,7 @@ static PROPDESC aFormProps[] = {
    { "cFontName", PT_STRING,  0, "Appearance" },
    { "nFontSize", PT_NUMBER,  0, "Appearance" },
    { "lCenter",   PT_LOGICAL, 0, "Position" },
+   { "lSizable",  PT_LOGICAL, 0, "Behavior" },
 };
 
 static int s_nFormCount = 0;
@@ -20,8 +21,11 @@ TForm::TForm()
    FFormFont = NULL;
    FClrPane = GetSysColor( COLOR_BTNFACE );
    FCenter = TRUE;
+   FSizable = FALSE;
+   FAppBar = FALSE;
    FModalResult = 0;
    FRunning = FALSE;
+   FMainWindow = FALSE;
    FGridBmp = NULL;
    FGridDC = NULL;
    FGridW = FGridH = 0;
@@ -40,19 +44,42 @@ TForm::TForm()
    FWidth = 470;
    FHeight = 400;
    lstrcpy( FText, "New Form" );
+
+   /* Toolbar */
+   FToolBar = NULL;
+   FPalette = NULL;
+   FStatusBar = NULL;
+   FHasStatusBar = FALSE;
+   FClientTop = 0;
+
+   /* Menu */
+   FMenuBar = NULL;
+   FMenuItemCount = 0;
+   memset( FMenuActions, 0, sizeof(FMenuActions) );
+
 }
 
 TForm::~TForm()
 {
+   int i;
    if( FGridBmp ) { SelectObject( FGridDC, NULL ); DeleteObject( FGridBmp ); }
    if( FGridDC )  DeleteDC( FGridDC );
    if( FFormFont ) DeleteObject( FFormFont );
+   if( FOnSelChange ) hb_itemRelease( FOnSelChange );
+   FOnSelChange = NULL;
+   /* Release menu action blocks */
+   for( i = 0; i < FMenuItemCount; i++ )
+      if( FMenuActions[i] ) hb_itemRelease( FMenuActions[i] );
+   if( FMenuBar ) DestroyMenu( FMenuBar );
    /* FBkBrush cleaned up by ~TControl() */
 }
 
 void TForm::CreateParams( DWORD * pdwStyle, DWORD * pdwExStyle, const char ** pszClass )
 {
-   *pdwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_MODALFRAME;
+   if( FSizable )
+      *pdwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;
+   else
+      *pdwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_MODALFRAME | WS_CLIPCHILDREN;
    *pdwExStyle = 0;
    *pszClass = "HbIdeForm";
 }
@@ -86,10 +113,29 @@ void TForm::CreateHandle( HWND hParent )
    RegisterClassA( &wc );
 
    /* Create window */
-   FHandle = CreateWindowExA( WS_EX_COMPOSITED, szClass, FText,
-      WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_MODALFRAME | WS_CLIPCHILDREN,
-      0, 0, FWidth, FHeight,
-      NULL, NULL, GetModuleHandle(NULL), NULL );
+   {
+      DWORD dwStyle;
+      DWORD dwExStyle = WS_EX_COMPOSITED;
+
+      if( FAppBar )
+      {
+         /* Top bar: caption + min/max/close, NO thick resize border.
+          * Like C++Builder main window: visible in taskbar, fixed height. */
+         dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
+                   WS_MAXIMIZEBOX | WS_CLIPCHILDREN;
+      }
+      else if( FSizable )
+         dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;
+      else
+         dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_MODALFRAME | WS_CLIPCHILDREN;
+
+      FHandle = CreateWindowExA( dwExStyle, szClass, FText,
+         dwStyle,
+         FCenter ? CW_USEDEFAULT : FLeft,
+         FCenter ? CW_USEDEFAULT : FTop,
+         FWidth, FHeight,
+         NULL, NULL, GetModuleHandle(NULL), NULL );
+   }
 
    if( FHandle )
    {
@@ -97,6 +143,10 @@ void TForm::CreateHandle( HWND hParent )
 
       if( FFormFont )
          SendMessage( FHandle, WM_SETFONT, (WPARAM) FFormFont, TRUE );
+
+      /* Attach menu bar if created before window */
+      if( FMenuBar )
+         SetMenu( FHandle, FMenuBar );
    }
 }
 
@@ -109,6 +159,29 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
          WORD wId = LOWORD(wParam);
          WORD wNotify = HIWORD(wParam);
 
+         /* Toolbar button clicks */
+         if( FToolBar && wId >= TOOLBAR_BTN_ID_BASE &&
+             wId < TOOLBAR_BTN_ID_BASE + FToolBar->FBtnCount )
+         {
+            FToolBar->DoCommand( wId - TOOLBAR_BTN_ID_BASE );
+            return 0;
+         }
+
+         /* Menu item clicks */
+         if( wId >= MENU_ID_BASE && wId < (WORD)(MENU_ID_BASE + FMenuItemCount) )
+         {
+            int idx = wId - MENU_ID_BASE;
+            if( idx < FMenuItemCount && FMenuActions[idx] &&
+                HB_IS_BLOCK( FMenuActions[idx] ) )
+            {
+               hb_vmPushEvalSym();
+               hb_vmPush( FMenuActions[idx] );
+               hb_vmSend( 0 );
+            }
+            return 0;
+         }
+
+         /* Child control notifications */
          {
             HWND hCtrl = (HWND) lParam;
             int i;
@@ -152,7 +225,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                FGridBmp = CreateCompatibleBitmap( hDC, FGridW, FGridH );
                SelectObject( FGridDC, FGridBmp );
                FillRect( FGridDC, &rc, FBkBrush );
-               for( y = 8; y < FGridH; y += 8 )
+               for( y = FClientTop + 8; y < FGridH; y += 8 )
                   for( x = 8; x < FGridW; x += 8 )
                      SetPixel( FGridDC, x, y, RGB(200, 200, 200) );
             }
@@ -226,8 +299,44 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
       case WM_MOVE:
       case WM_SIZE:
       {
+         /* Resize toolbar */
+         if( FToolBar && FToolBar->FHandle )
+         {
+            FClientTop = FToolBar->GetBarHeight();
+         }
+         /* Resize palette to fill remaining width */
+         if( FPalette && FPalette->FTabCtrl )
+         {
+            RECT rc;
+            int tbW = ( FToolBar ) ? FToolBar->FWidth + 4 : 0;
+            GetClientRect( FHandle, &rc );
+            SetWindowPos( FPalette->FTabCtrl, NULL, tbW, 0,
+               rc.right - tbW, rc.bottom, SWP_NOZORDER );
+         }
+         /* Resize status bar */
+         if( FStatusBar )
+            SendMessage( FStatusBar, WM_SIZE, 0, 0 );
          if( FDesignMode )
             UpdateOverlay();
+         break;
+      }
+
+      case WM_NOTIFY:
+      {
+         LPNMHDR pNMH = (LPNMHDR) lParam;
+         if( pNMH->code == TTN_GETDISPINFOA && FToolBar )
+         {
+            LPNMTTDISPINFOA pTTDI = (LPNMTTDISPINFOA) lParam;
+            int idx = (int) pTTDI->hdr.idFrom - TOOLBAR_BTN_ID_BASE;
+            if( idx >= 0 && idx < FToolBar->FBtnCount )
+               pTTDI->lpszText = FToolBar->FBtns[idx].szTooltip;
+         }
+         /* Tab control selection changed (component palette) */
+         if( pNMH->code == TCN_SELCHANGE && FPalette &&
+             pNMH->hwndFrom == FPalette->FTabCtrl )
+         {
+            FPalette->HandleTabChange();
+         }
          break;
       }
 
@@ -242,7 +351,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
       {
          if( FDesignMode )
          {
-            int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam);
+            int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam) - FClientTop;
             BOOL bCtrl = ( wParam & MK_CONTROL ) != 0;
             int nHandle;
             TControl * pHit;
@@ -318,7 +427,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
          /* Rubber band */
          if( FDesignMode && FRubberBand )
          {
-            int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam);
+            int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam) - FClientTop;
             HDC hDC = GetDC( FHandle );
             HPEN hPen = CreatePen( PS_DOT, 1, RGB(0, 120, 215) );
             HPEN hOld = (HPEN) SelectObject( hDC, hPen );
@@ -345,7 +454,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
          /* Resize */
          if( FDesignMode && FResizing && FSelCount > 0 )
          {
-            int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam);
+            int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam) - FClientTop;
             int dx = mx - FDragStartX, dy = my - FDragStartY;
             TControl * p = FSelected[0];
             int nl = p->FLeft, nt = p->FTop, nw = p->FWidth, nh = p->FHeight;
@@ -373,7 +482,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
 
             p->FLeft = nl; p->FTop = nt; p->FWidth = nw; p->FHeight = nh;
             if( p->FHandle )
-               SetWindowPos( p->FHandle, NULL, nl, nt, nw, nh, SWP_NOZORDER );
+               SetWindowPos( p->FHandle, NULL, nl, nt + FClientTop, nw, nh, SWP_NOZORDER );
 
             FDragStartX += dx;
             FDragStartY += dy;
@@ -392,7 +501,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
          /* Drag/move */
          if( FDesignMode && FDragging && FSelCount > 0 )
          {
-            int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam);
+            int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam) - FClientTop;
             int dx = mx - FDragStartX, dy = my - FDragStartY;
             int i;
             RECT rcOld, rcNew, rcInval;
@@ -408,7 +517,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                   p->FLeft += dx;
                   p->FTop += dy;
                   if( p->FHandle )
-                     SetWindowPos( p->FHandle, NULL, p->FLeft, p->FTop,
+                     SetWindowPos( p->FHandle, NULL, p->FLeft, p->FTop + FClientTop,
                         p->FWidth, p->FHeight, SWP_NOZORDER | SWP_NOSIZE );
                }
                FDragStartX += dx;
@@ -429,7 +538,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
          /* Change cursor in design mode */
          if( FDesignMode )
          {
-            int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam);
+            int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam) - FClientTop;
             int nH = HitTestHandle( mx, my );
             LPCTSTR cur = IDC_ARROW;
 
@@ -551,7 +660,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                   FSelected[i]->FTop += dy;
                   if( FSelected[i]->FHandle )
                      SetWindowPos( FSelected[i]->FHandle, NULL,
-                        FSelected[i]->FLeft, FSelected[i]->FTop, 0, 0,
+                        FSelected[i]->FLeft, FSelected[i]->FTop + FClientTop, 0, 0,
                         SWP_NOZORDER | SWP_NOSIZE );
                }
                UpdateOverlay();
@@ -571,11 +680,18 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
       }
 
       case WM_CLOSE:
-         Close();
+         if( FMainWindow )
+            Close();   /* Main window: destroy -> PostQuitMessage */
+         else
+         {
+            /* Secondary window: just hide, don't destroy */
+            ShowWindow( FHandle, SW_HIDE );
+         }
          return 0;
 
       case WM_DESTROY:
-         PostQuitMessage(0);
+         if( FMainWindow )
+            PostQuitMessage(0);
          return 0;
    }
 
@@ -585,6 +701,8 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
 void TForm::Run()
 {
    MSG msg;
+
+   FMainWindow = TRUE;
 
    CreateHandle( NULL );
    CreateAllChildren();
@@ -612,6 +730,25 @@ void TForm::Run()
    FRunning = FALSE;
 }
 
+/* Show() - Create window and show it, but do NOT enter a message loop.
+ * Use this for secondary windows (inspector, design form) that share
+ * the message loop of the main window (which uses Run()). */
+void TForm::Show()
+{
+   CreateHandle( NULL );
+   CreateAllChildren();
+
+   if( FDesignMode )
+      SubclassChildren();
+
+   if( FCenter )
+      Center();
+
+   ShowWindow( FHandle, SW_SHOW );
+   UpdateWindow( FHandle );
+   FRunning = TRUE;
+}
+
 void TForm::Close()
 {
    FRunning = FALSE;
@@ -636,6 +773,36 @@ void TForm::CreateAllChildren()
 {
    int i;
 
+   /* Create toolbar first (it docks to the top-left) */
+   if( FToolBar )
+   {
+      FToolBar->CreateHandle( FHandle );
+      FClientTop = FToolBar->GetBarHeight();
+   }
+
+   /* Create component palette (to the right of toolbar) */
+   if( FPalette )
+   {
+      FPalette->CreateHandle( FHandle );
+      /* If palette is taller than toolbar, use palette height */
+      if( FPalette->GetBarHeight() > FClientTop )
+         FClientTop = FPalette->GetBarHeight();
+   }
+
+   /* Create status bar */
+   if( FHasStatusBar && !FStatusBar )
+   {
+      int parts[] = { 80, 200, -1 };
+      FStatusBar = CreateWindowExA( 0, STATUSCLASSNAMEA, NULL,
+         WS_CHILD | WS_VISIBLE,
+         0, 0, 0, 0,
+         FHandle, NULL, GetModuleHandle(NULL), NULL );
+      SendMessage( FStatusBar, SB_SETPARTS, 3, (LPARAM) parts );
+      SendMessageA( FStatusBar, SB_SETTEXTA, 0, (LPARAM) "1:1" );
+      SendMessageA( FStatusBar, SB_SETTEXTA, 1, (LPARAM) "Modified" );
+      SendMessageA( FStatusBar, SB_SETTEXTA, 2, (LPARAM) "" );
+   }
+
    /* GroupBoxes first (lowest z-order) */
    for( i = 0; i < FChildCount; i++ )
    {
@@ -643,16 +810,27 @@ void TForm::CreateAllChildren()
       {
          FChildren[i]->SetFont( FFormFont );
          FChildren[i]->CreateHandle( FHandle );
+         /* Offset below toolbar */
+         if( FClientTop > 0 && FChildren[i]->FHandle )
+            SetWindowPos( FChildren[i]->FHandle, NULL,
+               FChildren[i]->FLeft, FChildren[i]->FTop + FClientTop,
+               FChildren[i]->FWidth, FChildren[i]->FHeight, SWP_NOZORDER );
       }
    }
 
-   /* All other controls */
+   /* All other controls (except toolbar) */
    for( i = 0; i < FChildCount; i++ )
    {
-      if( FChildren[i]->FControlType != CT_GROUPBOX )
+      if( FChildren[i]->FControlType != CT_GROUPBOX &&
+          FChildren[i]->FControlType != CT_TOOLBAR )
       {
          FChildren[i]->SetFont( FFormFont );
          FChildren[i]->CreateHandle( FHandle );
+         /* Offset below toolbar */
+         if( FClientTop > 0 && FChildren[i]->FHandle )
+            SetWindowPos( FChildren[i]->FHandle, NULL,
+               FChildren[i]->FLeft, FChildren[i]->FTop + FClientTop,
+               FChildren[i]->FWidth, FChildren[i]->FHeight, SWP_NOZORDER );
       }
    }
 }
@@ -815,7 +993,7 @@ void TForm::PaintSelectionHandles( HDC hDC )
    for( i = 0; i < FSelCount; i++ )
    {
       TControl * p = FSelected[i];
-      int x = p->FLeft, y = p->FTop, w = p->FWidth, h = p->FHeight;
+      int x = p->FLeft, y = p->FTop + FClientTop, w = p->FWidth, h = p->FHeight;
       int hx[8], hy[8];
 
       /* Dashed border */
@@ -940,6 +1118,56 @@ void TForm::UpdateOverlay()
    DeleteObject( hBmp );
    DeleteDC( hMemDC );
    ReleaseDC( NULL, hScreenDC );
+}
+
+/* ======================================================================
+ * Toolbar
+ * ====================================================================== */
+
+void TForm::AttachToolBar( TToolBar * pTB )
+{
+   FToolBar = pTB;
+   pTB->FCtrlParent = this;
+   pTB->FParent = this;
+}
+
+/* ======================================================================
+ * Menu
+ * ====================================================================== */
+
+void TForm::CreateMenuBar()
+{
+   if( !FMenuBar )
+      FMenuBar = CreateMenu();
+}
+
+HMENU TForm::AddMenuPopup( const char * szText )
+{
+   HMENU hPopup;
+   if( !FMenuBar ) CreateMenuBar();
+   hPopup = CreatePopupMenu();
+   AppendMenuA( FMenuBar, MF_POPUP, (UINT_PTR) hPopup, szText );
+   if( FHandle ) SetMenu( FHandle, FMenuBar );
+   return hPopup;
+}
+
+int TForm::AddMenuItem( HMENU hPopup, const char * szText, PHB_ITEM pBlock )
+{
+   int idx;
+   if( !hPopup || FMenuItemCount >= MAX_MENUITEMS ) return -1;
+   idx = FMenuItemCount++;
+   if( pBlock )
+      FMenuActions[idx] = hb_itemNew( pBlock );
+   else
+      FMenuActions[idx] = NULL;
+   AppendMenuA( hPopup, MF_STRING, MENU_ID_BASE + idx, szText );
+   return idx;
+}
+
+void TForm::AddMenuSeparator( HMENU hPopup )
+{
+   if( hPopup )
+      AppendMenuA( hPopup, MF_SEPARATOR, 0, NULL );
 }
 
 const PROPDESC * TForm::GetPropDescs( int * pnCount )
