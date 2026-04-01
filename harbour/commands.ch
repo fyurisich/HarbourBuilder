@@ -116,8 +116,9 @@
 #xcommand DEFINE POPUP <oPopup> PROMPT <cText> OF <oForm> => ;
    <oPopup> := <oForm>:AddPopup( <cText> )
 
-#xcommand MENUITEM <cText> OF <oPopup> ACTION <action> => ;
-   <oPopup>:AddItem( <cText>, { || <action> } )
+#xcommand MENUITEM <cText> OF <oPopup> ACTION <action> ;
+      [ ACCEL <cKey> ] => ;
+   <oPopup>:AddItem( <cText>, { || <action> }, <cKey> )
 
 #xcommand MENUSEPARATOR OF <oPopup> => ;
    <oPopup>:AddSeparator()

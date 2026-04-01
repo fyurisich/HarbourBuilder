@@ -1,5 +1,5 @@
 #!/bin/bash
-# build_mac.sh - Build test_design_mac for macOS using Harbour + Cocoa
+# build_mac.sh - Build HBCPP MacOS using Harbour + Cocoa
 #
 # Usage: ./build_mac.sh
 
@@ -10,7 +10,7 @@ HBBIN="$HBDIR/bin/darwin/clang"
 HBINC="$HBDIR/include"
 HBLIB="$HBDIR/lib/darwin/clang"
 PROJDIR="$(cd "$(dirname "$0")/.." && pwd)"
-PROG="test_design_mac"
+PROG="hbcpp_macos"
 
 cd "$(dirname "$0")"
 

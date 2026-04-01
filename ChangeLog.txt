@@ -3,6 +3,34 @@ hbcpp - C++ powered GUI for Harbour
 
 2026-04-01
 ----------
+- macOS IDE: full Borland C++Builder-style layout with 4 independent windows
+  * Renamed to hbcpp_macos (binary) / hbcpp_macos.prg (source)
+  * App title: "hbcpp (GUI framework for Harbour)"
+  * Main IDE bar: borderless full-width window (no title bar, no shadow)
+    Toolbar with 32px buttons + draggable splitter + component palette
+  * Component Palette: NSSegmentedControl tabs at bottom, 52x50 buttons
+    Tabs: Standard, Additional, Data Access, Data Controls
+    Real implementation replacing stubs (PalShowTab, HBSplitterView)
+  * Code Editor: NSTextView with dark theme (VS Code colors), syntax
+    highlighting for Harbour/xBase (keywords, commands, strings, comments,
+    preprocessor, logical literals), line number gutter (HBGutterView),
+    scroll-synced gutter, Cmd+Z undo, find bar
+  * Inspector combo: control selection dropdown (INS_ComboAdd, INS_ComboSelect,
+    INS_ComboClear, INS_SetFormCtrl, INS_SetOnComboSel, INS_SetPos)
+    Synced with design form selection changes
+  * Layout: Inspector left column, Code Editor right (background),
+    Form Designer floating centered on top of editor
+    Positions calculated from MAC_GetWindowBottom() for pixel-perfect alignment
+  * Menu accelerators: explicit ACCEL parameter (not & convention)
+    Standard macOS shortcuts: Cmd+N/O/S/Z/X/C/V/F/H/R/Q
+  * New bridge functions: MAC_GetScreenWidth, MAC_GetScreenHeight,
+    MAC_GetWindowBottom, MAC_MsgBox
+  * Fixed compilation: forward declarations for HBToolBar, PALDATA,
+    HBSplitterView; replaced LONG_PTR with __bridge ARC casts;
+    moved MAX_MENUITEMS/MAX_TOOLBTNS defines before first use
+  * commands.ch: MENUITEM now supports optional ACCEL clause
+  * classes.prg: TMenuPopup:AddItem accepts optional cAccel parameter
+
 - IDE main window with C++Builder-like layout (3 independent windows)
   * Main IDE bar: thin top strip with menu bar, speedbar (toolbar),
     component palette (TabControl with Standard/Additional tabs),

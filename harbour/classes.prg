@@ -301,7 +301,7 @@ CLASS TMenuPopup
    DATA hPopup INIT 0
 
    METHOD New( oForm, cText )
-   METHOD AddItem( cText, bAction )
+   METHOD AddItem( cText, bAction, cAccel )
    METHOD AddSeparator()
 
 ENDCLASS
@@ -313,8 +313,8 @@ METHOD New( oForm, cText ) CLASS TMenuPopup
 
 return Self
 
-METHOD AddItem( cText, bAction ) CLASS TMenuPopup
-return UI_MenuItemAddEx( ::oForm:hCpp, ::hPopup, cText, bAction )
+METHOD AddItem( cText, bAction, cAccel ) CLASS TMenuPopup
+return UI_MenuItemAddEx( ::oForm:hCpp, ::hPopup, cText, bAction, cAccel )
 
 METHOD AddSeparator() CLASS TMenuPopup
    UI_MenuSepAdd( ::oForm:hCpp, ::hPopup )

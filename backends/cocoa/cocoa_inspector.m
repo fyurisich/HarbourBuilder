@@ -35,11 +35,14 @@ typedef struct {
    NSFont *     font;
    NSFont *     boldFont;
    HB_PTRUINT   hCtrl;       /* currently inspected control handle */
+   HB_PTRUINT   hFormCtrl;   /* form handle for combo enumeration */
    IROW         rows[MAX_ROWS];
    int          nRows;
    int          map[MAX_ROWS]; /* visible row -> rows index */
    int          nVisible;
    NSScrollView * scrollView;
+   NSPopUpButton * combo;    /* control selection combo */
+   PHB_ITEM     pOnComboSel; /* callback for combo selection change */
 } INSDATA;
 
 /* ======================================================================
@@ -417,6 +420,17 @@ static HBFontPickerTarget * s_fontTarget = nil;
    }
 }
 
+/* Combo selection changed - fire Harbour callback */
+- (void)comboSelChanged:(id)sender
+{
+   if( !d || !d->combo || !d->pOnComboSel ) return;
+   NSInteger idx = [d->combo indexOfSelectedItem];
+   hb_vmPushEvalSym();
+   hb_vmPush( d->pOnComboSel );
+   hb_vmPushInteger( (int) idx );
+   hb_vmSend( 1 );
+}
+
 /* Handle click on "..." button column (view-based fallback) */
 - (void)onBtnClick:(id)sender
 {
@@ -588,9 +602,20 @@ HB_FUNC( INS_CREATE )
    if( [NSAppearance respondsToSelector:@selector(appearanceNamed:)] )
       [d->window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameAqua]];
 
-   /* Scroll view + table view */
+   /* Control selection combo at top */
    NSRect contentFrame = [[d->window contentView] bounds];
-   d->scrollView = [[NSScrollView alloc] initWithFrame:contentFrame];
+   CGFloat comboHeight = 28;
+   d->combo = [[NSPopUpButton alloc] initWithFrame:
+      NSMakeRect( 0, contentFrame.size.height - comboHeight, contentFrame.size.width, comboHeight )
+      pullsDown:NO];
+   [d->combo setAutoresizingMask:NSViewWidthSizable | NSViewMinYMargin];
+   [d->combo setFont:[NSFont systemFontOfSize:11]];
+   [[d->window contentView] addSubview:d->combo];
+
+   /* Scroll view + table view (below combo) */
+   NSRect tableFrame = NSMakeRect( 0, 0, contentFrame.size.width,
+      contentFrame.size.height - comboHeight );
+   d->scrollView = [[NSScrollView alloc] initWithFrame:tableFrame];
    [d->scrollView setHasVerticalScroller:YES];
    [d->scrollView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
@@ -640,6 +665,10 @@ HB_FUNC( INS_CREATE )
 
    [d->scrollView setDocumentView:d->tableView];
    [[d->window contentView] addSubview:d->scrollView];
+
+   /* Wire combo action to delegate */
+   [d->combo setTarget:s_delegate];
+   [d->combo setAction:@selector(comboSelChanged:)];
 
    [d->window orderFront:nil];
 
@@ -698,6 +727,88 @@ HB_FUNC( INS_DESTROY )
 {
    INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
    if( !d ) return;
+   if( d->pOnComboSel ) { hb_itemRelease( d->pOnComboSel ); d->pOnComboSel = NULL; }
    if( d->window ) [d->window close];
    free( d );
+}
+
+/* ======================================================================
+ * INS_SetFormCtrl( hInsData, hForm )
+ * ====================================================================== */
+
+HB_FUNC( INS_SETFORMCTRL )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   if( d ) d->hFormCtrl = (HB_PTRUINT) hb_parnint(2);
+}
+
+/* ======================================================================
+ * INS_SetOnComboSel( hInsData, bBlock )
+ * ====================================================================== */
+
+HB_FUNC( INS_SETONCOMBOSEL )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   PHB_ITEM pBlock = hb_param(2, HB_IT_BLOCK);
+   if( d )
+   {
+      if( d->pOnComboSel ) hb_itemRelease( d->pOnComboSel );
+      d->pOnComboSel = pBlock ? hb_itemNew( pBlock ) : NULL;
+   }
+}
+
+/* ======================================================================
+ * INS_ComboAdd( hInsData, cText )
+ * ====================================================================== */
+
+HB_FUNC( INS_COMBOADD )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   if( d && d->combo && HB_ISCHAR(2) )
+      [d->combo addItemWithTitle:[NSString stringWithUTF8String:hb_parc(2)]];
+}
+
+/* ======================================================================
+ * INS_ComboSelect( hInsData, nIndex )
+ * ====================================================================== */
+
+HB_FUNC( INS_COMBOSELECT )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   int idx = hb_parni(2);
+   if( d && d->combo && idx >= 0 && idx < (int)[d->combo numberOfItems] )
+      [d->combo selectItemAtIndex:idx];
+}
+
+/* ======================================================================
+ * INS_ComboClear( hInsData )
+ * ====================================================================== */
+
+HB_FUNC( INS_COMBOCLEAR )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   if( d && d->combo )
+      [d->combo removeAllItems];
+}
+
+/* ======================================================================
+ * INS_SetPos( hInsData, nLeft, nTop, nWidth, nHeight )
+ * ====================================================================== */
+
+HB_FUNC( INS_SETPOS )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   if( !d || !d->window ) return;
+
+   int nLeft   = hb_parni(2);
+   int nTop    = hb_parni(3);
+   int nWidth  = hb_parni(4);
+   int nHeight = hb_parni(5);
+
+   /* macOS uses bottom-left origin, flip Y */
+   NSRect screenFrame = [[NSScreen mainScreen] frame];
+   NSRect frame = NSMakeRect( nLeft,
+      screenFrame.size.height - nTop - nHeight,
+      nWidth, nHeight );
+   [d->window setFrame:frame display:YES];
 }

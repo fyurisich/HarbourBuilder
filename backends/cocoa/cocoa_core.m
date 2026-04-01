@@ -25,6 +25,54 @@
 #define CT_TOOLBAR    9
 
 #define MAX_CHILDREN  256
+#define MAX_TOOLBTNS  64
+#define TOOLBAR_BTN_ID_BASE 100
+#define MENU_ID_BASE        1000
+#define MAX_MENUITEMS       128
+
+/* LONG_PTR equivalent for macOS */
+typedef long LONG_PTR_MAC;
+#define LONG_PTR LONG_PTR_MAC
+
+/* Forward declaration */
+@class HBToolBar;
+@class HBSplitterView;
+
+/* Component Palette data (forward declared for use in HBForm) */
+#define CT_TABCONTROL 10
+#define MAX_PALETTE_TABS 16
+#define MAX_PALETTE_BTNS 32
+
+typedef struct {
+   char szText[32];
+   char szTooltip[128];
+   int  nControlType;
+} PaletteBtn;
+
+typedef struct {
+   char szName[32];
+   PaletteBtn btns[MAX_PALETTE_BTNS];
+   int nBtnCount;
+} PaletteTab;
+
+@class HBForm;
+
+typedef struct {
+   HBForm * __unsafe_unretained parentForm;
+   NSView *           containerView;
+   NSView *           splitterView;
+   NSSegmentedControl * segmented;
+   NSView *           btnPanel;
+   NSButton *         buttons[MAX_PALETTE_BTNS];
+   PaletteTab         tabs[MAX_PALETTE_TABS];
+   int                nTabCount;
+   int                nCurrentTab;
+   int                nSplitPos;
+   PHB_ITEM           pOnSelect;
+} PALDATA;
+
+static PALDATA * s_palData = NULL;
+static void PalShowTab( PALDATA * pd, int nTab );
 
 /* ======================================================================
  * NSApp initialization
@@ -41,7 +89,7 @@ static void EnsureNSApp( void )
 
       NSMenu * menuBar = [[NSMenu alloc] init];
       NSMenuItem * appMenuItem = [[NSMenuItem alloc] init];
-      NSMenu * appMenu = [[NSMenu alloc] initWithTitle:@"App"];
+      NSMenu * appMenu = [[NSMenu alloc] initWithTitle:@"hbcpp"];
       [appMenu addItemWithTitle:@"Quit" action:@selector(terminate:) keyEquivalent:@"q"];
       [appMenuItem setSubmenu:appMenu];
       [menuBar addItem:appMenuItem];
@@ -184,10 +232,6 @@ static void EnsureNSApp( void )
 @end
 
 /* --- HBToolBar --- */
-#define MAX_TOOLBTNS  64
-#define TOOLBAR_BTN_ID_BASE 100
-#define MENU_ID_BASE        1000
-#define MAX_MENUITEMS       128
 
 @interface HBToolBar : HBControl
 {
@@ -555,38 +599,50 @@ static void EnsureNSApp( void )
 
 - (void)createViewInParent:(NSView *)parentView
 {
-   /* Create a horizontal stack of buttons as a toolbar strip */
-   NSRect tbFrame = NSMakeRect( 0, 0, FWidth > 0 ? FWidth : 800, 30 );
-   NSView * toolbar = [[HBFlippedView alloc] initWithFrame:tbFrame];
-   [toolbar setAutoresizingMask:NSViewWidthSizable];
+   /* Create a horizontal stack of buttons as a toolbar strip.
+      Width is sized to fit content, not the parent. */
+   NSView * toolbar = [[HBFlippedView alloc] initWithFrame:NSMakeRect( 0, 0, 100, 30 )];
 
    /* Light gray background */
    toolbar.wantsLayer = YES;
    toolbar.layer.backgroundColor = [[NSColor colorWithCalibratedWhite:0.92 alpha:1.0] CGColor];
 
+   int btnW = 32, btnH = 32;
    int xPos = 4;
+   int yOff = 2;
    for( int i = 0; i < FBtnCount; i++ )
    {
       if( FBtnSeparator[i] ) {
-         /* Separator: small vertical line */
-         NSBox * sep = [[NSBox alloc] initWithFrame:NSMakeRect( xPos, 2, 1, 26 )];
+         NSBox * sep = [[NSBox alloc] initWithFrame:NSMakeRect( xPos, yOff + 2, 1, btnH - 4 )];
          [sep setBoxType:NSBoxSeparator];
          [toolbar addSubview:sep];
          xPos += 8;
       } else {
-         NSButton * btn = [[NSButton alloc] initWithFrame:NSMakeRect( xPos, 2, 0, 26 )];
-         [btn setTitle:[NSString stringWithUTF8String:FBtnTexts[i]]];
+         /* Measure text width to size button */
+         NSString * title = [NSString stringWithUTF8String:FBtnTexts[i]];
+         NSFont * btnFont = [NSFont systemFontOfSize:11];
+         NSDictionary * attrs = @{ NSFontAttributeName: btnFont };
+         CGFloat textW = [title sizeWithAttributes:attrs].width;
+         int thisBtnW = (int)(textW + 16);
+         if( thisBtnW < btnW ) thisBtnW = btnW;
+
+         NSButton * btn = [[NSButton alloc] initWithFrame:NSMakeRect( xPos, yOff, thisBtnW, btnH )];
+         [btn setTitle:title];
          [btn setToolTip:[NSString stringWithUTF8String:FBtnTooltips[i]]];
-         [btn setBezelStyle:NSBezelStyleTexturedRounded];
+         [btn setBezelStyle:NSBezelStyleSmallSquare];
+         [btn setFont:btnFont];
          [btn setTarget:self];
          [btn setAction:@selector(toolBtnClicked:)];
          [btn setTag:i];
-         [btn sizeToFit];
-         NSRect f = [btn frame]; f.origin.x = xPos; f.origin.y = 2; [btn setFrame:f];
          [toolbar addSubview:btn];
-         xPos += (int)f.size.width + 2;
+         xPos += thisBtnW + 2;
       }
    }
+
+   /* Size toolbar to fit its content */
+   int tbHeight = btnH + yOff * 2;
+   [toolbar setFrame:NSMakeRect( 0, 0, xPos + 4, tbHeight )];
+   FWidth = xPos + 4;
 
    [parentView addSubview:toolbar];
    FView = toolbar;
@@ -635,9 +691,115 @@ static void EnsureNSApp( void )
    }
 }
 
-- (int)barHeight { return 30; }
+- (int)barHeight { return FView ? (int)[FView frame].size.height : 36; }
 
 @end
+
+/* --- HBSplitterView implementation --- */
+
+@interface HBSplitterView : NSView
+{
+@public
+   PALDATA * palData;
+   CGFloat dragStartX;
+   CGFloat startSplitPos;
+}
+@end
+
+@implementation HBSplitterView
+
+- (BOOL)isFlipped { return YES; }
+- (BOOL)acceptsFirstMouse:(NSEvent *)event { return YES; }
+- (BOOL)acceptsFirstResponder { return YES; }
+
+- (NSView *)hitTest:(NSPoint)point
+{
+   /* Always capture clicks in our bounds */
+   NSPoint local = [self convertPoint:point fromView:[self superview]];
+   if( NSPointInRect( local, [self bounds] ) ) return self;
+   return nil;
+}
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+   [[NSColor colorWithCalibratedWhite:0.70 alpha:1.0] setFill];
+   NSRectFill( [self bounds] );
+   /* Draw grip dots */
+   [[NSColor colorWithCalibratedWhite:0.45 alpha:1.0] setFill];
+   CGFloat midX = [self bounds].size.width / 2;
+   CGFloat midY = [self bounds].size.height / 2;
+   for( int i = -2; i <= 2; i++ )
+      NSRectFill( NSMakeRect( midX - 1, midY + i * 4, 3, 2 ) );
+}
+
+- (void)resetCursorRects
+{
+   [self addCursorRect:[self bounds] cursor:[NSCursor resizeLeftRightCursor]];
+}
+
+- (void)mouseDown:(NSEvent *)event
+{
+   dragStartX = [event locationInWindow].x;
+   startSplitPos = palData ? palData->nSplitPos : 0;
+   [[NSCursor resizeLeftRightCursor] push];
+}
+
+- (void)mouseDragged:(NSEvent *)event
+{
+   if( !palData ) return;
+   CGFloat dx = [event locationInWindow].x - dragStartX;
+   int newPos = (int)(startSplitPos + dx);
+   if( newPos < 80 ) newPos = 80;
+   if( newPos > 600 ) newPos = 600;
+   palData->nSplitPos = newPos;
+
+   int splW = 8;
+   CGFloat segH = 24;
+   NSRect containerBounds = [palData->containerView bounds];
+   [palData->splitterView setFrame:NSMakeRect( newPos, 0, splW, containerBounds.size.height )];
+   CGFloat rightX = newPos + splW;
+   CGFloat rightW = containerBounds.size.width - rightX;
+   [palData->btnPanel setFrame:NSMakeRect( rightX, 0, rightW, containerBounds.size.height - segH - 2 )];
+   [palData->segmented setFrame:NSMakeRect( rightX + 4, containerBounds.size.height - segH - 1, rightW - 8, segH )];
+
+   if( palData->parentForm && palData->parentForm->FToolBar && palData->parentForm->FToolBar->FView )
+   {
+      NSRect tbFrame = [palData->parentForm->FToolBar->FView frame];
+      tbFrame.size.width = newPos;
+      [palData->parentForm->FToolBar->FView setFrame:tbFrame];
+   }
+}
+
+- (void)mouseUp:(NSEvent *)event
+{
+   [NSCursor pop];
+}
+
+@end
+
+/* --- HBPaletteTarget --- */
+
+@interface HBPaletteTarget : NSObject
+{
+@public
+   PALDATA * palData;
+}
+- (void)tabChanged:(id)sender;
+@end
+
+@implementation HBPaletteTarget
+
+- (void)tabChanged:(id)sender
+{
+   if( palData ) {
+      int sel = (int)[palData->segmented selectedSegment];
+      PalShowTab( palData, sel );
+   }
+}
+
+@end
+
+static HBPaletteTarget * s_palTarget = nil;
 
 /* --- HBOverlayView implementation --- */
 
@@ -894,8 +1056,10 @@ static void EnsureNSApp( void )
 
    NSRect frame = NSMakeRect( 0, 0, FWidth, FHeight );
    NSUInteger style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
-   if( FAppBar )
-      style |= NSWindowStyleMaskMiniaturizable;  /* no resize for appbar */
+   if( FAppBar ) {
+      /* AppBar: no title bar, no shadow - thin strip flush with content below */
+      style = NSWindowStyleMaskBorderless;
+   }
    else if( FSizable )
       style |= NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable;
    FWindow = [[NSWindow alloc] initWithContentRect:frame
@@ -904,6 +1068,7 @@ static void EnsureNSApp( void )
    [FWindow setTitle:[NSString stringWithUTF8String:FText]];
    [FWindow setDelegate:self];
    [FWindow setReleasedWhenClosed:NO];
+   if( FAppBar ) [FWindow setHasShadow:NO];  /* no shadow gap for appbar */
 
    FContentView = [[HBFlippedView alloc] initWithFrame:[[FWindow contentView] bounds]];
    [FContentView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
@@ -962,6 +1127,66 @@ static void EnsureNSApp( void )
       FToolBar->FWidth = FWidth;
       [FToolBar createViewInParent:FContentView];
       FClientTop = [FToolBar barHeight];
+   }
+
+   /* Component Palette: create tabs + splitter to the right of toolbar */
+   if( s_palData && s_palData->parentForm == self && s_palData->nTabCount > 0 )
+   {
+      PALDATA * pd = s_palData;
+      NSRect contentBounds = [FContentView bounds];
+      int tbWidth = 0;
+      if( FToolBar && FToolBar->FView ) {
+         NSRect tbFrame = [FToolBar->FView frame];
+         tbWidth = (int) tbFrame.size.width;
+      }
+      pd->nSplitPos = tbWidth;
+
+      /* Container view for palette area (full width, full content height) */
+      CGFloat fullH = contentBounds.size.height;
+      pd->containerView = [[HBFlippedView alloc] initWithFrame:
+         NSMakeRect( 0, 0, contentBounds.size.width, fullH )];
+      [pd->containerView setAutoresizingMask:NSViewWidthSizable];
+
+      /* Splitter (8px wide for easy grabbing) */
+      int splW = 8;
+      HBSplitterView * sp = [[HBSplitterView alloc] initWithFrame:
+         NSMakeRect( tbWidth, 0, splW, fullH )];
+      sp->palData = pd;
+      pd->splitterView = sp;
+      [pd->containerView addSubview:sp];
+
+      /* Layout: buttons on top, tab selector at bottom of window */
+      CGFloat rightX = tbWidth + splW;
+      CGFloat rightW = contentBounds.size.width - rightX;
+      CGFloat segH = 24;
+
+      /* Button panel (top area, below toolbar) */
+      pd->btnPanel = [[HBFlippedView alloc] initWithFrame:
+         NSMakeRect( rightX, 0, rightW, fullH - segH - 2 )];
+      [pd->btnPanel setAutoresizingMask:NSViewWidthSizable];
+      [pd->containerView addSubview:pd->btnPanel];
+
+      /* Segmented control for tabs (bottom) */
+      pd->segmented = [NSSegmentedControl segmentedControlWithLabels:@[] trackingMode:NSSegmentSwitchTrackingSelectOne target:nil action:nil];
+      [pd->segmented setSegmentCount:pd->nTabCount];
+      for( int i = 0; i < pd->nTabCount; i++ )
+         [pd->segmented setLabel:[NSString stringWithUTF8String:pd->tabs[i].szName] forSegment:i];
+      [pd->segmented setSelectedSegment:0];
+      [pd->segmented setFrame:NSMakeRect( rightX + 4, fullH - segH - 1, rightW - 8, segH )];
+      [pd->segmented setAutoresizingMask:NSViewWidthSizable];
+      [pd->segmented setFont:[NSFont systemFontOfSize:11]];
+
+      s_palTarget = [[HBPaletteTarget alloc] init];
+      s_palTarget->palData = pd;
+      [pd->segmented setTarget:s_palTarget];
+      [pd->segmented setAction:@selector(tabChanged:)];
+
+      [pd->containerView addSubview:pd->segmented];
+
+      [FContentView addSubview:pd->containerView];
+
+      /* Show first tab */
+      PalShowTab( pd, 0 );
    }
 
    /* GroupBoxes first */
@@ -1453,7 +1678,7 @@ HB_FUNC( UI_TOOLBARNEW )
 
 HB_FUNC( UI_TOOLBTNADD )
 {
-   HBToolBar * p = (HBToolBar *)(HBControl *)(LONG_PTR)hb_parnint(1);
+   HBToolBar * p = (__bridge HBToolBar *)(void *)(HB_PTRUINT)hb_parnint(1);
    if( p && p->FControlType == CT_TOOLBAR )
       hb_retni( [p addButton:hb_parc(2) tooltip:HB_ISCHAR(3)?hb_parc(3):""] );
    else hb_retni( -1 );
@@ -1461,13 +1686,13 @@ HB_FUNC( UI_TOOLBTNADD )
 
 HB_FUNC( UI_TOOLBTNADDSEP )
 {
-   HBToolBar * p = (HBToolBar *)(HBControl *)(LONG_PTR)hb_parnint(1);
+   HBToolBar * p = (__bridge HBToolBar *)(void *)(HB_PTRUINT)hb_parnint(1);
    if( p && p->FControlType == CT_TOOLBAR ) [p addSeparator];
 }
 
 HB_FUNC( UI_TOOLBTNONCLICK )
 {
-   HBToolBar * p = (HBToolBar *)(HBControl *)(LONG_PTR)hb_parnint(1);
+   HBToolBar * p = (__bridge HBToolBar *)(void *)(HB_PTRUINT)hb_parnint(1);
    PHB_ITEM pBlock = hb_param(3, HB_IT_BLOCK);
    if( p && p->FControlType == CT_TOOLBAR && pBlock )
       [p setBtnClick:hb_parni(2) block:pBlock];
@@ -1522,7 +1747,7 @@ static NSMutableArray * s_menuTargets = nil;
 HB_FUNC( UI_MENUITEMADDEX )
 {
    HBForm * pForm = GetForm(1);
-   NSMenu * popup = (NSMenu *)(LONG_PTR)hb_parnint(2);
+   NSMenu * popup = (__bridge NSMenu *)(void *)(HB_PTRUINT)hb_parnint(2);
    PHB_ITEM pBlock = hb_param(4, HB_IT_BLOCK);
 
    if( !popup || !HB_ISCHAR(3) ) { hb_retni(-1); return; }
@@ -1533,13 +1758,19 @@ HB_FUNC( UI_MENUITEMADDEX )
    target->pAction = pBlock ? hb_itemNew(pBlock) : NULL;
    [s_menuTargets addObject:target];
 
-   /* Parse accelerator from text (strip &) */
+   /* Build clean title (strip &, it's a Windows convention) */
    const char * text = hb_parc(3);
    NSString * title = [NSString stringWithUTF8String:text];
    title = [title stringByReplacingOccurrencesOfString:@"&" withString:@""];
 
+   /* Key equivalent from optional 5th parameter (e.g. "n", "o", "s") */
+   NSString * keyEq = @"";
+   if( HB_ISCHAR(5) && hb_parclen(5) > 0 )
+      keyEq = [NSString stringWithUTF8String:hb_parc(5)];
+
    NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:title
-      action:@selector(menuAction:) keyEquivalent:@""];
+      action:@selector(menuAction:) keyEquivalent:keyEq];
+   [item setKeyEquivalentModifierMask:NSEventModifierFlagCommand];
    [item setTarget:target];
    [popup addItem:item];
 
@@ -1550,7 +1781,7 @@ HB_FUNC( UI_MENUITEMADDEX )
 
 HB_FUNC( UI_MENUSEPADD )
 {
-   NSMenu * popup = (NSMenu *)(LONG_PTR)hb_parnint(2);
+   NSMenu * popup = (__bridge NSMenu *)(void *)(HB_PTRUINT)hb_parnint(2);
    if( popup ) [popup addItem:[NSMenuItem separatorItem]];
 }
 
@@ -1574,50 +1805,116 @@ HB_FUNC( UI_FORMGETHWND )
 }
 
 /* ======================================================================
- * Component Palette (macOS stub - palette created natively)
+ * Component Palette (macOS - NSSegmentedControl tabs + NSButton components)
  * ====================================================================== */
 
-static HBControl * s_palette = NULL;  /* simple storage for palette reference */
+/* Show buttons for a given tab */
+static void PalShowTab( PALDATA * pd, int nTab )
+{
+   if( !pd || nTab < 0 || nTab >= pd->nTabCount ) return;
+   pd->nCurrentTab = nTab;
 
+   /* Remove existing buttons */
+   for( int i = 0; i < MAX_PALETTE_BTNS; i++ ) {
+      if( pd->buttons[i] ) {
+         [pd->buttons[i] removeFromSuperview];
+         pd->buttons[i] = nil;
+      }
+   }
+
+   /* Create 52x50 buttons for this tab */
+   PaletteTab * t = &pd->tabs[nTab];
+   CGFloat xPos = 4;
+   int btnW = 52, btnH = 50;
+   CGFloat y = 0;
+
+   for( int i = 0; i < t->nBtnCount; i++ ) {
+      NSString * title = [NSString stringWithUTF8String:t->btns[i].szText];
+      NSFont * btnFont = [NSFont systemFontOfSize:11];
+      NSDictionary * attrs = @{ NSFontAttributeName: btnFont };
+      CGFloat textW = [title sizeWithAttributes:attrs].width;
+      int thisBtnW = (int)(textW + 24);
+      if( thisBtnW < btnW ) thisBtnW = btnW;
+
+      NSButton * btn = [[NSButton alloc] initWithFrame:NSMakeRect( xPos, y, thisBtnW, btnH )];
+      [btn setTitle:title];
+      [btn setToolTip:[NSString stringWithUTF8String:t->btns[i].szTooltip]];
+      [btn setBezelStyle:NSBezelStyleSmallSquare];
+      [btn setFont:btnFont];
+      [pd->btnPanel addSubview:btn];
+      pd->buttons[i] = btn;
+      xPos += thisBtnW + 2;
+   }
+}
+
+/* UI_PaletteNew( hForm ) --> hPalette */
 HB_FUNC( UI_PALETTENEW )
 {
-   /* On macOS, palette tabs are part of the window toolbar area */
-   /* For now, store as a lightweight placeholder */
+   HBForm * pForm = GetForm(1);
+   if( !pForm ) { hb_retnint(0); return; }
+
+   PALDATA * pd = (PALDATA *) calloc( 1, sizeof(PALDATA) );
+   pd->parentForm = pForm;
+   s_palData = pd;
+
+   /* Return a control handle (use a lightweight HBControl) */
    HBControl * p = [[HBControl alloc] init];
    strcpy( p->FClassName, "TComponentPalette" );
-   p->FControlType = CT_TOOLBAR + 1;  /* CT_TABCONTROL */
+   p->FControlType = CT_TABCONTROL;
    KeepAlive( p );
-   s_palette = p;
-   /* Associate with form */
-   HBForm * pForm = GetForm(1);
-   (void)pForm;
    hb_retnint( (HB_PTRUINT)(__bridge void *)p );
 }
 
+/* UI_PaletteAddTab( hPalette, cName ) --> nTabIndex */
 HB_FUNC( UI_PALETTEADDTAB )
 {
-   /* Store tab name for future NSSegmentedControl implementation */
-   static int s_tabCount = 0;
-   hb_retni( s_tabCount++ );
+   PALDATA * pd = s_palData;
+   if( pd && pd->nTabCount < MAX_PALETTE_TABS && HB_ISCHAR(2) ) {
+      int idx = pd->nTabCount++;
+      strncpy( pd->tabs[idx].szName, hb_parc(2), 31 );
+      pd->tabs[idx].nBtnCount = 0;
+      hb_retni( idx );
+   } else
+      hb_retni( -1 );
 }
 
+/* UI_PaletteAddComp( hPalette, nTab, cText, cTooltip, nCtrlType ) */
 HB_FUNC( UI_PALETTEADDCOMP )
 {
-   /* Stub - component buttons will be created during window show */
+   PALDATA * pd = s_palData;
+   int nTab = hb_parni(2);
+   if( pd && nTab >= 0 && nTab < pd->nTabCount ) {
+      PaletteTab * t = &pd->tabs[nTab];
+      if( t->nBtnCount < MAX_PALETTE_BTNS ) {
+         int idx = t->nBtnCount++;
+         strncpy( t->btns[idx].szText, hb_parc(3), 31 );
+         strncpy( t->btns[idx].szTooltip, HB_ISCHAR(4) ? hb_parc(4) : "", 127 );
+         t->btns[idx].nControlType = hb_parni(5);
+      }
+   }
 }
 
+/* UI_PaletteOnSelect( hPalette, bBlock ) */
 HB_FUNC( UI_PALETTEONSELECT )
 {
-   /* Stub */
+   PALDATA * pd = s_palData;
+   PHB_ITEM pBlock = hb_param(2, HB_IT_BLOCK);
+   if( pd ) {
+      if( pd->pOnSelect ) hb_itemRelease( pd->pOnSelect );
+      pd->pOnSelect = pBlock ? hb_itemNew( pBlock ) : NULL;
+   }
 }
 
 HB_FUNC( UI_TOOLBARGETWIDTH )
 {
-   HBToolBar * p = (HBToolBar *)(HBControl *)(LONG_PTR)hb_parnint(1);
-   if( p && p->FControlType == CT_TOOLBAR )
-      hb_retni( 200 );  /* approximate width for layout */
+   HBToolBar * p = (__bridge HBToolBar *)(void *)(HB_PTRUINT)hb_parnint(1);
+   if( p && p->FControlType == CT_TOOLBAR && p->FView )
+   {
+      NSRect f = [p->FView frame];
+      hb_retni( (int) f.size.width );
+   }
    else
-      hb_retni( 0 );
+      hb_retni( 200 );
 }
 
 /* ======================================================================
@@ -1670,6 +1967,47 @@ HB_FUNC( UI_FORMSETPOS )
    }
 }
 
+/* --- Window geometry --- */
+
+/* MAC_GetWindowBottom( hForm ) -> nY in top-left coords (where bottom edge of window is) */
+HB_FUNC( MAC_GETWINDOWBOTTOM )
+{
+   HBForm * p = GetForm(1);
+   if( p && p->FWindow )
+   {
+      NSRect screenFrame = [[NSScreen mainScreen] frame];
+      NSRect winFrame = [p->FWindow frame];
+      /* In macOS coords (bottom-left origin):
+         winFrame.origin.y = bottom edge of window
+         winFrame.origin.y + winFrame.size.height = top edge of window
+
+         Convert to top-left coords:
+         topOfWindow = screenH - (origin.y + height)
+         bottomOfWindow = topOfWindow + height = screenH - origin.y
+      */
+      int bottom = (int)(screenFrame.size.height - winFrame.origin.y);
+      hb_retni( bottom );
+   }
+   else
+      hb_retni( 0 );
+}
+
+/* --- Screen size --- */
+
+HB_FUNC( MAC_GETSCREENWIDTH )
+{
+   EnsureNSApp();
+   NSRect frame = [[NSScreen mainScreen] frame];
+   hb_retni( (int) frame.size.width );
+}
+
+HB_FUNC( MAC_GETSCREENHEIGHT )
+{
+   EnsureNSApp();
+   NSRect frame = [[NSScreen mainScreen] frame];
+   hb_retni( (int) frame.size.height );
+}
+
 /* --- MsgBox --- */
 
 HB_FUNC( MAC_MSGBOX )
@@ -1681,4 +2019,464 @@ HB_FUNC( MAC_MSGBOX )
    [alert addButtonWithTitle:@"OK"];
    [alert setAlertStyle:NSAlertStyleInformational];
    [alert runModal];
+}
+
+/* ======================================================================
+ * Code Editor - NSTextView with syntax highlighting (dark theme)
+ * ====================================================================== */
+
+#define GUTTER_WIDTH 45
+
+/* Harbour/xBase keywords for syntax highlighting */
+static const char * s_keywords[] = {
+   "function", "procedure", "return", "local", "static", "private", "public",
+   "if", "else", "elseif", "endif", "do", "while", "enddo", "for", "next", "to", "step",
+   "switch", "case", "otherwise", "endswitch", "endcase",
+   "class", "endclass", "method", "data", "access", "assign", "inherit", "inline",
+   "nil", "self", "begin", "end", "exit", "loop", "with",
+   NULL
+};
+
+/* xBase commands (uppercase) */
+static const char * s_commands[] = {
+   "DEFINE", "ACTIVATE", "FORM", "TITLE", "SIZE", "FONT", "SIZABLE", "APPBAR", "TOOLWINDOW",
+   "CENTERED", "SAY", "GET", "BUTTON", "PROMPT", "CHECKBOX", "COMBOBOX", "GROUPBOX",
+   "ITEMS", "CHECKED", "DEFAULT", "CANCEL", "OF", "VAR", "ACTION",
+   "TOOLBAR", "SEPARATOR", "TOOLTIP", "MENUBAR", "POPUP", "MENUITEM", "MENUSEPARATOR",
+   "PALETTE", "REQUEST",
+   NULL
+};
+
+static int CE_IsWordChar( char c )
+{
+   return ( c >= 'A' && c <= 'Z' ) || ( c >= 'a' && c <= 'z' ) ||
+          ( c >= '0' && c <= '9' ) || c == '_';
+}
+
+static int CE_IsKeyword( const char * word, int len )
+{
+   char buf[64];
+   if( len <= 0 || len >= 63 ) return 0;
+   for( int i = 0; i < len; i++ ) buf[i] = (char)tolower( (unsigned char)word[i] );
+   buf[len] = 0;
+   for( int i = 0; s_keywords[i]; i++ )
+      if( strcmp( buf, s_keywords[i] ) == 0 ) return 1;
+   return 0;
+}
+
+static int CE_IsCommand( const char * word, int len )
+{
+   char buf[64];
+   if( len <= 0 || len >= 63 ) return 0;
+   for( int i = 0; i < len; i++ ) buf[i] = (char)toupper( (unsigned char)word[i] );
+   buf[len] = 0;
+   for( int i = 0; s_commands[i]; i++ )
+      if( strcmp( buf, s_commands[i] ) == 0 ) return 1;
+   return 0;
+}
+
+/* -----------------------------------------------------------------------
+ * Line number gutter view
+ * ----------------------------------------------------------------------- */
+
+@interface HBGutterView : NSView
+{
+@public
+   NSTextView * __unsafe_unretained textView;
+   NSFont * font;
+}
+@end
+
+@implementation HBGutterView
+
+- (BOOL)isFlipped { return YES; }
+
+- (void)drawRect:(NSRect)dirtyRect
+{
+   /* Dark background */
+   [[NSColor colorWithCalibratedRed:37/255.0 green:37/255.0 blue:38/255.0 alpha:1.0] setFill];
+   NSRectFill( dirtyRect );
+
+   /* Right border */
+   [[NSColor colorWithCalibratedRed:60/255.0 green:60/255.0 blue:60/255.0 alpha:1.0] setStroke];
+   NSBezierPath * line = [NSBezierPath bezierPath];
+   [line moveToPoint:NSMakePoint( GUTTER_WIDTH - 1, dirtyRect.origin.y )];
+   [line lineToPoint:NSMakePoint( GUTTER_WIDTH - 1, dirtyRect.origin.y + dirtyRect.size.height )];
+   [line stroke];
+
+   if( !textView ) return;
+
+   NSLayoutManager * lm = [textView layoutManager];
+   NSTextContainer * tc = [textView textContainer];
+   NSString * text = [[textView textStorage] string];
+   NSUInteger length = [text length];
+
+   if( length == 0 ) return;
+
+   NSDictionary * attrs = @{
+      NSFontAttributeName: font ? font : [NSFont monospacedSystemFontOfSize:13 weight:NSFontWeightRegular],
+      NSForegroundColorAttributeName: [NSColor colorWithCalibratedRed:133/255.0 green:133/255.0 blue:133/255.0 alpha:1.0]
+   };
+
+   /* Visible rect in textView coordinates */
+   NSRect visibleRect = [textView visibleRect];
+   NSRange glyphRange = [lm glyphRangeForBoundingRect:visibleRect inTextContainer:tc];
+   NSRange charRange = [lm characterRangeForGlyphRange:glyphRange actualGlyphRange:NULL];
+
+   /* Walk lines in visible range */
+   NSUInteger idx = charRange.location;
+   int lineNum = 1;
+
+   /* Count lines before visible range */
+   for( NSUInteger i = 0; i < idx && i < length; i++ )
+      if( [text characterAtIndex:i] == '\n' ) lineNum++;
+
+   CGFloat yOffset = [textView textContainerInset].height;
+
+   while( idx < NSMaxRange(charRange) && idx < length )
+   {
+      NSRange lineRange = [text lineRangeForRange:NSMakeRange(idx, 0)];
+      NSRange glRange = [lm glyphRangeForCharacterRange:lineRange actualCharacterRange:NULL];
+      NSRect lineRect = [lm boundingRectForGlyphRange:glRange inTextContainer:tc];
+
+      /* Convert textView coords to gutter coords */
+      CGFloat yPos = lineRect.origin.y + yOffset - visibleRect.origin.y;
+
+      NSString * numStr = [NSString stringWithFormat:@"%d", lineNum];
+      NSSize numSize = [numStr sizeWithAttributes:attrs];
+      [numStr drawAtPoint:NSMakePoint( GUTTER_WIDTH - 8 - numSize.width, yPos )
+           withAttributes:attrs];
+
+      lineNum++;
+      idx = NSMaxRange(lineRange);
+   }
+}
+
+@end
+
+/* -----------------------------------------------------------------------
+ * Code editor data structure
+ * ----------------------------------------------------------------------- */
+
+typedef struct {
+   NSWindow *     window;
+   NSTextView *   textView;
+   NSScrollView * scrollView;
+   HBGutterView * gutterView;
+   NSFont *       font;
+} CODEEDITOR;
+
+/* -----------------------------------------------------------------------
+ * Syntax highlighting
+ * ----------------------------------------------------------------------- */
+
+static void CE_HighlightCode( NSTextView * tv )
+{
+   NSTextStorage * ts = [tv textStorage];
+   NSString * text = [ts string];
+   NSUInteger nLen = [text length];
+
+   if( nLen == 0 ) return;
+
+   const char * buf = [text UTF8String];
+   NSUInteger utf8Len = strlen( buf );
+
+   /* Default color: light gray */
+   NSColor * clrDefault  = [NSColor colorWithCalibratedRed:212/255.0 green:212/255.0 blue:212/255.0 alpha:1.0];
+   NSColor * clrComment  = [NSColor colorWithCalibratedRed:106/255.0 green:153/255.0 blue:85/255.0  alpha:1.0];
+   NSColor * clrString   = [NSColor colorWithCalibratedRed:206/255.0 green:145/255.0 blue:120/255.0 alpha:1.0];
+   NSColor * clrKeyword  = [NSColor colorWithCalibratedRed:86/255.0  green:156/255.0 blue:214/255.0 alpha:1.0];
+   NSColor * clrCommand  = [NSColor colorWithCalibratedRed:78/255.0  green:201/255.0 blue:176/255.0 alpha:1.0];
+   NSColor * clrPreproc  = [NSColor colorWithCalibratedRed:198/255.0 green:120/255.0 blue:221/255.0 alpha:1.0];
+
+   NSFont * boldFont = [NSFont monospacedSystemFontOfSize:15 weight:NSFontWeightBold];
+
+   [ts beginEditing];
+
+   /* Reset all to default */
+   [ts addAttribute:NSForegroundColorAttributeName value:clrDefault range:NSMakeRange(0, nLen)];
+
+   /* We work in UTF-8 offsets and convert to NSString offsets.
+      For ASCII-only code, they are the same. Use a mapping approach. */
+   NSUInteger i = 0;
+   while( i < utf8Len )
+   {
+      /* Line comments: // */
+      if( buf[i] == '/' && i + 1 < utf8Len && buf[i+1] == '/' )
+      {
+         NSUInteger start = i;
+         while( i < utf8Len && buf[i] != '\r' && buf[i] != '\n' ) i++;
+         [ts addAttribute:NSForegroundColorAttributeName value:clrComment
+            range:NSMakeRange(start, i - start)];
+         continue;
+      }
+
+      /* Block comments */
+      if( buf[i] == '/' && i + 1 < utf8Len && buf[i+1] == '*' )
+      {
+         NSUInteger start = i;
+         i += 2;
+         while( i + 1 < utf8Len && !( buf[i] == '*' && buf[i+1] == '/' ) ) i++;
+         if( i + 1 < utf8Len ) i += 2;
+         [ts addAttribute:NSForegroundColorAttributeName value:clrComment
+            range:NSMakeRange(start, i - start)];
+         continue;
+      }
+
+      /* Strings */
+      if( buf[i] == '"' || buf[i] == '\'' )
+      {
+         char q = buf[i];
+         NSUInteger start = i;
+         i++;
+         while( i < utf8Len && buf[i] != q && buf[i] != '\r' && buf[i] != '\n' ) i++;
+         if( i < utf8Len && buf[i] == q ) i++;
+         [ts addAttribute:NSForegroundColorAttributeName value:clrString
+            range:NSMakeRange(start, i - start)];
+         continue;
+      }
+
+      /* Preprocessor: # */
+      if( buf[i] == '#' )
+      {
+         NSUInteger start = i;
+         i++;
+         while( i < utf8Len && CE_IsWordChar(buf[i]) ) i++;
+         [ts addAttribute:NSForegroundColorAttributeName value:clrPreproc
+            range:NSMakeRange(start, i - start)];
+         continue;
+      }
+
+      /* Logical literals: .T. .F. .AND. .OR. .NOT. */
+      if( buf[i] == '.' && i + 2 < utf8Len )
+      {
+         NSUInteger start = i;
+         i++;
+         while( i < utf8Len && buf[i] != '.' && CE_IsWordChar(buf[i]) ) i++;
+         if( i < utf8Len && buf[i] == '.' ) {
+            i++;
+            [ts addAttribute:NSForegroundColorAttributeName value:clrPreproc
+               range:NSMakeRange(start, i - start)];
+         }
+         continue;
+      }
+
+      /* Words */
+      if( CE_IsWordChar(buf[i]) )
+      {
+         NSUInteger ws = i;
+         while( i < utf8Len && CE_IsWordChar(buf[i]) ) i++;
+         int wlen = (int)(i - ws);
+         if( CE_IsKeyword( buf + ws, wlen ) ) {
+            [ts addAttribute:NSForegroundColorAttributeName value:clrKeyword
+               range:NSMakeRange(ws, wlen)];
+            [ts addAttribute:NSFontAttributeName value:boldFont
+               range:NSMakeRange(ws, wlen)];
+         } else if( CE_IsCommand( buf + ws, wlen ) ) {
+            [ts addAttribute:NSForegroundColorAttributeName value:clrCommand
+               range:NSMakeRange(ws, wlen)];
+         }
+         continue;
+      }
+
+      i++;
+   }
+
+   [ts endEditing];
+}
+
+/* -----------------------------------------------------------------------
+ * Text change delegate — triggers re-highlight and gutter repaint
+ * ----------------------------------------------------------------------- */
+
+@interface HBCodeEditorDelegate : NSObject <NSTextViewDelegate>
+{
+@public
+   CODEEDITOR * ed;
+}
+@end
+
+@implementation HBCodeEditorDelegate
+
+- (void)textDidChange:(NSNotification *)notification
+{
+   if( ed && ed->textView )
+   {
+      CE_HighlightCode( ed->textView );
+      [ed->gutterView setNeedsDisplay:YES];
+   }
+}
+
+/* Gutter sync on scroll */
+- (NSRect)adjustScroll:(NSRect)proposedVisibleRect
+{
+   if( ed && ed->gutterView )
+      [ed->gutterView performSelector:@selector(setNeedsDisplay:)
+         withObject:@YES afterDelay:0.0];
+   return proposedVisibleRect;
+}
+
+@end
+
+static HBCodeEditorDelegate * s_codeDelegate = nil;
+
+/* -----------------------------------------------------------------------
+ * Scroll observer — repaint gutter when user scrolls
+ * ----------------------------------------------------------------------- */
+
+@interface HBScrollObserver : NSObject
+{
+@public
+   CODEEDITOR * ed;
+}
+@end
+
+@implementation HBScrollObserver
+
+- (void)scrollViewDidScroll:(NSNotification *)notification
+{
+   if( ed && ed->gutterView )
+      [ed->gutterView setNeedsDisplay:YES];
+}
+
+@end
+
+static HBScrollObserver * s_scrollObserver = nil;
+
+/* -----------------------------------------------------------------------
+ * HB_FUNC Bridge: CodeEditorCreate, CodeEditorSetText, CodeEditorGetText, CodeEditorDestroy
+ * ----------------------------------------------------------------------- */
+
+/* CodeEditorCreate( nLeft, nTop, nWidth, nHeight ) --> hEditor */
+HB_FUNC( CODEEDITORCREATE )
+{
+   EnsureNSApp();
+
+   int nLeft   = hb_parni(1);
+   int nTop    = hb_parni(2);
+   int nWidth  = hb_parni(3);
+   int nHeight = hb_parni(4);
+
+   CODEEDITOR * ed = (CODEEDITOR *) calloc( 1, sizeof(CODEEDITOR) );
+
+   /* Monospace font 15pt */
+   ed->font = [NSFont monospacedSystemFontOfSize:15 weight:NSFontWeightRegular];
+
+   /* Window */
+   NSRect screenFrame = [[NSScreen mainScreen] frame];
+   NSRect frame = NSMakeRect( nLeft, screenFrame.size.height - nTop - nHeight, nWidth, nHeight );
+   ed->window = [[NSWindow alloc] initWithContentRect:frame
+      styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable |
+                NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable
+      backing:NSBackingStoreBuffered defer:NO];
+   [ed->window setTitle:@"Code Editor"];
+   [ed->window setReleasedWhenClosed:NO];
+   if( [NSAppearance respondsToSelector:@selector(appearanceNamed:)] )
+      [ed->window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameDarkAqua]];
+
+   NSView * content = [ed->window contentView];
+   NSRect contentBounds = [content bounds];
+
+   /* Gutter view */
+   ed->gutterView = [[HBGutterView alloc] initWithFrame:
+      NSMakeRect( 0, 0, GUTTER_WIDTH, contentBounds.size.height )];
+   ed->gutterView->font = ed->font;
+   [ed->gutterView setAutoresizingMask:NSViewHeightSizable];
+
+   /* Scroll view + text view (to the right of gutter) */
+   ed->scrollView = [[NSScrollView alloc] initWithFrame:
+      NSMakeRect( GUTTER_WIDTH, 0, contentBounds.size.width - GUTTER_WIDTH, contentBounds.size.height )];
+   [ed->scrollView setHasVerticalScroller:YES];
+   [ed->scrollView setHasHorizontalScroller:YES];
+   [ed->scrollView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+
+   NSSize contentSize = [ed->scrollView contentSize];
+   ed->textView = [[NSTextView alloc] initWithFrame:
+      NSMakeRect( 0, 0, contentSize.width, contentSize.height )];
+   [ed->textView setMinSize:NSMakeSize( 0, contentSize.height )];
+   [ed->textView setMaxSize:NSMakeSize( 1e7, 1e7 )];
+   [ed->textView setVerticallyResizable:YES];
+   [ed->textView setHorizontallyResizable:YES];
+   [ed->textView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+   [[ed->textView textContainer] setContainerSize:NSMakeSize( 1e7, 1e7 )];
+   [[ed->textView textContainer] setWidthTracksTextView:NO];
+
+   /* Dark theme */
+   [ed->textView setBackgroundColor:[NSColor colorWithCalibratedRed:30/255.0 green:30/255.0 blue:30/255.0 alpha:1.0]];
+   [ed->textView setInsertionPointColor:[NSColor whiteColor]];
+   [ed->textView setTextColor:[NSColor colorWithCalibratedRed:212/255.0 green:212/255.0 blue:212/255.0 alpha:1.0]];
+   [ed->textView setFont:ed->font];
+   [ed->textView setRichText:YES];
+   [ed->textView setUsesFindBar:YES];
+   [ed->textView setAllowsUndo:YES];
+
+   /* Text inset for better readability */
+   [ed->textView setTextContainerInset:NSMakeSize( 4, 4 )];
+
+   /* Link gutter to text view */
+   ed->gutterView->textView = ed->textView;
+
+   /* Delegate for text changes */
+   s_codeDelegate = [[HBCodeEditorDelegate alloc] init];
+   s_codeDelegate->ed = ed;
+   [ed->textView setDelegate:s_codeDelegate];
+
+   [ed->scrollView setDocumentView:ed->textView];
+
+   /* Observe scroll for gutter sync */
+   s_scrollObserver = [[HBScrollObserver alloc] init];
+   s_scrollObserver->ed = ed;
+   [[NSNotificationCenter defaultCenter] addObserver:s_scrollObserver
+      selector:@selector(scrollViewDidScroll:)
+      name:NSViewBoundsDidChangeNotification
+      object:[ed->scrollView contentView]];
+   [[ed->scrollView contentView] setPostsBoundsChangedNotifications:YES];
+
+   [content addSubview:ed->gutterView];
+   [content addSubview:ed->scrollView];
+
+   [ed->window orderFront:nil];
+
+   hb_retnint( (HB_PTRUINT) ed );
+}
+
+/* CodeEditorSetText( hEditor, cText ) */
+HB_FUNC( CODEEDITORSETTEXT )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   if( ed && ed->textView && HB_ISCHAR(2) )
+   {
+      NSString * text = [NSString stringWithUTF8String:hb_parc(2)];
+      [[ed->textView textStorage] replaceCharactersInRange:
+         NSMakeRange(0, [[ed->textView textStorage] length]) withString:text];
+      [ed->textView setFont:ed->font];
+      CE_HighlightCode( ed->textView );
+      [ed->gutterView setNeedsDisplay:YES];
+   }
+}
+
+/* CodeEditorGetText( hEditor ) --> cText */
+HB_FUNC( CODEEDITORGETTEXT )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   if( ed && ed->textView )
+   {
+      NSString * text = [[ed->textView textStorage] string];
+      const char * utf8 = [text UTF8String];
+      hb_retc( utf8 ? utf8 : "" );
+   }
+   else
+      hb_retc( "" );
+}
+
+/* CodeEditorDestroy( hEditor ) */
+HB_FUNC( CODEEDITORDESTROY )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   if( ed )
+   {
+      [[NSNotificationCenter defaultCenter] removeObserver:s_scrollObserver];
+      if( ed->window ) [ed->window close];
+      free( ed );
+   }
 }
