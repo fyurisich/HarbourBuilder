@@ -50,9 +50,31 @@ function Main()
    MENUITEM "&Copy"  OF oEdit ACTION MsgInfo( "Copy" )
    MENUITEM "&Paste" OF oEdit ACTION MsgInfo( "Paste" )
 
+   DEFINE POPUP oView PROMPT "&Search" OF oIDE
+   MENUITEM "&Find..."      OF oView ACTION MsgInfo( "Find" )
+   MENUITEM "&Replace..."   OF oView ACTION MsgInfo( "Replace" )
+
    DEFINE POPUP oView PROMPT "&View" OF oIDE
-   MENUITEM "&Inspector"   OF oView ACTION InspectorOpen()
-   MENUITEM "&Object Tree" OF oView ACTION MsgInfo( "Object Tree" )
+   MENUITEM "&Inspector"    OF oView ACTION InspectorOpen()
+   MENUITEM "&Object Tree"  OF oView ACTION MsgInfo( "Object Tree" )
+
+   DEFINE POPUP oView PROMPT "&Project" OF oIDE
+   MENUITEM "&Add to Project..." OF oView ACTION MsgInfo( "Add to Project" )
+   MENUITEM "&Remove from Project" OF oView ACTION MsgInfo( "Remove" )
+   MENUSEPARATOR OF oView
+   MENUITEM "&Options..." OF oView ACTION MsgInfo( "Project Options" )
+
+   DEFINE POPUP oView PROMPT "&Run" OF oIDE
+   MENUITEM "&Run"           OF oView ACTION MsgInfo( "Run" )
+   MENUITEM "&Step Over"     OF oView ACTION MsgInfo( "Step Over" )
+   MENUITEM "Step &Into"     OF oView ACTION MsgInfo( "Step Into" )
+
+   DEFINE POPUP oView PROMPT "&Component" OF oIDE
+   MENUITEM "&Install Component..." OF oView ACTION MsgInfo( "Install" )
+   MENUITEM "&New Component..."     OF oView ACTION MsgInfo( "New Component" )
+
+   DEFINE POPUP oView PROMPT "&Tools" OF oIDE
+   MENUITEM "&Environment Options..." OF oView ACTION MsgInfo( "Options" )
 
    DEFINE POPUP oHelp PROMPT "&Help" OF oIDE
    MENUITEM "&About IDE..." OF oHelp ACTION ;
@@ -114,17 +136,30 @@ static function CreatePalette()
 
    // Standard tab
    nStd := oPal:AddTab( "Standard" )
-   oPal:AddComp( nStd, "A",   "Label",    1 )   // CT_LABEL
-   oPal:AddComp( nStd, "ab",  "Edit",     2 )   // CT_EDIT
-   oPal:AddComp( nStd, "Btn", "Button",   3 )   // CT_BUTTON
-   oPal:AddComp( nStd, "Chk", "CheckBox", 4 )   // CT_CHECKBOX
-   oPal:AddComp( nStd, "Cmb", "ComboBox", 5 )   // CT_COMBOBOX
-   oPal:AddComp( nStd, "Grp", "GroupBox", 6 )   // CT_GROUPBOX
+   oPal:AddComp( nStd, "A",    "Label",    1 )   // CT_LABEL
+   oPal:AddComp( nStd, "ab",   "Edit",     2 )   // CT_EDIT
+   oPal:AddComp( nStd, "Btn",  "Button",   3 )   // CT_BUTTON
+   oPal:AddComp( nStd, "Chk",  "CheckBox", 4 )   // CT_CHECKBOX
+   oPal:AddComp( nStd, "Cmb",  "ComboBox", 5 )   // CT_COMBOBOX
+   oPal:AddComp( nStd, "Grp",  "GroupBox", 6 )   // CT_GROUPBOX
+   oPal:AddComp( nStd, "Lst",  "ListBox",  7 )   // CT_LISTBOX
+   oPal:AddComp( nStd, "Rad",  "Radio",    8 )   // CT_RADIO
 
    // Additional tab
    nAdd := oPal:AddTab( "Additional" )
-   oPal:AddComp( nAdd, "Lst", "ListBox",  7 )   // CT_LISTBOX
-   oPal:AddComp( nAdd, "Rad", "Radio",    8 )   // CT_RADIO
+   oPal:AddComp( nAdd, "Img",  "Image",    0 )
+   oPal:AddComp( nAdd, "Shp",  "Shape",    0 )
+   oPal:AddComp( nAdd, "Spd",  "SpeedBtn", 0 )
+
+   // Data Access tab
+   nAdd := oPal:AddTab( "Data Access" )
+   oPal:AddComp( nAdd, "Tbl",  "Table",    0 )
+   oPal:AddComp( nAdd, "Qry",  "Query",    0 )
+
+   // Data Controls tab
+   nAdd := oPal:AddTab( "Data Controls" )
+   oPal:AddComp( nAdd, "DBG",  "DBGrid",   0 )
+   oPal:AddComp( nAdd, "DBN",  "DBNav",    0 )
 
 return nil
 
@@ -132,7 +167,7 @@ static function CreateDesignForm()
 
    local oCbx, oChk, oBtn
 
-   DEFINE FORM oDesignForm TITLE "Form1" SIZE 470, 380 FONT "Segoe UI", 9
+   DEFINE FORM oDesignForm TITLE "Form1" SIZE 470, 380 FONT "Segoe UI", 9 TOOLWINDOW
 
    // Position: right of inspector area, below IDE bar
    // Inspector is ~215px wide on the left, IDE bar is ~120px tall at top

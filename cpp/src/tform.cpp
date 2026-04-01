@@ -23,6 +23,7 @@ TForm::TForm()
    FCenter = TRUE;
    FSizable = FALSE;
    FAppBar = FALSE;
+   FToolWindow = FALSE;
    FModalResult = 0;
    FRunning = FALSE;
    FMainWindow = FALSE;
@@ -119,10 +120,15 @@ void TForm::CreateHandle( HWND hParent )
 
       if( FAppBar )
       {
-         /* Top bar: caption + min/max/close, NO thick resize border.
-          * Like C++Builder main window: visible in taskbar, fixed height. */
+         /* Top bar: caption + min/max/close, NO thick resize border. */
          dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
                    WS_MAXIMIZEBOX | WS_CLIPCHILDREN;
+      }
+      else if( FToolWindow )
+      {
+         /* Compact caption, no taskbar entry (design form, inspector) */
+         dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN;
+         dwExStyle = WS_EX_TOOLWINDOW;
       }
       else if( FSizable )
          dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;

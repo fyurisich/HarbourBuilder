@@ -156,6 +156,7 @@ public:
    BOOL         FCenter;
    BOOL         FSizable;      /* resizable window */
    BOOL         FAppBar;       /* thin top-bar style (IDE main window) */
+   BOOL         FToolWindow;   /* compact caption, no taskbar entry */
    int          FModalResult;
    BOOL         FRunning;
    BOOL         FMainWindow;   /* TRUE = this form owns the message loop */

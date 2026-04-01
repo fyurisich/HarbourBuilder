@@ -11,12 +11,14 @@
       [ FONT <cFont> [, <nSize>] ] ;
       [ <sizable: SIZABLE> ] ;
       [ <appbar: APPBAR> ] ;
+      [ <toolwin: TOOLWINDOW> ] ;
    => ;
       <oForm> := TForm():New( <cTitle>, <nWidth>, <nHeight> ) ;
       [; <oForm>:FontName := <cFont> ] ;
       [; <oForm>:FontSize := <nSize> ] ;
       [; <oForm>:Sizable := <.sizable.> ] ;
-      [; <oForm>:AppBar := <.appbar.> ]
+      [; <oForm>:AppBar := <.appbar.> ] ;
+      [; <oForm>:ToolWindow := <.toolwin.> ]
 
 #xcommand ACTIVATE FORM <oForm> [ <center: CENTERED> ] => ;
       <oForm>:Activate()

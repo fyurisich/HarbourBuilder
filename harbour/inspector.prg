@@ -29,12 +29,13 @@ function InspectorPopulateCombo( hForm )
    endif
 
    INS_ComboClear( h )
+   INS_SetFormCtrl( h, hForm )
 
    // Add the form itself
    cName  := UI_GetProp( hForm, "cName" )
    cClass := UI_GetProp( hForm, "cClassName" )
    if Empty( cName ); cName := "Form1"; endif
-   cEntry := cName + ": " + cClass
+   cEntry := cName + " AS " + cClass
    INS_ComboAdd( h, cEntry )
 
    // Add all child controls
@@ -45,7 +46,7 @@ function InspectorPopulateCombo( hForm )
          cName  := UI_GetProp( hChild, "cName" )
          cClass := UI_GetProp( hChild, "cClassName" )
          if Empty( cName ); cName := "ctrl" + LTrim( Str( i ) ); endif
-         cEntry := cName + ": " + cClass
+         cEntry := cName + " AS " + cClass
          INS_ComboAdd( h, cEntry )
       endif
    next
@@ -231,17 +232,17 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
          int comboH = 24, tabH = 24, topY = comboH + tabH + 8;
          if( d )
          {
-            if( d->hCombo ) MoveWindow( d->hCombo, 0, 0, w, 200, TRUE );
-            if( d->hTab )   MoveWindow( d->hTab, 0, comboH + 2, w, tabH + 4, TRUE );
+            if( d->hCombo ) MoveWindow( d->hCombo, 2, 2, w - 4, 200, TRUE );
+            if( d->hTab )   MoveWindow( d->hTab, 2, comboH + 4, w - 4, tabH + 2, TRUE );
             if( d->hList )
             {
                MoveWindow( d->hList, 0, topY, w, h - topY, TRUE );
-               ListView_SetColumnWidth( d->hList, 1, w - COL_NAME_W - 4 );
+               ListView_SetColumnWidth( d->hList, 1, w - COL_NAME_W - 20 );
             }
             if( d->hEventList )
             {
                MoveWindow( d->hEventList, 0, topY, w, h - topY, TRUE );
-               ListView_SetColumnWidth( d->hEventList, 1, w - COL_NAME_W - 4 );
+               ListView_SetColumnWidth( d->hEventList, 1, w - COL_NAME_W - 20 );
             }
          }
          return 0;
@@ -347,6 +348,50 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             return 0;
          }
 
+         break;
+      }
+
+      case WM_COMMAND:
+      {
+         WORD wId = LOWORD(wParam);
+         WORD wNotify = HIWORD(wParam);
+         /* ComboBox selection changed - select control in design form */
+         if( wId == 101 && wNotify == CBN_SELCHANGE && d && d->hCombo )
+         {
+            int sel = (int) SendMessage( d->hCombo, CB_GETCURSEL, 0, 0 );
+            if( d->hFormCtrl && sel >= 0 )
+            {
+               /* Fire a Harbour callback to select the control */
+               /* sel 0 = form, sel N = child N */
+               HB_PTRUINT hTarget = d->hFormCtrl;
+               if( sel > 0 )
+               {
+                  /* Get child at index sel (1-based in bridge) */
+                  hb_vmPushDynSym( hb_dynsymFind( "UI_GETCHILD" ) );
+                  hb_vmPushNil();
+                  hb_vmPushNumInt( (HB_MAXINT) d->hFormCtrl );
+                  hb_vmPushInteger( sel );
+                  hb_vmDo( 2 );
+                  hTarget = (HB_PTRUINT) hb_parnint( -1 );
+               }
+               /* Refresh inspector and select control in design form */
+               if( hTarget )
+               {
+                  d->hCtrl = hTarget;
+                  /* Select control in design form */
+                  hb_vmPushDynSym( hb_dynsymFind( "UI_FORMSELECTCTRL" ) );
+                  hb_vmPushNil();
+                  hb_vmPushNumInt( (HB_MAXINT) d->hFormCtrl );
+                  hb_vmPushNumInt( (HB_MAXINT) hTarget );
+                  hb_vmDo( 2 );
+                  /* Refresh inspector properties */
+                  hb_vmPushDynSym( hb_dynsymFind( "INSPECTORREFRESH" ) );
+                  hb_vmPushNil();
+                  hb_vmPushNumInt( (HB_MAXINT) hTarget );
+                  hb_vmDo( 1 );
+               }
+            }
+         }
          break;
       }
 
@@ -625,14 +670,14 @@ HB_FUNC( INS_CREATE )
    /* ComboBox: control selector at top */
    d->hCombo = CreateWindowExA( 0, "COMBOBOX", "",
       WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL,
-      0, 0, 215, 200,
+      2, 2, 200, 200,
       d->hWnd, (HMENU)101, GetModuleHandle(NULL), NULL );
    SendMessage( d->hCombo, WM_SETFONT, (WPARAM) d->hFont, TRUE );
 
    /* TabControl: Properties | Events */
    d->hTab = CreateWindowExA( 0, WC_TABCONTROLA, "",
       WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS,
-      0, comboH + 2, 215, tabH + 4,
+      2, comboH + 4, 200, tabH + 2,
       d->hWnd, (HMENU)102, GetModuleHandle(NULL), NULL );
    SendMessage( d->hTab, WM_SETFONT, (WPARAM) d->hFont, TRUE );
 
@@ -799,34 +844,41 @@ static void InsPopulateEvents( INSDATA * d )
    }
 }
 
-/* Update the control selector combobox - simple version using stored name/class */
+/* Update the combo selection to match the currently inspected control.
+ * Does NOT clear the combo - the full list is populated from Harbour. */
 static void InsUpdateCombo( INSDATA * d )
 {
-   char szBuf[128];
+   int i, nCount, nSel = -1;
 
-   if( !d || !d->hCombo ) return;
+   if( !d || !d->hCombo || !d->hFormCtrl ) return;
 
-   /* Just show the current control. Full enumeration done from Harbour side. */
-   /* Find if current control name matches an existing combo entry */
-   if( d->nRows > 0 )
+   nCount = (int) SendMessage( d->hCombo, CB_GETCOUNT, 0, 0 );
+   if( nCount <= 0 ) return;
+
+   /* Find which combo index matches the current control */
+   if( d->hCtrl == d->hFormCtrl )
+      nSel = 0;  /* form itself is always index 0 */
+   else
    {
-      int i;
-      const char * cls = "";
-      const char * name = "";
-      for( i = 0; i < d->nRows; i++ )
+      /* Search by matching the name from rows data */
+      char szName[64] = "", szClass[64] = "", szSearch[128];
+      int j;
+      for( j = 0; j < d->nRows; j++ )
       {
-         if( !d->rows[i].bIsCat && lstrcmpiA( d->rows[i].szName, "cClassName" ) == 0 )
-            cls = d->rows[i].szValue;
-         if( !d->rows[i].bIsCat && lstrcmpiA( d->rows[i].szName, "cName" ) == 0 )
-            name = d->rows[i].szValue;
+         if( !d->rows[j].bIsCat && lstrcmpiA( d->rows[j].szName, "cName" ) == 0 )
+            lstrcpynA( szName, d->rows[j].szValue, 64 );
+         if( !d->rows[j].bIsCat && lstrcmpiA( d->rows[j].szName, "cClassName" ) == 0 )
+            lstrcpynA( szClass, d->rows[j].szValue, 64 );
       }
-      sprintf( szBuf, "%s: %s", name[0] ? name : "?", cls[0] ? cls : "?" );
-
-      /* Only update if combo is empty or text changed */
-      SendMessage( d->hCombo, CB_RESETCONTENT, 0, 0 );
-      SendMessageA( d->hCombo, CB_ADDSTRING, 0, (LPARAM) szBuf );
-      SendMessage( d->hCombo, CB_SETCURSEL, 0, 0 );
+      if( szName[0] )
+      {
+         sprintf( szSearch, "%s AS %s", szName, szClass );
+         nSel = (int) SendMessageA( d->hCombo, CB_FINDSTRINGEXACT, (WPARAM)-1, (LPARAM) szSearch );
+      }
    }
+
+   if( nSel >= 0 )
+      SendMessage( d->hCombo, CB_SETCURSEL, nSel, 0 );
 }
 
 /* INS_ComboAdd( hInsData, cText ) - add entry to combo from Harbour */

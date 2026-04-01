@@ -54,6 +54,9 @@ CLASS TForm INHERIT TControl
    ACCESS AppBar        INLINE UI_GetProp( ::hCpp, "lAppBar" )
    ASSIGN AppBar( l )   INLINE UI_SetProp( ::hCpp, "lAppBar", l )
 
+   ACCESS ToolWindow    INLINE UI_GetProp( ::hCpp, "lToolWindow" )
+   ASSIGN ToolWindow( l ) INLINE UI_SetProp( ::hCpp, "lToolWindow", l )
+
    ACCESS ModalResult   INLINE UI_FormResult( ::hCpp )
 
    METHOD New( cTitle, nWidth, nHeight )

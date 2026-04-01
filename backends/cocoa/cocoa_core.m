@@ -1566,6 +1566,92 @@ HB_FUNC( UI_FORMSETAPPBAR )
    if( p ) p->FAppBar = hb_parl(2);
 }
 
+HB_FUNC( UI_FORMGETHWND )
+{
+   /* macOS doesn't use HWND, return the object pointer as handle */
+   HBForm * p = GetForm(1);
+   hb_retnint( p ? (HB_PTRUINT)(__bridge void *)p : 0 );
+}
+
+/* ======================================================================
+ * Component Palette (macOS stub - palette created natively)
+ * ====================================================================== */
+
+static HBControl * s_palette = NULL;  /* simple storage for palette reference */
+
+HB_FUNC( UI_PALETTENEW )
+{
+   /* On macOS, palette tabs are part of the window toolbar area */
+   /* For now, store as a lightweight placeholder */
+   HBControl * p = [[HBControl alloc] init];
+   strcpy( p->FClassName, "TComponentPalette" );
+   p->FControlType = CT_TOOLBAR + 1;  /* CT_TABCONTROL */
+   KeepAlive( p );
+   s_palette = p;
+   /* Associate with form */
+   HBForm * pForm = GetForm(1);
+   (void)pForm;
+   hb_retnint( (HB_PTRUINT)(__bridge void *)p );
+}
+
+HB_FUNC( UI_PALETTEADDTAB )
+{
+   /* Store tab name for future NSSegmentedControl implementation */
+   static int s_tabCount = 0;
+   hb_retni( s_tabCount++ );
+}
+
+HB_FUNC( UI_PALETTEADDCOMP )
+{
+   /* Stub - component buttons will be created during window show */
+}
+
+HB_FUNC( UI_PALETTEONSELECT )
+{
+   /* Stub */
+}
+
+HB_FUNC( UI_TOOLBARGETWIDTH )
+{
+   HBToolBar * p = (HBToolBar *)(HBControl *)(LONG_PTR)hb_parnint(1);
+   if( p && p->FControlType == CT_TOOLBAR )
+      hb_retni( 200 );  /* approximate width for layout */
+   else
+      hb_retni( 0 );
+}
+
+/* ======================================================================
+ * StatusBar (macOS)
+ * ====================================================================== */
+
+HB_FUNC( UI_STATUSBARCREATE )
+{
+   /* On macOS, status bar is a thin NSTextField at the bottom of the window */
+   /* For now, just mark the form as having a status bar */
+   HBForm * p = GetForm(1);
+   (void)p;
+}
+
+HB_FUNC( UI_STATUSBARSETTEXT )
+{
+   /* Stub - will be implemented with NSTextField panels */
+   HBForm * p = GetForm(1);
+   (void)p;
+}
+
+HB_FUNC( UI_FORMSELECTCTRL )
+{
+   HBForm * pForm = GetForm(1);
+   HBControl * pCtrl = GetCtrl(2);
+   if( pForm && pForm->FDesignMode )
+   {
+      if( pCtrl && pCtrl != (HBControl *)pForm )
+         [pForm selectControl:pCtrl add:NO];
+      else
+         [pForm clearSelection];
+   }
+}
+
 HB_FUNC( UI_FORMSETPOS )
 {
    HBForm * p = GetForm(1);

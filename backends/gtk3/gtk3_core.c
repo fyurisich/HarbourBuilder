@@ -1587,6 +1587,59 @@ HB_FUNC( UI_FORMSETAPPBAR )
    if( p ) p->FAppBar = hb_parl(2);
 }
 
+HB_FUNC( UI_FORMGETHWND )
+{
+   HBForm * p = GetForm(1);
+   hb_retnint( p ? (HB_PTRUINT) p : 0 );
+}
+
+/* ======================================================================
+ * Component Palette (GTK3 stubs)
+ * ====================================================================== */
+
+HB_FUNC( UI_PALETTENEW )
+{
+   HBControl * p = (HBControl *) calloc( 1, sizeof(HBControl) );
+   HBControl_Init( p );
+   strcpy( p->FClassName, "TComponentPalette" );
+   p->FControlType = CT_TOOLBAR + 1;
+   KeepAlive( p );
+   HBForm * pForm = GetForm(1);
+   (void)pForm;
+   RetCtrl( p );
+}
+
+HB_FUNC( UI_PALETTEADDTAB )
+{
+   static int s_tabCount = 0;
+   hb_retni( s_tabCount++ );
+}
+
+HB_FUNC( UI_PALETTEADDCOMP ) { /* stub */ }
+HB_FUNC( UI_PALETTEONSELECT ) { /* stub */ }
+
+HB_FUNC( UI_TOOLBARGETWIDTH )
+{
+   HBToolBar * p = (HBToolBar *) GetCtrl(1);
+   if( p && p->base.FControlType == CT_TOOLBAR )
+      hb_retni( 200 );
+   else
+      hb_retni( 0 );
+}
+
+/* ======================================================================
+ * StatusBar (GTK3 stubs)
+ * ====================================================================== */
+
+HB_FUNC( UI_STATUSBARCREATE ) { /* stub */ }
+HB_FUNC( UI_STATUSBARSETTEXT ) { /* stub */ }
+
+HB_FUNC( UI_FORMSELECTCTRL )
+{
+   /* Stub - design mode selection from combo */
+   /* TODO: implement HBForm_SelectControl for GTK3 */
+}
+
 HB_FUNC( UI_FORMSETPOS )
 {
    HBForm * p = GetForm(1);

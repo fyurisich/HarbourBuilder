@@ -264,6 +264,8 @@ HB_FUNC( UI_SETPROP )
       ((TForm*)p)->FSizable = hb_parl(3);
    else if( lstrcmpi( szProp, "lAppBar" ) == 0 && p->FControlType == CT_FORM )
       ((TForm*)p)->FAppBar = hb_parl(3);
+   else if( lstrcmpi( szProp, "lToolWindow" ) == 0 && p->FControlType == CT_FORM )
+      ((TForm*)p)->FToolWindow = hb_parl(3);
    else if( lstrcmpi( szProp, "nClrPane" ) == 0 )
    {
       p->FClrPane = (COLORREF) hb_parnint(3);
@@ -846,6 +848,20 @@ HB_FUNC( UI_STATUSBARSETTEXT )
    int nPanel = hb_parni(2);
    if( p && p->FStatusBar && HB_ISCHAR(3) )
       SendMessageA( p->FStatusBar, SB_SETTEXTA, nPanel, (LPARAM) hb_parc(3) );
+}
+
+/* UI_FormSelectCtrl( hForm, hCtrl ) - select a control in design mode */
+HB_FUNC( UI_FORMSELECTCTRL )
+{
+   TForm * pForm = GetForm(1);
+   TControl * pCtrl = GetCtrl(2);
+   if( pForm && pForm->FDesignMode )
+   {
+      if( pCtrl && pCtrl != (TControl*)pForm )
+         pForm->SelectControl( pCtrl, FALSE );
+      else
+         pForm->ClearSelection();
+   }
 }
 
 /* UI_FormSetSizable( hForm, lSizable ) */
