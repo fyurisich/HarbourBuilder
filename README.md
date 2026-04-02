@@ -112,7 +112,7 @@ backends/
   web/backend.prg        - HTML5 Canvas backend
 
 samples/
-  hbcpp_win32.prg        - Windows IDE
+  hbbuilder_win.prg      - Windows IDE
   hbbuilder_macos.prg    - macOS IDE: save/build/run projects
   hbbuilder_linux.prg    - Linux IDE: save/build/run projects
   test_design.prg        - Windows IDE (legacy, hardcoded positions)
