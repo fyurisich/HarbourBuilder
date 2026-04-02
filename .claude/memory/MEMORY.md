@@ -1,0 +1,5 @@
+- [User: Antonio Linares](user_antonio.md) — hbcpp creator, Harbour expert, prefers direct action
+- [Always execute directly](feedback_direct_execution.md) — Never ask confirmation for build/run, just do it
+- [UI design preferences](feedback_ui_design.md) — Pixel-level layout rules for IDE (C++Builder style)
+- [HbBuilder IDE state](project_macos_ide.md) — Multi-form IDE, two-way tools, Run pipeline, dot grid
+- [Build and run commands](reference_build_run.md) — ./build_mac.sh then ./HbBuilder &
