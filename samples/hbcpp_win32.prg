@@ -307,11 +307,7 @@ static function GenerateSampleCode()
 
 return cCode
 
-static function MsgInfo( cText )
-
-   W32_MsgBox( cText, "IDE" )
-
-return nil
+// MsgInfo() is now in classes.prg (cross-platform)
 
 // Framework
 #include "../harbour/classes.prg"
@@ -325,6 +321,12 @@ return nil
 #include <ctype.h>
 
 HB_FUNC( W32_MSGBOX )
+{
+   MessageBoxA( GetActiveWindow(), hb_parc(1), hb_parc(2), MB_OK | MB_ICONINFORMATION );
+}
+
+/* UI_MsgBox - cross-platform alias */
+HB_FUNC( UI_MSGBOX )
 {
    MessageBoxA( GetActiveWindow(), hb_parc(1), hb_parc(2), MB_OK | MB_ICONINFORMATION );
 }

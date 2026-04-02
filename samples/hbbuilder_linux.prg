@@ -289,7 +289,14 @@ static function RegenerateFormCode( cName, hForm )
    local i, nCount, hCtrl, cCtrlName, cCtrlClass, nType
    local nW, nH, nFL, nFT, cTitle, nClr
    local nL, nT, nCW, nCH, cText
-   local cDatas := "", cCreate := ""
+   local cDatas := "", cCreate := "", cEvents := ""
+   local cExistingCode, aEvents, j, cEvName, cEvSuffix, cHandlerName
+
+   // Read existing code to find declared event handlers
+   cExistingCode := ""
+   if nActiveForm > 0 .and. nActiveForm <= Len( aForms )
+      cExistingCode := CodeEditorGetTabText( hCodeEditor, nActiveForm + 1 )
+   endif
 
    if hForm != 0
       cTitle := UI_GetProp( hForm, "cText" )
@@ -349,6 +356,39 @@ static function RegenerateFormCode( cName, hForm )
                   ' GROUPBOX ::o' + cCtrlName + ' PROMPT "' + cText + '" OF Self SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
          endcase
+
+         // Scan for event handlers matching this control
+         // Pattern: METHOD ControlName + EventSuffix (e.g. Button1Click)
+         aEvents := { "OnClick", "OnChange", "OnDblClick", "OnCreate", ;
+                       "OnClose", "OnResize", "OnKeyDown", "OnKeyUp", ;
+                       "OnMouseDown", "OnMouseUp", "OnEnter", "OnExit" }
+         for j := 1 to Len( aEvents )
+            cEvName := aEvents[j]
+            cEvSuffix := SubStr( cEvName, 3 )  // "Click", "Change"...
+            cHandlerName := cCtrlName + cEvSuffix
+            if cHandlerName $ cExistingCode
+               cEvents += "   ::o" + cCtrlName + ":" + cEvName + ;
+                  " := { |oSender| oSelf:" + cHandlerName + "( oSender ) }" + e
+            endif
+         next
+      next
+   endif
+
+   // Scan form-level events (Form1Click, Form1Create, etc.)
+   if ! Empty( cExistingCode )
+      aEvents := { "OnClick", "OnDblClick", "OnCreate", "OnDestroy", ;
+                    "OnShow", "OnHide", "OnClose", "OnCloseQuery", ;
+                    "OnActivate", "OnDeactivate", "OnResize", "OnPaint", ;
+                    "OnKeyDown", "OnKeyUp", "OnKeyPress", ;
+                    "OnMouseDown", "OnMouseUp", "OnMouseMove" }
+      for j := 1 to Len( aEvents )
+         cEvName := aEvents[j]
+         cEvSuffix := SubStr( cEvName, 3 )
+         cHandlerName := cName + cEvSuffix
+         if ( "METHOD " + cHandlerName ) $ cExistingCode
+            cEvents += "   ::" + cEvName + ;
+               " := { |oSender| oSelf:" + cHandlerName + "( oSender ) }" + e
+         endif
       next
    endif
 
@@ -369,6 +409,8 @@ static function RegenerateFormCode( cName, hForm )
    cCode += e
    cCode += "METHOD CreateForm() CLASS " + cClass + e
    cCode += e
+   cCode += "   local oSelf := Self" + e
+   cCode += e
    cCode += '   ::Title  := "' + cTitle + '"' + e
    cCode += "   ::Left   := " + LTrim(Str(nFL)) + e
    cCode += "   ::Top    := " + LTrim(Str(nFT)) + e
@@ -379,6 +421,11 @@ static function RegenerateFormCode( cName, hForm )
    endif
    if ! Empty( cCreate )
       cCode += e + cCreate
+   endif
+   if ! Empty( cEvents )
+      cCode += e
+      cCode += "   // Event wiring" + e
+      cCode += cEvents
    endif
    cCode += e
    cCode += "return nil" + e
@@ -406,6 +453,11 @@ static function OnEventDblClick( hCtrl, cEvent )
 
    cHandler := cName + SubStr( cEvent, 3 )
 
+   // Ensure we're on the form's tab in the editor
+   if nActiveForm > 0
+      CodeEditorSelectTab( hCodeEditor, nActiveForm + 1 )
+   endif
+
    if CodeEditorGotoFunction( hCodeEditor, cHandler )
       return cHandler
    endif
@@ -425,6 +477,9 @@ static function OnEventDblClick( hCtrl, cEvent )
 
    cDecl := "   METHOD " + cHandler + "( oSender )" + e
    CodeEditorInsertAfter( hCodeEditor, "// Event handlers", cDecl )
+
+   // Regenerate CreateForm to include event wiring
+   SyncDesignerToCode()
 
 return cHandler
 
@@ -869,11 +924,7 @@ static function ShowAbout()
 
 return nil
 
-static function MsgInfo( cText )
-
-   GTK_MsgBox( cText, "HbBuilder" )
-
-return nil
+// MsgInfo() is now in classes.prg (cross-platform)
 
 // Framework
 #include "../harbour/classes.prg"

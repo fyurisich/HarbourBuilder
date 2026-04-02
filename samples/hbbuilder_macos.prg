@@ -311,6 +311,13 @@ static function RegenerateFormCode( cName, hForm )
    local nW, nH, nFL, nFT, cTitle, nClr
    local nL, nT, nCW, nCH, cText
    local cDatas := "", cCreate := "", cEvents := ""
+   local cExistingCode, aEvents, j, cEvName, cEvSuffix, cHandlerName
+
+   // Read existing code to find declared event handlers
+   cExistingCode := ""
+   if nActiveForm > 0 .and. nActiveForm <= Len( aForms )
+      cExistingCode := CodeEditorGetTabText( hCodeEditor, nActiveForm + 1 )
+   endif
 
    // Form properties (read from live form or use defaults)
    if hForm != 0
@@ -377,6 +384,38 @@ static function RegenerateFormCode( cName, hForm )
                   ' GROUPBOX ::o' + cCtrlName + ' PROMPT "' + cText + '" OF Self SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
          endcase
+
+         // Scan for event handlers matching this control
+         aEvents := { "OnClick", "OnChange", "OnDblClick", "OnCreate", ;
+                       "OnClose", "OnResize", "OnKeyDown", "OnKeyUp", ;
+                       "OnMouseDown", "OnMouseUp", "OnEnter", "OnExit" }
+         for j := 1 to Len( aEvents )
+            cEvName := aEvents[j]
+            cEvSuffix := SubStr( cEvName, 3 )
+            cHandlerName := cCtrlName + cEvSuffix
+            if cHandlerName $ cExistingCode
+               cEvents += "   ::o" + cCtrlName + ":" + cEvName + ;
+                  " := { |oSender| oSelf:" + cHandlerName + "( oSender ) }" + e
+            endif
+         next
+      next
+   endif
+
+   // Scan form-level events
+   if ! Empty( cExistingCode )
+      aEvents := { "OnClick", "OnDblClick", "OnCreate", "OnDestroy", ;
+                    "OnShow", "OnHide", "OnClose", "OnCloseQuery", ;
+                    "OnActivate", "OnDeactivate", "OnResize", "OnPaint", ;
+                    "OnKeyDown", "OnKeyUp", "OnKeyPress", ;
+                    "OnMouseDown", "OnMouseUp", "OnMouseMove" }
+      for j := 1 to Len( aEvents )
+         cEvName := aEvents[j]
+         cEvSuffix := SubStr( cEvName, 3 )
+         cHandlerName := cName + cEvSuffix
+         if ( "METHOD " + cHandlerName ) $ cExistingCode
+            cEvents += "   ::" + cEvName + ;
+               " := { |oSender| oSelf:" + cHandlerName + "( oSender ) }" + e
+         endif
       next
    endif
 
@@ -400,6 +439,8 @@ static function RegenerateFormCode( cName, hForm )
    cCode += e
    cCode += "METHOD CreateForm() CLASS " + cClass + e
    cCode += e
+   cCode += "   local oSelf := Self" + e
+   cCode += e
    cCode += '   ::Title  := "' + cTitle + '"' + e
    cCode += "   ::Left   := " + LTrim(Str(nFL)) + e
    cCode += "   ::Top    := " + LTrim(Str(nFT)) + e
@@ -411,6 +452,11 @@ static function RegenerateFormCode( cName, hForm )
    if ! Empty( cCreate )
       cCode += e
       cCode += cCreate
+   endif
+   if ! Empty( cEvents )
+      cCode += e
+      cCode += "   // Event wiring" + e
+      cCode += cEvents
    endif
    cCode += e
    cCode += "return nil" + e
@@ -494,6 +540,9 @@ static function OnEventDblClick( hCtrl, cEvent )
    // Find "// Event handlers" line and insert after it
    cDecl := "   METHOD " + cHandler + "( oSender )" + e
    CodeEditorInsertAfter( hCodeEditor, "// Event handlers", cDecl )
+
+   // Regenerate CreateForm to include event wiring
+   SyncDesignerToCode()
 
 return cHandler
 
@@ -1035,11 +1084,7 @@ static function ShowAbout()
 
 return nil
 
-static function MsgInfo( cText )
-
-   MAC_MsgBox( cText, "HbBuilder" )
-
-return nil
+// MsgInfo() is now in classes.prg (cross-platform)
 
 // Framework
 #include "../harbour/classes.prg"

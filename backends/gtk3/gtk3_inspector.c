@@ -46,9 +46,19 @@ typedef struct {
    int          nVisible;
    GtkWidget *  combo;       /* control selection combo (GtkComboBoxText) */
    PHB_ITEM     pOnComboSel; /* callback for combo selection change */
+   /* Properties/Events tabs */
+   GtkWidget *  tabWidget;   /* GtkNotebook for Properties/Events */
+   int          nTab;        /* 0 = Properties, 1 = Events */
+   /* Cached property rows (saved when switching to Events tab) */
+   IROW         propRows[MAX_ROWS];
+   int          nPropRows;
+   int          propMap[MAX_ROWS];
+   int          nPropVisible;
    /* Events tab */
    IROW         evRows[MAX_ROWS];
    int          nEvRows;
+   int          evMap[MAX_ROWS];
+   int          nEvVisible;
    /* Callbacks */
    PHB_ITEM     pOnEventDblClick;  /* double-click on event row */
    PHB_ITEM     pOnPropChanged;    /* after property edit (two-way sync) */
@@ -202,10 +212,14 @@ static void InsRebuildStore( INSDATA * d )
             hasBg = TRUE;
          }
 
+         /* Events tab: not editable (double-click generates handler) */
+         gboolean editable = (d->nTab == 0) &&
+            (d->rows[nReal].cType != 'C' && d->rows[nReal].cType != 'F');
+
          gtk_list_store_set( d->store, &iter,
             COL_NAME, dispName,
             COL_VALUE, d->rows[nReal].szValue,
-            COL_EDITABLE, (d->rows[nReal].cType != 'C' && d->rows[nReal].cType != 'F'),
+            COL_EDITABLE, editable,
             COL_WEIGHT, PANGO_WEIGHT_NORMAL,
             COL_BG_COLOR, hasBg ? bgColor : NULL,
             COL_BG_SET, hasBg,
@@ -267,13 +281,60 @@ static void on_value_edited( GtkCellRendererText * renderer,
    gtk_tree_model_get( GTK_TREE_MODEL(d->store), &iter, COL_REAL_IDX, &nReal, -1 );
 
    if( nReal < 0 || nReal >= d->nRows || d->rows[nReal].bIsCat ) return;
+   if( d->nTab == 1 ) return;  /* Events tab: no inline editing */
 
    strncpy( d->rows[nReal].szValue, new_text, sizeof(d->rows[0].szValue) - 1 );
    InsApplyValue( d, nReal );
    InsRebuildStore( d );
 }
 
-/* Row activated (double-click) - toggle category or open picker */
+/* Activate the current tab: swap rows/map/nVisible for display */
+static void InsActivateTab( INSDATA * d )
+{
+   if( d->nTab == 1 )
+   {
+      /* Show event rows */
+      memcpy( d->rows, d->evRows, sizeof(d->evRows) );
+      d->nRows = d->nEvRows;
+      memcpy( d->map, d->evMap, sizeof(d->evMap) );
+      d->nVisible = d->nEvVisible;
+   }
+   else
+   {
+      /* Restore property rows */
+      memcpy( d->rows, d->propRows, sizeof(d->propRows) );
+      d->nRows = d->nPropRows;
+      memcpy( d->map, d->propMap, sizeof(d->propMap) );
+      d->nVisible = d->nPropVisible;
+   }
+   InsRebuildStore( d );
+}
+
+/* Tab switch callback */
+static void on_inspector_tab_switched( GtkNotebook * nb, GtkWidget * page, guint nPage, gpointer data )
+{
+   INSDATA * d = (INSDATA *)data;
+   if( !d ) return;
+   d->nTab = (int)nPage;
+
+   /* Update column headers */
+   GList * cols = gtk_tree_view_get_columns( GTK_TREE_VIEW(d->treeView) );
+   if( cols )
+   {
+      GtkTreeViewColumn * nameCol = (GtkTreeViewColumn *)cols->data;
+      gtk_tree_view_column_set_title( nameCol, d->nTab == 0 ? "Property" : "Event" );
+      if( cols->next )
+      {
+         GtkTreeViewColumn * valCol = (GtkTreeViewColumn *)cols->next->data;
+         gtk_tree_view_column_set_title( valCol, d->nTab == 0 ? "Value" : "Handler" );
+      }
+      g_list_free( cols );
+   }
+
+   InsActivateTab( d );
+}
+
+/* Row activated (double-click) - toggle category, open picker, or fire event handler */
 static void on_row_activated( GtkTreeView * treeView, GtkTreePath * path,
    GtkTreeViewColumn * column, gpointer data )
 {
@@ -361,6 +422,21 @@ static void on_row_activated( GtkTreeView * treeView, GtkTreePath * path,
       gtk_widget_destroy( dialog );
       return;
    }
+
+   /* Events tab: double-click fires event handler callback */
+   if( d->nTab == 1 )
+   {
+      if( d->pOnEventDblClick && HB_IS_BLOCK( d->pOnEventDblClick ) )
+      {
+         const char * szEvent = d->rows[nReal].szName;
+         hb_vmPushEvalSym();
+         hb_vmPush( d->pOnEventDblClick );
+         hb_vmPushNumInt( d->hCtrl );
+         hb_vmPushString( szEvent, strlen(szEvent) );
+         hb_vmSend( 2 );
+      }
+      return;
+   }
 }
 
 /* Combo box selection changed */
@@ -418,6 +494,19 @@ HB_FUNC( INS_CREATE )
    d->combo = gtk_combo_box_text_new();
    gtk_box_pack_start( GTK_BOX(vbox), d->combo, FALSE, FALSE, 2 );
    g_signal_connect( d->combo, "changed", G_CALLBACK(on_combo_sel_changed), d );
+
+   /* Properties / Events tabs */
+   d->nTab = 0;
+   d->tabWidget = gtk_notebook_new();
+   gtk_notebook_set_show_border( GTK_NOTEBOOK(d->tabWidget), FALSE );
+   GtkWidget * propLabel = gtk_label_new( "Properties" );
+   GtkWidget * evLabel   = gtk_label_new( "Events" );
+   GtkWidget * propDummy = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+   GtkWidget * evDummy   = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+   gtk_notebook_append_page( GTK_NOTEBOOK(d->tabWidget), propDummy, propLabel );
+   gtk_notebook_append_page( GTK_NOTEBOOK(d->tabWidget), evDummy, evLabel );
+   gtk_box_pack_start( GTK_BOX(vbox), d->tabWidget, FALSE, FALSE, 0 );
+   g_signal_connect( d->tabWidget, "switch-page", G_CALLBACK(on_inspector_tab_switched), d );
 
    /* List store */
    d->store = gtk_list_store_new( NUM_COLS,
@@ -512,7 +601,18 @@ HB_FUNC( INS_REFRESHWITHDATA )
    }
 
    InsBuildRows( d, pArray );
-   InsRebuildStore( d );
+
+   /* Cache property rows */
+   memcpy( d->propRows, d->rows, sizeof(d->rows) );
+   d->nPropRows = d->nRows;
+   memcpy( d->propMap, d->map, sizeof(d->map) );
+   d->nPropVisible = d->nVisible;
+
+   /* If Events tab is active, show events instead */
+   if( d->nTab == 1 )
+      InsActivateTab( d );
+   else
+      InsRebuildStore( d );
 }
 
 /* ======================================================================
@@ -672,6 +772,18 @@ HB_FUNC( INS_SETEVENTS )
          r->bVisible = 1;
       }
    }
+
+   /* Build visible map */
+   d->nEvVisible = 0;
+   for( int k = 0; k < d->nEvRows; k++ )
+   {
+      if( d->evRows[k].bVisible || d->evRows[k].bIsCat )
+         d->evMap[d->nEvVisible++] = k;
+   }
+
+   /* If Events tab is active, refresh display */
+   if( d->nTab == 1 )
+      InsActivateTab( d );
 }
 
 /* ======================================================================

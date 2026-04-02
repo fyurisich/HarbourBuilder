@@ -2981,6 +2981,18 @@ HB_FUNC( MAC_MSGBOX )
    [alert runModal];
 }
 
+/* UI_MsgBox - cross-platform alias */
+HB_FUNC( UI_MSGBOX )
+{
+   EnsureNSApp();
+   NSAlert * alert = [[NSAlert alloc] init];
+   [alert setMessageText:[NSString stringWithUTF8String:hb_parc(2) ? hb_parc(2) : ""]];
+   [alert setInformativeText:[NSString stringWithUTF8String:hb_parc(1) ? hb_parc(1) : ""]];
+   [alert addButtonWithTitle:@"OK"];
+   [alert setAlertStyle:NSAlertStyleInformational];
+   [alert runModal];
+}
+
 /* MAC_ShellExec( cCommand ) --> cOutput
  * Execute a shell command and return stdout+stderr as string */
 HB_FUNC( MAC_SHELLEXEC )

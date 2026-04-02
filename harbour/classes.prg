@@ -438,3 +438,14 @@ METHOD Run() CLASS TApplication
    endif
 
 return Self
+
+//----------------------------------------------------------------------------//
+// MsgInfo - cross-platform message box
+//----------------------------------------------------------------------------//
+
+function MsgInfo( cText, cTitle )
+
+   if cTitle == nil; cTitle := ""; endif
+   UI_MsgBox( cText, cTitle )
+
+return nil

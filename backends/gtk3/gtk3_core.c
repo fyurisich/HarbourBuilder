@@ -2246,6 +2246,18 @@ HB_FUNC( GTK_MSGBOX )
    gtk_widget_destroy( dialog );
 }
 
+/* UI_MsgBox - cross-platform alias */
+HB_FUNC( UI_MSGBOX )
+{
+   EnsureGTK();
+   GtkWidget * dialog = gtk_message_dialog_new( NULL,
+      GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+      "%s", hb_parc(1) ? hb_parc(1) : "" );
+   gtk_window_set_title( GTK_WINDOW(dialog), hb_parc(2) ? hb_parc(2) : "" );
+   gtk_dialog_run( GTK_DIALOG(dialog) );
+   gtk_widget_destroy( dialog );
+}
+
 /* ======================================================================
  * Screen geometry
  * ====================================================================== */
