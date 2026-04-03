@@ -1196,7 +1196,7 @@ static void InsPopulateEvents( INSDATA * d )
       nType = hb_itemGetNI( hb_stackReturnItem() );
       hb_vmRequestRestore();
    }
-   InsLog("  -> nType = %d" );
+   { char tb[64]; sprintf(tb,"  -> nType = %d",nType); InsLog(tb); }
 
    /* Show events based on control type */
    switch( nType )
