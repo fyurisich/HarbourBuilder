@@ -22,6 +22,7 @@
 
 HarbourBuilder is a **Borland C++Builder-style visual IDE** that generates Harbour/xBase code. Drop controls from the palette, set properties in the inspector, double-click to write event handlers — and your app runs natively on Windows, macOS, and Linux with zero code changes.
 
+**What you write:**
 ```harbour
 #include "hbbuilder.ch"
 
@@ -37,7 +38,30 @@ function Main()
 return nil
 ```
 
-> This code runs **identically** on Windows, macOS, and Linux — with native controls on each platform.
+**What the IDE generates** (two-way code sync from the visual designer):
+```harbour
+// Form1.prg
+
+CLASS TForm1 FROM TForm
+
+   // IDE-managed Components
+
+   // Event handlers
+
+   METHOD CreateForm()
+
+ENDCLASS
+
+METHOD CreateForm() CLASS TForm1
+   ::Title  := "Form1"
+   ::Left   := 100
+   ::Top    := 170
+   ::Width  := 400
+   ::Height := 300
+return nil
+```
+
+> Both styles run **identically** on Windows, macOS, and Linux — with native controls on each platform.
 
 ---
 
