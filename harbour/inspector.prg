@@ -387,7 +387,7 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
                case CDDS_ITEMPREPAINT:
                {
                   /* Check lParam: 1=category, 0=event */
-                  if( pcd->nmcd.lItemlParam == 1 )
+                  if( pcd->nmcd.lItemlParam == 1 || pcd->nmcd.lItemlParam == 2 )
                   {
                      pcd->clrTextBk = GetSysColor( COLOR_BTNFACE );
                      pcd->clrText = GetSysColor( COLOR_BTNTEXT );
@@ -400,6 +400,49 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
                }
             }
             return CDRF_DODEFAULT;
+         }
+
+         /* Click on Events list: toggle category collapse */
+         if( pnm->code == NM_CLICK && pnm->idFrom == 103 )
+         {
+            NMITEMACTIVATE * pe = (NMITEMACTIVATE *) lParam;
+            if( d && pe->iItem >= 0 )
+            {
+               LVITEMA lviCheck = {0};
+               lviCheck.mask = LVIF_PARAM;
+               lviCheck.iItem = pe->iItem;
+               SendMessageA( d->hEventList, LVM_GETITEMA, 0, (LPARAM) &lviCheck );
+
+               /* If it's a category row (lParam=1), toggle visibility of following event rows */
+               if( lviCheck.lParam == 1 )
+               {
+                  int j = pe->iItem + 1;
+                  int nTotal = (int) SendMessage( d->hEventList, LVM_GETITEMCOUNT, 0, 0 );
+                  LVITEMA lviNext = {0};
+
+                  /* Collapse: delete event rows until next category */
+                  while( j < nTotal )
+                  {
+                     lviNext.mask = LVIF_PARAM;
+                     lviNext.iItem = j;
+                     SendMessageA( d->hEventList, LVM_GETITEMA, 0, (LPARAM) &lviNext );
+                     if( lviNext.lParam == 1 || lviNext.lParam == 2 ) break; /* next category */
+                     SendMessage( d->hEventList, LVM_DELETEITEM, j, 0 );
+                     nTotal--;
+                  }
+                  /* Mark as collapsed */
+                  lviCheck.mask = LVIF_PARAM;
+                  lviCheck.iItem = pe->iItem;
+                  lviCheck.lParam = 2;
+                  SendMessageA( d->hEventList, LVM_SETITEMA, 0, (LPARAM) &lviCheck );
+               }
+               else if( lviCheck.lParam == 2 )
+               {
+                  /* Expand: repopulate events */
+                  InsPopulateEvents( d );
+               }
+            }
+            return 0;
          }
 
          /* Double-click on Events list -> fire OnEventDblClick callback */

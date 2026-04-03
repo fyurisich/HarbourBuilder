@@ -38,6 +38,9 @@ function Main()
    local nBarH, nInsW, nEditorX, nEditorW, nEditorH
    local nFormX, nFormY, nInsTop, nEditorTop, nBottomY
 
+   // Check if Harbour and BCC are installed
+   CheckHarbourInstall()
+
    nScreenW := W32_GetScreenWidth()
    nScreenH := W32_GetScreenHeight()
    cCurrentFile := ""
@@ -1483,7 +1486,59 @@ return nil
 // === AI Assistant (Ollama / LM Studio) ===
 
 static function ShowAIAssistant()
+
+   // Check if Ollama is running before opening the panel
+   local cResult := W32_ShellExec( 'curl -s http://localhost:11434/api/tags 2>nul' )
+
+   if Empty( cResult ) .or. ! ( "models" $ cResult )
+      // Ollama not detected - offer to help
+      MsgInfo( "Ollama is not running!" + Chr(10) + ;
+               Chr(10) + ;
+               "The AI Assistant requires Ollama for local AI." + Chr(10) + ;
+               Chr(10) + ;
+               "To install Ollama:" + Chr(10) + ;
+               "1. Download from https://ollama.com/download" + Chr(10) + ;
+               "2. Run the installer" + Chr(10) + ;
+               "3. Open a terminal and run: ollama pull codellama" + Chr(10) + ;
+               "4. Restart HbBuilder and try again" + Chr(10) + ;
+               Chr(10) + ;
+               "The AI Assistant will open anyway for preview.", ;
+               "Ollama Not Detected" )
+   endif
+
    W32_AIAssistantPanel()
+
+return nil
+
+// === Harbour Installation Check ===
+
+static function CheckHarbourInstall()
+
+   if ! File( "c:\harbour\bin\win\bcc\harbour.exe" )
+      MsgInfo( "Harbour compiler not found!" + Chr(10) + ;
+               Chr(10) + ;
+               "HbBuilder requires Harbour 3.2 to compile projects." + Chr(10) + ;
+               Chr(10) + ;
+               "Please install Harbour from:" + Chr(10) + ;
+               "https://harbour.github.io/" + Chr(10) + ;
+               Chr(10) + ;
+               "Expected path: c:\harbour" + Chr(10) + ;
+               Chr(10) + ;
+               "After installation, restart HbBuilder.", ;
+               "Harbour Not Found" )
+   endif
+
+   if ! File( "c:\bcc77c\bin\bcc32.exe" )
+      MsgInfo( "C Compiler (BCC) not found!" + Chr(10) + ;
+               Chr(10) + ;
+               "HbBuilder requires Embarcadero BCC to link projects." + Chr(10) + ;
+               Chr(10) + ;
+               "Expected path: c:\bcc77c" + Chr(10) + ;
+               Chr(10) + ;
+               "Download from: www.embarcadero.com", ;
+               "Compiler Not Found" )
+   endif
+
 return nil
 
 // === Helpers ===
