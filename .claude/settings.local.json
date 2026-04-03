@@ -69,7 +69,8 @@
       "Bash(sed:*)",
       "Bash(grep -v \"^$\"o tan)",
       "Bash(echo \"EXIT: $?\")",
-      "Bash(powershell -ExecutionPolicy Bypass -File c:\\\\HarbourBuilder\\\\screenshot.ps1)"
+      "Bash(powershell -ExecutionPolicy Bypass -File c:\\\\HarbourBuilder\\\\screenshot.ps1)",
+      "Bash(tasklist)"
     ]
   }
 }

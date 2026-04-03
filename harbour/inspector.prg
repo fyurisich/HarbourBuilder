@@ -175,6 +175,15 @@ static LRESULT CALLBACK InsBtnProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 static LRESULT CALLBACK InsEditProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
    INSDATA * d = (INSDATA *) GetPropA( hWnd, "InsData" );
+
+   /* Log ALL messages to trace file for debugging */
+   if( msg == WM_KEYDOWN || msg == WM_KILLFOCUS || msg == WM_COMMAND || msg == WM_DESTROY )
+   {
+      FILE * f = fopen("c:\\HarbourBuilder\\inspector_trace.log","a");
+      if(f) { fprintf(f,"InsEditProc: msg=0x%04X wParam=%d d=%p oldProc=%p hWnd=%p hEdit=%p\n",
+         msg,(int)wParam,d,d?d->oldEditProc:0,hWnd,d?d->hEdit:0); fclose(f); }
+   }
+
    if( !d || !d->oldEditProc ) return DefWindowProc( hWnd, msg, wParam, lParam );
 
    /* Guard: if our edit was already destroyed, don't process */
@@ -331,6 +340,9 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             NMITEMACTIVATE * pa = (NMITEMACTIVATE *) lParam;
             int nLV = pa->iItem;
             int nReal;
+            { FILE*f=fopen("c:\\HarbourBuilder\\inspector_trace.log","a");
+              if(f){fprintf(f,"NM_CLICK: iItem=%d iSubItem=%d d=%p nVisible=%d\n",
+                nLV,pa->iSubItem,d,d?d->nVisible:0);fclose(f);} }
             if( !d || nLV < 0 || nLV >= d->nVisible ) return 0;
             nReal = d->map[nLV];
 
@@ -588,12 +600,18 @@ static void InsStartEdit( INSDATA * d, int nLVRow )
    int nReal, nBtnW;
    ENUMDEF * pEnum;
 
+   { FILE*f=fopen("c:\\HarbourBuilder\\inspector_trace.log","a");
+     if(f){fprintf(f,"InsStartEdit: nLVRow=%d d=%p\n",nLVRow,d);fclose(f);} }
+
    if( !d ) return;
    if( d->hEdit ) InsEndEdit( d, FALSE );
    if( nLVRow < 0 || nLVRow >= d->nVisible ) return;
    nReal = d->map[nLVRow];
    if( nReal < 0 || nReal >= d->nRows ) return;
    if( d->rows[nReal].bIsCat ) return;  /* don't edit category rows */
+
+   { FILE*f=fopen("c:\\HarbourBuilder\\inspector_trace.log","a");
+     if(f){fprintf(f,"  nReal=%d name='%s' type='%c'\n",nReal,d->rows[nReal].szName,d->rows[nReal].cType);fclose(f);} }
    d->nEditRow = nLVRow;
    ListView_GetSubItemRect( d->hList, nLVRow, 1, LVIR_LABEL, &rc );
 
@@ -680,12 +698,15 @@ static void InsEndEdit( INSDATA * d, BOOL bApply )
          lstrcpynA( d->rows[nReal].szValue, szVal, sizeof(d->rows[0].szValue) );
          InsApplyValue( d, nReal, szVal );
       }
+      InsLog( "  -> calling InsRebuild" );
       InsRebuild( d );
+      InsLog( "  -> InsRebuild done" );
    }
-   if( d->hBtn ) { DestroyWindow( d->hBtn ); d->hBtn = NULL; }
-   DestroyWindow( d->hEdit );
-   d->hEdit = NULL;
-   d->nEditRow = -1;
+   InsLog( "  -> destroying edit control" );
+   if( d->hBtn ) { HWND hb = d->hBtn; d->hBtn = NULL; DestroyWindow( hb ); }
+   if( d->hEdit ) { HWND he = d->hEdit; d->hEdit = NULL; d->nEditRow = -1; DestroyWindow( he ); }
+   else d->nEditRow = -1;
+   InsLog( "InsEndEdit done" );
 }
 
 static void InsApplyValue( INSDATA * d, int nReal, const char * szVal )
@@ -721,11 +742,17 @@ static void InsApplyValue( INSDATA * d, int nReal, const char * szVal )
    /* Notify IDE that a property changed */
    if( d->pOnPropChanged && HB_IS_BLOCK( d->pOnPropChanged ) )
    {
-      InsLog( "  -> firing pOnPropChanged" );
-      hb_vmPush( d->pOnPropChanged );
-      hb_vmPushNil();
-      hb_vmDo( 0 );
+      InsLog( "  -> firing pOnPropChanged (with reenter)" );
+      if( hb_vmRequestReenter() )
+      {
+         hb_vmPushEvalSym();
+         hb_vmPush( d->pOnPropChanged );
+         hb_vmSend( 0 );
+         hb_vmRequestRestore();
+      }
+      InsLog( "  -> pOnPropChanged returned OK" );
    }
+   InsLog( "InsApplyValue done" );
 }
 
 static void InsPopulate( INSDATA * d )
