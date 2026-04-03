@@ -235,7 +235,9 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
             {
                int ctrlType = FPalette->FTabs[nTab].btns[btnIdx].nControlType;
                { FILE*f=fopen("c:\\HarbourBuilder\\palette_trace.log","a");
-                 if(f){fprintf(f,"  -> ctrlType=%d, setting PendingControlType\n",ctrlType);fclose(f);} }
+                 if(f){fprintf(f,"  -> ctrlType=%d name='%s' tooltip='%s', setting PendingControlType\n",
+                   ctrlType, FPalette->FTabs[nTab].btns[btnIdx].szText,
+                   FPalette->FTabs[nTab].btns[btnIdx].szTooltip);fclose(f);} }
 
                /* Fire FOnSelect callback with the control type */
                if( FPalette->FOnSelect && HB_IS_BLOCK( FPalette->FOnSelect ) )
