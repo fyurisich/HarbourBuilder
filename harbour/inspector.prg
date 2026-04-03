@@ -472,15 +472,72 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
    return DefWindowProc( hWnd, msg, wParam, lParam );
 }
 
+/* Enum definitions for dropdown properties */
+typedef struct { const char * szPropName; const char ** aValues; int nCount; } ENUMDEF;
+
+static const char * s_borderStyle[] = { "bsSizeable", "bsSingle", "bsNone", "bsToolWindow" };
+static const char * s_position[]    = { "poDesigned", "poCenter", "poCenterScreen" };
+static const char * s_windowState[] = { "wsNormal", "wsMinimized", "wsMaximized" };
+static const char * s_formStyle[]   = { "fsNormal", "fsStayOnTop" };
+static const char * s_cursor[]      = { "crDefault", "crArrow", "crCross", "crIBeam", "crHand",
+                                        "crHelp", "crNo", "crWait", "crSizeAll" };
+static const char * s_bevelStyle[]  = { "bsLowered", "bsRaised" };
+static const char * s_alignment[]   = { "taLeftJustify", "taCenter", "taRightJustify" };
+static const char * s_scrollBars[]  = { "ssNone", "ssVertical", "ssHorizontal", "ssBoth" };
+
+static ENUMDEF s_enums[] = {
+   { "nBorderStyle",  s_borderStyle,  4 },
+   { "nPosition",     s_position,     3 },
+   { "nWindowState",  s_windowState,  3 },
+   { "nFormStyle",    s_formStyle,    2 },
+   { "nCursor",       s_cursor,       9 },
+   { "nBevelStyle",   s_bevelStyle,   2 },
+   { "nAlignment",    s_alignment,    3 },
+   { "nScrollBars",   s_scrollBars,   4 },
+   { NULL, NULL, 0 }
+};
+
+static ENUMDEF * InsGetEnum( const char * szName )
+{
+   int i;
+   for( i = 0; s_enums[i].szPropName; i++ )
+      if( lstrcmpiA( szName, s_enums[i].szPropName ) == 0 )
+         return &s_enums[i];
+   return NULL;
+}
+
 static void InsStartEdit( INSDATA * d, int nLVRow )
 {
    RECT rc;
    int nReal, nBtnW;
+   ENUMDEF * pEnum;
+
    if( d->hEdit ) InsEndEdit( d, FALSE );
    if( nLVRow < 0 || nLVRow >= d->nVisible ) return;
    nReal = d->map[nLVRow];
    d->nEditRow = nLVRow;
    ListView_GetSubItemRect( d->hList, nLVRow, 1, LVIR_LABEL, &rc );
+
+   /* Check if this property should be an enum dropdown */
+   pEnum = InsGetEnum( d->rows[nReal].szName );
+   if( pEnum )
+   {
+      int i, nSel;
+      d->hEdit = CreateWindowExA( 0, "COMBOBOX", NULL,
+         WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL,
+         rc.left, rc.top - 2, rc.right - rc.left, 200,
+         d->hList, NULL, GetModuleHandle(NULL), NULL );
+      SendMessage( d->hEdit, WM_SETFONT, (WPARAM) d->hFont, TRUE );
+      for( i = 0; i < pEnum->nCount; i++ )
+         SendMessageA( d->hEdit, CB_ADDSTRING, 0, (LPARAM) pEnum->aValues[i] );
+      nSel = atoi( d->rows[nReal].szValue );
+      if( nSel >= 0 && nSel < pEnum->nCount )
+         SendMessage( d->hEdit, CB_SETCURSEL, nSel, 0 );
+      SetFocus( d->hEdit );
+      SetPropA( d->hEdit, "InsData", (HANDLE) d );
+      d->oldEditProc = (WNDPROC) SetWindowLongPtr( d->hEdit, GWLP_WNDPROC, (LONG_PTR) InsEditProc );
+      return;
+   }
 
    nBtnW = ( d->rows[nReal].cType == 'C' || d->rows[nReal].cType == 'F' ) ? 22 : 0;
 
@@ -515,9 +572,23 @@ static void InsEndEdit( INSDATA * d, BOOL bApply )
    nReal = d->map[d->nEditRow];
    if( bApply )
    {
-      GetWindowTextA( d->hEdit, szVal, sizeof(szVal) );
-      lstrcpynA( d->rows[nReal].szValue, szVal, sizeof(d->rows[0].szValue) );
-      InsApplyValue( d, nReal, szVal );
+      ENUMDEF * pEnum = InsGetEnum( d->rows[nReal].szName );
+      if( pEnum )
+      {
+         /* Enum dropdown: get selected index as the numeric value */
+         int nSel = (int) SendMessage( d->hEdit, CB_GETCURSEL, 0, 0 );
+         if( nSel >= 0 ) {
+            sprintf( szVal, "%d", nSel );
+            lstrcpynA( d->rows[nReal].szValue, szVal, sizeof(d->rows[0].szValue) );
+            InsApplyValue( d, nReal, szVal );
+         }
+      }
+      else
+      {
+         GetWindowTextA( d->hEdit, szVal, sizeof(szVal) );
+         lstrcpynA( d->rows[nReal].szValue, szVal, sizeof(d->rows[0].szValue) );
+         InsApplyValue( d, nReal, szVal );
+      }
       InsRebuild( d );
    }
    if( d->hBtn ) { DestroyWindow( d->hBtn ); d->hBtn = NULL; }
