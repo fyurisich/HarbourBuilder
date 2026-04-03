@@ -727,12 +727,12 @@ static function OnComponentDrop( hForm, nType, nL, nT, nW, nH )
 
    // Initialize counters on first call (indexed by control type)
    if aCnt == nil
-      aCnt := Array( 50 )
+      aCnt := Array( 120 )
       AFill( aCnt, 0 )
    endif
 
    // Auto-name the new control (C++Builder style: Button1, Button2...)
-   if nType < 1 .or. nType > 45; return nil; endif
+   if nType < 1 .or. nType > 119; return nil; endif
    aCnt[ nType ]++
 
    do case

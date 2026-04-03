@@ -846,6 +846,8 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                   FSelected[i]->FHandle = NULL;
                }
                ClearSelection();
+               /* Sync code after delete */
+               FireEvent( FOnResize );
                return 0;
             }
 
