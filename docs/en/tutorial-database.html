@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial: Database CRUD - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a class="logo" href="index.html">
+    <span>HB</span> HarbourBuilder Docs
+  </a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (7)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html" class="active">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span> Tutorials <span>/</span> Database CRUD
+</div>
+
+<h1>Tutorial: Database CRUD</h1>
+<p>This tutorial walks you through building a complete database application with Create, Read, Update,
+and Delete operations using SQLite. You will connect to a database, display records in a TBrowse
+grid, and navigate them with TDBNavigator.</p>
+
+<h2>Step 1: Create the Project</h2>
+<ol>
+  <li>Create a new project called <code>ContactsDB</code> via <strong>File &rarr; New Project</strong>.</li>
+  <li>Open <code>main.prg</code> in the Code Editor.</li>
+  <li>We will build a contacts manager with name, email, and phone fields.</li>
+</ol>
+
+<h2>Step 2: Connect to SQLite</h2>
+<p>Drop a <strong>TSQLite</strong> component from the <strong>Data Access</strong> palette tab onto the form, or create
+it in code. HarbourBuilder's SQLite component handles the connection and query execution.</p>
+
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oDB, oForm
+
+   <span class="cm">// Open (or create) the SQLite database file</span>
+   <span class="cmd">DEFINE SQLITE</span> oDB <span class="cmd">FILE</span> <span class="st">"contacts.db"</span>
+
+   <span class="kw">if</span> .not. oDB:<span class="fn">lConnected</span>
+      MsgAlert( <span class="st">"Failed to open database: "</span> + oDB:<span class="fn">cError</span> )
+      <span class="kw">return</span> <span class="kw">nil</span>
+   <span class="kw">endif</span>
+
+   <span class="fn">CreateTable</span>( oDB )
+   <span class="fn">BuildUI</span>( oDB )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<div class="info-box tip">
+  <strong>SQLite requires no server</strong>
+  <p>SQLite stores the entire database in a single file. This makes it perfect for desktop
+  applications &mdash; no installation, no configuration, and it works on all platforms.</p>
+</div>
+
+<h2>Step 3: Create the Table</h2>
+<p>Use <code>Execute()</code> to run a <code>CREATE TABLE IF NOT EXISTS</code> statement. This is safe to call
+every time the application starts.</p>
+
+<pre><span class="kw">static function</span> <span class="fn">CreateTable</span>( oDB )
+
+   oDB:<span class="fn">Execute</span>( <span class="st">"CREATE TABLE IF NOT EXISTS contacts ("</span> + ;
+      <span class="st">"id INTEGER PRIMARY KEY AUTOINCREMENT,"</span> + ;
+      <span class="st">"name TEXT NOT NULL,"</span> + ;
+      <span class="st">"email TEXT,"</span> + ;
+      <span class="st">"phone TEXT"</span> + ;
+      <span class="st">")"</span> )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Step 4: Build the User Interface</h2>
+<p>The UI consists of a TBrowse grid to display records, input fields for editing, a TDBNavigator
+for record navigation, and CRUD buttons.</p>
+
+<pre><span class="kw">static function</span> <span class="fn">BuildUI</span>( oDB )
+
+   <span class="kw">local</span> oForm, oBrw, oNav
+   <span class="kw">local</span> oGetName, oGetEmail, oGetPhone
+   <span class="kw">local</span> oBtnAdd, oBtnUpdate, oBtnDelete
+   <span class="kw">local</span> cName := <span class="st">""</span>, cEmail := <span class="st">""</span>, cPhone := <span class="st">""</span>
+
+   <span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Contacts Manager"</span> ;
+      <span class="cmd">SIZE</span> <span class="nb">800</span>, <span class="nb">600</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+   <span class="cm">// --- Data grid ---</span>
+   @ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">BROWSE</span> oBrw ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">760</span>, <span class="nb">300</span> ;
+      <span class="cmd">HEADERS</span> { <span class="st">"ID"</span>, <span class="st">"Name"</span>, <span class="st">"Email"</span>, <span class="st">"Phone"</span> } ;
+      <span class="cmd">WIDTHS</span>  { <span class="nb">50</span>, <span class="nb">200</span>, <span class="nb">250</span>, <span class="nb">150</span> }
+
+   <span class="cm">// --- Navigator bar ---</span>
+   @ <span class="nb">320</span>, <span class="nb">10</span> <span class="cmd">DBNAVIGATOR</span> oNav ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">300</span>, <span class="nb">32</span> ;
+      <span class="cmd">BROWSE</span> oBrw
+
+   <span class="cm">// --- Input fields ---</span>
+   @ <span class="nb">370</span>, <span class="nb">10</span> <span class="cmd">LABEL</span> oLbl1 <span class="cmd">VALUE</span> <span class="st">"Name:"</span>   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">60</span>, <span class="nb">24</span>
+   @ <span class="nb">370</span>, <span class="nb">80</span> <span class="cmd">GET</span> oGetName <span class="cmd">VAR</span> cName     <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">250</span>, <span class="nb">24</span>
+
+   @ <span class="nb">400</span>, <span class="nb">10</span> <span class="cmd">LABEL</span> oLbl2 <span class="cmd">VALUE</span> <span class="st">"Email:"</span>  <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">60</span>, <span class="nb">24</span>
+   @ <span class="nb">400</span>, <span class="nb">80</span> <span class="cmd">GET</span> oGetEmail <span class="cmd">VAR</span> cEmail   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">250</span>, <span class="nb">24</span>
+
+   @ <span class="nb">430</span>, <span class="nb">10</span> <span class="cmd">LABEL</span> oLbl3 <span class="cmd">VALUE</span> <span class="st">"Phone:"</span>  <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">60</span>, <span class="nb">24</span>
+   @ <span class="nb">430</span>, <span class="nb">80</span> <span class="cmd">GET</span> oGetPhone <span class="cmd">VAR</span> cPhone   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">250</span>, <span class="nb">24</span>
+
+   <span class="cm">// --- CRUD buttons ---</span>
+   @ <span class="nb">480</span>, <span class="nb">80</span> <span class="cmd">BUTTON</span> oBtnAdd <span class="cmd">PROMPT</span> <span class="st">"Add"</span> ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">90</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> <span class="fn">DoInsert</span>( oDB, oBrw, oGetName, oGetEmail, oGetPhone )
+
+   @ <span class="nb">480</span>, <span class="nb">180</span> <span class="cmd">BUTTON</span> oBtnUpdate <span class="cmd">PROMPT</span> <span class="st">"Update"</span> ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">90</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> <span class="fn">DoUpdate</span>( oDB, oBrw, oGetName, oGetEmail, oGetPhone )
+
+   @ <span class="nb">480</span>, <span class="nb">280</span> <span class="cmd">BUTTON</span> oBtnDelete <span class="cmd">PROMPT</span> <span class="st">"Delete"</span> ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">90</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> <span class="fn">DoDelete</span>( oDB, oBrw )
+
+   <span class="cm">// Load initial data</span>
+   <span class="fn">RefreshBrowse</span>( oDB, oBrw )
+
+   <span class="cm">// When user clicks a row, populate the input fields</span>
+   oBrw:<span class="fn">OnClick</span> := { || <span class="fn">OnRowSelect</span>( oBrw, oGetName, oGetEmail, oGetPhone ) }
+
+   <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Step 5: Implement CRUD Operations</h2>
+
+<h3>INSERT &mdash; Adding a New Record</h3>
+<pre><span class="kw">static function</span> <span class="fn">DoInsert</span>( oDB, oBrw, oGetName, oGetEmail, oGetPhone )
+
+   <span class="kw">local</span> cName  := oGetName:<span class="fn">GetValue</span>()
+   <span class="kw">local</span> cEmail := oGetEmail:<span class="fn">GetValue</span>()
+   <span class="kw">local</span> cPhone := oGetPhone:<span class="fn">GetValue</span>()
+
+   <span class="kw">if</span> Empty( cName )
+      MsgAlert( <span class="st">"Name is required."</span> )
+      <span class="kw">return</span> <span class="kw">nil</span>
+   <span class="kw">endif</span>
+
+   oDB:<span class="fn">Execute</span>( <span class="st">"INSERT INTO contacts (name, email, phone) VALUES (?, ?, ?)"</span>, ;
+      { cName, cEmail, cPhone } )
+
+   <span class="fn">RefreshBrowse</span>( oDB, oBrw )
+   MsgInfo( <span class="st">"Contact added."</span> )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>SELECT &mdash; Refreshing the Grid</h3>
+<pre><span class="kw">static function</span> <span class="fn">RefreshBrowse</span>( oDB, oBrw )
+
+   <span class="kw">local</span> aRows := oDB:<span class="fn">QueryToArray</span>( <span class="st">"SELECT id, name, email, phone FROM contacts ORDER BY name"</span> )
+
+   oBrw:<span class="fn">SetArray</span>( aRows )
+   oBrw:<span class="fn">Refresh</span>()
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>UPDATE &mdash; Modifying the Selected Record</h3>
+<pre><span class="kw">static function</span> <span class="fn">DoUpdate</span>( oDB, oBrw, oGetName, oGetEmail, oGetPhone )
+
+   <span class="kw">local</span> nId    := oBrw:<span class="fn">GetValue</span>( <span class="nb">1</span> )  <span class="cm">// Column 1 = id</span>
+   <span class="kw">local</span> cName  := oGetName:<span class="fn">GetValue</span>()
+   <span class="kw">local</span> cEmail := oGetEmail:<span class="fn">GetValue</span>()
+   <span class="kw">local</span> cPhone := oGetPhone:<span class="fn">GetValue</span>()
+
+   <span class="kw">if</span> nId == <span class="nb">0</span>
+      MsgAlert( <span class="st">"Select a contact first."</span> )
+      <span class="kw">return</span> <span class="kw">nil</span>
+   <span class="kw">endif</span>
+
+   oDB:<span class="fn">Execute</span>( <span class="st">"UPDATE contacts SET name=?, email=?, phone=? WHERE id=?"</span>, ;
+      { cName, cEmail, cPhone, nId } )
+
+   <span class="fn">RefreshBrowse</span>( oDB, oBrw )
+   MsgInfo( <span class="st">"Contact updated."</span> )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>DELETE &mdash; Removing the Selected Record</h3>
+<pre><span class="kw">static function</span> <span class="fn">DoDelete</span>( oDB, oBrw )
+
+   <span class="kw">local</span> nId := oBrw:<span class="fn">GetValue</span>( <span class="nb">1</span> )
+
+   <span class="kw">if</span> nId == <span class="nb">0</span>
+      MsgAlert( <span class="st">"Select a contact first."</span> )
+      <span class="kw">return</span> <span class="kw">nil</span>
+   <span class="kw">endif</span>
+
+   <span class="kw">if</span> MsgYesNo( <span class="st">"Delete this contact?"</span> )
+      oDB:<span class="fn">Execute</span>( <span class="st">"DELETE FROM contacts WHERE id=?"</span>, { nId } )
+      <span class="fn">RefreshBrowse</span>( oDB, oBrw )
+      MsgInfo( <span class="st">"Contact deleted."</span> )
+   <span class="kw">endif</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Row Selection &mdash; Populating Input Fields</h3>
+<pre><span class="kw">static function</span> <span class="fn">OnRowSelect</span>( oBrw, oGetName, oGetEmail, oGetPhone )
+
+   oGetName:<span class="fn">SetValue</span>(  oBrw:<span class="fn">GetValue</span>( <span class="nb">2</span> ) )
+   oGetEmail:<span class="fn">SetValue</span>( oBrw:<span class="fn">GetValue</span>( <span class="nb">3</span> ) )
+   oGetPhone:<span class="fn">SetValue</span>( oBrw:<span class="fn">GetValue</span>( <span class="nb">4</span> ) )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Step 6: Using TDBNavigator</h2>
+<p>The <strong>TDBNavigator</strong> control provides standard navigation buttons (First, Previous, Next, Last)
+that work directly with the TBrowse grid. Drop it from the <strong>Data Access</strong> palette and set its
+<code>oBrowse</code> property to your TBrowse instance.</p>
+
+<!-- Screenshot placeholder: Running ContactsDB application with grid showing records, navigator bar, and input fields -->
+
+<div class="info-box tip">
+  <strong>Parameterized queries prevent SQL injection</strong>
+  <p>Always use <code>?</code> placeholders and pass values as an array. Never concatenate user input
+  directly into SQL strings. HarbourBuilder's SQLite component handles escaping automatically.</p>
+</div>
+
+<h2>Application Architecture</h2>
+
+<div class="mermaid">
+graph TD
+    A["UI Layer<br/>TForm + TBrowse + TGet"] --> B["Event Handlers<br/>DoInsert / DoUpdate / DoDelete"]
+    B --> C["Data Layer<br/>TSQLite Component"]
+    C --> D["SQLite File<br/>contacts.db"]
+    D --> C
+    C --> B
+    B --> E["RefreshBrowse<br/>QueryToArray + SetArray"]
+    E --> A
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style C fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style D fill:#f0883e,stroke:#d18616,color:#0d1117
+</div>
+
+<div class="info-box tip">
+  <strong>Next step</strong>
+  <p>Ready to serve data over HTTP? Continue to the <a href="tutorial-webserver.html">Web Server</a>
+  tutorial to build a web application alongside your desktop app.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>
