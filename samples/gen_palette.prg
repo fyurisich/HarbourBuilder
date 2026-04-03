@@ -123,15 +123,21 @@ HB_FUNC( GENPALETTEICONS )
    bf.bfSize = sizeof(bf) + sizeof(bi) + dataSize;
    bf.bfOffBits = sizeof(bf) + sizeof(bi);
 
-   fp = fopen("c:\\HarbourBuilder\\resources\\palette_new.bmp","wb");
-   if(fp) {
-      fwrite(&bf,sizeof(bf),1,fp);
-      fwrite(&bi,sizeof(bi),1,fp);
-      fwrite(pBits,dataSize,1,fp);
-      fclose(fp);
-      MessageBoxA(NULL,"palette_new.bmp generated!\n109 icons, 32x32 each.\n\nRename to palette.bmp to use.","Done",MB_OK);
-   } else {
-      MessageBoxA(NULL,"Error creating file!","Error",MB_OK);
+   { char szPath[MAX_PATH];
+     GetModuleFileNameA(NULL, szPath, MAX_PATH);
+     { char * p = strrchr(szPath, '\\'); if(p) *p = 0; }
+     lstrcatA(szPath, "\\palette_new.bmp");
+     fp = fopen(szPath,"wb");
+     if(fp) {
+        fwrite(&bf,sizeof(bf),1,fp);
+        fwrite(&bi,sizeof(bi),1,fp);
+        fwrite(pBits,dataSize,1,fp);
+        fclose(fp);
+        { char msg[300]; sprintf(msg, "Generated: %s\n109 icons, 32x32", szPath);
+          MessageBoxA(NULL, msg, "Palette Icons", MB_OK|MB_ICONINFORMATION); }
+     } else {
+        MessageBoxA(NULL,"Error creating file!","Error",MB_OK|MB_ICONERROR);
+     }
    }
 
    SelectObject(hMemDC,hOldBmp); DeleteObject(hBmp);
