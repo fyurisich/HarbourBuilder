@@ -1185,6 +1185,21 @@ const PROPDESC * TBrowse::GetPropDescs( int * pnCount )
  * TComponentPalette
  * ====================================================================== */
 
+/* Subclass TabControl to forward WM_COMMAND (button clicks) to the form */
+static WNDPROC s_oldTabProc = NULL;
+
+static LRESULT CALLBACK PaletteTabSubProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+   if( msg == WM_COMMAND )
+   {
+      /* Forward button clicks to the form (grandparent) */
+      HWND hForm = GetParent( hWnd );
+      if( hForm )
+         return SendMessage( hForm, WM_COMMAND, wParam, lParam );
+   }
+   return CallWindowProc( s_oldTabProc, hWnd, msg, wParam, lParam );
+}
+
 TComponentPalette::TComponentPalette()
 {
    lstrcpy( FClassName, "TComponentPalette" );
@@ -1242,6 +1257,9 @@ void TComponentPalette::CreateHandle( HWND hParent )
 
    if( !FTabCtrl ) return;
    FHandle = FTabCtrl;
+
+   /* Subclass TabControl to forward button WM_COMMAND to the form */
+   s_oldTabProc = (WNDPROC) SetWindowLongPtr( FTabCtrl, GWLP_WNDPROC, (LONG_PTR) PaletteTabSubProc );
 
    /* Apply the exact same font as the toolbar for visual consistency */
    if( pForm && pForm->FToolBar && pForm->FToolBar->FHandle )
