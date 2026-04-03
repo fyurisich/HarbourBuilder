@@ -774,6 +774,9 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                      /* Select the new control */
                      SelectControl( newCtrl, FALSE );
 
+                     /* Subclass the new control so clicks go to the form in design mode */
+                     SubclassChildren();
+
                      /* Fire OnComponentDrop callback */
                      if( FOnComponentDrop && HB_IS_BLOCK( FOnComponentDrop ) )
                      {
