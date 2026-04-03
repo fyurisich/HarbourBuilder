@@ -510,11 +510,23 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
             else
             {
                ClearSelection();
-               /* Start rubber band selection */
-               FRubberBand = TRUE;
-               FRubberX1 = FRubberX2 = mx;
-               FRubberY1 = FRubberY2 = my;
-               SetCapture( FHandle );
+
+               /* If a palette component is pending, start rubber band for drop */
+               if( FPendingControlType >= 0 )
+               {
+                  FRubberBand = TRUE;
+                  FRubberX1 = FRubberX2 = mx;
+                  FRubberY1 = FRubberY2 = my;
+                  SetCapture( FHandle );
+               }
+               else
+               {
+                  /* Start rubber band selection */
+                  FRubberBand = TRUE;
+                  FRubberX1 = FRubberX2 = mx;
+                  FRubberY1 = FRubberY2 = my;
+                  SetCapture( FHandle );
+               }
             }
             return 0;
          }
@@ -674,6 +686,70 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
 
             /* Clear old rubber band from screen */
             InvalidateRect( FHandle, NULL, TRUE );
+
+            /* Component drop from palette */
+            if( FPendingControlType >= 0 )
+            {
+               int ctrlType = FPendingControlType;
+               int rw = rx2 - rx1, rh = ry2 - ry1;
+               FPendingControlType = -1;
+               SetCursor( LoadCursor(NULL, IDC_ARROW) );
+
+               /* Enforce minimum size */
+               if( rw < 20 ) rw = 80;
+               if( rh < 10 ) rh = 24;
+               /* Snap to 8-pixel grid */
+               rx1 = (rx1 / 8) * 8;
+               ry1 = (ry1 / 8) * 8;
+
+               /* Create the control via factory */
+               {
+                  TControl * newCtrl = CreateControlByType( (BYTE) ctrlType );
+                  if( newCtrl )
+                  {
+                     newCtrl->FLeft = rx1;
+                     newCtrl->FTop = ry1;
+                     newCtrl->FWidth = rw;
+                     newCtrl->FHeight = rh;
+                     newCtrl->FFont = FFormFont;
+                     AddChild( newCtrl );
+
+                     /* Create the Win32 control */
+                     if( FHandle )
+                     {
+                        DWORD dwStyle, dwExStyle;
+                        const char * szClass;
+                        newCtrl->CreateParams( &dwStyle, &dwExStyle, &szClass );
+                        newCtrl->FHandle = CreateWindowExA( dwExStyle, szClass,
+                           newCtrl->FText, dwStyle,
+                           newCtrl->FLeft, newCtrl->FTop + FClientTop,
+                           newCtrl->FWidth, newCtrl->FHeight,
+                           FHandle, NULL, GetModuleHandle(NULL), NULL );
+                        if( newCtrl->FHandle && newCtrl->FFont )
+                           SendMessage( newCtrl->FHandle, WM_SETFONT,
+                              (WPARAM) newCtrl->FFont, TRUE );
+                     }
+
+                     /* Select the new control */
+                     SelectControl( newCtrl, FALSE );
+
+                     /* Fire OnComponentDrop callback */
+                     if( FOnComponentDrop && HB_IS_BLOCK( FOnComponentDrop ) )
+                     {
+                        hb_vmPushEvalSym();
+                        hb_vmPush( FOnComponentDrop );
+                        hb_vmPushNumInt( (HB_PTRUINT) this );
+                        hb_vmPushInteger( ctrlType );
+                        hb_vmPushInteger( rx1 );
+                        hb_vmPushInteger( ry1 );
+                        hb_vmPushInteger( rw );
+                        hb_vmPushInteger( rh );
+                        hb_vmSend( 6 );
+                     }
+                  }
+               }
+               return 0;
+            }
 
             /* Select all controls that intersect */
             ClearSelection();
