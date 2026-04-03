@@ -580,26 +580,23 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
          if( FDesignMode && FRubberBand )
          {
             int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam) - FClientTop;
-            HDC hDC = GetDC( FHandle );
-            HPEN hPen = CreatePen( PS_DOT, 1, RGB(0, 120, 215) );
-            HPEN hOld = (HPEN) SelectObject( hDC, hPen );
-            int oldRop = SetROP2( hDC, R2_XORPEN );
-
-            /* Erase old rectangle */
-            SelectObject( hDC, GetStockObject(NULL_BRUSH) );
-            if( FRubberX1 != FRubberX2 || FRubberY1 != FRubberY2 )
-               Rectangle( hDC, FRubberX1, FRubberY1, FRubberX2, FRubberY2 );
-
             FRubberX2 = mx;
             FRubberY2 = my;
 
-            /* Draw new rectangle */
-            Rectangle( hDC, FRubberX1, FRubberY1, FRubberX2, FRubberY2 );
+            /* Redraw form to show rubber band rectangle cleanly */
+            InvalidateRect( FHandle, NULL, TRUE );
+            UpdateWindow( FHandle );
 
-            SetROP2( hDC, oldRop );
-            SelectObject( hDC, hOld );
-            DeleteObject( hPen );
-            ReleaseDC( FHandle, hDC );
+            /* Draw rubber band on top */
+            { HDC hDC = GetDC( FHandle );
+              HPEN hPen = CreatePen( PS_DASH, 2, RGB(0, 120, 215) );
+              HPEN hOld = (HPEN) SelectObject( hDC, hPen );
+              SelectObject( hDC, GetStockObject(NULL_BRUSH) );
+              Rectangle( hDC, FRubberX1, FRubberY1 + FClientTop,
+                              FRubberX2, FRubberY2 + FClientTop );
+              SelectObject( hDC, hOld );
+              DeleteObject( hPen );
+              ReleaseDC( FHandle, hDC ); }
             return 0;
          }
 
