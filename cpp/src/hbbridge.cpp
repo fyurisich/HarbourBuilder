@@ -1853,6 +1853,20 @@ HB_FUNC( UI_ATOMICDECREMENT )
    hb_retnl( val );
 }
 
+/* UI_FormSetPending( hForm, nControlType ) - set pending control type for palette drop */
+HB_FUNC( UI_FORMSETPENDING )
+{
+   TForm * p = GetForm(1);
+   if( p )
+   {
+      p->FPendingControlType = hb_parni(2);
+      if( p->FPendingControlType >= 0 && p->FHandle )
+         SetCursor( LoadCursor(NULL, IDC_CROSS) );
+      else if( p->FHandle )
+         SetCursor( LoadCursor(NULL, IDC_ARROW) );
+   }
+}
+
 /* UI_SetDesignForm( hForm ) - set active design form (used by palette drop) */
 static TForm * s_designForm = NULL;
 

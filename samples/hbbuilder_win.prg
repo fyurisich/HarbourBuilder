@@ -2879,6 +2879,7 @@ static void HighlightCode( HWND hEdit )
    int nLen, i, ws;
    char * buf;
    CHARRANGE crSave;
+   int nKeywords = 0, nComments = 0, nStrings = 0, nCommands = 0;
 
    nLen = GetWindowTextLengthA( hEdit );
    if( nLen <= 0 ) return;
@@ -2902,6 +2903,7 @@ static void HighlightCode( HWND hEdit )
          int start = i;
          while( i < nLen && buf[i] != '\r' && buf[i] != '\n' ) i++;
          SetRichColor( hEdit, start, i, RGB(106,153,85), FALSE );
+         nComments++;
          continue;
       }
 
@@ -2925,6 +2927,7 @@ static void HighlightCode( HWND hEdit )
          while( i < nLen && buf[i] != q && buf[i] != '\r' && buf[i] != '\n' ) i++;
          if( i < nLen && buf[i] == q ) i++;
          SetRichColor( hEdit, start, i, RGB(206,145,120), FALSE );
+         nStrings++;
          continue;
       }
 
@@ -2954,13 +2957,22 @@ static void HighlightCode( HWND hEdit )
          ws = i;
          while( i < nLen && IsWordChar(buf[i]) ) i++;
          if( IsKeyword( buf + ws, i - ws ) )
-            SetRichColor( hEdit, ws, i, RGB(86,156,214), TRUE );
+         {  SetRichColor( hEdit, ws, i, RGB(86,156,214), TRUE ); nKeywords++; }
          else if( IsCommand( buf + ws, i - ws ) )
-            SetRichColor( hEdit, ws, i, RGB(78,201,176), FALSE );
+         {  SetRichColor( hEdit, ws, i, RGB(78,201,176), FALSE ); nCommands++; }
          continue;
       }
 
       i++;
+   }
+
+   /* Log trace to file */
+   { FILE * fLog = fopen( "c:\\HarbourBuilder\\syntax_trace.log", "a" );
+     if( fLog ) {
+        fprintf( fLog, "HighlightCode: len=%d keywords=%d commands=%d comments=%d strings=%d\n",
+           nLen, nKeywords, nCommands, nComments, nStrings );
+        fclose( fLog );
+     }
    }
 
    /* Restore selection and redraw */
@@ -3794,21 +3806,37 @@ HB_FUNC( CODEEDITORSETTABTEXT )
       ed->aTexts[nTab][nLen] = 0;
    }
 
-   /* If this is the active tab, update RichEdit */
+   /* If this is the active tab, update RichEdit - only if text changed */
    if( nTab == ed->nActiveTab && ed->hEdit )
    {
-      SetWindowTextA( ed->hEdit, ed->aTexts[nTab] );
+      /* Check if text actually changed to avoid unnecessary re-highlight */
+      int nCurLen = GetWindowTextLengthA( ed->hEdit );
+      int nNewLen = (int) hb_parclen(3);
+      BOOL bChanged = ( nCurLen != nNewLen );
 
-      /* Re-apply font formatting */
-      cf.cbSize = sizeof(cf);
-      cf.dwMask = CFM_FACE | CFM_SIZE | CFM_COLOR;
-      cf.yHeight = 15 * 20;
-      cf.crTextColor = RGB(212,212,212);
-      lstrcpyA( cf.szFaceName, "Consolas" );
-      SendMessageA( ed->hEdit, EM_SETCHARFORMAT, SCF_ALL, (LPARAM) &cf );
+      if( !bChanged && nCurLen > 0 )
+      {
+         char * cur = (char *) malloc( nCurLen + 1 );
+         GetWindowTextA( ed->hEdit, cur, nCurLen + 1 );
+         bChanged = ( memcmp( cur, hb_parc(3), nNewLen ) != 0 );
+         free( cur );
+      }
 
-      HighlightCode( ed->hEdit );
-      GutterSync( ed );
+      if( bChanged )
+      {
+         SetWindowTextA( ed->hEdit, ed->aTexts[nTab] );
+
+         /* Re-apply font formatting */
+         cf.cbSize = sizeof(cf);
+         cf.dwMask = CFM_FACE | CFM_SIZE | CFM_COLOR;
+         cf.yHeight = 15 * 20;
+         cf.crTextColor = RGB(212,212,212);
+         lstrcpyA( cf.szFaceName, "Consolas" );
+         SendMessageA( ed->hEdit, EM_SETCHARFORMAT, SCF_ALL, (LPARAM) &cf );
+
+         HighlightCode( ed->hEdit );
+         GutterSync( ed );
+      }
    }
 }
 
