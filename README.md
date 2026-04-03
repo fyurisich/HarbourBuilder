@@ -73,16 +73,19 @@ return nil
 - Color picker, font picker, inline editing
 - ComboBox selector for all form controls
 
-### 💻 Code Editor (VSCode-level)
-- Dark theme with syntax highlighting (keywords, commands, strings, comments, preprocessor)
+### 💻 Code Editor (Scintilla 5.6.1)
+- **Scintilla** editor component (same engine as Notepad++, SciTE, Code::Blocks)
+- VS Code Dark+ color theme with Harbour-aware syntax highlighting
+- Keywords (blue, bold), commands (teal), comments (green, italic), strings (orange), numbers (light green), preprocessor (magenta)
+- Built-in **line numbers**, **code folding**, and **indentation guides**
+- Harbour-aware folding: function/return, class/endclass, if/endif, for/next, do/enddo
 - **Ctrl+F** Find bar with match count, F3 next/prev
 - **Ctrl+H** Replace bar with Replace All
-- **Ctrl+Space** Auto-completion popup (Harbour keywords, 60+ functions, xBase commands)
+- **Ctrl+Space** Auto-completion (Harbour keywords, 60+ functions, xBase commands)
 - **Ctrl+/** Toggle line comment
-- **Ctrl+Shift+D** Duplicate line
-- **Ctrl+G** Go to line
+- **Ctrl+Shift+D** Duplicate line, **Ctrl+Shift+K** Delete line, **Ctrl+L** Select line
 - Tabbed editor (Project1.prg + Form tabs)
-- Line number gutter with synchronized scrolling
+- Status bar: Line, Column, INS/OVR, line count, char count, UTF-8
 
 ### 🤖 Built-in AI Assistant
 - **Ollama integration** — local AI, no API keys, fully private
@@ -113,10 +116,13 @@ return nil
 
 ## 📸 Screenshots
 
+### Windows (Scintilla editor + Object Inspector + Form Designer)
 ![Windows](images/windows_scintilla.png)
 
+### macOS (Cocoa/AppKit)
 ![macOS](images/macos_now.png)
 
+### Linux (GTK3)
 ![Linux](images/linux_now.png)
 
 ---
@@ -147,8 +153,7 @@ Application Code (.prg)
 
 ### Windows
 ```bash
-cd samples
-build_cpp.bat hbbuilder_win
+build_win.bat
 ```
 
 ### macOS
@@ -221,7 +226,7 @@ Professional HTML documentation with dark/light theme, Mermaid diagrams, and cod
 
 | Platform | Backend | Status |
 |----------|---------|--------|
-| **Windows** | Win32 API (C++) | ✅ Full IDE |
+| **Windows** | Win32 API (C++) + Scintilla | ✅ Full IDE |
 | **macOS** | Cocoa/AppKit (Objective-C) | ✅ Full IDE |
 | **Linux** | GTK3 (C) | ✅ Full IDE |
 | **Android** | NDK + JNI | 🔮 Planned |
@@ -249,16 +254,18 @@ HarbourBuilder/
 │   ├── hbbuilder_win.prg         # Windows IDE (full)
 │   ├── hbbuilder_macos.prg       # macOS IDE
 │   ├── hbbuilder_linux.prg       # Linux IDE
-│   ├── build_cpp.bat             # Windows build script
 │   └── projects/transformer/     # 7 AI examples
 ├── docs/
 │   ├── assets/css/docs.css       # DeepWiki-style theme
 │   ├── assets/js/docs.js         # Search, theme, copy code
 │   └── en/                       # 20 HTML pages
-└── resources/
-    ├── toolbar.bmp               # Toolbar icons
-    ├── palette.bmp               # Palette icons
-    └── harbour_logo.png          # About dialog logo
+├── resources/
+│   ├── Scintilla.dll             # Scintilla 5.6.1 (32-bit)
+│   ├── Lexilla.dll               # Lexilla 5.4.8 (32-bit)
+│   ├── lazarus_icons/            # Professional PNG icons
+│   └── harbour_logo.png          # About dialog logo
+├── build_win.bat                 # Windows build script
+└── ChangeLog.txt                 # Detailed changelog
 ```
 
 ---
