@@ -175,7 +175,10 @@ static LRESULT CALLBACK InsBtnProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
 static LRESULT CALLBACK InsEditProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
    INSDATA * d = (INSDATA *) GetPropA( hWnd, "InsData" );
-   if( !d ) return DefWindowProc( hWnd, msg, wParam, lParam );
+   if( !d || !d->oldEditProc ) return DefWindowProc( hWnd, msg, wParam, lParam );
+
+   /* Guard: if our edit was already destroyed, don't process */
+   if( d->hEdit != hWnd && !IsWindow(hWnd) ) return 0;
 
    if( msg == WM_KEYDOWN && wParam == VK_RETURN ) { InsEndEdit( d, TRUE ); return 0; }
    if( msg == WM_KEYDOWN && wParam == VK_ESCAPE ) { InsEndEdit( d, FALSE ); return 0; }
@@ -193,9 +196,12 @@ static LRESULT CALLBACK InsEditProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
       HWND hFocus = (HWND) wParam;
       /* Don't close if focus goes to our own button */
       if( d->hBtn && hFocus == d->hBtn ) return 0;
-      /* Don't close if focus goes to a ComboBox dropdown (child of desktop or combo itself) */
-      { char cls[32]; GetClassNameA(hFocus, cls, 32);
-        if( lstrcmpiA(cls, "ComboLBox") == 0 ) return 0; }
+      /* Don't close if focus goes to a ComboBox dropdown */
+      if( hFocus ) {
+         char cls[32] = {0};
+         GetClassNameA(hFocus, cls, 31);
+         if( lstrcmpiA(cls, "ComboLBox") == 0 ) return 0;
+      }
       InsEndEdit( d, TRUE );
       return 0;
    }

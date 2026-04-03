@@ -359,7 +359,7 @@ static function CreateDesignForm( nX, nY )
    cName := "Form" + LTrim( Str( nIdx ) )
 
    // Create new empty form (like C++Builder File > New > VCL Forms Application)
-   DEFINE FORM oDesignForm TITLE cName SIZE 400, 300 FONT "Segoe UI", 9
+   DEFINE FORM oDesignForm TITLE cName SIZE 400, 300 FONT "Segoe UI", 9 SIZABLE
    UI_FormSetPos( oDesignForm:hCpp, nX, nY )
 
    // Register in project form list
