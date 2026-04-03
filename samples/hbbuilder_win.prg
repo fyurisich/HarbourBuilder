@@ -65,7 +65,7 @@ function Main()
    // Inspector and editor: right below IDE window (3px overlap to close gap)
    nInsTop  := W32_GetWindowBottom( UI_FormGetHwnd( oIDE:hCpp ) ) - 3
    nEditorTop := nInsTop
-   nEditorX := nInsW - 3
+   nEditorX := nInsW - 5
    nEditorW := nScreenW - nEditorX
    // Both inspector and editor end at same bottom position
    nBottomY := nScreenH                        // no bottom margin
@@ -1001,7 +1001,7 @@ static function MenuNewForm()
    nInsW := Int( nScreenW * 0.18 )
    nInsTop := W32_GetWindowBottom( UI_FormGetHwnd( oIDE:hCpp ) ) - 3
    nEditorTop := nInsTop
-   nEditorX := nInsW - 3
+   nEditorX := nInsW - 5
    nEditorW := nScreenW - nEditorX
    nEditorH := nScreenH - nEditorTop
    nFormX := nEditorX + Int( ( nEditorW - 400 ) / 2 ) + Len(aForms) * 20
@@ -1075,7 +1075,7 @@ static function TBNew()
    nInsW := Int( nScreenW * 0.18 )
    nInsTop := W32_GetWindowBottom( UI_FormGetHwnd( oIDE:hCpp ) ) - 3
    nEditorTop := nInsTop
-   nEditorX := nInsW - 3
+   nEditorX := nInsW - 5
    nEditorW := nScreenW - nEditorX
    nEditorH := nScreenH - nEditorTop
    nFormX := nEditorX + Int( ( nEditorW - 400 ) / 2 )
@@ -1135,7 +1135,7 @@ static function TBOpen()
    nInsW := Int( nScreenW * 0.18 )
    nInsTop := W32_GetWindowBottom( UI_FormGetHwnd( oIDE:hCpp ) ) - 3
    nEditorTop := nInsTop
-   nEditorX := nInsW - 3
+   nEditorX := nInsW - 5
    nEditorW := nScreenW - nEditorX
    nEditorH := nScreenH - nEditorTop
 
