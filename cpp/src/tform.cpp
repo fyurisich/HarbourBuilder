@@ -383,6 +383,16 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
       case WM_MOVE:
       case WM_SIZE:
       {
+         /* Update FLeft/FTop/FWidth/FHeight from actual window position */
+         {
+            RECT rcWnd;
+            GetWindowRect( FHandle, &rcWnd );
+            FLeft = rcWnd.left;
+            FTop = rcWnd.top;
+            FWidth = rcWnd.right - rcWnd.left;
+            FHeight = rcWnd.bottom - rcWnd.top;
+         }
+
          /* Resize toolbar */
          if( FToolBar && FToolBar->FHandle )
          {
@@ -405,8 +415,8 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
             SendMessage( FStatusBar, WM_SIZE, 0, 0 );
          if( FDesignMode )
             UpdateOverlay();
-         if( !FDesignMode )
-            FireEvent( FOnResize );
+         /* Fire OnResize for both design and runtime mode */
+         FireEvent( FOnResize );
          break;
       }
 
