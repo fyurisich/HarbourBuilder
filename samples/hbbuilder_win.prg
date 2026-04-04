@@ -1421,10 +1421,26 @@ static function TBRun()
    local cCDir, cCC, cILink
    local cProjDir, cAllPrg, cCmd, cObjs
    local aCppFiles, cCppBase
+   local cAllCode, nHash, cHashFile, cOldHash
+   static nLastHash := 0
 
    SaveActiveFormCode()
 
    cBuildDir := "c:\hbbuilder_build"
+
+   // Quick check: if nothing changed since last successful build, just run
+   cAllCode := CodeEditorGetTabText( hCodeEditor, 1 )
+   for i := 1 to Len( aForms )
+      cAllCode += aForms[i][3]
+   next
+   nHash := Len( cAllCode )
+   for i := 1 to Min( Len( cAllCode ), 5000 )
+      nHash := nHash + Asc( SubStr( cAllCode, i, 1 ) ) * i
+   next
+   if nHash == nLastHash .and. nLastHash != 0 .and. File( cBuildDir + "\UserApp.exe" )
+      W32_ShellExec( 'cmd /c start "" "' + cBuildDir + '\UserApp.exe"' )
+      return nil
+   endif
    cHbDir   := "c:\harbour"
    cHbBin   := cHbDir + "\bin\win\bcc"
    cHbInc   := cHbDir + "\include"
@@ -1591,6 +1607,7 @@ static function TBRun()
       cLog += Chr(10) + "ERROR: UserApp.exe was not created." + Chr(10)
       W32_BuildErrorDialog( "Build Failed", cLog )
    else
+      nLastHash := nHash  // remember successful build hash
       W32_ShellExec( 'cmd /c start "" "' + cBuildDir + '\UserApp.exe"' )
    endif
 
