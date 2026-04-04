@@ -24,7 +24,7 @@ TForm::TForm()
    FFormFont = NULL;
    FClrPane = GetSysColor( COLOR_BTNFACE );
    FCenter = TRUE;
-   FSizable = FALSE;
+   FSizable = TRUE;   /* Default: resizable (like Delphi/C++Builder) */
    FAppBar = FALSE;
    FToolWindow = FALSE;
    FModalResult = 0;
@@ -1170,6 +1170,10 @@ void TForm::Run()
    MSG msg;
 
    FMainWindow = TRUE;
+
+   { FILE*f=fopen("c:\\HarbourBuilder\\run_trace.log","a");
+     if(f){fprintf(f,"Run: FWidth=%d FHeight=%d FLeft=%d FTop=%d FSizable=%d FCenter=%d\n",
+       FWidth, FHeight, FLeft, FTop, FSizable, FCenter);fclose(f);} }
 
    CreateHandle( NULL );
    CreateAllChildren();

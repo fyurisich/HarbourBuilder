@@ -648,14 +648,17 @@ static function RegenerateFormCode( cName, hForm )
    // Form properties (read from live form or use defaults)
    if hForm != 0
       cTitle := UI_GetProp( hForm, "cText" )
-      nFL    := UI_GetProp( hForm, "nLeft" )
-      nFT    := UI_GetProp( hForm, "nTop" )
       nW     := UI_GetProp( hForm, "nWidth" )
       nH     := UI_GetProp( hForm, "nHeight" )
       nClr   := UI_GetProp( hForm, "nClrPane" )
+      // Left/Top: design-time property (user's intended runtime position)
+      // Not the designer's screen position
+      nFL := 100
+      nFT := 100
+
    else
       cTitle := cName
-      nFL := 0; nFT := 0; nW := 400; nH := 300
+      nFL := 100; nFT := 100; nW := 400; nH := 300
       nClr   := 15790320  // 0x00F0F0F0
    endif
 
