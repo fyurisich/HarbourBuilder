@@ -230,8 +230,8 @@ oDb:Close()
 ### macOS (Cocoa/AppKit + Scintilla)
 ![macOS](images/macos_scintilla.png)
 
-### Linux (GTK3 + Scintilla)
-![Linux](images/linux_now.png)
+### Linux (GTK3 + Scintilla + Inspector + Form Designer)
+![Linux](images/linux_ide_full.png)
 
 ---
 
