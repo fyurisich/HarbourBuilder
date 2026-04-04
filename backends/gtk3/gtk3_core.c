@@ -3341,6 +3341,9 @@ typedef struct {
    GtkWidget *    findEntry;
    GtkWidget *    findLabel;
    GtkWidget *    replaceEntry;
+   GtkWidget *    replaceLbl;     /* "Replace:" label */
+   GtkWidget *    replaceBtn;     /* Replace button */
+   GtkWidget *    replaceAllBtn;  /* All button */
    int            bFindVisible;
    int            bReplaceVisible;
    /* Status bar */
@@ -3572,11 +3575,17 @@ static void CE_ShowFindBar( CODEEDITOR * ed, int bShow, int bReplace )
 
    if( bShow ) {
       gtk_widget_show( ed->findBar );
-      if( ed->replaceEntry ) {
-         if( bReplace )
-            gtk_widget_show( ed->replaceEntry );
-         else
-            gtk_widget_hide( ed->replaceEntry );
+      /* Show/hide all replace-related widgets together */
+      if( bReplace ) {
+         if( ed->replaceLbl )    gtk_widget_show( ed->replaceLbl );
+         if( ed->replaceEntry )  gtk_widget_show( ed->replaceEntry );
+         if( ed->replaceBtn )    gtk_widget_show( ed->replaceBtn );
+         if( ed->replaceAllBtn ) gtk_widget_show( ed->replaceAllBtn );
+      } else {
+         if( ed->replaceLbl )    gtk_widget_hide( ed->replaceLbl );
+         if( ed->replaceEntry )  gtk_widget_hide( ed->replaceEntry );
+         if( ed->replaceBtn )    gtk_widget_hide( ed->replaceBtn );
+         if( ed->replaceAllBtn ) gtk_widget_hide( ed->replaceAllBtn );
       }
       gtk_widget_grab_focus( ed->findEntry );
    } else {
@@ -3824,17 +3833,21 @@ HB_FUNC( CODEEDITORCREATE )
       ed->findLabel = gtk_label_new( "" );
       gtk_box_pack_start( GTK_BOX(findBox), ed->findLabel, FALSE, FALSE, 4 );
 
+      ed->replaceLbl = gtk_label_new( "Replace:" );
+      gtk_box_pack_start( GTK_BOX(findBox), ed->replaceLbl, FALSE, FALSE, 4 );
+
       ed->replaceEntry = gtk_entry_new();
       gtk_entry_set_width_chars( GTK_ENTRY(ed->replaceEntry), 25 );
       gtk_box_pack_start( GTK_BOX(findBox), ed->replaceEntry, FALSE, FALSE, 0 );
+      g_signal_connect( ed->replaceEntry, "key-press-event", G_CALLBACK(on_find_entry_key), ed );
 
-      GtkWidget * btnReplace = gtk_button_new_with_label( "Replace" );
-      gtk_box_pack_start( GTK_BOX(findBox), btnReplace, FALSE, FALSE, 0 );
-      g_signal_connect( btnReplace, "clicked", G_CALLBACK(on_replace_clicked), ed );
+      ed->replaceBtn = gtk_button_new_with_label( "Replace" );
+      gtk_box_pack_start( GTK_BOX(findBox), ed->replaceBtn, FALSE, FALSE, 0 );
+      g_signal_connect( ed->replaceBtn, "clicked", G_CALLBACK(on_replace_clicked), ed );
 
-      GtkWidget * btnReplAll = gtk_button_new_with_label( "All" );
-      gtk_box_pack_start( GTK_BOX(findBox), btnReplAll, FALSE, FALSE, 0 );
-      g_signal_connect( btnReplAll, "clicked", G_CALLBACK(on_replace_all_clicked), ed );
+      ed->replaceAllBtn = gtk_button_new_with_label( "All" );
+      gtk_box_pack_start( GTK_BOX(findBox), ed->replaceAllBtn, FALSE, FALSE, 0 );
+      g_signal_connect( ed->replaceAllBtn, "clicked", G_CALLBACK(on_replace_all_clicked), ed );
 
       GtkWidget * btnClose = gtk_button_new_with_label( "X" );
       gtk_box_pack_end( GTK_BOX(findBox), btnClose, FALSE, FALSE, 0 );
@@ -3857,10 +3870,15 @@ HB_FUNC( CODEEDITORCREATE )
          g_object_unref( provider );
       }
 
-      /* Show all children so they're ready, then hide the bar */
+      /* Show all children so they're ready, then hide the bar and replace widgets */
       gtk_widget_show_all( findBox );
       gtk_widget_hide( findBox );
+      gtk_widget_hide( ed->replaceLbl );
+      gtk_widget_hide( ed->replaceEntry );
+      gtk_widget_hide( ed->replaceBtn );
+      gtk_widget_hide( ed->replaceAllBtn );
       ed->bFindVisible = 0;
+      ed->bReplaceVisible = 0;
    }
 
    /* Status bar at bottom */
@@ -3886,8 +3904,12 @@ HB_FUNC( CODEEDITORCREATE )
    g_signal_connect( ed->tabBar, "switch-page", G_CALLBACK(on_editor_tab_switched), ed );
 
    gtk_widget_show_all( ed->window );
-   /* Re-hide find bar after show_all */
+   /* Re-hide find bar and replace widgets after show_all */
    gtk_widget_hide( ed->findBar );
+   gtk_widget_hide( ed->replaceLbl );
+   gtk_widget_hide( ed->replaceEntry );
+   gtk_widget_hide( ed->replaceBtn );
+   gtk_widget_hide( ed->replaceAllBtn );
 
    hb_retnint( (HB_PTRUINT) ed );
 }
