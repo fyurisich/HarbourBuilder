@@ -5,9 +5,14 @@
 
 #include "hbbuilder.ch"
 
+REQUEST DBFCDX, DBFNTX
+
 function Main()
 
    local oDb, i, aStruct
+   local aNames := { "Alice", "Bob", "Carol", "David", "Eve" }
+   local aEmails := { "alice@dev.io", "bob@dev.io", "carol@dev.io", "david@dev.io", "eve@dev.io" }
+   local aAges := { 28, 34, 22, 45, 31 }
 
    ? "=== TDBFTable Example ==="
    ?
@@ -35,9 +40,6 @@ function Main()
 
    // Insert records
    ? "Inserting 5 records..."
-   local aNames := { "Alice", "Bob", "Carol", "David", "Eve" }
-   local aEmails := { "alice@dev.io", "bob@dev.io", "carol@dev.io", "david@dev.io", "eve@dev.io" }
-   local aAges := { 28, 34, 22, 45, 31 }
 
    for i := 1 to 5
       oDb:Append()

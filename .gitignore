@@ -39,3 +39,13 @@ samples/form.html
 samples/tui_trace.log
 progreso.md
 TButton.cpp
+samples/projects/database/*.o
+samples/projects/database/*.dbf
+samples/projects/database/*.sqlite
+samples/projects/database/dbf_example
+samples/projects/database/sqlite_example
+samples/projects/database/datacontrols_example
+samples/projects/database/portable_example
+samples/projects/database/*.c
+samples/projects/database/gtk3_core.o
+samples/projects/database/classes.o

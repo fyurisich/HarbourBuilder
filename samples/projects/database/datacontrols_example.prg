@@ -6,9 +6,11 @@
 
 #include "hbbuilder.ch"
 
+REQUEST DBFCDX, DBFNTX
+
 function Main()
 
-   local oDb, oDS
+   local oDb, oDS, oName, oDept, oActive, oNav
 
    ? "=== Data Controls Example ==="
    ?
@@ -49,20 +51,20 @@ function Main()
    oDS := TDataSource():New( oDb )
 
    // === Create bound controls ===
-   local oName := TDBEdit():New()
+   oName := TDBEdit():New()
    oName:nFieldIndex := 2  // NAME field
    oDS:AddControl( oName )
 
-   local oDept := TDBEdit():New()
+   oDept := TDBEdit():New()
    oDept:nFieldIndex := 3  // DEPT field
    oDS:AddControl( oDept )
 
-   local oActive := TDBCheckBox():New()
+   oActive := TDBCheckBox():New()
    oActive:nFieldIndex := 5  // ACTIVE field
    oDS:AddControl( oActive )
 
    // === Create Navigator ===
-   local oNav := TDBNavigator():New( oDS )
+   oNav := TDBNavigator():New( oDS )
 
    // === Simulate navigation ===
    ? "Record navigation:"

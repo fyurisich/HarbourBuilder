@@ -46,7 +46,7 @@ function Main()
    oDb:Execute( "INSERT INTO products (name, price, stock) VALUES ('USB Cable', 9.99, 500)" )
    oDb:Commit()
    ? "  5 products inserted"
-   ? "  Last insert ID: " + LTrim(Str(oDb:LastInsertId()))
+   ? "  Last insert ID: " + hb_ValToStr(oDb:LastInsertId())
    ?
 
    // Query all products
@@ -57,10 +57,10 @@ function Main()
    aRows := oDb:Query( "SELECT id, name, price, stock FROM products ORDER BY name" )
    for i := 1 to Len( aRows )
       aRow := aRows[i]
-      ? PadR(LTrim(Str(aRow[1])), 5) + ;
-        PadR(aRow[2], 20) + ;
-        PadR(LTrim(Str(aRow[3], 10, 2)), 12) + ;
-        LTrim(Str(aRow[4]))
+      ? PadR(hb_ValToStr(aRow[1]), 5) + ;
+        PadR(hb_ValToStr(aRow[2]), 20) + ;
+        PadR(hb_ValToStr(aRow[3]), 12) + ;
+        hb_ValToStr(aRow[4])
    next
 
    ?
@@ -68,7 +68,7 @@ function Main()
    ? "Products over $50:"
    aRows := oDb:Query( "SELECT name, price FROM products WHERE price > 50 ORDER BY price DESC" )
    for i := 1 to Len( aRows )
-      ? "  " + PadR(aRows[i][1], 20) + "$" + LTrim(Str(aRows[i][2], 10, 2))
+      ? "  " + PadR(hb_ValToStr(aRows[i][1]), 20) + "$" + hb_ValToStr(aRows[i][2])
    next
 
    ?

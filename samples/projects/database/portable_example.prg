@@ -8,6 +8,8 @@
 
 #include "hbbuilder.ch"
 
+REQUEST DBFCDX, DBFNTX
+
 function Main()
 
    local oDb

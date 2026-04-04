@@ -1002,8 +1002,8 @@ METHOD Open() CLASS TSQLite
       ::cLastError := "Database file path not specified"
       return .F.
    endif
-   ::pHandle := sqlite3_open( ::cDatabase )
-   if ::pHandle != nil .and. ::pHandle != 0
+   ::pHandle := sqlite3_open( ::cDatabase, .T. )  // .T. = create if not exists
+   if ::pHandle != nil
       ::lConnected := .T.
       if ! Empty( ::cCharSet )
          sqlite3_exec( ::pHandle, "PRAGMA encoding = '" + ::cCharSet + "'" )
@@ -1023,14 +1023,18 @@ METHOD Execute( cSQL ) CLASS TSQLite
    local nResult
    if ! ::lConnected; ::cLastError := "Not connected"; return .F.; endif
    nResult := sqlite3_exec( ::pHandle, cSQL )
-   if nResult != 0   // SQLITE_OK = 0
+   if ValType( nResult ) == "N" .and. nResult != 0
       ::cLastError := sqlite3_errmsg( ::pHandle )
+      return .F.
+   elseif ValType( nResult ) != "N"
+      // sqlite3_exec may return non-numeric on some errors
+      ::cLastError := "Unexpected return from sqlite3_exec"
       return .F.
    endif
 return .T.
 
 METHOD Query( cSQL ) CLASS TSQLite
-   local pStmt, aRows := {}, aRow, nCols, i, nType
+   local pStmt, aRows := {}, aRow, nCols, i, nRet
    if ! ::lConnected; ::cLastError := "Not connected"; return {}; endif
 
    pStmt := sqlite3_prepare( ::pHandle, cSQL )
@@ -1041,24 +1045,15 @@ METHOD Query( cSQL ) CLASS TSQLite
 
    nCols := sqlite3_column_count( pStmt )
 
-   while sqlite3_step( pStmt ) == 100  // SQLITE_ROW = 100
+   nRet := sqlite3_step( pStmt )
+   while nRet == 100  // SQLITE_ROW
       aRow := Array( nCols )
       for i := 1 to nCols
-         nType := sqlite3_column_type( pStmt, i )
-         do case
-            case nType == 1  // SQLITE_INTEGER
-               aRow[i] := sqlite3_column_int( pStmt, i )
-            case nType == 2  // SQLITE_FLOAT
-               aRow[i] := sqlite3_column_double( pStmt, i )
-            case nType == 3  // SQLITE_TEXT
-               aRow[i] := sqlite3_column_text( pStmt, i )
-            case nType == 5  // SQLITE_NULL
-               aRow[i] := nil
-            otherwise
-               aRow[i] := sqlite3_column_text( pStmt, i )
-         endcase
+         // Use text for all columns - simplest, most portable
+         aRow[i] := sqlite3_column_text( pStmt, i )
       next
       AAdd( aRows, aRow )
+      nRet := sqlite3_step( pStmt )
    enddo
 
    sqlite3_finalize( pStmt )
