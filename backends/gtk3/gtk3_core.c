@@ -4752,7 +4752,75 @@ HB_FUNC( GTK_SETDARKMODE )
  * Debugger Panel - floating window with 5 tabs
  * ====================================================================== */
 
+#include <stdarg.h>
+
 static GtkWidget * s_hDbgWnd = NULL;
+static GtkWidget * s_dbgLocalsTV = NULL;   /* Locals TreeView */
+static GtkWidget * s_dbgStackTV = NULL;    /* Call Stack TreeView */
+static GtkWidget * s_dbgBpTV = NULL;       /* Breakpoints TreeView */
+static GtkWidget * s_dbgWatchTV = NULL;    /* Watch TreeView */
+static GtkWidget * s_dbgStatusLbl = NULL;  /* Status label */
+static GtkWidget * s_dbgOutputTV_panel = NULL;  /* Output tab textview (debug panel) */
+
+/* Debug toolbar button callbacks - set state via global variable
+ * The actual state variables (s_dbgState etc.) are defined in the
+ * Debugger Engine section below. Forward-declare what we need here. */
+static int * _dbg_state_ptr(void);   /* returns &s_dbgState */
+
+static void on_dbg_run( GtkButton * b, gpointer d )
+   { (void)b; (void)d; int * p = _dbg_state_ptr(); if( p && *p == 2 ) *p = 1; }
+static void on_dbg_step( GtkButton * b, gpointer d )
+   { (void)b; (void)d; int * p = _dbg_state_ptr(); if( p && *p == 2 ) *p = 3; }
+static void on_dbg_stepover( GtkButton * b, gpointer d )
+   { (void)b; (void)d; int * p = _dbg_state_ptr(); if( p && *p == 2 ) *p = 4; }
+static void on_dbg_stop( GtkButton * b, gpointer d )
+   { (void)b; (void)d; int * p = _dbg_state_ptr(); if( p && *p != 0 ) *p = 5; }
+
+/* Helper: create a dark-themed TreeView with columns */
+static GtkWidget * DbgCreateTreeView( GtkWidget * container, int nCols, ... )
+{
+   va_list args;
+   GType types[8];
+   int i;
+   for( i = 0; i < nCols && i < 8; i++ ) types[i] = G_TYPE_STRING;
+
+   GtkListStore * store = gtk_list_store_newv( nCols, types );
+   GtkWidget * tv = gtk_tree_view_new_with_model( GTK_TREE_MODEL(store) );
+   g_object_unref( store );
+
+   GtkCellRenderer * r = gtk_cell_renderer_text_new();
+   va_start( args, nCols );
+   for( i = 0; i < nCols; i++ )
+   {
+      const char * title = va_arg( args, const char * );
+      GtkTreeViewColumn * col = gtk_tree_view_column_new_with_attributes( title, r, "text", i, NULL );
+      gtk_tree_view_column_set_resizable( col, TRUE );
+      if( i == 0 ) gtk_tree_view_column_set_min_width( col, 120 );
+      gtk_tree_view_append_column( GTK_TREE_VIEW(tv), col );
+   }
+   va_end( args );
+
+   gtk_tree_view_set_grid_lines( GTK_TREE_VIEW(tv), GTK_TREE_VIEW_GRID_LINES_HORIZONTAL );
+
+   /* Dark theme */
+   { GtkCssProvider * p = gtk_css_provider_new();
+     gtk_css_provider_load_from_data( p,
+        "treeview { background-color: #1E1E1E; color: #D4D4D4; font-family: Monospace; font-size: 10pt; }"
+        "treeview:selected { background-color: #094771; }"
+        "treeview header button { background-color: #2D2D2D; color: #D4D4D4;"
+        "  border-color: #3E3E3E; font-weight: bold; }", -1, NULL );
+     gtk_style_context_add_provider( gtk_widget_get_style_context(tv),
+        GTK_STYLE_PROVIDER(p), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+     g_object_unref( p );
+   }
+
+   GtkWidget * sw = gtk_scrolled_window_new( NULL, NULL );
+   gtk_scrolled_window_set_policy( GTK_SCROLLED_WINDOW(sw),
+      GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
+   gtk_container_add( GTK_CONTAINER(sw), tv );
+   gtk_container_add( GTK_CONTAINER(container), sw );
+   return tv;
+}
 
 HB_FUNC( GTK_DEBUGPANEL )
 {
@@ -4765,91 +4833,181 @@ HB_FUNC( GTK_DEBUGPANEL )
 
    s_hDbgWnd = gtk_window_new( GTK_WINDOW_TOPLEVEL );
    gtk_window_set_title( GTK_WINDOW(s_hDbgWnd), "Debugger" );
-   gtk_window_set_default_size( GTK_WINDOW(s_hDbgWnd), 400, 300 );
+   gtk_window_set_default_size( GTK_WINDOW(s_hDbgWnd), 650, 420 );
    gtk_window_set_type_hint( GTK_WINDOW(s_hDbgWnd), GDK_WINDOW_TYPE_HINT_UTILITY );
    g_signal_connect( s_hDbgWnd, "delete-event",
       G_CALLBACK(gtk_widget_hide_on_delete), NULL );
 
+   /* Dark window background */
+   { GtkCssProvider * p = gtk_css_provider_new();
+     gtk_css_provider_load_from_data( p,
+        "window { background-color: #252526; }"
+        "notebook { background-color: #252526; }"
+        "notebook tab { background-color: #2D2D2D; color: #D4D4D4; padding: 4px 12px; }"
+        "notebook tab:checked { background-color: #1E1E1E; border-bottom: 2px solid #007ACC; }"
+        "label { color: #D4D4D4; }"
+        "button { background-color: #3C3C3C; color: #D4D4D4; border-color: #555;"
+        "  padding: 3px 10px; }"
+        "button:hover { background-color: #4C4C4C; }", -1, NULL );
+     gtk_style_context_add_provider( gtk_widget_get_style_context(s_hDbgWnd),
+        GTK_STYLE_PROVIDER(p), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+     g_object_unref( p );
+   }
+
+   GtkWidget * vbox = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
+   gtk_container_add( GTK_CONTAINER(s_hDbgWnd), vbox );
+
+   /* === Debug toolbar (Lazarus/C++Builder style) === */
+   GtkWidget * toolbar = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 2 );
+   gtk_widget_set_margin_start( toolbar, 4 );
+   gtk_widget_set_margin_top( toolbar, 2 );
+   gtk_widget_set_margin_bottom( toolbar, 2 );
+   gtk_box_pack_start( GTK_BOX(vbox), toolbar, FALSE, FALSE, 0 );
+
+   { GtkWidget * b;
+     b = gtk_button_new_with_label( "\xe2\x96\xb6 Run" );       /* ▶ Run */
+     g_signal_connect( b, "clicked", G_CALLBACK(on_dbg_run), NULL );
+     gtk_box_pack_start( GTK_BOX(toolbar), b, FALSE, FALSE, 2 );
+
+     b = gtk_button_new_with_label( "\xe2\x8f\xb8 Pause" );     /* ⏸ Pause */
+     gtk_widget_set_sensitive( b, FALSE );
+     gtk_box_pack_start( GTK_BOX(toolbar), b, FALSE, FALSE, 2 );
+
+     b = gtk_button_new_with_label( "\xe2\x86\x93 Step Into" );  /* ↓ Step Into */
+     g_signal_connect( b, "clicked", G_CALLBACK(on_dbg_step), NULL );
+     gtk_box_pack_start( GTK_BOX(toolbar), b, FALSE, FALSE, 2 );
+
+     b = gtk_button_new_with_label( "\xe2\x86\x92 Step Over" );  /* → Step Over */
+     g_signal_connect( b, "clicked", G_CALLBACK(on_dbg_stepover), NULL );
+     gtk_box_pack_start( GTK_BOX(toolbar), b, FALSE, FALSE, 2 );
+
+     b = gtk_button_new_with_label( "\xe2\x96\xa0 Stop" );       /* ■ Stop */
+     g_signal_connect( b, "clicked", G_CALLBACK(on_dbg_stop), NULL );
+     gtk_box_pack_start( GTK_BOX(toolbar), b, FALSE, FALSE, 2 );
+
+     /* Separator + status */
+     gtk_box_pack_start( GTK_BOX(toolbar),
+        gtk_separator_new( GTK_ORIENTATION_VERTICAL ), FALSE, FALSE, 6 );
+
+     s_dbgStatusLbl = gtk_label_new( "Ready" );
+     gtk_box_pack_start( GTK_BOX(toolbar), s_dbgStatusLbl, FALSE, FALSE, 4 );
+   }
+
+   /* === Notebook with 5 tabs === */
    GtkWidget * nb = gtk_notebook_new();
-   gtk_container_add( GTK_CONTAINER(s_hDbgWnd), nb );
+   gtk_notebook_set_tab_pos( GTK_NOTEBOOK(nb), GTK_POS_BOTTOM );
+   gtk_box_pack_start( GTK_BOX(vbox), nb, TRUE, TRUE, 0 );
 
-   /* Tab names */
-   const char * tabs[] = { "Watch", "Locals", "Call Stack", "Breakpoints", "Output" };
-   int i;
+   /* Tab 0: Watch */
+   { GtkWidget * box = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
+     s_dbgWatchTV = DbgCreateTreeView( box, 3, "Expression", "Value", "Type" );
+     gtk_notebook_append_page( GTK_NOTEBOOK(nb), box, gtk_label_new("Watch") );
+   }
 
-   for( i = 0; i < 5; i++ )
-   {
-      GtkWidget * sw = gtk_scrolled_window_new( NULL, NULL );
-      gtk_scrolled_window_set_policy( GTK_SCROLLED_WINDOW(sw),
-         GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
+   /* Tab 1: Locals */
+   { GtkWidget * box = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
+     s_dbgLocalsTV = DbgCreateTreeView( box, 3, "Name", "Value", "Type" );
+     gtk_notebook_append_page( GTK_NOTEBOOK(nb), box, gtk_label_new("Locals") );
+   }
 
-      if( i <= 1 ) {
-         /* Watch / Locals: 3-column TreeView (Name, Value, Type) */
-         GtkListStore * store = gtk_list_store_new( 3,
-            G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING );
-         GtkWidget * tv = gtk_tree_view_new_with_model( GTK_TREE_MODEL(store) );
-         g_object_unref( store );
+   /* Tab 2: Call Stack */
+   { GtkWidget * box = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
+     s_dbgStackTV = DbgCreateTreeView( box, 4, "#", "Function", "Module", "Line" );
+     gtk_notebook_append_page( GTK_NOTEBOOK(nb), box, gtk_label_new("Call Stack") );
+   }
 
-         GtkCellRenderer * r = gtk_cell_renderer_text_new();
-         gtk_tree_view_append_column( GTK_TREE_VIEW(tv),
-            gtk_tree_view_column_new_with_attributes( "Name", r, "text", 0, NULL ) );
-         gtk_tree_view_append_column( GTK_TREE_VIEW(tv),
-            gtk_tree_view_column_new_with_attributes( "Value", r, "text", 1, NULL ) );
-         gtk_tree_view_append_column( GTK_TREE_VIEW(tv),
-            gtk_tree_view_column_new_with_attributes( "Type", r, "text", 2, NULL ) );
+   /* Tab 3: Breakpoints */
+   { GtkWidget * box = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
+     s_dbgBpTV = DbgCreateTreeView( box, 3, "File", "Line", "Enabled" );
+     gtk_notebook_append_page( GTK_NOTEBOOK(nb), box, gtk_label_new("Breakpoints") );
+   }
 
-         /* Sample data for Locals */
-         if( i == 1 ) {
-            GtkTreeIter iter;
-            gtk_list_store_append( store, &iter );
-            gtk_list_store_set( store, &iter, 0, "oForm", 1, "TForm Object", 2, "Object", -1 );
-            gtk_list_store_append( store, &iter );
-            gtk_list_store_set( store, &iter, 0, "nCount", 1, "42", 2, "Numeric", -1 );
-            gtk_list_store_append( store, &iter );
-            gtk_list_store_set( store, &iter, 0, "cName", 1, "\"Form1\"", 2, "String", -1 );
-         }
-         gtk_container_add( GTK_CONTAINER(sw), tv );
-      }
-      else if( i == 2 ) {
-         /* Call Stack: 2-column (Level, Location) */
-         GtkListStore * store = gtk_list_store_new( 2, G_TYPE_STRING, G_TYPE_STRING );
-         GtkWidget * tv = gtk_tree_view_new_with_model( GTK_TREE_MODEL(store) );
-         g_object_unref( store );
-         GtkCellRenderer * r = gtk_cell_renderer_text_new();
-         gtk_tree_view_append_column( GTK_TREE_VIEW(tv),
-            gtk_tree_view_column_new_with_attributes( "Level", r, "text", 0, NULL ) );
-         gtk_tree_view_append_column( GTK_TREE_VIEW(tv),
-            gtk_tree_view_column_new_with_attributes( "Location", r, "text", 1, NULL ) );
-         gtk_container_add( GTK_CONTAINER(sw), tv );
-      }
-      else if( i == 3 ) {
-         /* Breakpoints: 3-column (File, Line, Enabled) */
-         GtkListStore * store = gtk_list_store_new( 3,
-            G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING );
-         GtkWidget * tv = gtk_tree_view_new_with_model( GTK_TREE_MODEL(store) );
-         g_object_unref( store );
-         GtkCellRenderer * r = gtk_cell_renderer_text_new();
-         gtk_tree_view_append_column( GTK_TREE_VIEW(tv),
-            gtk_tree_view_column_new_with_attributes( "File", r, "text", 0, NULL ) );
-         gtk_tree_view_append_column( GTK_TREE_VIEW(tv),
-            gtk_tree_view_column_new_with_attributes( "Line", r, "text", 1, NULL ) );
-         gtk_tree_view_append_column( GTK_TREE_VIEW(tv),
-            gtk_tree_view_column_new_with_attributes( "Enabled", r, "text", 2, NULL ) );
-         gtk_container_add( GTK_CONTAINER(sw), tv );
-      }
-      else {
-         /* Output: read-only text view */
-         GtkWidget * tv = gtk_text_view_new();
-         gtk_text_view_set_editable( GTK_TEXT_VIEW(tv), FALSE );
-         gtk_text_view_set_monospace( GTK_TEXT_VIEW(tv), TRUE );
-         gtk_container_add( GTK_CONTAINER(sw), tv );
-      }
-
-      gtk_notebook_append_page( GTK_NOTEBOOK(nb),
-         sw, gtk_label_new( tabs[i] ) );
+   /* Tab 4: Output */
+   { GtkWidget * sw = gtk_scrolled_window_new( NULL, NULL );
+     gtk_scrolled_window_set_policy( GTK_SCROLLED_WINDOW(sw),
+        GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
+     GtkWidget * tv = gtk_text_view_new();
+     gtk_text_view_set_editable( GTK_TEXT_VIEW(tv), FALSE );
+     gtk_text_view_set_monospace( GTK_TEXT_VIEW(tv), TRUE );
+     gtk_text_view_set_left_margin( GTK_TEXT_VIEW(tv), 6 );
+     gtk_text_view_set_top_margin( GTK_TEXT_VIEW(tv), 4 );
+     { GtkCssProvider * cp = gtk_css_provider_new();
+       gtk_css_provider_load_from_data( cp,
+          "textview text { background-color: #1E1E1E; color: #D4D4D4;"
+          "  font-family: Monospace; font-size: 10pt; }", -1, NULL );
+       gtk_style_context_add_provider( gtk_widget_get_style_context(tv),
+          GTK_STYLE_PROVIDER(cp), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+       g_object_unref( cp );
+     }
+     gtk_container_add( GTK_CONTAINER(sw), tv );
+     gtk_notebook_append_page( GTK_NOTEBOOK(nb), sw, gtk_label_new("Output") );
    }
 
    gtk_widget_show_all( s_hDbgWnd );
+
+   /* Auto-connect the Output tab textview for debug logging */
+   { GtkWidget * sw = gtk_notebook_get_nth_page( GTK_NOTEBOOK(nb), 4 );
+     if( sw ) {
+        GtkWidget * child = gtk_bin_get_child( GTK_BIN(sw) );
+        if( GTK_IS_TEXT_VIEW(child) ) s_dbgOutputTV_panel = child;
+     }
+   }
+}
+
+/* GTK_DebugUpdateLocals( aLocals ) - update Locals tab from Harbour array */
+HB_FUNC( GTK_DEBUGUPDATELOCALS )
+{
+   PHB_ITEM pArray = hb_param( 1, HB_IT_ARRAY );
+   if( !s_dbgLocalsTV || !pArray ) return;
+
+   GtkListStore * store = GTK_LIST_STORE( gtk_tree_view_get_model( GTK_TREE_VIEW(s_dbgLocalsTV) ) );
+   gtk_list_store_clear( store );
+
+   int n = (int) hb_arrayLen( pArray );
+   int i;
+   for( i = 1; i <= n; i++ )
+   {
+      PHB_ITEM pEntry = hb_arrayGetItemPtr( pArray, i );
+      if( !pEntry || hb_arrayLen(pEntry) < 3 ) continue;
+      GtkTreeIter iter;
+      gtk_list_store_append( store, &iter );
+      gtk_list_store_set( store, &iter,
+         0, hb_arrayGetCPtr( pEntry, 1 ),
+         1, hb_arrayGetCPtr( pEntry, 2 ),
+         2, hb_arrayGetCPtr( pEntry, 3 ), -1 );
+   }
+}
+
+/* GTK_DebugUpdateStack( aStack ) - update Call Stack from { {level,func,module,line}, ... } */
+HB_FUNC( GTK_DEBUGUPDATESTACK )
+{
+   PHB_ITEM pArray = hb_param( 1, HB_IT_ARRAY );
+   if( !s_dbgStackTV || !pArray ) return;
+
+   GtkListStore * store = GTK_LIST_STORE( gtk_tree_view_get_model( GTK_TREE_VIEW(s_dbgStackTV) ) );
+   gtk_list_store_clear( store );
+
+   int n = (int) hb_arrayLen( pArray );
+   int i;
+   for( i = 1; i <= n; i++ )
+   {
+      PHB_ITEM pEntry = hb_arrayGetItemPtr( pArray, i );
+      if( !pEntry || hb_arrayLen(pEntry) < 4 ) continue;
+      GtkTreeIter iter;
+      gtk_list_store_append( store, &iter );
+      gtk_list_store_set( store, &iter,
+         0, hb_arrayGetCPtr( pEntry, 1 ),
+         1, hb_arrayGetCPtr( pEntry, 2 ),
+         2, hb_arrayGetCPtr( pEntry, 3 ),
+         3, hb_arrayGetCPtr( pEntry, 4 ), -1 );
+   }
+}
+
+/* GTK_DebugSetStatus( cStatus ) */
+HB_FUNC( GTK_DEBUGSETSTATUS )
+{
+   if( s_dbgStatusLbl && HB_ISCHAR(1) )
+      gtk_label_set_text( GTK_LABEL(s_dbgStatusLbl), hb_parc(1) );
 }
 
 /* ======================================================================
@@ -5313,5 +5471,240 @@ HB_FUNC( GTK_PROJECTOPTIONSDIALOG )
    gtk_widget_show_all( dlg );
    gtk_dialog_run( GTK_DIALOG(dlg) );
    gtk_widget_destroy( dlg );
+}
+
+/* ======================================================================
+ * Integrated Debugger Engine
+ * Runs user .hrb code inside the IDE's Harbour VM with debug hooks.
+ * The debug callback pauses execution and processes GTK events,
+ * allowing the Debugger panel to update and accept user commands.
+ * ====================================================================== */
+
+#include <hbapidbg.h>
+
+/* Debugger states */
+#define DBG_IDLE      0
+#define DBG_RUNNING   1
+#define DBG_PAUSED    2
+#define DBG_STEPPING  3
+#define DBG_STEPOVER  4
+#define DBG_STOPPED   5
+
+static int           s_dbgState = DBG_IDLE;
+
+/* Provide pointer to s_dbgState for the debug panel toolbar buttons */
+static int * _dbg_state_ptr(void) { return &s_dbgState; }
+static int           s_dbgLine = 0;
+static int           s_dbgStepDepth = 0;
+static char          s_dbgModule[256] = "";
+static GtkWidget *   s_dbgOutputTV = NULL;
+static PHB_ITEM      s_dbgOnPause = NULL;
+
+/* Breakpoints */
+#define DBG_MAX_BP 64
+typedef struct { char module[256]; int line; } DBGBP;
+static DBGBP s_breakpoints[DBG_MAX_BP];
+static int   s_nBreakpoints = 0;
+
+static int DbgIsBreakpoint( const char * module, int line )
+{
+   int i;
+   for( i = 0; i < s_nBreakpoints; i++ )
+      if( s_breakpoints[i].line == line &&
+          ( s_breakpoints[i].module[0] == 0 || strcasestr( module, s_breakpoints[i].module ) ) )
+         return 1;
+   return 0;
+}
+
+static void DbgOutput( const char * text )
+{
+   /* Use panel's output TV if debugger engine's is not set */
+   if( !s_dbgOutputTV && s_dbgOutputTV_panel ) s_dbgOutputTV = s_dbgOutputTV_panel;
+   if( !s_dbgOutputTV ) return;
+   GtkTextBuffer * buf = gtk_text_view_get_buffer( GTK_TEXT_VIEW(s_dbgOutputTV) );
+   GtkTextIter end;
+   gtk_text_buffer_get_end_iter( buf, &end );
+   gtk_text_buffer_insert( buf, &end, text, -1 );
+   gtk_text_buffer_get_end_iter( buf, &end );
+   GtkTextMark * mark = gtk_text_buffer_get_mark( buf, "insert" );
+   gtk_text_buffer_move_mark( buf, mark, &end );
+   gtk_text_view_scroll_mark_onscreen( GTK_TEXT_VIEW(s_dbgOutputTV), mark );
+}
+
+/* Debug hook - called by Harbour VM on each line */
+static void IDE_DebugHook( int nMode, int nLine, const char * szName,
+                            int nIndex, PHB_ITEM pFrame )
+{
+   (void)nIndex; (void)pFrame;
+
+   if( nMode == 1 && szName ) /* HB_DBG_MODULENAME */
+      strncpy( s_dbgModule, szName, sizeof(s_dbgModule) - 1 );
+
+   if( nMode != 5 ) return; /* Only process HB_DBG_SHOWLINE */
+
+   s_dbgLine = nLine;
+   if( s_dbgState == DBG_STOPPED ) return;
+
+   if( s_dbgState == DBG_RUNNING && !DbgIsBreakpoint( s_dbgModule, nLine ) )
+      return;
+
+   if( s_dbgState == DBG_STEPOVER )
+   {
+      HB_ULONG curDepth = hb_dbg_ProcLevel();
+      if( (int)curDepth > s_dbgStepDepth ) return;
+   }
+
+   /* === PAUSE === */
+   s_dbgState = DBG_PAUSED;
+
+   /* Notify Harbour callback */
+   if( s_dbgOnPause && HB_IS_BLOCK( s_dbgOnPause ) )
+   {
+      PHB_ITEM pMod  = hb_itemPutC( NULL, s_dbgModule );
+      PHB_ITEM pLine = hb_itemPutNI( NULL, nLine );
+      hb_itemDo( s_dbgOnPause, 2, pMod, pLine );
+      hb_itemRelease( pMod );
+      hb_itemRelease( pLine );
+   }
+
+   { char msg[512];
+     snprintf( msg, sizeof(msg), "Paused at %s:%d\n", s_dbgModule, nLine );
+     DbgOutput( msg );
+   }
+
+   /* Process GTK events while paused */
+   while( s_dbgState == DBG_PAUSED )
+      gtk_main_iteration_do( TRUE );
+
+   if( s_dbgState == DBG_STOPPED )
+      DbgOutput( "Debug session stopped.\n" );
+}
+
+/* IDE_DebugStart( cHrbFile, bOnPause ) -> lSuccess */
+HB_FUNC( IDE_DEBUGSTART )
+{
+   const char * cHrbFile = hb_parc(1);
+   PHB_ITEM pOnPause = hb_param(2, HB_IT_BLOCK);
+
+   if( !cHrbFile || s_dbgState != DBG_IDLE ) { hb_retl( HB_FALSE ); return; }
+
+   if( s_dbgOnPause ) { hb_itemRelease( s_dbgOnPause ); s_dbgOnPause = NULL; }
+   if( pOnPause ) s_dbgOnPause = hb_itemNew( pOnPause );
+
+   /* Install debug hook */
+   hb_dbg_SetEntry( IDE_DebugHook );
+   s_dbgState = DBG_STEPPING;
+   s_nBreakpoints = 0;
+
+   DbgOutput( "=== Debug session started ===\n" );
+   { char msg[512]; snprintf( msg, sizeof(msg), "Loading: %s\n", cHrbFile ); DbgOutput( msg ); }
+
+   /* Execute .hrb via Harbour's hb_hrbRun() */
+   {
+      PHB_ITEM pFile = hb_itemPutC( NULL, cHrbFile );
+      hb_vmPushDynSym( hb_dynsymFind( "HB_HRBRUN" ) );
+      hb_vmPushNil();
+      hb_vmPush( pFile );
+      hb_vmDo( 1 );
+      hb_itemRelease( pFile );
+   }
+
+   hb_dbg_SetEntry( NULL );
+   s_dbgState = DBG_IDLE;
+   DbgOutput( "=== Debug session ended ===\n" );
+   hb_retl( HB_TRUE );
+}
+
+/* Debug control commands */
+HB_FUNC( IDE_DEBUGGO )       { if( s_dbgState == DBG_PAUSED ) s_dbgState = DBG_RUNNING; }
+HB_FUNC( IDE_DEBUGSTEP )     { if( s_dbgState == DBG_PAUSED ) s_dbgState = DBG_STEPPING; }
+HB_FUNC( IDE_DEBUGSTEPOVER ) {
+   if( s_dbgState == DBG_PAUSED ) {
+      s_dbgStepDepth = (int) hb_dbg_ProcLevel();
+      s_dbgState = DBG_STEPOVER;
+   }
+}
+HB_FUNC( IDE_DEBUGSTOP )     { if( s_dbgState != DBG_IDLE ) s_dbgState = DBG_STOPPED; }
+
+/* Breakpoint management */
+HB_FUNC( IDE_DEBUGADDBREAKPOINT )
+{
+   if( s_nBreakpoints >= DBG_MAX_BP ) return;
+   const char * mod = HB_ISCHAR(1) ? hb_parc(1) : "";
+   strncpy( s_breakpoints[s_nBreakpoints].module, mod, 255 );
+   s_breakpoints[s_nBreakpoints].line = hb_parni(2);
+   s_nBreakpoints++;
+}
+
+HB_FUNC( IDE_DEBUGCLEARBREAKPOINTS ) { s_nBreakpoints = 0; }
+
+/* State queries */
+HB_FUNC( IDE_DEBUGGETSTATE )  { hb_retni( s_dbgState ); }
+HB_FUNC( IDE_DEBUGGETLINE )   { hb_retni( s_dbgLine ); }
+HB_FUNC( IDE_DEBUGGETMODULE ) { hb_retc( s_dbgModule ); }
+
+/* IDE_DebugGetLocals( nLevel ) -> { {cName,cValue,cType}, ... } */
+HB_FUNC( IDE_DEBUGGETLOCALS )
+{
+   int nLevel = HB_ISNUM(1) ? hb_parni(1) : 1;
+   PHB_ITEM pArray = hb_itemArrayNew( 0 );
+   int i;
+
+   for( i = 1; i <= 30; i++ )
+   {
+      PHB_ITEM pVal = hb_dbg_vmVarLGet( nLevel, i );
+      if( !pVal ) break;
+
+      PHB_ITEM pEntry = hb_itemArrayNew( 3 );
+      char szName[32], szValue[256], szType[32];
+      snprintf( szName, sizeof(szName), "Local_%d", i );
+
+      switch( hb_itemType( pVal ) )
+      {
+         case HB_IT_STRING:
+            snprintf( szValue, sizeof(szValue), "\"%.*s\"",
+               (int)(hb_itemGetCLen(pVal) > 200 ? 200 : hb_itemGetCLen(pVal)),
+               hb_itemGetCPtr(pVal) );
+            strcpy( szType, "String" ); break;
+         case HB_IT_INTEGER: case HB_IT_LONG: case HB_IT_NUMERIC:
+            snprintf( szValue, sizeof(szValue), "%g", hb_itemGetND(pVal) );
+            strcpy( szType, "Numeric" ); break;
+         case HB_IT_LOGICAL:
+            strcpy( szValue, hb_itemGetL(pVal) ? ".T." : ".F." );
+            strcpy( szType, "Logical" ); break;
+         case HB_IT_NIL:
+            strcpy( szValue, "NIL" ); strcpy( szType, "NIL" ); break;
+         case HB_IT_ARRAY:
+            snprintf( szValue, sizeof(szValue), "Array(%lu)", (unsigned long)hb_arrayLen(pVal) );
+            strcpy( szType, "Array" ); break;
+         case HB_IT_BLOCK:
+            strcpy( szValue, "{||}" ); strcpy( szType, "Block" ); break;
+         default:
+            if( hb_itemType(pVal) & HB_IT_OBJECT )
+               { strcpy( szValue, "(object)" ); strcpy( szType, "Object" ); }
+            else
+               { strcpy( szValue, "(?)" ); strcpy( szType, "?" ); }
+            break;
+      }
+      hb_arraySetC( pEntry, 1, szName );
+      hb_arraySetC( pEntry, 2, szValue );
+      hb_arraySetC( pEntry, 3, szType );
+      hb_arrayAdd( pArray, pEntry );
+      hb_itemRelease( pEntry );
+   }
+   hb_itemReturnRelease( pArray );
+}
+
+/* IDE_DebugSetOutputTV() - find and store the Output tab textview */
+HB_FUNC( IDE_DEBUGSETOUTPUTTV )
+{
+   s_dbgOutputTV = NULL;
+   if( !s_hDbgWnd ) return;
+   GtkWidget * nb = gtk_bin_get_child( GTK_BIN(s_hDbgWnd) );
+   if( !GTK_IS_NOTEBOOK(nb) ) return;
+   GtkWidget * sw = gtk_notebook_get_nth_page( GTK_NOTEBOOK(nb), 4 );
+   if( !sw ) return;
+   GtkWidget * child = gtk_bin_get_child( GTK_BIN(sw) );
+   if( GTK_IS_TEXT_VIEW(child) ) s_dbgOutputTV = child;
 }
 

@@ -104,9 +104,13 @@ function Main()
    MENUITEM "Options..."           OF oProject ACTION ShowProjectOptions()
 
    DEFINE POPUP oRun PROMPT "Run" OF oIDE
-   MENUITEM "Run"           OF oRun ACTION TBRun()                 ACCEL "r"
-   MENUITEM "Step Over"     OF oRun ACTION DebugStepOver()
-   MENUITEM "Step Into"     OF oRun ACTION DebugStepInto()
+   MENUITEM "Run"            OF oRun ACTION TBRun()                ACCEL "r"
+   MENUITEM "Debug"          OF oRun ACTION TBDebugRun()
+   MENUSEPARATOR OF oRun
+   MENUITEM "Step Over"      OF oRun ACTION DebugStepOver()
+   MENUITEM "Step Into"      OF oRun ACTION DebugStepInto()
+   MENUITEM "Continue"       OF oRun ACTION IDE_DebugGo()
+   MENUITEM "Stop"           OF oRun ACTION IDE_DebugStop()
    MENUSEPARATOR OF oRun
    MENUITEM "Toggle Breakpoint"  OF oRun ACTION ToggleBreakpoint()
    MENUITEM "Clear Breakpoints"  OF oRun ACTION ClearBreakpoints()
@@ -1103,26 +1107,118 @@ static function TBRun()
 
 return nil
 
+// === Debug Run (executes user code inside the IDE with debug hooks) ===
+
+static function TBDebugRun()
+
+   local cBuildDir, cOutput, cLog, cAllPrg, cCmd, i
+   local cHbDir, cHbBin, cHbInc
+   local lError := .F.
+
+   SaveActiveFormCode()
+
+   cBuildDir := "/tmp/hbbuilder_debug"
+   cHbDir   := GetEnv( "HBDIR" )
+   if Empty( cHbDir ); cHbDir := GetEnv( "HOME" ) + "/harbour"; endif
+   cHbBin   := cHbDir + "/bin/linux/gcc"
+   cHbInc   := cHbDir + "/include"
+
+   GTK_ShellExec( "mkdir -p " + cBuildDir )
+
+   // Open debugger panel
+   GTK_DebugPanel()
+   GTK_DebugSetStatus( "Compiling..." )
+
+   // Save all project files
+   MemoWrit( cBuildDir + "/Project1.prg", CodeEditorGetTabText( hCodeEditor, 1 ) )
+   for i := 1 to Len( aForms )
+      MemoWrit( cBuildDir + "/" + aForms[i][1] + ".prg", aForms[i][3] )
+   next
+
+   // Build single .prg with all code
+   cAllPrg := '#include "hbbuilder.ch"' + Chr(10) + Chr(10)
+   cAllPrg += StrTran( MemoRead( cBuildDir + "/Project1.prg" ), ;
+                       '#include "hbbuilder.ch"', "" ) + Chr(10)
+   for i := 1 to Len( aForms )
+      cAllPrg += MemoRead( cBuildDir + "/" + aForms[i][1] + ".prg" ) + Chr(10)
+   next
+   MemoWrit( cBuildDir + "/debug_main.prg", cAllPrg )
+
+   // Compile to .hrb (portable bytecode) with debug info
+   cCmd := cHbBin + "/harbour " + cBuildDir + "/debug_main.prg -gh -b -n -w -q" + ;
+           " -I" + cHbInc + " -I" + cBuildDir + ;
+           " -o" + cBuildDir + "/debug_main.hrb 2>&1"
+   cOutput := GTK_ShellExec( cCmd )
+
+   if "Error" $ cOutput .or. ! File( cBuildDir + "/debug_main.hrb" )
+      GTK_DebugSetStatus( "Compile FAILED" )
+      MsgInfo( "Debug compile failed:" + Chr(10) + cOutput )
+      return nil
+   endif
+
+   GTK_DebugSetStatus( "Running (debugger active)..." )
+
+   // Execute .hrb inside IDE VM with debug hooks
+   IDE_DebugStart( cBuildDir + "/debug_main.hrb", ;
+      { |cModule, nLine| OnDebugPause( cModule, nLine ) } )
+
+   GTK_DebugSetStatus( "Ready" )
+
+return nil
+
+// Called by debug hook when execution pauses at a line
+static function OnDebugPause( cModule, nLine )
+
+   local aLocals, aStack, i
+
+   GTK_DebugSetStatus( "Paused at " + cModule + ":" + LTrim(Str(nLine)) )
+
+   // Update Locals tab
+   aLocals := IDE_DebugGetLocals( 1 )
+   GTK_DebugUpdateLocals( aLocals )
+
+   // Update Call Stack tab (basic: show current position)
+   aStack := { { "0", ProcName(2), cModule, LTrim(Str(nLine)) } }
+   for i := 3 to 8
+      if ! Empty( ProcName(i) )
+         AAdd( aStack, { LTrim(Str(i-2)), ProcName(i), "", LTrim(Str(ProcLine(i))) } )
+      endif
+   next
+   GTK_DebugUpdateStack( aStack )
+
+return nil
+
 // === Debugger ===
 
 static function DebugStepOver()
-   GTK_DebugPanel()
-   MsgInfo( "Step Over: start a debug session with Run > Run first" )
+   if IDE_DebugGetState() == 2  // DBG_PAUSED
+      IDE_DebugStepOver()
+   else
+      GTK_DebugPanel()
+      GTK_DebugSetStatus( "Start debug with Run > Run (F9)" )
+   endif
 return nil
 
 static function DebugStepInto()
-   GTK_DebugPanel()
-   MsgInfo( "Step Into: start a debug session with Run > Run first" )
+   if IDE_DebugGetState() == 2  // DBG_PAUSED
+      IDE_DebugStep()
+   else
+      GTK_DebugPanel()
+      GTK_DebugSetStatus( "Start debug with Run > Run (F9)" )
+   endif
 return nil
 
 static function ToggleBreakpoint()
    static aBreakpoints := {}
-   AAdd( aBreakpoints, { "Form1.prg", 1 } )
-   MsgInfo( "Breakpoints: " + LTrim(Str(Len(aBreakpoints))) )
+   local cFile := aForms[ nActiveForm ][ 1 ] + ".prg"
+   AAdd( aBreakpoints, { cFile, 1 } )
+   IDE_DebugAddBreakpoint( cFile, 1 )
+   GTK_DebugSetStatus( "Breakpoints: " + LTrim(Str(Len(aBreakpoints))) )
 return nil
 
 static function ClearBreakpoints()
-   MsgInfo( "All breakpoints cleared" )
+   IDE_DebugClearBreakpoints()
+   GTK_DebugSetStatus( "All breakpoints cleared" )
 return nil
 
 // === Components ===
