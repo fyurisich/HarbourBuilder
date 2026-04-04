@@ -5943,3 +5943,659 @@ HB_FUNC( IDE_DEBUGSETOUTPUTTV )
    if( GTK_IS_TEXT_VIEW(child) ) s_dbgOutputTV = child;
 }
 
+/* ======================================================================
+ * Report Designer - Visual band/field editor with Cairo rendering
+ * ====================================================================== */
+
+#include <math.h>
+
+#define RPT_MAX_BANDS  20
+#define RPT_MAX_FIELDS 50
+#define RPT_MARGIN_W   24
+#define RPT_RULER_H    24
+#define RPT_PAGE_PAD   30
+#define RPT_HANDLE_SZ  6
+
+typedef struct {
+   char cName[32];
+   char cText[128];
+   char cFieldName[64];
+   int  nLeft, nTop, nWidth, nHeight;
+} RptField;
+
+typedef struct {
+   char     cName[32];
+   int      nHeight;
+   int      nFieldCount;
+   RptField fields[RPT_MAX_FIELDS];
+   double   colorR, colorG, colorB;
+} RptBand;
+
+static GtkWidget * s_rptDesigner = NULL;
+static GtkWidget * s_rptDrawArea = NULL;
+static RptBand     s_rptBands[RPT_MAX_BANDS];
+static int         s_rptBandCount = 0;
+static int         s_rptSelBand  = -1;
+static int         s_rptSelField = -1;
+static int         s_rptPageWidth  = 210;  /* mm, A4 */
+static int         s_rptPageHeight = 297;
+static int         s_rptScale = 3;         /* pixels per mm */
+
+/* Drag state */
+static int  s_rptDragging = 0;    /* 0=none, 1=move field, 2=resize band */
+static int  s_rptDragStartX = 0;
+static int  s_rptDragStartY = 0;
+static int  s_rptDragOrigX  = 0;
+static int  s_rptDragOrigY  = 0;
+static int  s_rptDragOrigH  = 0;
+
+/* Band color lookup */
+static void rpt_band_color( const char * name, double * r, double * g, double * b )
+{
+   if( strcasecmp( name, "Header" ) == 0 || strcasecmp( name, "Footer" ) == 0 )
+      { *r = 0.290; *g = 0.565; *b = 0.851; }
+   else if( strcasecmp( name, "Detail" ) == 0 )
+      { *r = 0.850; *g = 0.850; *b = 0.850; }
+   else if( strncasecmp( name, "Group", 5 ) == 0 )
+      { *r = 0.420; *g = 0.749; *b = 0.420; }
+   else if( strncasecmp( name, "Page", 4 ) == 0 )
+      { *r = 0.831; *g = 0.659; *b = 0.263; }
+   else
+      { *r = 0.600; *g = 0.600; *b = 0.600; }
+}
+
+/* Compute Y offset for a given band (cumulative) */
+static int rpt_band_y( int idx )
+{
+   int y = RPT_RULER_H;
+   int i;
+   for( i = 0; i < idx && i < s_rptBandCount; i++ )
+      y += s_rptBands[i].nHeight + 2;  /* 2px separator */
+   return y;
+}
+
+/* ---- Cairo draw callback ---- */
+static gboolean on_report_draw( GtkWidget * widget, cairo_t * cr, gpointer data )
+{
+   (void)data;
+   GtkAllocation alloc;
+   gtk_widget_get_allocation( widget, &alloc );
+
+   int pageW = s_rptPageWidth * s_rptScale;
+   int pageX = RPT_PAGE_PAD;
+
+   /* Dark background */
+   cairo_set_source_rgb( cr, 0.145, 0.145, 0.149 );
+   cairo_paint( cr );
+
+   /* Page area (white surround) */
+   int totalBandH = rpt_band_y( s_rptBandCount ) - RPT_RULER_H;
+   int pageH = totalBandH > 200 ? totalBandH + RPT_RULER_H + 20 : s_rptPageHeight * s_rptScale;
+   cairo_set_source_rgb( cr, 1.0, 1.0, 1.0 );
+   cairo_rectangle( cr, pageX, RPT_RULER_H, pageW, pageH );
+   cairo_fill( cr );
+
+   /* ---- Ruler ---- */
+   cairo_set_source_rgb( cr, 0.220, 0.220, 0.220 );
+   cairo_rectangle( cr, pageX, 0, pageW, RPT_RULER_H );
+   cairo_fill( cr );
+
+   cairo_set_source_rgb( cr, 0.800, 0.800, 0.800 );
+   cairo_select_font_face( cr, "Sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL );
+   cairo_set_font_size( cr, 9.0 );
+   { int mm;
+     for( mm = 0; mm <= s_rptPageWidth; mm += 10 )
+     {
+        int rx = pageX + mm * s_rptScale;
+        cairo_move_to( cr, rx, RPT_RULER_H - 2 );
+        cairo_line_to( cr, rx, RPT_RULER_H - 10 );
+        cairo_stroke( cr );
+
+        if( mm % 50 == 0 )
+        {
+           char buf[16];
+           snprintf( buf, sizeof(buf), "%d", mm );
+           cairo_move_to( cr, rx + 2, 10 );
+           cairo_show_text( cr, buf );
+        }
+     }
+   }
+
+   /* ---- Bands ---- */
+   { int i;
+     int bandY = RPT_RULER_H;
+     for( i = 0; i < s_rptBandCount; i++ )
+     {
+        RptBand * b = &s_rptBands[i];
+        int bH = b->nHeight;
+
+        /* Left margin strip */
+        cairo_set_source_rgb( cr, b->colorR, b->colorG, b->colorB );
+        cairo_rectangle( cr, pageX, bandY, RPT_MARGIN_W, bH );
+        cairo_fill( cr );
+
+        /* Band name (rotated 90 deg) in margin */
+        cairo_save( cr );
+        cairo_set_source_rgb( cr, 1.0, 1.0, 1.0 );
+        cairo_set_font_size( cr, 9.0 );
+        cairo_move_to( cr, pageX + 4, bandY + bH - 4 );
+        cairo_rotate( cr, -G_PI / 2.0 );
+        cairo_show_text( cr, b->cName );
+        cairo_restore( cr );
+
+        /* Band content area background */
+        cairo_set_source_rgb( cr, 1.0, 1.0, 1.0 );
+        cairo_rectangle( cr, pageX + RPT_MARGIN_W, bandY, pageW - RPT_MARGIN_W, bH );
+        cairo_fill( cr );
+
+        /* Selected band highlight */
+        if( i == s_rptSelBand && s_rptSelField < 0 )
+        {
+           cairo_set_source_rgba( cr, b->colorR, b->colorG, b->colorB, 0.12 );
+           cairo_rectangle( cr, pageX + RPT_MARGIN_W, bandY, pageW - RPT_MARGIN_W, bH );
+           cairo_fill( cr );
+        }
+
+        /* ---- Fields within band ---- */
+        { int f;
+          for( f = 0; f < b->nFieldCount; f++ )
+          {
+             RptField * fld = &b->fields[f];
+             int fx = pageX + RPT_MARGIN_W + fld->nLeft;
+             int fy = bandY + fld->nTop;
+             int fw = fld->nWidth;
+             int fh = fld->nHeight;
+
+             /* Field rectangle */
+             cairo_set_source_rgb( cr, 0.95, 0.95, 0.97 );
+             cairo_rectangle( cr, fx, fy, fw, fh );
+             cairo_fill( cr );
+
+             cairo_set_source_rgb( cr, 0.70, 0.70, 0.70 );
+             cairo_set_line_width( cr, 1.0 );
+             cairo_rectangle( cr, fx + 0.5, fy + 0.5, fw, fh );
+             cairo_stroke( cr );
+
+             /* Field text */
+             cairo_set_source_rgb( cr, 0.15, 0.15, 0.15 );
+             cairo_set_font_size( cr, 10.0 );
+             { const char * label = fld->cFieldName[0] ? fld->cFieldName : fld->cText;
+               char display[140];
+               if( fld->cFieldName[0] )
+                  snprintf( display, sizeof(display), "[%s]", label );
+               else
+                  snprintf( display, sizeof(display), "%s", label );
+               cairo_move_to( cr, fx + 3, fy + fh - 4 );
+               cairo_show_text( cr, display );
+             }
+
+             /* Selection highlight */
+             if( i == s_rptSelBand && f == s_rptSelField )
+             {
+                cairo_set_source_rgb( cr, 0.0, 0.47, 0.84 );
+                cairo_set_line_width( cr, 2.0 );
+                cairo_rectangle( cr, fx - 1, fy - 1, fw + 2, fh + 2 );
+                cairo_stroke( cr );
+
+                /* 4 corner handles */
+                int hx[4], hy[4];
+                hx[0] = fx - 3;            hy[0] = fy - 3;
+                hx[1] = fx + fw - 3;       hy[1] = fy - 3;
+                hx[2] = fx + fw - 3;       hy[2] = fy + fh - 3;
+                hx[3] = fx - 3;            hy[3] = fy + fh - 3;
+                { int j;
+                  for( j = 0; j < 4; j++ )
+                  {
+                     cairo_set_source_rgb( cr, 1.0, 1.0, 1.0 );
+                     cairo_rectangle( cr, hx[j], hy[j], RPT_HANDLE_SZ, RPT_HANDLE_SZ );
+                     cairo_fill( cr );
+                     cairo_set_source_rgb( cr, 0.0, 0.47, 0.84 );
+                     cairo_rectangle( cr, hx[j], hy[j], RPT_HANDLE_SZ, RPT_HANDLE_SZ );
+                     cairo_stroke( cr );
+                  }
+                }
+             }
+          }
+        }
+
+        /* Separator line between bands */
+        cairo_set_source_rgb( cr, 0.60, 0.60, 0.60 );
+        cairo_set_line_width( cr, 1.0 );
+        { double dashes[] = { 4.0, 2.0 };
+          cairo_set_dash( cr, dashes, 2, 0 );
+        }
+        cairo_move_to( cr, pageX, bandY + bH + 0.5 );
+        cairo_line_to( cr, pageX + pageW, bandY + bH + 0.5 );
+        cairo_stroke( cr );
+        cairo_set_dash( cr, NULL, 0, 0 );
+
+        /* Band height resize handle (small triangle at bottom-right of margin) */
+        cairo_set_source_rgb( cr, b->colorR, b->colorG, b->colorB );
+        { int hx = pageX + RPT_MARGIN_W - 2;
+          int hy = bandY + bH - 1;
+          cairo_move_to( cr, hx - 8, hy );
+          cairo_line_to( cr, hx, hy );
+          cairo_line_to( cr, hx, hy - 8 );
+          cairo_close_path( cr );
+          cairo_fill( cr );
+        }
+
+        bandY += bH + 2;
+     }
+   }
+
+   /* Set minimum size for scrolling */
+   { int minH = rpt_band_y( s_rptBandCount ) + 40;
+     int minW = pageX + pageW + RPT_PAGE_PAD;
+     gtk_widget_set_size_request( widget, minW, minH < 400 ? 400 : minH );
+   }
+
+   return FALSE;
+}
+
+/* ---- Mouse press ---- */
+static gboolean on_report_click( GtkWidget * widget, GdkEventButton * ev, gpointer data )
+{
+   (void)widget; (void)data;
+   if( ev->button != 1 ) return FALSE;
+
+   int mx = (int)ev->x;
+   int my = (int)ev->y;
+   int pageX = RPT_PAGE_PAD;
+
+   s_rptSelBand  = -1;
+   s_rptSelField = -1;
+   s_rptDragging = 0;
+
+   /* Hit test bands */
+   { int i;
+     int bandY = RPT_RULER_H;
+     for( i = 0; i < s_rptBandCount; i++ )
+     {
+        RptBand * b = &s_rptBands[i];
+        int bH = b->nHeight;
+
+        if( my >= bandY && my < bandY + bH + 2 )
+        {
+           /* Check resize handle area (bottom 8px of margin strip) */
+           if( my >= bandY + bH - 8 && mx >= pageX && mx < pageX + RPT_MARGIN_W )
+           {
+              s_rptSelBand = i;
+              s_rptDragging = 2;
+              s_rptDragStartY = my;
+              s_rptDragOrigH  = bH;
+              goto done;
+           }
+
+           /* Check margin strip -> select band */
+           if( mx >= pageX && mx < pageX + RPT_MARGIN_W )
+           {
+              s_rptSelBand = i;
+              goto done;
+           }
+
+           /* Check fields */
+           { int f;
+             for( f = b->nFieldCount - 1; f >= 0; f-- )
+             {
+                RptField * fld = &b->fields[f];
+                int fx = pageX + RPT_MARGIN_W + fld->nLeft;
+                int fy = bandY + fld->nTop;
+                if( mx >= fx && mx < fx + fld->nWidth &&
+                    my >= fy && my < fy + fld->nHeight )
+                {
+                   s_rptSelBand  = i;
+                   s_rptSelField = f;
+                   s_rptDragging = 1;
+                   s_rptDragStartX = mx;
+                   s_rptDragStartY = my;
+                   s_rptDragOrigX  = fld->nLeft;
+                   s_rptDragOrigY  = fld->nTop;
+                   goto done;
+                }
+             }
+           }
+
+           /* Clicked in band content area but not on a field */
+           s_rptSelBand = i;
+           goto done;
+        }
+        bandY += bH + 2;
+     }
+   }
+
+done:
+   gtk_widget_queue_draw( s_rptDrawArea );
+   return TRUE;
+}
+
+/* ---- Mouse motion ---- */
+static gboolean on_report_motion( GtkWidget * widget, GdkEventMotion * ev, gpointer data )
+{
+   (void)widget; (void)data;
+   if( !s_rptDragging ) return FALSE;
+
+   int mx = (int)ev->x;
+   int my = (int)ev->y;
+
+   if( s_rptDragging == 1 && s_rptSelBand >= 0 && s_rptSelField >= 0 )
+   {
+      /* Move field */
+      RptField * fld = &s_rptBands[s_rptSelBand].fields[s_rptSelField];
+      int dx = mx - s_rptDragStartX;
+      int dy = my - s_rptDragStartY;
+      int newLeft = s_rptDragOrigX + dx;
+      int newTop  = s_rptDragOrigY + dy;
+      if( newLeft < 0 ) newLeft = 0;
+      if( newTop  < 0 ) newTop  = 0;
+      fld->nLeft = newLeft;
+      fld->nTop  = newTop;
+      gtk_widget_queue_draw( s_rptDrawArea );
+   }
+   else if( s_rptDragging == 2 && s_rptSelBand >= 0 )
+   {
+      /* Resize band height */
+      int dy = my - s_rptDragStartY;
+      int newH = s_rptDragOrigH + dy;
+      if( newH < 20 ) newH = 20;
+      if( newH > 600 ) newH = 600;
+      s_rptBands[s_rptSelBand].nHeight = newH;
+      gtk_widget_queue_draw( s_rptDrawArea );
+   }
+
+   return TRUE;
+}
+
+/* ---- Mouse release ---- */
+static gboolean on_report_release( GtkWidget * widget, GdkEventButton * ev, gpointer data )
+{
+   (void)widget; (void)ev; (void)data;
+   s_rptDragging = 0;
+   return TRUE;
+}
+
+/* ---- Toolbar callbacks ---- */
+static void on_rpt_add_band_type( GtkMenuItem * item, gpointer data )
+{
+   (void)item;
+   const char * name = (const char *)data;
+   if( s_rptBandCount >= RPT_MAX_BANDS ) return;
+
+   RptBand * b = &s_rptBands[s_rptBandCount];
+   memset( b, 0, sizeof(RptBand) );
+   strncpy( b->cName, name, sizeof(b->cName) - 1 );
+   b->nHeight = 80;
+   rpt_band_color( name, &b->colorR, &b->colorG, &b->colorB );
+   s_rptBandCount++;
+
+   if( s_rptDrawArea )
+      gtk_widget_queue_draw( s_rptDrawArea );
+}
+
+static void on_rpt_add_band_clicked( GtkButton * btn, gpointer data )
+{
+   (void)data;
+   GtkWidget * menu = gtk_menu_new();
+   static const char * types[] = {
+      "Header", "Detail", "Footer",
+      "GroupHeader", "GroupFooter",
+      "PageHeader", "PageFooter", NULL
+   };
+   int i;
+   for( i = 0; types[i]; i++ )
+   {
+      GtkWidget * mi = gtk_menu_item_new_with_label( types[i] );
+      g_signal_connect( mi, "activate", G_CALLBACK(on_rpt_add_band_type), (gpointer)types[i] );
+      gtk_menu_shell_append( GTK_MENU_SHELL(menu), mi );
+   }
+   gtk_widget_show_all( menu );
+   gtk_menu_popup_at_widget( GTK_MENU(menu), GTK_WIDGET(btn),
+      GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL );
+}
+
+static void on_rpt_add_field( GtkButton * btn, gpointer data )
+{
+   (void)btn; (void)data;
+   int bi = s_rptSelBand;
+   if( bi < 0 )
+   {
+      /* Default to first band if none selected */
+      if( s_rptBandCount > 0 ) bi = 0; else return;
+   }
+   RptBand * b = &s_rptBands[bi];
+   if( b->nFieldCount >= RPT_MAX_FIELDS ) return;
+
+   RptField * f = &b->fields[b->nFieldCount];
+   memset( f, 0, sizeof(RptField) );
+   snprintf( f->cName, sizeof(f->cName), "Field%d", b->nFieldCount + 1 );
+   snprintf( f->cText, sizeof(f->cText), "Field%d", b->nFieldCount + 1 );
+   f->nLeft   = 10 + (b->nFieldCount % 4) * 80;
+   f->nTop    = 10;
+   f->nWidth  = 70;
+   f->nHeight = 20;
+
+   s_rptSelBand  = bi;
+   s_rptSelField = b->nFieldCount;
+   b->nFieldCount++;
+
+   if( s_rptDrawArea )
+      gtk_widget_queue_draw( s_rptDrawArea );
+}
+
+static void on_rpt_delete( GtkButton * btn, gpointer data )
+{
+   (void)btn; (void)data;
+   if( s_rptSelBand < 0 ) return;
+
+   if( s_rptSelField >= 0 )
+   {
+      /* Delete selected field */
+      RptBand * b = &s_rptBands[s_rptSelBand];
+      int f = s_rptSelField;
+      if( f < b->nFieldCount - 1 )
+         memmove( &b->fields[f], &b->fields[f + 1],
+                  sizeof(RptField) * (b->nFieldCount - f - 1) );
+      b->nFieldCount--;
+      s_rptSelField = -1;
+   }
+   else
+   {
+      /* Delete selected band */
+      int i = s_rptSelBand;
+      if( i < s_rptBandCount - 1 )
+         memmove( &s_rptBands[i], &s_rptBands[i + 1],
+                  sizeof(RptBand) * (s_rptBandCount - i - 1) );
+      s_rptBandCount--;
+      s_rptSelBand = -1;
+   }
+
+   if( s_rptDrawArea )
+      gtk_widget_queue_draw( s_rptDrawArea );
+}
+
+static void on_rpt_preview( GtkButton * btn, gpointer data )
+{
+   (void)btn; (void)data;
+   /* Placeholder: future print preview */
+}
+
+/* RPT_DESIGNEROPEN() - Create/show the report designer window */
+HB_FUNC( RPT_DESIGNEROPEN )
+{
+   EnsureGTK();
+
+   if( s_rptDesigner )
+   {
+      gtk_window_present( GTK_WINDOW(s_rptDesigner) );
+      return;
+   }
+
+   s_rptDesigner = gtk_window_new( GTK_WINDOW_TOPLEVEL );
+   gtk_window_set_title( GTK_WINDOW(s_rptDesigner), "Report Designer" );
+   gtk_window_set_default_size( GTK_WINDOW(s_rptDesigner), 800, 600 );
+   g_signal_connect( s_rptDesigner, "delete-event",
+      G_CALLBACK(gtk_widget_hide_on_delete), NULL );
+
+   /* Dark theme CSS */
+   { GtkCssProvider * p = gtk_css_provider_new();
+     gtk_css_provider_load_from_data( p,
+        "window { background-color: #252526; }"
+        "button { background-color: #3C3C3C; color: #D4D4D4; border-color: #555;"
+        "  padding: 3px 8px; }"
+        "button:hover { background-color: #4C4C4C; }"
+        "label { color: #D4D4D4; }"
+        "toolbar { background-color: #2D2D2D; border-bottom: 1px solid #3E3E3E; }", -1, NULL );
+     gtk_style_context_add_provider( gtk_widget_get_style_context(s_rptDesigner),
+        GTK_STYLE_PROVIDER(p), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+     g_object_unref( p );
+   }
+
+   /* Main layout: vbox with toolbar + scrolled drawing area */
+   GtkWidget * vbox = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
+   gtk_container_add( GTK_CONTAINER(s_rptDesigner), vbox );
+
+   /* Toolbar */
+   { GtkWidget * toolbar = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
+     gtk_widget_set_margin_start( toolbar, 4 );
+     gtk_widget_set_margin_end( toolbar, 4 );
+     gtk_widget_set_margin_top( toolbar, 4 );
+     gtk_widget_set_margin_bottom( toolbar, 4 );
+
+     GtkWidget * btnAddBand = gtk_button_new_with_label( "Add Band" );
+     g_signal_connect( btnAddBand, "clicked", G_CALLBACK(on_rpt_add_band_clicked), NULL );
+     gtk_box_pack_start( GTK_BOX(toolbar), btnAddBand, FALSE, FALSE, 0 );
+
+     GtkWidget * btnAddField = gtk_button_new_with_label( "Add Field" );
+     g_signal_connect( btnAddField, "clicked", G_CALLBACK(on_rpt_add_field), NULL );
+     gtk_box_pack_start( GTK_BOX(toolbar), btnAddField, FALSE, FALSE, 0 );
+
+     GtkWidget * btnDelete = gtk_button_new_with_label( "Delete" );
+     g_signal_connect( btnDelete, "clicked", G_CALLBACK(on_rpt_delete), NULL );
+     gtk_box_pack_start( GTK_BOX(toolbar), btnDelete, FALSE, FALSE, 0 );
+
+     GtkWidget * btnPreview = gtk_button_new_with_label( "Preview" );
+     g_signal_connect( btnPreview, "clicked", G_CALLBACK(on_rpt_preview), NULL );
+     gtk_box_pack_start( GTK_BOX(toolbar), btnPreview, FALSE, FALSE, 0 );
+
+     gtk_box_pack_start( GTK_BOX(vbox), toolbar, FALSE, FALSE, 0 );
+   }
+
+   /* Scrolled window with drawing area */
+   { GtkWidget * sw = gtk_scrolled_window_new( NULL, NULL );
+     gtk_scrolled_window_set_policy( GTK_SCROLLED_WINDOW(sw),
+        GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
+     gtk_box_pack_start( GTK_BOX(vbox), sw, TRUE, TRUE, 0 );
+
+     s_rptDrawArea = gtk_drawing_area_new();
+     gtk_widget_set_size_request( s_rptDrawArea, 700, 400 );
+     gtk_widget_add_events( s_rptDrawArea,
+        GDK_BUTTON_PRESS_MASK | GDK_BUTTON_RELEASE_MASK |
+        GDK_POINTER_MOTION_MASK );
+
+     g_signal_connect( s_rptDrawArea, "draw", G_CALLBACK(on_report_draw), NULL );
+     g_signal_connect( s_rptDrawArea, "button-press-event", G_CALLBACK(on_report_click), NULL );
+     g_signal_connect( s_rptDrawArea, "motion-notify-event", G_CALLBACK(on_report_motion), NULL );
+     g_signal_connect( s_rptDrawArea, "button-release-event", G_CALLBACK(on_report_release), NULL );
+
+     gtk_container_add( GTK_CONTAINER(sw), s_rptDrawArea );
+   }
+
+   gtk_widget_show_all( s_rptDesigner );
+}
+
+/* RPT_DESIGNERCLOSE() - Hide the report designer window */
+HB_FUNC( RPT_DESIGNERCLOSE )
+{
+   if( s_rptDesigner )
+      gtk_widget_hide( s_rptDesigner );
+}
+
+/* RPT_SETREPORT( pReportHandle ) - Store reference to TReport object */
+HB_FUNC( RPT_SETREPORT )
+{
+   /* Reserved for future integration with TReport Harbour object.
+    * Currently the designer uses its own internal C data structures.
+    * When integration is complete, this will sync band/field data
+    * between the Harbour TReport object and the C arrays. */
+   (void)hb_parni(1);
+}
+
+/* RPT_ADDBAND( cBandName, nHeight ) - Add a band to the designer */
+HB_FUNC( RPT_ADDBAND )
+{
+   if( s_rptBandCount >= RPT_MAX_BANDS ) { hb_retni( -1 ); return; }
+
+   const char * cName = hb_parc(1);
+   int nHeight = HB_ISNUM(2) ? hb_parni(2) : 80;
+
+   if( !cName || !cName[0] ) { hb_retni( -1 ); return; }
+
+   RptBand * b = &s_rptBands[s_rptBandCount];
+   memset( b, 0, sizeof(RptBand) );
+   strncpy( b->cName, cName, sizeof(b->cName) - 1 );
+   b->nHeight = nHeight;
+   rpt_band_color( cName, &b->colorR, &b->colorG, &b->colorB );
+
+   int idx = s_rptBandCount;
+   s_rptBandCount++;
+
+   if( s_rptDrawArea )
+      gtk_widget_queue_draw( s_rptDrawArea );
+
+   hb_retni( idx );
+}
+
+/* RPT_ADDFIELD( nBandIndex, cName, cText, nLeft, nTop, nWidth, nHeight ) - Add a field */
+HB_FUNC( RPT_ADDFIELD )
+{
+   int bi = hb_parni(1);
+   if( bi < 0 || bi >= s_rptBandCount ) { hb_retni( -1 ); return; }
+
+   RptBand * b = &s_rptBands[bi];
+   if( b->nFieldCount >= RPT_MAX_FIELDS ) { hb_retni( -1 ); return; }
+
+   RptField * f = &b->fields[b->nFieldCount];
+   memset( f, 0, sizeof(RptField) );
+
+   if( HB_ISCHAR(2) ) strncpy( f->cName, hb_parc(2), sizeof(f->cName) - 1 );
+   if( HB_ISCHAR(3) ) strncpy( f->cText, hb_parc(3), sizeof(f->cText) - 1 );
+   f->nLeft   = HB_ISNUM(4) ? hb_parni(4) : 10;
+   f->nTop    = HB_ISNUM(5) ? hb_parni(5) : 10;
+   f->nWidth  = HB_ISNUM(6) ? hb_parni(6) : 70;
+   f->nHeight = HB_ISNUM(7) ? hb_parni(7) : 20;
+
+   int idx = b->nFieldCount;
+   b->nFieldCount++;
+
+   if( s_rptDrawArea )
+      gtk_widget_queue_draw( s_rptDrawArea );
+
+   hb_retni( idx );
+}
+
+/* RPT_GETSELECTED() -> { nBandIndex, nFieldIndex, cBandName, cFieldName }
+ * Returns info about currently selected band/field for the inspector */
+HB_FUNC( RPT_GETSELECTED )
+{
+   PHB_ITEM pArray = hb_itemArrayNew( 4 );
+
+   hb_arraySetNI( pArray, 1, s_rptSelBand );
+   hb_arraySetNI( pArray, 2, s_rptSelField );
+
+   if( s_rptSelBand >= 0 && s_rptSelBand < s_rptBandCount )
+   {
+      hb_arraySetC( pArray, 3, s_rptBands[s_rptSelBand].cName );
+      if( s_rptSelField >= 0 && s_rptSelField < s_rptBands[s_rptSelBand].nFieldCount )
+         hb_arraySetC( pArray, 4, s_rptBands[s_rptSelBand].fields[s_rptSelField].cName );
+      else
+         hb_arraySetC( pArray, 4, "" );
+   }
+   else
+   {
+      hb_arraySetC( pArray, 3, "" );
+      hb_arraySetC( pArray, 4, "" );
+   }
+
+   hb_itemReturnRelease( pArray );
+}
+
