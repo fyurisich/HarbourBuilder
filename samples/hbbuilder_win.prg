@@ -730,15 +730,8 @@ static function RegenerateFormCode( cName, hForm )
                   LTrim(Str(nL)) + ',' + LTrim(Str(nT)) + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ',' + LTrim(Str(nCH)) + e
             otherwise
-               // Non-visual and other components: create as object
-               if nCW == 32 .and. nCH == 32
-                  // Non-visual component (icon on form)
-                  cCreate += '   ::o' + cCtrlName + ' := ' + cCtrlClass + '():New( Self )' + e
-               else
-                  cCreate += '   // ::o' + cCtrlName + ' (' + cCtrlClass + ') at ' + ;
-                     LTrim(Str(nL)) + ',' + LTrim(Str(nT)) + ' SIZE ' + ;
-                     LTrim(Str(nCW)) + ',' + LTrim(Str(nCH)) + e
-               endif
+               // Non-visual and other components
+               cCreate += '   // ::o' + cCtrlName + ' := ' + cCtrlClass + '():New( Self )' + e
          endcase
 
          // Scan for event handlers matching this control
@@ -1423,10 +1416,11 @@ return nil
 // Run: compile and execute the project (C++Builder F9)
 static function TBRun()
 
-   local cBuildDir, cOutput, cLog, i, lError
+   local cBuildDir, cOutput, cLog, i, k, lError
    local cHbDir, cHbBin, cHbInc, cHbLib
    local cCDir, cCC, cILink
    local cProjDir, cAllPrg, cCmd, cObjs
+   local aCppFiles, cCppBase
 
    SaveActiveFormCode()
 
@@ -1443,16 +1437,14 @@ static function TBRun()
    lError   := .F.
 
    W32_ShellExec( 'cmd /c mkdir "' + cBuildDir + '" 2>nul' )
+   // Delete old exe to avoid running stale builds
+   W32_ShellExec( 'cmd /c del "' + cBuildDir + '\UserApp.exe" 2>nul' )
 
-   // Trace log
-   MemoWrit( cBuildDir + "\build_trace.log", "=== TBRun started ===" + Chr(10) + ;
-      "BuildDir: " + cBuildDir + Chr(10) + ;
-      "HbDir: " + cHbDir + Chr(10) + ;
-      "CDir: " + cCDir + Chr(10) + ;
-      "ProjDir: " + cProjDir + Chr(10) + ;
-      "Forms: " + LTrim(Str(Len(aForms))) + Chr(10) )
+   // Show progress dialog (7 steps)
+   W32_ProgressOpen( "Building Project...", 7 )
 
    // Step 1: Save files
+   W32_ProgressStep( "Saving project files..." )
    cLog += "[1] Saving project files..." + Chr(10)
    MemoWrit( cBuildDir + "\Project1.prg", CodeEditorGetTabText( hCodeEditor, 1 ) )
    for i := 1 to Len( aForms )
@@ -1463,6 +1455,7 @@ static function TBRun()
    W32_ShellExec( 'cmd /c copy "' + cProjDir + '\harbour\hbbuilder.ch" "' + cBuildDir + '\" >nul 2>&1' )
 
    // Step 2: Assemble main.prg
+   W32_ProgressStep( "Assembling main.prg..." )
    cLog += "[2] Building main.prg..." + Chr(10)
    cAllPrg := '#include "hbbuilder.ch"' + Chr(10)
    cAllPrg += "REQUEST HB_GT_GUI_DEFAULT" + Chr(10) + Chr(10)
@@ -1475,6 +1468,7 @@ static function TBRun()
 
    // Step 3: Compile user code with Harbour
    if ! lError
+      W32_ProgressStep( "Compiling Harbour code..." )
       cLog += "[3] Compiling main.prg..." + Chr(10)
       cCmd := cHbBin + '\harbour.exe ' + cBuildDir + '\main.prg /n /w /q' + ;
               " /i" + cHbInc + " /i" + cBuildDir + ;
@@ -1490,6 +1484,7 @@ static function TBRun()
 
    // Step 4: Compile framework
    if ! lError
+      W32_ProgressStep( "Compiling framework..." )
       cLog += "[4] Compiling framework..." + Chr(10)
       cCmd := cHbBin + '\harbour.exe ' + cBuildDir + '\classes.prg /n /w /q' + ;
               " /i" + cHbInc + " /i" + cBuildDir + ;
@@ -1500,6 +1495,7 @@ static function TBRun()
 
    // Step 5: Compile C sources
    if ! lError
+      W32_ProgressStep( "Compiling C sources..." )
       cLog += "[5] Compiling C sources..." + Chr(10)
       cCmd := cCC + ' -c -O2 -tW -I' + cHbInc + ;
               " -I" + cCDir + "\include" + ;
@@ -1522,26 +1518,31 @@ static function TBRun()
 
    // Step 6: Compile C++ core
    if ! lError
+      W32_ProgressStep( "Compiling C++ core..." )
       cLog += "[6] Compiling C++ core..." + Chr(10)
-      cCmd := cCC + ' -c -O2 -tW -I' + cHbInc + ;
+      aCppFiles := { "tcontrol", "tform", "tcontrols", "hbbridge" }
+      cCppBase := " -c -O2 -tW -w- -I" + cHbInc + ;
               " -I" + cCDir + "\include" + ;
-              " -I" + cProjDir + "\cpp\include" + ;
-              " " + cProjDir + "\cpp\src\tcontrol.cpp" + ;
-              " " + cProjDir + "\cpp\src\tform.cpp" + ;
-              " " + cProjDir + "\cpp\src\tcontrols.cpp" + ;
-              " " + cProjDir + "\cpp\src\hbbridge.cpp" + ;
-              " -o" + cBuildDir + "\"
-      cOutput := W32_ShellExec( cCmd )
-      if "Error" $ cOutput
-         cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
-         lError := .T.
-      else
+              " -I" + cProjDir + "\cpp\include "
+      for k := 1 to Len( aCppFiles )
+         cCmd := cCC + cCppBase + ;
+                 cProjDir + "\cpp\src\" + aCppFiles[k] + ".cpp" + ;
+                 " -o" + cBuildDir + "\" + aCppFiles[k] + ".obj"
+         cOutput := W32_ShellExec( cCmd )
+         if "Error" $ cOutput .or. "error" $ cOutput
+            cLog += "    FAILED (" + aCppFiles[k] + "):" + Chr(10) + cOutput + Chr(10)
+            lError := .T.
+            exit
+         endif
+      next
+      if ! lError
          cLog += "    OK" + Chr(10)
       endif
    endif
 
    // Step 7: Link
    if ! lError
+      W32_ProgressStep( "Linking executable..." )
       cLog += "[7] Linking..." + Chr(10)
       cObjs := "c0w32.obj " + ;
                cBuildDir + "\main.obj " + ;
@@ -1560,12 +1561,16 @@ static function TBRun()
               " hbmacro.lib hbpp.lib hbcommon.lib hbcplr.lib hbct.lib" + ;
               " hbhsx.lib hbsix.lib hbusrrdd.lib" + ;
               " rddntx.lib rddnsx.lib rddcdx.lib rddfpt.lib" + ;
-              " hbdebug.lib gtwin.lib gtwvt.lib gtgui.lib" + ;
-              " cw32.lib import32.lib ws2_32.lib" + ;
+              " hbdebug.lib hbpcre.lib hbzlib.lib" + ;
+              " hbsqlit3.lib sqlite3.lib" + ;
+              " gtwin.lib gtwvt.lib gtgui.lib" + ;
+              " cw32mt.lib import32.lib ws2_32.lib winmm.lib" + ;
               " user32.lib gdi32.lib comctl32.lib comdlg32.lib shell32.lib" + ;
-              " ole32.lib uuid.lib,,"
+              " ole32.lib oleaut32.lib uuid.lib advapi32.lib" + ;
+              " msimg32.lib gdiplus.lib,,"
       cOutput := W32_ShellExec( cCmd )
-      if "error" $ Lower( cOutput )
+      // Also check if exe was actually created
+      if ! File( cBuildDir + "\UserApp.exe" )
          cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
          lError := .T.
       else
@@ -1576,11 +1581,16 @@ static function TBRun()
    // Write full build log to trace file
    MemoWrit( cBuildDir + "\build_trace.log", cLog )
 
+   // Close progress dialog
+   W32_ProgressClose()
+
    // Result
    if lError
-      MsgInfo( "Build FAILED:" + Chr(10) + Chr(10) + cLog )
+      W32_BuildErrorDialog( "Build Failed", cLog )
+   elseif ! File( cBuildDir + "\UserApp.exe" )
+      cLog += Chr(10) + "ERROR: UserApp.exe was not created." + Chr(10)
+      W32_BuildErrorDialog( "Build Failed", cLog )
    else
-      cLog += Chr(10) + "Build succeeded. Running..." + Chr(10)
       W32_ShellExec( 'cmd /c start "" "' + cBuildDir + '\UserApp.exe"' )
    endif
 

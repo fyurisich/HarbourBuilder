@@ -1657,6 +1657,251 @@ HB_FUNC( UI_DROPNONVISUAL )
    hb_retnint( (HB_PTRUINT) ctrl );
 }
 
+/* ================================================================
+ * BUILD PROGRESS DIALOG
+ * ================================================================ */
+
+static HWND s_hProgressWnd = NULL;
+static HWND s_hProgressBar = NULL;
+static HWND s_hProgressLabel = NULL;
+
+/* W32_ProgressOpen( cTitle, nSteps ) - show progress dialog */
+HB_FUNC( W32_PROGRESSOPEN )
+{
+   const char * cTitle = HB_ISCHAR(1) ? hb_parc(1) : "Building...";
+   int nSteps = HB_ISNUM(2) ? hb_parni(2) : 7;
+
+   if( s_hProgressWnd ) {
+      ShowWindow( s_hProgressWnd, SW_SHOW );
+      SetForegroundWindow( s_hProgressWnd );
+      return;
+   }
+
+   /* Register window class for progress dialog */
+   {  static BOOL bReg = FALSE;
+      if( !bReg ) {
+         WNDCLASSEXA wc = { sizeof(WNDCLASSEXA) };
+         wc.lpfnWndProc = DefWindowProcA;
+         wc.hInstance = GetModuleHandle(NULL);
+         wc.lpszClassName = "HbProgressDlg";
+         wc.hCursor = LoadCursor( NULL, IDC_ARROW );
+         wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+         RegisterClassExA( &wc );
+         bReg = TRUE;
+      }
+   }
+
+   int sw = GetSystemMetrics( SM_CXSCREEN );
+   int sh = GetSystemMetrics( SM_CYSCREEN );
+   int dlgW = 420, dlgH = 130;
+   int x = (sw - dlgW) / 2, y = (sh - dlgH) / 2;
+
+   s_hProgressWnd = CreateWindowExA( WS_EX_DLGMODALFRAME | WS_EX_TOPMOST,
+      "HbProgressDlg", cTitle,
+      WS_POPUP | WS_CAPTION | WS_VISIBLE,
+      x, y, dlgW, dlgH, NULL, NULL, GetModuleHandle(NULL), NULL );
+
+   /* Dark title bar */
+   {  typedef HRESULT (WINAPI *PFN)(HWND, DWORD, LPCVOID, DWORD);
+      HMODULE hDwm = LoadLibraryA("dwmapi.dll");
+      if( hDwm ) {
+         PFN pFn = (PFN)GetProcAddress(hDwm, "DwmSetWindowAttribute");
+         if( pFn ) { BOOL val = TRUE; pFn( s_hProgressWnd, 20, &val, sizeof(val) ); }
+         FreeLibrary( hDwm );
+      }
+   }
+
+   HFONT hFont = (HFONT)GetStockObject( DEFAULT_GUI_FONT );
+
+   /* Status label */
+   s_hProgressLabel = CreateWindowExA( 0, "STATIC", "Preparing...",
+      WS_CHILD | WS_VISIBLE | SS_LEFT,
+      16, 12, dlgW - 40, 20, s_hProgressWnd, NULL, GetModuleHandle(NULL), NULL );
+   SendMessageA( s_hProgressLabel, WM_SETFONT, (WPARAM) hFont, TRUE );
+
+   /* Progress bar */
+   s_hProgressBar = CreateWindowExA( 0, PROGRESS_CLASSA, NULL,
+      WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
+      16, 40, dlgW - 40, 24, s_hProgressWnd, NULL, GetModuleHandle(NULL), NULL );
+   SendMessageA( s_hProgressBar, PBM_SETRANGE, 0, MAKELPARAM(0, nSteps) );
+   SendMessageA( s_hProgressBar, PBM_SETSTEP, 1, 0 );
+   SendMessageA( s_hProgressBar, PBM_SETPOS, 0, 0 );
+
+   /* Process messages so the dialog shows immediately */
+   { MSG m; while( PeekMessage(&m, NULL, 0, 0, PM_REMOVE) )
+     { TranslateMessage(&m); DispatchMessage(&m); } }
+}
+
+/* W32_ProgressStep( cText ) - advance progress and update label */
+HB_FUNC( W32_PROGRESSSTEP )
+{
+   if( !s_hProgressWnd ) return;
+
+   if( HB_ISCHAR(1) && s_hProgressLabel )
+      SetWindowTextA( s_hProgressLabel, hb_parc(1) );
+
+   if( s_hProgressBar )
+      SendMessageA( s_hProgressBar, PBM_STEPIT, 0, 0 );
+
+   UpdateWindow( s_hProgressWnd );
+
+   /* Process messages to keep UI responsive */
+   { MSG m; while( PeekMessage(&m, NULL, 0, 0, PM_REMOVE) )
+     { TranslateMessage(&m); DispatchMessage(&m); } }
+}
+
+/* W32_ProgressClose() - close progress dialog */
+HB_FUNC( W32_PROGRESSCLOSE )
+{
+   if( s_hProgressWnd )
+   {
+      DestroyWindow( s_hProgressWnd );
+      s_hProgressWnd = NULL;
+      s_hProgressBar = NULL;
+      s_hProgressLabel = NULL;
+   }
+}
+
+/* W32_BuildErrorDialog( cTitle, cLog ) - resizable dialog with selectable/copyable text */
+
+static HWND s_errEdit = NULL;
+static HWND s_errCopyBtn = NULL;
+
+static LRESULT CALLBACK BuildErrProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+   switch( msg )
+   {
+      case WM_COMMAND:
+      {
+         int id = LOWORD(wParam);
+         if( id == 1001 && s_errEdit )
+         {
+            /* Select all + copy */
+            SendMessageA( s_errEdit, EM_SETSEL, 0, -1 );
+            SendMessageA( s_errEdit, WM_COPY, 0, 0 );
+            if( s_errCopyBtn )
+               SetWindowTextA( s_errCopyBtn, "Copied!" );
+            return 0;
+         }
+         if( id == 1002 || id == IDCANCEL )
+         {
+            PostQuitMessage( 0 );
+            return 0;
+         }
+         break;
+      }
+      case WM_SIZE:
+      {
+         int w = LOWORD(lParam), h = HIWORD(lParam);
+         if( s_errEdit )
+            MoveWindow( s_errEdit, 8, 8, w - 16, h - 56, TRUE );
+         if( s_errCopyBtn )
+            MoveWindow( s_errCopyBtn, w / 2 - 140, h - 40, 130, 30, TRUE );
+         { HWND hClose = GetDlgItem( hWnd, 1002 );
+           if( hClose ) MoveWindow( hClose, w / 2 + 10, h - 40, 130, 30, TRUE ); }
+         return 0;
+      }
+      case WM_CLOSE:
+         PostQuitMessage( 0 );
+         return 0;
+   }
+   return DefWindowProc( hWnd, msg, wParam, lParam );
+}
+
+HB_FUNC( W32_BUILDERRORDIALOG )
+{
+   const char * cTitle = HB_ISCHAR(1) ? hb_parc(1) : "Build Error";
+   const char * cLog   = HB_ISCHAR(2) ? hb_parc(2) : "";
+
+   /* Register class */
+   {  static BOOL bReg = FALSE;
+      if( !bReg ) {
+         WNDCLASSEXA wc = { sizeof(WNDCLASSEXA) };
+         wc.lpfnWndProc = BuildErrProc;
+         wc.hInstance = GetModuleHandle(NULL);
+         wc.lpszClassName = "HbBuildErr";
+         wc.hCursor = LoadCursor( NULL, IDC_ARROW );
+         wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+         RegisterClassExA( &wc );
+         bReg = TRUE;
+      }
+   }
+
+   int sw = GetSystemMetrics( SM_CXSCREEN );
+   int sh = GetSystemMetrics( SM_CYSCREEN );
+   int dlgW = 620, dlgH = 400;
+
+   HWND hDlg = CreateWindowExA( WS_EX_TOPMOST, "HbBuildErr", cTitle,
+      WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+      (sw-dlgW)/2, (sh-dlgH)/2, dlgW, dlgH,
+      NULL, NULL, GetModuleHandle(NULL), NULL );
+
+   /* Dark title bar */
+   {  typedef HRESULT (WINAPI *PFN)(HWND, DWORD, LPCVOID, DWORD);
+      HMODULE hDwm = LoadLibraryA("dwmapi.dll");
+      if( hDwm ) {
+         PFN pFn = (PFN)GetProcAddress(hDwm, "DwmSetWindowAttribute");
+         if( pFn ) { BOOL val = TRUE; pFn( hDlg, 20, &val, sizeof(val) ); }
+         FreeLibrary( hDwm );
+      }
+   }
+
+   HFONT hMono = CreateFontA( -13, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE,
+      DEFAULT_CHARSET, 0, 0, CLEARTYPE_QUALITY, FIXED_PITCH | FF_MODERN, "Consolas" );
+   HFONT hGui = (HFONT) GetStockObject( DEFAULT_GUI_FONT );
+
+   /* Convert LF to CRLF for Windows Edit control */
+   char * cLogCRLF = NULL;
+   {
+      int len = (int) strlen( cLog );
+      cLogCRLF = (char *) malloc( len * 2 + 1 );
+      int j = 0;
+      for( int k = 0; k < len; k++ )
+      {
+         if( cLog[k] == '\n' && ( k == 0 || cLog[k-1] != '\r' ) )
+            cLogCRLF[j++] = '\r';
+         cLogCRLF[j++] = cLog[k];
+      }
+      cLogCRLF[j] = 0;
+   }
+
+   /* Edit: full log, read-only, selectable, Ctrl+C works */
+   s_errEdit = CreateWindowExA( WS_EX_CLIENTEDGE, "EDIT", cLogCRLF,
+      WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL |
+      WS_VSCROLL | WS_HSCROLL | ES_AUTOHSCROLL,
+      8, 8, dlgW - 32, dlgH - 90, hDlg, NULL, GetModuleHandle(NULL), NULL );
+   SendMessageA( s_errEdit, WM_SETFONT, (WPARAM) hMono, TRUE );
+
+   /* Copy button */
+   s_errCopyBtn = CreateWindowExA( 0, "BUTTON", "Copy to Clipboard",
+      WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+      dlgW/2 - 140, dlgH - 74, 130, 30, hDlg, (HMENU) 1001,
+      GetModuleHandle(NULL), NULL );
+   SendMessageA( s_errCopyBtn, WM_SETFONT, (WPARAM) hGui, TRUE );
+
+   /* Close button */
+   HWND hClose = CreateWindowExA( 0, "BUTTON", "Close",
+      WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+      dlgW/2 + 10, dlgH - 74, 130, 30, hDlg, (HMENU) 1002,
+      GetModuleHandle(NULL), NULL );
+   SendMessageA( hClose, WM_SETFONT, (WPARAM) hGui, TRUE );
+
+   /* Modal loop */
+   { MSG msg;
+     while( GetMessage( &msg, NULL, 0, 0 ) > 0 )
+     {
+        TranslateMessage( &msg );
+        DispatchMessage( &msg );
+     }
+   }
+
+   s_errEdit = NULL;
+   s_errCopyBtn = NULL;
+   DeleteObject( hMono );
+   DestroyWindow( hDlg );
+   if( cLogCRLF ) free( cLogCRLF );
+}
+
 /* UI_MenuSetBitmapByPos( hPopup, nPos, cPngPath ) - set PNG bitmap on menu item */
 HB_FUNC( UI_MENUSETBITMAPBYPOS )
 {
