@@ -32,6 +32,7 @@ static cCurrentFile  // Current file path (empty = untitled)
 static aForms        // Array of form entries
 static nActiveForm   // Index of active form (1-based)
 static lDarkMode := .T.   // Dark mode state for toggle
+static cSelectedCompiler := ""  // "", "msvc", "bcc" (empty = auto-detect)
 
 function Main()
 
@@ -169,6 +170,8 @@ function Main()
    MENUSEPARATOR OF oTools
    MENUITEM "&AI Assistant..."        OF oTools ACTION ShowAIAssistant()
    MENUITEM "&Report Designer"        OF oTools ACTION OpenReportDesigner()
+   MENUSEPARATOR OF oTools
+   MENUITEM "&Select Compiler..."     OF oTools ACTION SelectCompiler()
    MENUSEPARATOR OF oTools
    MENUITEM "&Generate Palette Icons" OF oTools ACTION ( W32_GeneratePaletteIcons( .F. ), W32_GenerateToolbarIcons( .F. ) )
 
@@ -1419,15 +1422,72 @@ static function TBSave()
 
 return nil
 
+// Detect available C compiler: "msvc" or "bcc"
+static function DetectCompiler()
+
+   // User selected a specific compiler
+   if ! Empty( cSelectedCompiler )
+      return cSelectedCompiler
+   endif
+
+   // Auto-detect: MSVC first (preferred)
+   if File( "c:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\bin\Hostx86\x86\cl.exe" )
+      return "msvc"
+   endif
+   // Check BCC
+   if File( "c:\bcc77c\bin\bcc32.exe" )
+      return "bcc"
+   endif
+
+return ""
+
+static function SelectCompiler()
+
+   local aOptions := {}
+   local nSel, cCurrent
+
+   cCurrent := DetectCompiler()
+
+   // Build list of available compilers
+   if File( "c:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133\bin\Hostx86\x86\cl.exe" )
+      AAdd( aOptions, "MSVC 2019 (32-bit)" + iif( cCurrent == "msvc", " [active]", "" ) )
+   endif
+   if File( "c:\bcc77c\bin\bcc32.exe" )
+      AAdd( aOptions, "BCC 7.7 (32-bit)" + iif( cCurrent == "bcc", " [active]", "" ) )
+   endif
+   AAdd( aOptions, "Auto-detect" + iif( Empty( cSelectedCompiler ), " [active]", "" ) )
+
+   if Len( aOptions ) == 0
+      MsgInfo( "No compiler found" )
+      return nil
+   endif
+
+   nSel := W32_SelectFromList( "Select C/C++ Compiler", aOptions )
+
+   if nSel > 0
+      if "MSVC" $ aOptions[nSel]
+         cSelectedCompiler := "msvc"
+      elseif "BCC" $ aOptions[nSel]
+         cSelectedCompiler := "bcc"
+      else
+         cSelectedCompiler := ""  // auto-detect
+      endif
+      MsgInfo( "Compiler: " + iif( Empty(cSelectedCompiler), "Auto-detect", Upper(cSelectedCompiler) ) )
+   endif
+
+return nil
+
 // Run: compile and execute the project (C++Builder F9)
 static function TBRun()
 
    local cBuildDir, cOutput, cLog, i, k, lError
    local cHbDir, cHbBin, cHbInc, cHbLib
-   local cCDir, cCC, cILink
+   local cCDir, cCC, cLinker
    local cProjDir, cAllPrg, cCmd, cObjs
    local aCppFiles, cCppBase
-   local cAllCode, nHash, cHashFile, cOldHash
+   local cAllCode, nHash
+   local cCompiler, cMsvcBase, cWinKit, cWinKitVer
+   local cMsvcInc, cMsvcLib, cUcrtInc, cUmInc, cUcrtLib, cUmLib
    static nLastHash := 0
 
    SaveActiveFormCode()
@@ -1450,13 +1510,42 @@ static function TBRun()
    cHbDir   := "c:\harbour"
    cHbBin   := cHbDir + "\bin\win\bcc"
    cHbInc   := cHbDir + "\include"
-   cHbLib   := cHbDir + "\lib\win\bcc"
-   cCDir    := "c:\bcc77c"
-   cCC      := cCDir + "\bin\bcc32.exe"
-   cILink   := cCDir + "\bin\ilink32.exe"
    cProjDir := "c:\HarbourBuilder"
    cLog     := ""
    lError   := .F.
+
+   // Detect compiler
+   cCompiler := DetectCompiler()
+   if Empty( cCompiler )
+      MsgInfo( "No C compiler found!" + Chr(10) + Chr(10) + ;
+               "Install one of:" + Chr(10) + ;
+               "- Visual Studio Build Tools (recommended)" + Chr(10) + ;
+               "- Embarcadero BCC (c:\bcc77c)" )
+      return nil
+   endif
+
+   if cCompiler == "msvc"
+      cMsvcBase  := "c:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133"
+      cWinKit    := "c:\Program Files (x86)\Windows Kits\10"
+      cWinKitVer := "10.0.26100.0"
+      cCC        := '"' + cMsvcBase + '\bin\Hostx86\x86\cl.exe"'
+      cLinker    := '"' + cMsvcBase + '\bin\Hostx86\x86\link.exe"'
+      cMsvcInc   := cMsvcBase + "\include"
+      cMsvcLib   := cMsvcBase + "\lib\x86"
+      cUcrtInc   := cWinKit + "\Include\" + cWinKitVer + "\ucrt"
+      cUmInc     := cWinKit + "\Include\" + cWinKitVer + "\um"
+      cUcrtLib   := cWinKit + "\Lib\" + cWinKitVer + "\ucrt\x86"
+      cUmLib     := cWinKit + "\Lib\" + cWinKitVer + "\um\x86"
+      cHbBin     := cHbDir + "\bin\win\msvc"
+      cHbLib     := cHbDir + "\lib\win\msvc"
+      cLog += "Compiler: MSVC 2019 (32-bit)" + Chr(10)
+   else
+      cCDir      := "c:\bcc77c"
+      cCC        := cCDir + "\bin\bcc32.exe"
+      cLinker    := cCDir + "\bin\ilink32.exe"
+      cHbLib     := cHbDir + "\lib\win\bcc"
+      cLog += "Compiler: BCC (32-bit)" + Chr(10)
+   endif
 
    W32_ShellExec( 'cmd /c mkdir "' + cBuildDir + '" 2>nul' )
    // Delete old exe to avoid running stale builds
@@ -1522,27 +1611,46 @@ static function TBRun()
       cLog += "    OK" + Chr(10)
    endif
 
-   // Step 5: Compile C sources
+   // Step 5: Compile C sources (compiler-specific)
    if ! lError
       W32_ProgressStep( "Compiling C sources..." )
       cLog += "[5] Compiling C sources..." + Chr(10)
-      cCmd := cCC + ' -c -O2 -tW -I' + cHbInc + ;
-              " -I" + cCDir + "\include" + ;
-              " -I" + cProjDir + "\cpp\include" + ;
-              " " + cBuildDir + "\main.c" + ;
-              " -o" + cBuildDir + "\main.obj"
-      cOutput := W32_ShellExec( cCmd )
-      if "Error" $ cOutput
-         cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
-         lError := .T.
+      if cCompiler == "msvc"
+         cCppBase := cCC + ' /c /O2 /W0 /EHsc' + ;
+                 ' /I"' + cHbInc + '"' + ;
+                 ' /I"' + cMsvcInc + '"' + ;
+                 ' /I"' + cUcrtInc + '"' + ;
+                 ' /I"' + cUmInc + '"' + ;
+                 ' /I"' + cProjDir + '\cpp\include" '
+         cCmd := cCppBase + '"' + cBuildDir + '\main.c" /Fo"' + cBuildDir + '\main.obj"'
+         cOutput := W32_ShellExec( cCmd )
+         if "error" $ Lower( cOutput )
+            cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
+            lError := .T.
+         endif
+         if ! lError
+            cCmd := cCppBase + '"' + cBuildDir + '\classes.c" /Fo"' + cBuildDir + '\classes.obj"'
+            W32_ShellExec( cCmd )
+         endif
+      else
+         cCmd := cCC + ' -c -O2 -tW -I' + cHbInc + ;
+                 " -I" + cCDir + "\include" + ;
+                 " -I" + cProjDir + "\cpp\include" + ;
+                 " " + cBuildDir + "\main.c" + ;
+                 " -o" + cBuildDir + "\main.obj"
+         cOutput := W32_ShellExec( cCmd )
+         if "Error" $ cOutput
+            cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
+            lError := .T.
+         endif
+         cCmd := cCC + ' -c -O2 -tW -I' + cHbInc + ;
+                 " -I" + cCDir + "\include" + ;
+                 " -I" + cProjDir + "\cpp\include" + ;
+                 " " + cBuildDir + "\classes.c" + ;
+                 " -o" + cBuildDir + "\classes.obj"
+         W32_ShellExec( cCmd )
       endif
-      cCmd := cCC + ' -c -O2 -tW -I' + cHbInc + ;
-              " -I" + cCDir + "\include" + ;
-              " -I" + cProjDir + "\cpp\include" + ;
-              " " + cBuildDir + "\classes.c" + ;
-              " -o" + cBuildDir + "\classes.obj"
-      W32_ShellExec( cCmd )
-      cLog += "    OK" + Chr(10)
+      if ! lError; cLog += "    OK" + Chr(10); endif
    endif
 
    // Step 6: Compile C++ core
@@ -1550,53 +1658,85 @@ static function TBRun()
       W32_ProgressStep( "Compiling C++ core..." )
       cLog += "[6] Compiling C++ core..." + Chr(10)
       aCppFiles := { "tcontrol", "tform", "tcontrols", "hbbridge" }
-      cCppBase := " -c -O2 -tW -w- -I" + cHbInc + ;
-              " -I" + cCDir + "\include" + ;
-              " -I" + cProjDir + "\cpp\include "
+      if cCompiler == "msvc"
+         cCppBase := cCC + ' /c /O2 /W0 /EHsc' + ;
+                 ' /I"' + cHbInc + '"' + ;
+                 ' /I"' + cMsvcInc + '"' + ;
+                 ' /I"' + cUcrtInc + '"' + ;
+                 ' /I"' + cUmInc + '"' + ;
+                 ' /I"' + cProjDir + '\cpp\include" '
+      else
+         cCppBase := " -c -O2 -tW -w- -I" + cHbInc + ;
+                 " -I" + cCDir + "\include" + ;
+                 " -I" + cProjDir + "\cpp\include "
+      endif
       for k := 1 to Len( aCppFiles )
-         cCmd := cCC + cCppBase + ;
-                 cProjDir + "\cpp\src\" + aCppFiles[k] + ".cpp" + ;
-                 " -o" + cBuildDir + "\" + aCppFiles[k] + ".obj"
+         if cCompiler == "msvc"
+            cCmd := cCppBase + '"' + cProjDir + "\cpp\src\" + aCppFiles[k] + '.cpp"' + ;
+                    ' /Fo"' + cBuildDir + "\" + aCppFiles[k] + '.obj"'
+         else
+            cCmd := cCC + cCppBase + ;
+                    cProjDir + "\cpp\src\" + aCppFiles[k] + ".cpp" + ;
+                    " -o" + cBuildDir + "\" + aCppFiles[k] + ".obj"
+         endif
          cOutput := W32_ShellExec( cCmd )
-         if "Error" $ cOutput .or. "error" $ cOutput
+         if "error" $ Lower( cOutput )
             cLog += "    FAILED (" + aCppFiles[k] + "):" + Chr(10) + cOutput + Chr(10)
             lError := .T.
             exit
          endif
       next
-      if ! lError
-         cLog += "    OK" + Chr(10)
-      endif
+      if ! lError; cLog += "    OK" + Chr(10); endif
    endif
 
    // Step 7: Link
    if ! lError
       W32_ProgressStep( "Linking executable..." )
       cLog += "[7] Linking..." + Chr(10)
-      cObjs := "c0w32.obj " + ;
-               cBuildDir + "\main.obj " + ;
+      cObjs := cBuildDir + "\main.obj " + ;
                cBuildDir + "\classes.obj " + ;
                cBuildDir + "\tcontrol.obj " + ;
                cBuildDir + "\tform.obj " + ;
                cBuildDir + "\tcontrols.obj " + ;
                cBuildDir + "\hbbridge.obj"
-      cCmd := cILink + ' -Gn -aa -Tpe' + ;
-              " -L" + cCDir + "\lib" + ;
-              " -L" + cCDir + "\lib\psdk" + ;
-              " -L" + cHbLib + ;
-              " " + cObjs + "," + ;
-              " " + cBuildDir + "\UserApp.exe,," + ;
-              " hbrtl.lib hbvm.lib hbcpage.lib hblang.lib hbrdd.lib" + ;
-              " hbmacro.lib hbpp.lib hbcommon.lib hbcplr.lib hbct.lib" + ;
-              " hbhsx.lib hbsix.lib hbusrrdd.lib" + ;
-              " rddntx.lib rddnsx.lib rddcdx.lib rddfpt.lib" + ;
-              " hbdebug.lib hbpcre.lib hbzlib.lib" + ;
-              " hbsqlit3.lib sqlite3.lib" + ;
-              " gtwin.lib gtwvt.lib gtgui.lib" + ;
-              " cw32mt.lib import32.lib ws2_32.lib winmm.lib" + ;
-              " user32.lib gdi32.lib comctl32.lib comdlg32.lib shell32.lib" + ;
-              " ole32.lib oleaut32.lib uuid.lib advapi32.lib" + ;
-              " msimg32.lib gdiplus.lib,,"
+      if cCompiler == "msvc"
+         cCmd := cLinker + " /NOLOGO /SUBSYSTEM:WINDOWS" + ;
+                 ' /LIBPATH:"' + cMsvcLib + '"' + ;
+                 ' /LIBPATH:"' + cUcrtLib + '"' + ;
+                 ' /LIBPATH:"' + cUmLib + '"' + ;
+                 ' /LIBPATH:"' + cHbLib + '"' + ;
+                 " /OUT:" + cBuildDir + "\UserApp.exe" + ;
+                 " " + cObjs + ;
+                 " hbrtl.lib hbvm.lib hbcpage.lib hblang.lib hbrdd.lib" + ;
+                 " hbmacro.lib hbpp.lib hbcommon.lib hbcplr.lib hbct.lib" + ;
+                 " hbhsx.lib hbsix.lib hbusrrdd.lib" + ;
+                 " rddntx.lib rddnsx.lib rddcdx.lib rddfpt.lib" + ;
+                 " hbdebug.lib hbpcre.lib hbzlib.lib" + ;
+                 " hbsqlit3.lib sqlite3.lib" + ;
+                 " gtwin.lib gtwvt.lib gtgui.lib" + ;
+                 " user32.lib gdi32.lib comctl32.lib comdlg32.lib shell32.lib" + ;
+                 " ole32.lib oleaut32.lib advapi32.lib ws2_32.lib winmm.lib" + ;
+                 " msimg32.lib gdiplus.lib ucrt.lib vcruntime.lib msvcrt.lib"
+      else
+         cObjs := "c0w32.obj " + cObjs
+         cCmd := cLinker + ' -Gn -aa -Tpe' + ;
+                 " -L" + cCDir + "\lib" + ;
+                 " -L" + cCDir + "\lib\psdk" + ;
+                 " -L" + cHbLib + ;
+                 " " + cObjs + "," + ;
+                 " " + cBuildDir + "\UserApp.exe,," + ;
+                 " hbrtl.lib hbvm.lib hbcpage.lib hblang.lib hbrdd.lib" + ;
+                 " hbmacro.lib hbpp.lib hbcommon.lib hbcplr.lib hbct.lib" + ;
+                 " hbhsx.lib hbsix.lib hbusrrdd.lib" + ;
+                 " rddntx.lib rddnsx.lib rddcdx.lib rddfpt.lib" + ;
+                 " hbdebug.lib hbpcre.lib hbzlib.lib" + ;
+                 " hbsqlit3.lib sqlite3.lib" + ;
+                 " gtwin.lib gtwvt.lib gtgui.lib" + ;
+                 " cw32mt.lib import32.lib ws2_32.lib winmm.lib" + ;
+                 " user32.lib gdi32.lib comctl32.lib comdlg32.lib shell32.lib" + ;
+                 " ole32.lib oleaut32.lib uuid.lib advapi32.lib" + ;
+                 " msimg32.lib gdiplus.lib,,"
+      endif
       cOutput := W32_ShellExec( cCmd )
       // Also check if exe was actually created
       if ! File( cBuildDir + "\UserApp.exe" )
