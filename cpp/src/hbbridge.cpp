@@ -1585,6 +1585,14 @@ HB_FUNC( UI_PALETTELOADIMAGES )
       p->LoadImages( hb_parc(2) );
 }
 
+/* UI_PaletteAppendImages( hPalette, cBmpPath ) - append more icons to existing ImageList */
+HB_FUNC( UI_PALETTEAPPENDIMAGES )
+{
+   TComponentPalette * p = (TComponentPalette *) GetCtrl(1);
+   if( p && p->FControlType == CT_TABCONTROL && HB_ISCHAR(2) )
+      p->AppendImages( hb_parc(2) );
+}
+
 /* UI_PaletteOnSelect( hPalette, bBlock ) */
 HB_FUNC( UI_PALETTEONSELECT )
 {

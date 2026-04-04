@@ -905,6 +905,7 @@ public:
    void HandleTabChange();
    int  GetBarHeight();
    void LoadImages( const char * szBmpPath );
+   void AppendImages( const char * szBmpPath );
    const PROPDESC * GetPropDescs( int * pnCount );
 };
 

@@ -1425,6 +1425,24 @@ void TComponentPalette::LoadImages( const char * szBmpPath )
       ShowTab( FCurrentTab );
 }
 
+void TComponentPalette::AppendImages( const char * szBmpPath )
+{
+   HBITMAP hBmp;
+
+   if( !szBmpPath || !FPalImageList ) return;
+
+   hBmp = (HBITMAP) LoadImageA( NULL, szBmpPath, IMAGE_BITMAP,
+      0, 0, LR_LOADFROMFILE );
+   if( !hBmp ) return;
+
+   ImageList_AddMasked( FPalImageList, hBmp, RGB(255, 0, 255) );
+   DeleteObject( hBmp );
+
+   /* Refresh current tab */
+   if( FTabCtrl )
+      ShowTab( FCurrentTab );
+}
+
 void TComponentPalette::HandleTabChange()
 {
    int sel = (int) SendMessage( FTabCtrl, TCM_GETCURSEL, 0, 0 );

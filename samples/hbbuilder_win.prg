@@ -58,7 +58,7 @@ function Main()
 
    // C++Builder classic proportions scaled to current screen
    // Reference: 1024x768 -> Inspector 250px (24.4%), Bar 140px
-   nBarH    := 155                           // title(23) + menu(20) + borders(8) + 2 toolbars(70) + palette(28)
+   nBarH    := 141                           // title(23) + menu(20) + borders(8) + 2 toolbars(70) + palette(28) - 14
    nInsW    := Int( nScreenW * 0.18 )        // ~18% of screen width
 
    // === Window 1: Main Bar (full screen width) ===
@@ -419,7 +419,7 @@ static function CreatePalette()
    oPal:AddComp( nTab, "Lua",  "Lua",         119 )
    oPal:AddComp( nTab, "Rby",  "Ruby",        120 )
 
-   // Load palette icons (Silk icon set by famfamfam, CC BY 2.5)
+   // Load palette icons (includes Connectivity language logos)
    UI_PaletteLoadImages( oPal:hCpp, HB_DirBase() + "..\resources\palette.bmp" )
 
 return nil
