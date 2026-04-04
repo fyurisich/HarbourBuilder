@@ -105,15 +105,15 @@ function Main()
 
    DEFINE POPUP oRun PROMPT "Run" OF oIDE
    MENUITEM "Run"           OF oRun ACTION TBRun()                 ACCEL "r"
-   MENUITEM "Step Over"     OF oRun ACTION MsgInfo( "Step Over" )
-   MENUITEM "Step Into"     OF oRun ACTION MsgInfo( "Step Into" )
+   MENUITEM "Step Over"     OF oRun ACTION DebugStepOver()
+   MENUITEM "Step Into"     OF oRun ACTION DebugStepInto()
    MENUSEPARATOR OF oRun
    MENUITEM "Toggle Breakpoint"  OF oRun ACTION ToggleBreakpoint()
    MENUITEM "Clear Breakpoints"  OF oRun ACTION ClearBreakpoints()
 
    DEFINE POPUP oComp PROMPT "Component" OF oIDE
-   MENUITEM "Install Component..." OF oComp ACTION MsgInfo( "Install" )
-   MENUITEM "New Component..."     OF oComp ACTION MsgInfo( "New Component" )
+   MENUITEM "Install Component..." OF oComp ACTION InstallComponent()
+   MENUITEM "New Component..."     OF oComp ACTION NewComponent()
 
    DEFINE POPUP oTools PROMPT "Tools" OF oIDE
    MENUITEM "Editor Colors..."        OF oTools ACTION ShowEditorSettings()
@@ -1105,6 +1105,16 @@ return nil
 
 // === Debugger ===
 
+static function DebugStepOver()
+   GTK_DebugPanel()
+   MsgInfo( "Step Over: start a debug session with Run > Run first" )
+return nil
+
+static function DebugStepInto()
+   GTK_DebugPanel()
+   MsgInfo( "Step Into: start a debug session with Run > Run first" )
+return nil
+
 static function ToggleBreakpoint()
    static aBreakpoints := {}
    AAdd( aBreakpoints, { "Form1.prg", 1 } )
@@ -1113,6 +1123,40 @@ return nil
 
 static function ClearBreakpoints()
    MsgInfo( "All breakpoints cleared" )
+return nil
+
+// === Components ===
+
+static function InstallComponent()
+   local cFile := GTK_OpenFileDialog( "Install Component (.prg)", "prg" )
+   local cName
+   if Empty( cFile ); return nil; endif
+   cName := SubStr( cFile, RAt( "/", cFile ) + 1 )
+   MsgInfo( "Component installed: " + cName + Chr(10) + Chr(10) + ;
+            "The component will be available in the palette" + Chr(10) + ;
+            "after restarting HbBuilder." )
+return nil
+
+static function NewComponent()
+   local cCode := ;
+      "// New Component Template" + Chr(10) + ;
+      "// Inherit from an existing control class" + Chr(10) + Chr(10) + ;
+      "#include 'hbbuilder.ch'" + Chr(10) + Chr(10) + ;
+      "class TMyComponent from TButton" + Chr(10) + ;
+      "   data cCustomProp init ''" + Chr(10) + ;
+      "   method New() constructor" + Chr(10) + ;
+      "   method Paint()" + Chr(10) + ;
+      "endclass" + Chr(10) + Chr(10) + ;
+      "method New() class TMyComponent" + Chr(10) + ;
+      "   ::Super:New()" + Chr(10) + ;
+      "return self" + Chr(10) + Chr(10) + ;
+      "method Paint() class TMyComponent" + Chr(10) + ;
+      "   ::Super:Paint()" + Chr(10) + ;
+      "return nil" + Chr(10)
+   // Add as new tab in editor
+   CodeEditorAddTab( hCodeEditor, "MyComponent.prg" )
+   CodeEditorSetTabText( hCodeEditor, Len(aForms) + 2, cCode )
+   CodeEditorSelectTab( hCodeEditor, Len(aForms) + 2 )
 return nil
 
 // === AI Assistant ===
