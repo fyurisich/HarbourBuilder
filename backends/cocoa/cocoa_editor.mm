@@ -2421,4 +2421,27 @@ HB_FUNC( CODEEDITORPARSEERRORS )
    hb_retni( nErrors );
 }
 
+/* -----------------------------------------------------------------------
+ * Report Designer / Preview — stubs for macOS
+ * (Linux uses GTK3 + Cairo; macOS implementation pending)
+ * ----------------------------------------------------------------------- */
+
+HB_FUNC( RPT_DESIGNEROPEN )  {}
+HB_FUNC( RPT_DESIGNERCLOSE ) {}
+HB_FUNC( RPT_SETREPORT )     {}
+HB_FUNC( RPT_ADDBAND )       {}
+HB_FUNC( RPT_ADDFIELD )      {}
+HB_FUNC( RPT_GETSELECTED )   { hb_retni(0); }
+HB_FUNC( RPT_GETBANDPROPS )  { hb_reta(0); }
+HB_FUNC( RPT_GETFIELDPROPS ) { hb_reta(0); }
+HB_FUNC( RPT_SETBANDPROP )   {}
+HB_FUNC( RPT_SETFIELDPROP )  {}
+HB_FUNC( RPT_PREVIEWOPEN )   {}
+HB_FUNC( RPT_PREVIEWCLOSE )  {}
+HB_FUNC( RPT_PREVIEWADDPAGE )   {}
+HB_FUNC( RPT_PREVIEWDRAWTEXT )  {}
+HB_FUNC( RPT_PREVIEWDRAWRECT )  {}
+HB_FUNC( RPT_PREVIEWDRAWLINE )  {}
+HB_FUNC( RPT_PREVIEWRENDER )    {}
+
 } /* extern "C" */
