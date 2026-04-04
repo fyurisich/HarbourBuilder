@@ -1255,7 +1255,7 @@ void TComponentPalette::CreateHandle( HWND hParent )
    GetClientRect( hParent, &rcParent );
 
    /* Store initial split position */
-   FSplitPos = tbWidth;
+   FSplitPos = tbWidth + 62;
 
    /* Draggable vertical splitter between speedbar and palette */
    EnsureSplitterClass();

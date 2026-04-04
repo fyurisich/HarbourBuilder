@@ -92,7 +92,7 @@ HB_FUNC( _INSSETDATA ) { s_insData = (HB_PTRUINT) hb_parnint(1); }
 #include <stdarg.h>
 
 #define MAX_ROWS 64
-#define COL_NAME_W 175
+#define COL_NAME_W 205
 
 /* Debug log to file */
 static void INSLOG( const char * fmt, ... )
