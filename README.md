@@ -22,6 +22,17 @@
 
 HarbourBuilder is a **Borland C++Builder-style visual IDE** that generates Harbour/xBase code. Drop controls from the palette, set properties in the inspector, double-click to write event handlers — and your app runs natively on Windows, macOS, and Linux with zero code changes.
 
+### Windows
+![Windows](images/windows_scintilla.png)
+
+### macOS
+![macOS](images/macos_scintilla.png)
+
+### Linux
+![Linux](images/linux_scintilla.png)
+
+---
+
 **What you write:**
 ```harbour
 #include "hbbuilder.ch"
@@ -264,17 +275,6 @@ oDb:Close()
 - `datacontrols_example.prg` — TDataSource + TDBNavigator binding
 
 ---
-
-## 📸 Screenshots
-
-### Windows (Scintilla editor + Object Inspector + Form Designer)
-![Windows](images/windows_scintilla.png)
-
-### macOS (Cocoa/AppKit + Scintilla)
-![macOS](images/macos_scintilla.png)
-
-### Linux (GTK3 + Scintilla + Inspector + Form Designer)
-![Linux](images/linux_scintilla.png)
 
 ---
 
