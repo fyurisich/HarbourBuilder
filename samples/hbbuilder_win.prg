@@ -334,6 +334,9 @@ function Main()
    oIDE:OnClose := { || DestroyAllForms(), InspectorClose(), ;
                        CodeEditorDestroy( hCodeEditor ) }
 
+   // Give focus to IDE bar so tooltips work immediately
+   W32_SetFocus( UI_FormGetHwnd( oIDE:hCpp ) )
+
    // IDE enters the message loop (dispatches for ALL windows)
    oIDE:Activate()
 
@@ -2579,6 +2582,16 @@ HB_FUNC( W32_BRINGTOTOP )
    if( hWnd )
       SetWindowPos( hWnd, HWND_TOP, 0, 0, 0, 0,
          SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE );
+}
+
+HB_FUNC( W32_SETFOCUS )
+{
+   HWND hWnd = (HWND)(LONG_PTR) hb_parnint(1);
+   if( hWnd )
+   {
+      SetForegroundWindow( hWnd );
+      SetFocus( hWnd );
+   }
 }
 
 /* W32_OpenFileDialog( cTitle, cExt ) --> cFilePath or "" */
