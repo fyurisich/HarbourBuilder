@@ -973,7 +973,7 @@ void EnsureNSApp( void )
    toolbar.wantsLayer = YES;
    toolbar.layer.backgroundColor = [[NSColor colorWithCalibratedWhite:0.92 alpha:1.0] CGColor];
 
-   int btnW = 32, btnH = 32;
+   int btnW = 24, btnH = 24;
    int xPos = 4;
    int yOff = 2;
    for( int i = 0; i < FBtnCount; i++ )
@@ -1005,10 +1005,11 @@ void EnsureNSApp( void )
       }
    }
 
-   /* Size toolbar to fit its content */
+   /* Size toolbar to fit its content, position at FTop for stacking */
    int tbHeight = btnH + yOff * 2;
-   [toolbar setFrame:NSMakeRect( 0, 0, xPos + 4, tbHeight )];
+   [toolbar setFrame:NSMakeRect( 0, FTop, xPos + 4, tbHeight )];
    FWidth = xPos + 4;
+   FHeight = tbHeight;
 
    [parentView addSubview:toolbar];
    FView = toolbar;
@@ -1025,14 +1026,14 @@ void EnsureNSApp( void )
 
          NSButton * btn = (NSButton *)sv;
          NSImage * img = FIconImages[imgIdx];
-         [img setSize:NSMakeSize(28, 28)];
+         [img setSize:NSMakeSize(20, 20)];
          [btn setImage:img];
          [btn setImagePosition:NSImageOnly];
          [btn setTitle:@""];
          [btn setBordered:NO];
          NSRect f = [btn frame];
-         f.size.width = 40;
-         f.size.height = 40;
+         f.size.width = 28;
+         f.size.height = 28;
          [btn setFrame:f];
          imgIdx++;
       }
@@ -1053,7 +1054,8 @@ void EnsureNSApp( void )
       }
       FWidth = xPos + 4;
       tbHeight = maxH + 4;
-      [toolbar setFrame:NSMakeRect( 0, 0, FWidth, tbHeight )];
+      FHeight = tbHeight;
+      [toolbar setFrame:NSMakeRect( 0, FTop, FWidth, tbHeight )];
    }
 }
 

@@ -44,7 +44,7 @@ function Main()
 
    // C++Builder classic proportions scaled to current screen
    // Reference: 1024x768 -> Inspector 250px (24.4%), Bar 100px (13%)
-   nBarH    := 72                            // toolbar(36) + tabs(24) + margins(12)
+   nBarH    := 84                            // two toolbar rows(28+28) + tabs(24) + margins(4)
    nInsW    := Int( nScreenW * 0.18 )        // ~18% of screen width
 
    // === Window 1: Main Bar (full screen width) ===
@@ -56,8 +56,8 @@ function Main()
 
    // Inspector: right below IDE window
    nInsTop  := MAC_GetWindowBottom( oIDE:hCpp )
-   // Editor: starts below IDE bar + offset
-   nEditorTop := nInsTop + 80
+   // Editor: starts below IDE bar + small offset
+   nEditorTop := nInsTop + 60
    nEditorX := nInsW
    nEditorW := nScreenW - nEditorX
    // Both inspector and editor end at same bottom position
