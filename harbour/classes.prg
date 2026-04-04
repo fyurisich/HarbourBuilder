@@ -1348,6 +1348,29 @@ METHOD AddColumn( cTitle, cField, nWidth ) CLASS TReport
 return nil
 
 METHOD Preview() CLASS TReport
+   local i, j, oBand, oFld, nY
+
+   RPT_PreviewOpen( ::nPageWidth, ::nPageHeight, ;
+      ::nMarginLeft, ::nMarginRight, ::nMarginTop, ::nMarginBottom )
+   RPT_PreviewAddPage()
+
+   nY := ::nMarginTop
+
+   for i := 1 to Len( ::aDesignBands )
+      oBand := ::aDesignBands[i]
+      if ! oBand:lVisible; loop; endif
+
+      for j := 1 to Len( oBand:aFields )
+         oFld := oBand:aFields[j]
+         RPT_PreviewDrawText( ::nMarginLeft + oFld:nLeft, nY + oFld:nTop, ;
+            iif( ! Empty(oFld:cText), oFld:cText, "[" + oFld:cFieldName + "]" ), ;
+            oFld:cFontName, oFld:nFontSize, oFld:lBold, oFld:lItalic, oFld:nForeColor )
+      next
+
+      nY += oBand:nHeight
+   next
+
+   RPT_PreviewRender()
 return nil
 
 METHOD Print() CLASS TReport

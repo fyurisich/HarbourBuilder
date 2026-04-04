@@ -6418,11 +6418,7 @@ static void on_rpt_delete( GtkButton * btn, gpointer data )
       gtk_widget_queue_draw( s_rptDrawArea );
 }
 
-static void on_rpt_preview( GtkButton * btn, gpointer data )
-{
-   (void)btn; (void)data;
-   /* Placeholder: future print preview */
-}
+static void on_rpt_preview( GtkButton * btn, gpointer data );  /* forward decl */
 
 /* RPT_DESIGNEROPEN() - Create/show the report designer window */
 HB_FUNC( RPT_DESIGNEROPEN )
@@ -6840,5 +6836,517 @@ HB_FUNC( RPT_SETFIELDPROP )
       gtk_widget_queue_draw( s_rptDrawArea );
 
    hb_retl( HB_TRUE );
+}
+
+/* ===================================================================
+ * Report Preview Window - Cairo page rendering with zoom/pagination
+ * =================================================================== */
+
+#define RPT_PRV_MAX_PAGES   100
+#define RPT_PRV_MAX_CMDS    500
+
+typedef struct {
+   int  type;         /* 1=text, 2=rect, 3=line */
+   int  x, y, w, h;
+   int  x2, y2;       /* for lines */
+   char text[256];
+   char fontName[64];
+   int  fontSize;
+   int  bold, italic;
+   int  color;
+   int  filled;
+   int  lineWidth;
+} RptDrawCmd;
+
+typedef struct {
+   RptDrawCmd cmds[RPT_PRV_MAX_CMDS];
+   int nCmds;
+} RptPrvPage;
+
+static GtkWidget * s_rptPreview     = NULL;
+static GtkWidget * s_rptPreviewDraw = NULL;
+static GtkWidget * s_rptPageLabel   = NULL;
+static RptPrvPage  s_rptPrvPages[RPT_PRV_MAX_PAGES];
+static int         s_rptPrvPageCount = 0;
+static int         s_rptPrvCurPage   = 0;   /* 0-based */
+static int         s_rptPreviewZoom  = 100;  /* percentage */
+static int         s_rptPrvPgW = 210, s_rptPrvPgH = 297;  /* mm */
+static int         s_rptPrvMgL = 15, s_rptPrvMgR = 15;
+static int         s_rptPrvMgT = 15, s_rptPrvMgB = 15;
+
+static void rpt_prv_update_label( void )
+{
+   if( !s_rptPageLabel ) return;
+   char buf[64];
+   snprintf( buf, sizeof(buf), "Page %d of %d",
+             s_rptPrvCurPage + 1,
+             s_rptPrvPageCount > 0 ? s_rptPrvPageCount : 1 );
+   gtk_label_set_text( GTK_LABEL(s_rptPageLabel), buf );
+}
+
+static void rpt_prv_redraw( void )
+{
+   if( s_rptPreviewDraw )
+      gtk_widget_queue_draw( s_rptPreviewDraw );
+   rpt_prv_update_label();
+}
+
+/* Navigation callbacks */
+static void on_prev_first( GtkButton * btn, gpointer d )
+{
+   (void)btn; (void)d;
+   s_rptPrvCurPage = 0;
+   rpt_prv_redraw();
+}
+
+static void on_prev_prev( GtkButton * btn, gpointer d )
+{
+   (void)btn; (void)d;
+   if( s_rptPrvCurPage > 0 ) s_rptPrvCurPage--;
+   rpt_prv_redraw();
+}
+
+static void on_prev_next( GtkButton * btn, gpointer d )
+{
+   (void)btn; (void)d;
+   if( s_rptPrvCurPage < s_rptPrvPageCount - 1 ) s_rptPrvCurPage++;
+   rpt_prv_redraw();
+}
+
+static void on_prev_last( GtkButton * btn, gpointer d )
+{
+   (void)btn; (void)d;
+   if( s_rptPrvPageCount > 0 )
+      s_rptPrvCurPage = s_rptPrvPageCount - 1;
+   rpt_prv_redraw();
+}
+
+static void on_prev_zoom_in( GtkButton * btn, gpointer d )
+{
+   (void)btn; (void)d;
+   if( s_rptPreviewZoom < 400 ) s_rptPreviewZoom += 25;
+   rpt_prv_redraw();
+}
+
+static void on_prev_zoom_out( GtkButton * btn, gpointer d )
+{
+   (void)btn; (void)d;
+   if( s_rptPreviewZoom > 25 ) s_rptPreviewZoom -= 25;
+   rpt_prv_redraw();
+}
+
+static void on_prev_close( GtkButton * btn, gpointer d )
+{
+   (void)btn; (void)d;
+   if( s_rptPreview ) gtk_widget_hide( s_rptPreview );
+}
+
+/* Cairo draw callback for preview */
+static gboolean on_preview_draw( GtkWidget * widget, cairo_t * cr, gpointer data )
+{
+   (void)data;
+   GtkAllocation alloc;
+   gtk_widget_get_allocation( widget, &alloc );
+
+   double ppm = 3.0 * s_rptPreviewZoom / 100.0;  /* pixels per mm */
+   int pageW = (int)( s_rptPrvPgW * ppm );
+   int pageH = (int)( s_rptPrvPgH * ppm );
+   int pad = 30;
+   int shadowOff = 4;
+
+   /* Request size for scrolled window */
+   gtk_widget_set_size_request( widget, pageW + pad * 2, pageH + pad * 2 );
+
+   /* Dark background */
+   cairo_set_source_rgb( cr, 0.118, 0.118, 0.118 );  /* #1E1E1E */
+   cairo_rectangle( cr, 0, 0, alloc.width, alloc.height );
+   cairo_fill( cr );
+
+   /* Center page horizontally */
+   int pageX = ( alloc.width - pageW ) / 2;
+   if( pageX < pad ) pageX = pad;
+   int pageY = pad;
+
+   /* Drop shadow */
+   cairo_set_source_rgba( cr, 0, 0, 0, 0.5 );
+   cairo_rectangle( cr, pageX + shadowOff, pageY + shadowOff, pageW, pageH );
+   cairo_fill( cr );
+
+   /* White page */
+   cairo_set_source_rgb( cr, 1, 1, 1 );
+   cairo_rectangle( cr, pageX, pageY, pageW, pageH );
+   cairo_fill( cr );
+
+   /* Page border */
+   cairo_set_source_rgb( cr, 0.6, 0.6, 0.6 );
+   cairo_set_line_width( cr, 1 );
+   cairo_rectangle( cr, pageX + 0.5, pageY + 0.5, pageW, pageH );
+   cairo_stroke( cr );
+
+   /* Margin lines - dashed light gray */
+   {
+      double dashes[] = { 4.0, 4.0 };
+      cairo_set_dash( cr, dashes, 2, 0 );
+      cairo_set_source_rgb( cr, 0.8, 0.8, 0.8 );
+      cairo_set_line_width( cr, 0.5 );
+
+      double mL = pageX + s_rptPrvMgL * ppm;
+      double mR = pageX + pageW - s_rptPrvMgR * ppm;
+      double mT = pageY + s_rptPrvMgT * ppm;
+      double mB = pageY + pageH - s_rptPrvMgB * ppm;
+
+      /* Left margin */
+      cairo_move_to( cr, mL, pageY );
+      cairo_line_to( cr, mL, pageY + pageH );
+      cairo_stroke( cr );
+      /* Right margin */
+      cairo_move_to( cr, mR, pageY );
+      cairo_line_to( cr, mR, pageY + pageH );
+      cairo_stroke( cr );
+      /* Top margin */
+      cairo_move_to( cr, pageX, mT );
+      cairo_line_to( cr, pageX + pageW, mT );
+      cairo_stroke( cr );
+      /* Bottom margin */
+      cairo_move_to( cr, pageX, mB );
+      cairo_line_to( cr, pageX + pageW, mB );
+      cairo_stroke( cr );
+
+      cairo_set_dash( cr, NULL, 0, 0 );
+   }
+
+   /* Draw commands for current page */
+   if( s_rptPrvCurPage >= 0 && s_rptPrvCurPage < s_rptPrvPageCount )
+   {
+      RptPrvPage * pg = &s_rptPrvPages[s_rptPrvCurPage];
+      int i;
+      for( i = 0; i < pg->nCmds; i++ )
+      {
+         RptDrawCmd * cmd = &pg->cmds[i];
+         double r = ((cmd->color >> 16) & 0xFF) / 255.0;
+         double g = ((cmd->color >> 8 ) & 0xFF) / 255.0;
+         double b = ((cmd->color      ) & 0xFF) / 255.0;
+
+         switch( cmd->type )
+         {
+            case 1:  /* Text */
+            {
+               cairo_set_source_rgb( cr, r, g, b );
+               cairo_select_font_face( cr,
+                  cmd->fontName[0] ? cmd->fontName : "Sans",
+                  cmd->italic ? CAIRO_FONT_SLANT_ITALIC : CAIRO_FONT_SLANT_NORMAL,
+                  cmd->bold   ? CAIRO_FONT_WEIGHT_BOLD  : CAIRO_FONT_WEIGHT_NORMAL );
+               double fs = cmd->fontSize * ppm / 3.0;
+               if( fs < 6 ) fs = 6;
+               cairo_set_font_size( cr, fs );
+               cairo_move_to( cr, pageX + cmd->x * ppm, pageY + cmd->y * ppm + fs );
+               cairo_show_text( cr, cmd->text );
+               break;
+            }
+            case 2:  /* Rect */
+            {
+               cairo_set_source_rgb( cr, r, g, b );
+               cairo_rectangle( cr,
+                  pageX + cmd->x * ppm, pageY + cmd->y * ppm,
+                  cmd->w * ppm, cmd->h * ppm );
+               if( cmd->filled )
+                  cairo_fill( cr );
+               else
+               {
+                  cairo_set_line_width( cr, 1 );
+                  cairo_stroke( cr );
+               }
+               break;
+            }
+            case 3:  /* Line */
+            {
+               cairo_set_source_rgb( cr, r, g, b );
+               cairo_set_line_width( cr, cmd->lineWidth > 0 ? cmd->lineWidth : 1 );
+               cairo_move_to( cr, pageX + cmd->x  * ppm, pageY + cmd->y  * ppm );
+               cairo_line_to( cr, pageX + cmd->x2 * ppm, pageY + cmd->y2 * ppm );
+               cairo_stroke( cr );
+               break;
+            }
+         }
+      }
+   }
+
+   return FALSE;
+}
+
+/* Helper: create the preview window UI */
+static void rpt_prv_create_window( void )
+{
+   s_rptPreview = gtk_window_new( GTK_WINDOW_TOPLEVEL );
+   gtk_window_set_title( GTK_WINDOW(s_rptPreview), "Report Preview" );
+   gtk_window_set_default_size( GTK_WINDOW(s_rptPreview), 700, 850 );
+   g_signal_connect( s_rptPreview, "delete-event",
+      G_CALLBACK(gtk_widget_hide_on_delete), NULL );
+
+   /* Dark theme CSS */
+   { GtkCssProvider * p = gtk_css_provider_new();
+     gtk_css_provider_load_from_data( p,
+        "window { background-color: #1E1E1E; }"
+        "button { background-color: #3C3C3C; color: #D4D4D4; border-color: #555;"
+        "  padding: 3px 8px; }"
+        "button:hover { background-color: #4C4C4C; }"
+        "label { color: #D4D4D4; }", -1, NULL );
+     gtk_style_context_add_provider( gtk_widget_get_style_context(s_rptPreview),
+        GTK_STYLE_PROVIDER(p), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+     g_object_unref( p );
+   }
+
+   GtkWidget * vbox = gtk_box_new( GTK_ORIENTATION_VERTICAL, 0 );
+   gtk_container_add( GTK_CONTAINER(s_rptPreview), vbox );
+
+   /* Toolbar */
+   { GtkWidget * tb = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
+     gtk_widget_set_margin_start( tb, 4 );
+     gtk_widget_set_margin_end( tb, 4 );
+     gtk_widget_set_margin_top( tb, 4 );
+     gtk_widget_set_margin_bottom( tb, 4 );
+
+     GtkWidget * b;
+
+     b = gtk_button_new_with_label( "|<" );
+     g_signal_connect( b, "clicked", G_CALLBACK(on_prev_first), NULL );
+     gtk_box_pack_start( GTK_BOX(tb), b, FALSE, FALSE, 0 );
+
+     b = gtk_button_new_with_label( "<" );
+     g_signal_connect( b, "clicked", G_CALLBACK(on_prev_prev), NULL );
+     gtk_box_pack_start( GTK_BOX(tb), b, FALSE, FALSE, 0 );
+
+     s_rptPageLabel = gtk_label_new( "Page 1 of 1" );
+     gtk_box_pack_start( GTK_BOX(tb), s_rptPageLabel, FALSE, FALSE, 8 );
+
+     b = gtk_button_new_with_label( ">" );
+     g_signal_connect( b, "clicked", G_CALLBACK(on_prev_next), NULL );
+     gtk_box_pack_start( GTK_BOX(tb), b, FALSE, FALSE, 0 );
+
+     b = gtk_button_new_with_label( ">|" );
+     g_signal_connect( b, "clicked", G_CALLBACK(on_prev_last), NULL );
+     gtk_box_pack_start( GTK_BOX(tb), b, FALSE, FALSE, 0 );
+
+     /* Separator */
+     GtkWidget * sep = gtk_separator_new( GTK_ORIENTATION_VERTICAL );
+     gtk_box_pack_start( GTK_BOX(tb), sep, FALSE, FALSE, 8 );
+
+     b = gtk_button_new_with_label( "Zoom +" );
+     g_signal_connect( b, "clicked", G_CALLBACK(on_prev_zoom_in), NULL );
+     gtk_box_pack_start( GTK_BOX(tb), b, FALSE, FALSE, 0 );
+
+     b = gtk_button_new_with_label( "Zoom -" );
+     g_signal_connect( b, "clicked", G_CALLBACK(on_prev_zoom_out), NULL );
+     gtk_box_pack_start( GTK_BOX(tb), b, FALSE, FALSE, 0 );
+
+     /* Separator */
+     sep = gtk_separator_new( GTK_ORIENTATION_VERTICAL );
+     gtk_box_pack_start( GTK_BOX(tb), sep, FALSE, FALSE, 8 );
+
+     b = gtk_button_new_with_label( "Close" );
+     g_signal_connect( b, "clicked", G_CALLBACK(on_prev_close), NULL );
+     gtk_box_pack_start( GTK_BOX(tb), b, FALSE, FALSE, 0 );
+
+     gtk_box_pack_start( GTK_BOX(vbox), tb, FALSE, FALSE, 0 );
+   }
+
+   /* Scrolled window with drawing area */
+   { GtkWidget * sw = gtk_scrolled_window_new( NULL, NULL );
+     gtk_scrolled_window_set_policy( GTK_SCROLLED_WINDOW(sw),
+        GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
+     gtk_box_pack_start( GTK_BOX(vbox), sw, TRUE, TRUE, 0 );
+
+     s_rptPreviewDraw = gtk_drawing_area_new();
+     gtk_widget_set_size_request( s_rptPreviewDraw, 700, 800 );
+     g_signal_connect( s_rptPreviewDraw, "draw", G_CALLBACK(on_preview_draw), NULL );
+     gtk_container_add( GTK_CONTAINER(sw), s_rptPreviewDraw );
+   }
+
+   gtk_widget_show_all( s_rptPreview );
+}
+
+/* Preview button handler from designer toolbar */
+static void on_rpt_preview( GtkButton * btn, gpointer data )
+{
+   (void)btn; (void)data;
+
+   /* Reset preview pages */
+   s_rptPrvPageCount = 0;
+   s_rptPrvCurPage = 0;
+   memset( s_rptPrvPages, 0, sizeof(s_rptPrvPages) );
+
+   /* Build a simple preview from designer band/field data */
+   s_rptPrvPgW = s_rptPageWidth;
+   s_rptPrvPgH = s_rptPageHeight;
+
+   /* Add one page with fields from current bands */
+   if( s_rptPrvPageCount < RPT_PRV_MAX_PAGES )
+   {
+      RptPrvPage * pg = &s_rptPrvPages[0];
+      pg->nCmds = 0;
+      s_rptPrvPageCount = 1;
+
+      int nY = s_rptPrvMgT;
+      int bi, fi;
+      for( bi = 0; bi < s_rptBandCount; bi++ )
+      {
+         RptBand * band = &s_rptBands[bi];
+         if( !band->lVisible ) continue;
+
+         for( fi = 0; fi < band->nFieldCount; fi++ )
+         {
+            if( pg->nCmds >= RPT_PRV_MAX_CMDS ) break;
+            RptField * fld = &band->fields[fi];
+            RptDrawCmd * cmd = &pg->cmds[pg->nCmds];
+            memset( cmd, 0, sizeof(RptDrawCmd) );
+            cmd->type = 1;  /* text */
+            cmd->x = s_rptPrvMgL + fld->nLeft;
+            cmd->y = nY + fld->nTop;
+            if( fld->cText[0] )
+               strncpy( cmd->text, fld->cText, sizeof(cmd->text) - 1 );
+            else
+               snprintf( cmd->text, sizeof(cmd->text), "[%s]", fld->cFieldName );
+            strncpy( cmd->fontName, "Sans", sizeof(cmd->fontName) - 1 );
+            cmd->fontSize = 10;
+            cmd->color = 0x000000;
+            pg->nCmds++;
+         }
+         nY += band->nHeight;
+      }
+   }
+
+   /* Open preview window */
+   if( !s_rptPreview )
+      rpt_prv_create_window();
+   else
+   {
+      gtk_widget_show_all( s_rptPreview );
+      gtk_window_present( GTK_WINDOW(s_rptPreview) );
+   }
+
+   rpt_prv_update_label();
+   rpt_prv_redraw();
+}
+
+/* RPT_PREVIEWOPEN( nPageWidth, nPageHeight, nMarginL, nMarginR, nMarginT, nMarginB ) */
+HB_FUNC( RPT_PREVIEWOPEN )
+{
+   EnsureGTK();
+
+   s_rptPrvPgW = HB_ISNUM(1) ? hb_parni(1) : 210;
+   s_rptPrvPgH = HB_ISNUM(2) ? hb_parni(2) : 297;
+   s_rptPrvMgL = HB_ISNUM(3) ? hb_parni(3) : 15;
+   s_rptPrvMgR = HB_ISNUM(4) ? hb_parni(4) : 15;
+   s_rptPrvMgT = HB_ISNUM(5) ? hb_parni(5) : 15;
+   s_rptPrvMgB = HB_ISNUM(6) ? hb_parni(6) : 15;
+
+   /* Reset pages */
+   s_rptPrvPageCount = 0;
+   s_rptPrvCurPage = 0;
+   memset( s_rptPrvPages, 0, sizeof(s_rptPrvPages) );
+   s_rptPreviewZoom = 100;
+
+   if( s_rptPreview )
+   {
+      gtk_widget_show_all( s_rptPreview );
+      gtk_window_present( GTK_WINDOW(s_rptPreview) );
+      rpt_prv_update_label();
+      return;
+   }
+
+   rpt_prv_create_window();
+   rpt_prv_update_label();
+}
+
+/* RPT_PREVIEWCLOSE() */
+HB_FUNC( RPT_PREVIEWCLOSE )
+{
+   if( s_rptPreview )
+      gtk_widget_hide( s_rptPreview );
+}
+
+/* RPT_PREVIEWADDPAGE() - Start a new page */
+HB_FUNC( RPT_PREVIEWADDPAGE )
+{
+   if( s_rptPrvPageCount >= RPT_PRV_MAX_PAGES )
+   {
+      hb_retl( HB_FALSE );
+      return;
+   }
+   RptPrvPage * pg = &s_rptPrvPages[s_rptPrvPageCount];
+   memset( pg, 0, sizeof(RptPrvPage) );
+   pg->nCmds = 0;
+   s_rptPrvPageCount++;
+   s_rptPrvCurPage = s_rptPrvPageCount - 1;
+   hb_retl( HB_TRUE );
+}
+
+/* RPT_PREVIEWDRAWTEXT( nX, nY, cText, cFontName, nFontSize, lBold, lItalic, nColor ) */
+HB_FUNC( RPT_PREVIEWDRAWTEXT )
+{
+   if( s_rptPrvPageCount <= 0 ) return;
+   RptPrvPage * pg = &s_rptPrvPages[s_rptPrvPageCount - 1];
+   if( pg->nCmds >= RPT_PRV_MAX_CMDS ) return;
+
+   RptDrawCmd * cmd = &pg->cmds[pg->nCmds];
+   memset( cmd, 0, sizeof(RptDrawCmd) );
+   cmd->type = 1;
+   cmd->x = hb_parni(1);
+   cmd->y = hb_parni(2);
+   if( HB_ISCHAR(3) )
+      strncpy( cmd->text, hb_parc(3), sizeof(cmd->text) - 1 );
+   if( HB_ISCHAR(4) )
+      strncpy( cmd->fontName, hb_parc(4), sizeof(cmd->fontName) - 1 );
+   cmd->fontSize = HB_ISNUM(5) ? hb_parni(5) : 10;
+   cmd->bold     = HB_ISLOG(6) ? ( hb_parl(6) ? 1 : 0 ) : 0;
+   cmd->italic   = HB_ISLOG(7) ? ( hb_parl(7) ? 1 : 0 ) : 0;
+   cmd->color    = HB_ISNUM(8) ? hb_parni(8) : 0;
+   pg->nCmds++;
+}
+
+/* RPT_PREVIEWDRAWRECT( nX, nY, nW, nH, nColor, lFilled ) */
+HB_FUNC( RPT_PREVIEWDRAWRECT )
+{
+   if( s_rptPrvPageCount <= 0 ) return;
+   RptPrvPage * pg = &s_rptPrvPages[s_rptPrvPageCount - 1];
+   if( pg->nCmds >= RPT_PRV_MAX_CMDS ) return;
+
+   RptDrawCmd * cmd = &pg->cmds[pg->nCmds];
+   memset( cmd, 0, sizeof(RptDrawCmd) );
+   cmd->type   = 2;
+   cmd->x      = hb_parni(1);
+   cmd->y      = hb_parni(2);
+   cmd->w      = hb_parni(3);
+   cmd->h      = hb_parni(4);
+   cmd->color  = HB_ISNUM(5) ? hb_parni(5) : 0;
+   cmd->filled = HB_ISLOG(6) ? ( hb_parl(6) ? 1 : 0 ) : 0;
+   pg->nCmds++;
+}
+
+/* RPT_PREVIEWDRAWLINE( nX1, nY1, nX2, nY2, nColor, nWidth ) */
+HB_FUNC( RPT_PREVIEWDRAWLINE )
+{
+   if( s_rptPrvPageCount <= 0 ) return;
+   RptPrvPage * pg = &s_rptPrvPages[s_rptPrvPageCount - 1];
+   if( pg->nCmds >= RPT_PRV_MAX_CMDS ) return;
+
+   RptDrawCmd * cmd = &pg->cmds[pg->nCmds];
+   memset( cmd, 0, sizeof(RptDrawCmd) );
+   cmd->type      = 3;
+   cmd->x         = hb_parni(1);
+   cmd->y         = hb_parni(2);
+   cmd->x2        = hb_parni(3);
+   cmd->y2        = hb_parni(4);
+   cmd->color     = HB_ISNUM(5) ? hb_parni(5) : 0;
+   cmd->lineWidth = HB_ISNUM(6) ? hb_parni(6) : 1;
+   pg->nCmds++;
+}
+
+/* RPT_PREVIEWRENDER() - Trigger Cairo rendering of all stored draw commands */
+HB_FUNC( RPT_PREVIEWRENDER )
+{
+   if( s_rptPrvPageCount > 0 )
+      s_rptPrvCurPage = 0;  /* Show first page */
+   rpt_prv_redraw();
 }
 
