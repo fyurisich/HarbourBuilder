@@ -2012,6 +2012,10 @@ HB_FUNC( IDE_DEBUGSTEPOVER )
 HB_FUNC( IDE_DEBUGSTOP )
 { if( s_dbgState != DBG_IDLE ) s_dbgState = DBG_STOPPED; }
 
+/* IDE_DebugGetState() --> nState (0=idle,1=running,2=paused,3=stepping,4=stepover,5=stopped) */
+HB_FUNC( IDE_DEBUGGETSTATE )
+{ hb_retni( s_dbgState ); }
+
 /* IDE_DebugAddBreakpoint( cModule, nLine ) */
 HB_FUNC( IDE_DEBUGADDBREAKPOINT )
 {

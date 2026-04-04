@@ -32,7 +32,7 @@ static nActiveForm   // Index of active form (1-based)
 
 function Main()
 
-   local oTB, oFile, oEdit, oSearch, oView, oProject, oRun, oFormat, oComp, oTools, oHelp
+   local oTB, oTB2, oFile, oEdit, oSearch, oView, oProject, oRun, oFormat, oComp, oTools, oHelp
    local nBarH, nInsW, nEditorX, nEditorW, nEditorH
    local nFormX, nFormY, nInsTop, nEditorTop, nBottomY
 
@@ -116,8 +116,8 @@ function Main()
    MENUITEM "Debug"           OF oRun ACTION TBDebugRun()
    MENUSEPARATOR OF oRun
    MENUITEM "Continue"        OF oRun ACTION IDE_DebugGo()
-   MENUITEM "Step Into"       OF oRun ACTION IDE_DebugStep()
-   MENUITEM "Step Over"       OF oRun ACTION IDE_DebugStepOver()
+   MENUITEM "Step Into"       OF oRun ACTION DebugStepInto()
+   MENUITEM "Step Over"       OF oRun ACTION DebugStepOver()
    MENUITEM "Stop"            OF oRun ACTION IDE_DebugStop()
    MENUSEPARATOR OF oRun
    MENUITEM "Toggle Breakpoint"  OF oRun ACTION ToggleBreakpoint()
@@ -169,6 +169,18 @@ function Main()
 
    // Load toolbar icons (Silk icon set by famfamfam, CC BY 2.5)
    UI_ToolBarLoadImages( oTB:hCpp, "../resources/toolbar.bmp" )
+
+   // Row 2: Run & Debug speedbar
+   DEFINE TOOLBAR oTB2 OF oIDE
+   BUTTON "Run"   OF oTB2 TOOLTIP "Run project (F9)"       ACTION TBRun()
+   BUTTON "Debug" OF oTB2 TOOLTIP "Debug (F8)"              ACTION TBDebugRun()
+   SEPARATOR OF oTB2
+   BUTTON "Step"  OF oTB2 TOOLTIP "Step Into (F7)"          ACTION DebugStepInto()
+   BUTTON "Over"  OF oTB2 TOOLTIP "Step Over (F8)"          ACTION DebugStepOver()
+   BUTTON "Go"    OF oTB2 TOOLTIP "Continue (F5)"           ACTION IDE_DebugGo()
+   BUTTON "Stop"  OF oTB2 TOOLTIP "Stop Debugging"          ACTION IDE_DebugStop()
+
+   UI_ToolBarLoadImages( oTB2:hCpp, "../resources/toolbar_debug.bmp" )
 
    // Component Palette (icon grid, tabbed, right of splitter)
    CreatePalette()
@@ -1417,7 +1429,23 @@ return nil
 
 // === Debug Step ===
 
-// DebugStepOver/StepInto now use IDE_DebugStepOver()/IDE_DebugStep() directly from menu
+static function DebugStepOver()
+   if IDE_DebugGetState() == 2  // DBG_PAUSED
+      IDE_DebugStepOver()
+   else
+      MAC_DebugPanel()
+      MAC_DebugSetStatus( "Start debug with Run > Debug" )
+   endif
+return nil
+
+static function DebugStepInto()
+   if IDE_DebugGetState() == 2  // DBG_PAUSED
+      IDE_DebugStep()
+   else
+      MAC_DebugPanel()
+      MAC_DebugSetStatus( "Start debug with Run > Debug" )
+   endif
+return nil
 
 // === Components ===
 
