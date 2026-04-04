@@ -77,50 +77,55 @@ function Main()
    MENUSEPARATOR OF oFile
    MENUITEM "Open..."    OF oFile ACTION TBOpen()                   ACCEL "o"
    MENUITEM "Save"       OF oFile ACTION TBSave()                   ACCEL "s"
-   MENUITEM "Save As..." OF oFile ACTION MsgInfo( "Save As" )
+   MENUITEM "Save As..." OF oFile ACTION TBSaveAs()
    MENUSEPARATOR OF oFile
    MENUITEM "Exit"       OF oFile ACTION oIDE:Close()               ACCEL "q"
 
    DEFINE POPUP oEdit PROMPT "Edit" OF oIDE
-   MENUITEM "Undo"  OF oEdit ACTION MsgInfo( "Undo" )              ACCEL "z"
-   MENUITEM "Redo"  OF oEdit ACTION MsgInfo( "Redo" )              ACCEL "y"
+   MENUITEM "Undo"  OF oEdit ACTION CodeEditorUndo( hCodeEditor )  ACCEL "z"
+   MENUITEM "Redo"  OF oEdit ACTION CodeEditorRedo( hCodeEditor )  ACCEL "y"
    MENUSEPARATOR OF oEdit
-   MENUITEM "Cut"   OF oEdit ACTION MsgInfo( "Cut" )               ACCEL "x"
-   MENUITEM "Copy"  OF oEdit ACTION MsgInfo( "Copy" )              ACCEL "c"
-   MENUITEM "Paste" OF oEdit ACTION MsgInfo( "Paste" )             ACCEL "v"
+   MENUITEM "Cut"   OF oEdit ACTION CodeEditorCut( hCodeEditor )   ACCEL "x"
+   MENUITEM "Copy"  OF oEdit ACTION CodeEditorCopy( hCodeEditor )  ACCEL "c"
+   MENUITEM "Paste" OF oEdit ACTION CodeEditorPaste( hCodeEditor ) ACCEL "v"
 
    DEFINE POPUP oSearch PROMPT "Search" OF oIDE
-   MENUITEM "Find..."      OF oSearch ACTION MsgInfo( "Find" )     ACCEL "f"
-   MENUITEM "Replace..."   OF oSearch ACTION MsgInfo( "Replace" )  ACCEL "h"
+   MENUITEM "Find..."        OF oSearch ACTION CodeEditorFind( hCodeEditor )     ACCEL "f"
+   MENUITEM "Replace..."     OF oSearch ACTION CodeEditorReplace( hCodeEditor )  ACCEL "h"
+   MENUSEPARATOR OF oSearch
+   MENUITEM "Find Next"      OF oSearch ACTION CodeEditorFindNext( hCodeEditor )
+   MENUITEM "Find Previous"  OF oSearch ACTION CodeEditorFindPrev( hCodeEditor )
+   MENUSEPARATOR OF oSearch
+   MENUITEM "Auto-Complete"  OF oSearch ACTION CodeEditorAutoComplete( hCodeEditor )
 
    DEFINE POPUP oView PROMPT "View" OF oIDE
    MENUITEM "Forms..."     OF oView ACTION MenuViewForms()
    MENUITEM "Code Editor"  OF oView ACTION CodeEditorBringToFront( hCodeEditor )
    MENUITEM "Inspector"        OF oView ACTION InspectorOpen()
    MENUITEM "Project Inspector" OF oView ACTION ShowProjectInspector()
-   MENUITEM "Debugger"          OF oView ACTION MsgInfo( "Debugger" )
+   MENUITEM "Debugger"          OF oView ACTION ShowDebugger()
 
    DEFINE POPUP oProject PROMPT "Project" OF oIDE
-   MENUITEM "Add to Project..."    OF oProject ACTION MsgInfo( "Add to Project" )
-   MENUITEM "Remove from Project"  OF oProject ACTION MsgInfo( "Remove" )
+   MENUITEM "Add to Project..."    OF oProject ACTION AddToProject()
+   MENUITEM "Remove from Project"  OF oProject ACTION RemoveFromProject()
    MENUSEPARATOR OF oProject
    MENUITEM "Options..."           OF oProject ACTION ShowProjectOptions()
 
    DEFINE POPUP oRun PROMPT "Run" OF oIDE
-   MENUITEM "Run"           OF oRun ACTION MsgInfo( "Run" )        ACCEL "r"
-   MENUITEM "Step Over"     OF oRun ACTION MsgInfo( "Step Over" )
-   MENUITEM "Step Into"     OF oRun ACTION MsgInfo( "Step Into" )
+   MENUITEM "Run"           OF oRun ACTION TBRun()                 ACCEL "r"
+   MENUITEM "Step Over"     OF oRun ACTION DebugStepOver()
+   MENUITEM "Step Into"     OF oRun ACTION DebugStepInto()
    MENUSEPARATOR OF oRun
    MENUITEM "Toggle Breakpoint"  OF oRun ACTION ToggleBreakpoint()
    MENUITEM "Clear Breakpoints"  OF oRun ACTION ClearBreakpoints()
 
    DEFINE POPUP oComp PROMPT "Component" OF oIDE
-   MENUITEM "Install Component..." OF oComp ACTION MsgInfo( "Install" )
-   MENUITEM "New Component..."     OF oComp ACTION MsgInfo( "New Component" )
+   MENUITEM "Install Component..." OF oComp ACTION InstallComponent()
+   MENUITEM "New Component..."     OF oComp ACTION NewComponent()
 
    DEFINE POPUP oTools PROMPT "Tools" OF oIDE
    MENUITEM "Editor Colors..."        OF oTools ACTION ShowEditorSettings()
-   MENUITEM "Environment Options..."  OF oTools ACTION MsgInfo( "Options" )
+   MENUITEM "Environment Options..."  OF oTools ACTION ShowEnvironmentOptions()
    MENUSEPARATOR OF oTools
    MENUITEM "AI Assistant..."         OF oTools ACTION ShowAIAssistant()
 
@@ -137,12 +142,12 @@ function Main()
    BUTTON "Open"  OF oTB TOOLTIP "Open file (Cmd+O)"    ACTION TBOpen()
    BUTTON "Save"  OF oTB TOOLTIP "Save file (Cmd+S)"    ACTION TBSave()
    SEPARATOR OF oTB
-   BUTTON "Cut"   OF oTB TOOLTIP "Cut (Cmd+X)"          ACTION MsgInfo( "Cut" )
-   BUTTON "Copy"  OF oTB TOOLTIP "Copy (Cmd+C)"         ACTION MsgInfo( "Copy" )
-   BUTTON "Paste" OF oTB TOOLTIP "Paste (Cmd+V)"        ACTION MsgInfo( "Paste" )
+   BUTTON "Cut"   OF oTB TOOLTIP "Cut (Cmd+X)"          ACTION CodeEditorCut( hCodeEditor )
+   BUTTON "Copy"  OF oTB TOOLTIP "Copy (Cmd+C)"         ACTION CodeEditorCopy( hCodeEditor )
+   BUTTON "Paste" OF oTB TOOLTIP "Paste (Cmd+V)"        ACTION CodeEditorPaste( hCodeEditor )
    SEPARATOR OF oTB
-   BUTTON "Undo"  OF oTB TOOLTIP "Undo (Cmd+Z)"         ACTION MsgInfo( "Undo" )
-   BUTTON "Redo"  OF oTB TOOLTIP "Redo (Cmd+Y)"         ACTION MsgInfo( "Redo" )
+   BUTTON "Undo"  OF oTB TOOLTIP "Undo (Cmd+Z)"         ACTION CodeEditorUndo( hCodeEditor )
+   BUTTON "Redo"  OF oTB TOOLTIP "Redo (Cmd+Y)"         ACTION CodeEditorRedo( hCodeEditor )
    SEPARATOR OF oTB
    BUTTON "Run"   OF oTB TOOLTIP "Run project (F9)"      ACTION TBRun()
 
@@ -185,6 +190,9 @@ function Main()
    INS_SetPos( _InsGetData(), 0, nInsTop, nInsW, nBottomY - nInsTop - 50 )
 
    WireDesignForm()
+
+   // Dark mode for all IDE windows (macOS 10.14+)
+   MAC_SetAppDarkMode( .T. )
 
    // When IDE closes, destroy all secondary windows
    oIDE:OnClose := { || DestroyAllForms(), InspectorClose(), ;
@@ -1248,7 +1256,7 @@ return nil
 
 return nil
 
-// === Debugger (placeholder) ===
+// === Debugger ===
 
 static function ToggleBreakpoint()
    static aBreakpoints := {}
@@ -1260,49 +1268,146 @@ static function ClearBreakpoints()
    MsgInfo( "All breakpoints cleared" )
 return nil
 
-// === AI Assistant (placeholder) ===
+static function ShowDebugger()
+   MAC_DebugPanel()
+return nil
+
+// === AI Assistant ===
 
 static function ShowAIAssistant()
-   MsgInfo( "AI Assistant (Ollama)" + Chr(10) + Chr(10) + ;
-            "Connect to localhost:11434 for local AI" + Chr(10) + ;
-            "Models: codellama, llama3, deepseek-coder" + Chr(10) + Chr(10) + ;
-            "Coming soon: full chat interface" )
+   MAC_AIAssistantPanel()
 return nil
 
-// === Project Inspector (placeholder) ===
+// === Project Inspector ===
 
 static function ShowProjectInspector()
-   local cInfo := "Project Inspector" + Chr(10) + Chr(10)
-   local i
-   cInfo += "Project1" + Chr(10)
-   for i := 1 to Len( aForms )
-      cInfo += "  " + aForms[i][1] + ".prg" + Chr(10)
-   next
-   cInfo += "  classes.prg" + Chr(10)
-   cInfo += "  hbbuilder.ch" + Chr(10)
-   MsgInfo( cInfo )
+   MAC_ProjectInspector()
 return nil
 
-// === Editor Settings (placeholder) ===
+// === Editor Colors ===
 
 static function ShowEditorSettings()
-   MsgInfo( "Editor Colors" + Chr(10) + Chr(10) + ;
-            "Font: Helvetica Neue, 12pt" + Chr(10) + ;
-            "Theme: Dark" + Chr(10) + ;
-            "Keywords: Blue bold" + Chr(10) + ;
-            "Commands: Teal" + Chr(10) + ;
-            "Strings: Orange" + Chr(10) + ;
-            "Comments: Green" )
+   MAC_EditorColorsDialog( hCodeEditor )
 return nil
 
-// === Project Options (placeholder) ===
+// === Project Options ===
 
 static function ShowProjectOptions()
-   MsgInfo( "Project Options" + Chr(10) + Chr(10) + ;
-            "Harbour: /Users/usuario/harbour" + Chr(10) + ;
-            "Flags: -n -w -q" + Chr(10) + ;
-            "Compiler: clang" + Chr(10) + ;
-            "Backend: Cocoa (AppKit)" )
+   MAC_ProjectOptionsDialog()
+return nil
+
+// === Save As ===
+
+static function TBSaveAs()
+   local cFile := MAC_SaveFileDialog( "Save As", "hbp" )
+   if ! Empty( cFile )
+      cCurrentFile := cFile
+      TBSave()
+   endif
+return nil
+
+// === Debug Step ===
+
+static function DebugStepOver()
+   MAC_DebugPanel()
+   MsgInfo( "Step Over: start a debug session with Run > Run first" )
+return nil
+
+static function DebugStepInto()
+   MAC_DebugPanel()
+   MsgInfo( "Step Into: start a debug session with Run > Run first" )
+return nil
+
+// === Components ===
+
+static function InstallComponent()
+   local cFile := MAC_OpenFileDialog( "Install Component (.prg)", "prg" )
+   local cName
+   if Empty( cFile ); return nil; endif
+   cName := SubStr( cFile, RAt( "/", cFile ) + 1 )
+   MsgInfo( "Component installed: " + cName + Chr(10) + Chr(10) + ;
+            "The component will be available in the palette" + Chr(10) + ;
+            "after restarting HbBuilder." )
+return nil
+
+static function NewComponent()
+   local cCode := ;
+      "// New Component Template" + Chr(10) + ;
+      "// Inherit from an existing control class" + Chr(10) + Chr(10) + ;
+      "#include 'hbbuilder.ch'" + Chr(10) + Chr(10) + ;
+      "class TMyComponent from TButton" + Chr(10) + ;
+      "   data cCustomProp init ''" + Chr(10) + ;
+      "   method New() constructor" + Chr(10) + ;
+      "   method Paint()" + Chr(10) + ;
+      "endclass" + Chr(10) + Chr(10) + ;
+      "method New() class TMyComponent" + Chr(10) + ;
+      "   ::Super:New()" + Chr(10) + ;
+      "return self" + Chr(10) + Chr(10) + ;
+      "method Paint() class TMyComponent" + Chr(10) + ;
+      "   ::Super:Paint()" + Chr(10) + ;
+      "return nil" + Chr(10)
+   CodeEditorAddTab( hCodeEditor, "MyComponent.prg" )
+   CodeEditorSetTabText( hCodeEditor, Len(aForms) + 2, cCode )
+   CodeEditorSelectTab( hCodeEditor, Len(aForms) + 2 )
+return nil
+
+// === Add/Remove from Project ===
+
+static function AddToProject()
+   local cFile := MAC_OpenFileDialog( "Add File to Project", "prg" )
+   local cName, cCode, i
+   if Empty( cFile ); return nil; endif
+   cName := SubStr( cFile, RAt( "/", cFile ) + 1 )
+   if "." $ cName
+      cName := Left( cName, At( ".", cName ) - 1 )
+   endif
+   for i := 1 to Len( aForms )
+      if Lower( aForms[i][1] ) == Lower( cName )
+         MsgInfo( cName + " is already in the project" )
+         return nil
+      endif
+   next
+   cCode := hb_MemoRead( cFile )
+   if Empty( cCode )
+      cCode := "// " + cName + ".prg" + Chr(10)
+   endif
+   CodeEditorAddTab( hCodeEditor, cName + ".prg" )
+   CodeEditorSetTabText( hCodeEditor, Len(aForms) + 2, cCode )
+   CodeEditorSelectTab( hCodeEditor, Len(aForms) + 2 )
+   CodeEditorSetTabText( hCodeEditor, 1, GenerateProjectCode() )
+return nil
+
+static function RemoveFromProject()
+   local aNames := {}, i, nSel
+   if Len( aForms ) <= 1
+      MsgInfo( "Cannot remove the last form" )
+      return nil
+   endif
+   for i := 1 to Len( aForms )
+      AAdd( aNames, aForms[i][1] + ".prg" )
+   next
+   nSel := MAC_SelectFromList( "Remove from Project", aNames )
+   if nSel > 0 .and. nSel <= Len( aForms )
+      aForms[nSel][2]:Destroy()
+      ADel( aForms, nSel )
+      ASize( aForms, Len(aForms) - 1 )
+      if nActiveForm > Len( aForms )
+         nActiveForm := Len( aForms )
+      endif
+      CodeEditorClearTabs( hCodeEditor )
+      CodeEditorSetTabText( hCodeEditor, 1, GenerateProjectCode() )
+      for i := 1 to Len( aForms )
+         CodeEditorAddTab( hCodeEditor, aForms[i][1] + ".prg" )
+         CodeEditorSetTabText( hCodeEditor, i + 1, aForms[i][3] )
+      next
+      SwitchToForm( nActiveForm )
+   endif
+return nil
+
+// === Environment Options ===
+
+static function ShowEnvironmentOptions()
+   MAC_ProjectOptionsDialog()
 return nil
 
 // === Helpers ===

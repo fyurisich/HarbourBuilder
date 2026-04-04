@@ -97,17 +97,23 @@ return nil
 - Color picker, font picker, inline editing
 - ComboBox selector for all form controls
 
-### 💻 Code Editor (Scintilla 5.6.1)
-- **Scintilla** editor component (same engine as Notepad++, SciTE, Code::Blocks)
+### 💻 Code Editor (Scintilla — all 3 platforms)
+- **Scintilla 5.5+** editor on **all platforms** (same engine as Notepad++, SciTE, Code::Blocks)
+  - Windows: Scintilla.dll + Lexilla.dll (dynamic)
+  - macOS: libscintilla.a + liblexilla.a (static, compiled from source)
+  - Linux: libscintilla.so + liblexilla.so (dynamic)
 - VS Code Dark+ color theme with Harbour-aware syntax highlighting
 - Keywords (blue, bold), commands (teal), comments (green, italic), strings (orange), numbers (light green), preprocessor (magenta)
 - Built-in **line numbers**, **code folding**, and **indentation guides**
-- Harbour-aware folding: function/return, class/endclass, if/endif, for/next, do/enddo
-- **Ctrl+F** Find bar with match count, F3 next/prev
-- **Ctrl+H** Replace bar with Replace All
-- **Ctrl+Space** Auto-completion (Harbour keywords, 60+ functions, xBase commands)
-- **Ctrl+/** Toggle line comment
-- **Ctrl+Shift+D** Duplicate line, **Ctrl+Shift+K** Delete line, **Ctrl+L** Select line
+- Harbour-aware folding: function/return, class/endclass, if/endif, for/next, do/enddo, switch/endswitch, begin/end, #pragma begindump/enddump
+- **Ctrl+F / Cmd+F** Find bar, **Ctrl+H / Cmd+H** Replace bar
+- **Ctrl+Space / Cmd+Space** Auto-completion (150+ Harbour keywords, functions, xBase commands)
+- **Ctrl+/ / Cmd+/** Toggle line comment
+- **Ctrl+Shift+D / Cmd+Shift+D** Duplicate line
+- **Ctrl+Shift+K / Cmd+Shift+K** Delete line
+- **Ctrl+L / Cmd+L** Select line
+- **Ctrl+G / Cmd+G** Go to line
+- Auto-indent on Enter (preserves previous line indentation)
 - Tabbed editor (Project1.prg + Form tabs)
 - Status bar: Line, Column, INS/OVR, line count, char count, UTF-8
 
@@ -123,10 +129,11 @@ return nil
 - Toggle/Clear breakpoints from Run menu
 - Variable inspection with Name, Value, Type columns
 
-### 🌙 Dark Mode
-- Windows 10/11 dark title bars (DwmSetWindowAttribute)
-- Dark code editor (already default)
-- Dark documentation theme
+### 🌙 Dark Mode (all platforms)
+- Windows: dark title bars via DwmSetWindowAttribute
+- macOS: NSAppearanceNameDarkAqua applied app-wide on startup
+- Linux: gtk-application-prefer-dark-theme toggle
+- Dark code editor and documentation theme
 
 ### 📋 Project Management
 - New Application / Open / Save projects (.hbp files)
@@ -143,10 +150,10 @@ return nil
 ### Windows (Scintilla editor + Object Inspector + Form Designer)
 ![Windows](images/windows_scintilla.png)
 
-### macOS (Cocoa/AppKit)
+### macOS (Cocoa/AppKit + Scintilla)
 ![macOS](images/macos_now.png)
 
-### Linux (GTK3)
+### Linux (GTK3 + Scintilla)
 ![Linux](images/linux_now.png)
 
 ---
@@ -250,9 +257,9 @@ Professional HTML documentation with dark/light theme, Mermaid diagrams, and cod
 
 | Platform | Backend | Status |
 |----------|---------|--------|
-| **Windows** | Win32 API (C++) + Scintilla | ✅ Full IDE |
-| **macOS** | Cocoa/AppKit (Objective-C) | ✅ Full IDE |
-| **Linux** | GTK3 (C) | ✅ Full IDE |
+| **Windows** | Win32 API (C++) + Scintilla DLL | ✅ Full IDE |
+| **macOS** | Cocoa/AppKit (Obj-C/C++) + Scintilla static lib | ✅ Full IDE |
+| **Linux** | GTK3 (C) + Scintilla shared lib | ✅ Full IDE |
 | **Android** | NDK + JNI | 🔮 Planned |
 | **iOS** | UIKit (Objective-C) | 🔮 Planned |
 
@@ -266,8 +273,10 @@ HarbourBuilder/
 │   ├── include/hbide.h           # 109 CT_ defines + class declarations
 │   └── src/                      # tcontrol, tform, tcontrols, hbbridge
 ├── backends/
-│   ├── cocoa/cocoa_core.m        # macOS (137K, 4000+ lines)
-│   ├── gtk3/gtk3_core.c          # Linux (128K, 3500+ lines)
+│   ├── cocoa/cocoa_core.m        # macOS Cocoa backend (Obj-C)
+│   ├── cocoa/cocoa_editor.mm     # macOS Scintilla editor (Obj-C++)
+│   ├── cocoa/cocoa_inspector.m   # macOS Object Inspector
+│   ├── gtk3/gtk3_core.c          # Linux GTK3 backend + Scintilla
 │   ├── console/backend.prg       # TUI console backend
 │   └── web/backend.prg           # HTML5 Canvas backend
 ├── harbour/
@@ -284,11 +293,17 @@ HarbourBuilder/
 │   ├── assets/js/docs.js         # Search, theme, copy code
 │   └── en/                       # 20 HTML pages
 ├── resources/
-│   ├── Scintilla.dll             # Scintilla 5.6.1 (32-bit)
-│   ├── Lexilla.dll               # Lexilla 5.4.8 (32-bit)
+│   ├── Scintilla.dll             # Scintilla 5.6.1 (Windows, 32-bit)
+│   ├── Lexilla.dll               # Lexilla 5.4.8 (Windows, 32-bit)
+│   ├── libscintilla.so           # Scintilla (Linux, x86_64)
+│   ├── liblexilla.so             # Lexilla (Linux, x86_64)
+│   ├── scintilla_src/            # Scintilla + Lexilla source (macOS build)
+│   │   ├── build/libscintilla.a  # Scintilla (macOS, static)
+│   │   └── build/liblexilla.a    # Lexilla (macOS, static)
 │   ├── lazarus_icons/            # Professional PNG icons
 │   └── harbour_logo.png          # About dialog logo
 ├── build_win.bat                 # Windows build script
+├── build_scintilla.sh            # Linux Scintilla build script
 └── ChangeLog.txt                 # Detailed changelog
 ```
 

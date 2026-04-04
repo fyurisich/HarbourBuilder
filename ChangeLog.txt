@@ -1,6 +1,126 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-04 (Session 6: macOS Scintilla Integration + IDE Panels)
+-----------------------------------------------------------------
+
+macOS: Complete Scintilla 5.5.3 + Lexilla 5.4.0 integration, replacing
+NSTextView-based editor. Plus 5 native Cocoa IDE panels/dialogs, keyboard
+shortcuts, auto-indent, dark mode, and find bar.
+
+  SCINTILLA CODE EDITOR (replaces NSTextView):
+  - Downloaded & compiled Scintilla 5.5.3 + Lexilla 5.4.0 as static libraries
+    * libscintilla.a (1.9 MB) + liblexilla.a (2.4 MB)
+    * Build script: resources/scintilla_src/build_scintilla_mac.sh
+  - New file: backends/cocoa/cocoa_editor.mm (Objective-C++ for Scintilla)
+    * Separate from cocoa_core.m (pure Objective-C) to avoid C++17 conflicts
+  - C++ lexer via Lexilla CreateLexer("cpp") for Harbour syntax
+  - Same colour scheme as Windows (VS Code Dark+ inspired):
+    Keywords blue bold, Commands teal, Comments green italic,
+    Strings orange, Numbers light green, Preprocessor magenta
+  - Line numbers margin (48px), code folding margin (16px, box style)
+  - Indentation guides (SC_IV_LOOKBOTH)
+  - UTF-8 (SC_CP_UTF8), tab width 3, Menlo 15pt font
+
+  KEYBOARD SHORTCUTS (via NSEvent local monitor):
+  - Cmd+/ ............ Toggle line comment (//)
+  - Cmd+Shift+D ...... Duplicate line (SCI_LINEDUPLICATE)
+  - Cmd+Shift+K ...... Delete line (SCI_LINEDELETE)
+  - Cmd+L ............ Select entire line
+  - Cmd+G ............ Go to line (input dialog)
+  - Cmd+Space ........ Auto-complete popup (150+ Harbour keywords/functions)
+  - Cmd+F ............ Find (menu-driven)
+  - Cmd+H ............ Find & Replace (menu-driven)
+
+  SCINTILLA NOTIFICATIONS (HBSciDelegate):
+  - SCN_CHARADDED ..... Auto-indent on Enter (copies previous line indentation)
+  - SCN_MARGINCLICK ... Fold/unfold on margin click (SCI_TOGGLEFOLD)
+
+  DARK MODE:
+  - MAC_SetAppDarkMode(.T.) .... app-wide NSAppearanceNameDarkAqua
+  - MAC_SetAllDarkMode(.T.) .... all visible windows
+  - Applied automatically on IDE startup
+
+  DEBUGGER PANEL (MAC_DebugPanel):
+  - Singleton floating window, 500x350, dark Aqua appearance
+  - NSTabView with 5 tabs:
+    * Watch ......... NSTableView (Name/Value/Type columns)
+    * Locals ........ NSTableView (Name/Value/Type columns)
+    * Call Stack .... NSTableView (Level/Location columns)
+    * Breakpoints ... NSTableView (File/Line/Enabled columns)
+    * Output ........ NSTextView, monospace, dark theme, read-only
+  - Menu: View > Debugger
+
+  AI ASSISTANT PANEL (MAC_AIAssistantPanel):
+  - Singleton floating window, 420x550, dark Aqua appearance
+  - Model selector NSPopUpButton: codellama, llama3, deepseek-coder,
+    mistral, phi3, gemma2
+  - Chat output: read-only NSTextView, monospace, dark theme
+  - Input NSTextField with Send + Clear buttons
+  - Ollama integration: async HTTP POST to localhost:11434/api/generate
+  - JSON response parsing via NSJSONSerialization
+  - Menu: Tools > AI Assistant
+
+  PROJECT INSPECTOR (MAC_ProjectInspector):
+  - Singleton floating window, 260x400, dark Aqua appearance
+  - NSOutlineView with tree hierarchy
+  - Menu: View > Project Inspector
+
+  EDITOR COLORS DIALOG (MAC_EditorColorsDialog):
+  - Modal NSAlert with 4 preset theme buttons:
+    Dark (VS Code Dark+), Light, Monokai, Solarized
+  - Live application to Scintilla editor via SCI_STYLESETFORE/BACK
+  - Updates all syntax styles, caret, selection, gutter, fold markers
+  - Menu: Tools > Editor Colors
+
+  PROJECT OPTIONS DIALOG (MAC_ProjectOptionsDialog):
+  - Modal NSAlert with NSTabView accessory (4 tabs):
+    * Harbour ...... directory, compiler flags
+    * C Compiler ... compiler name, flags
+    * Linker ....... flags, libraries
+    * Directories .. project dir, output dir, include paths
+  - Pre-populated with actual macOS build settings
+  - Menu: Project > Options
+
+  HARBOUR-AWARE CODE FOLDING (CE_UpdateHarbourFolding):
+  - Custom fold levels for Harbour blocks (not just C++ lexer defaults)
+  - Fold openers: function, procedure, method, class, if, do, for, switch,
+    begin, while, #pragma begindump
+  - Fold closers: return, endclass, endif, enddo, next, endswitch, endcase,
+    end, #pragma enddump
+  - CE_LineStartsWithCI(): case-insensitive line-start matching with
+    whitespace skip and word-boundary check
+  - Called on every text change (SCN_MODIFIED) and tab switch
+
+  STATUS BAR (CE_UpdateStatusBar):
+  - NSTextField at bottom of code editor window
+  - Shows: Ln X, Col Y | INS/OVR | Lines: N | Chars: N | UTF-8
+  - Updated on every cursor/selection change (SCN_UPDATEUI)
+  - Dark theme: gray text on dark background (#242426)
+  - Monospace 11pt font
+
+  BUG FIX:
+  - Run menu item now calls TBRun() instead of MsgInfo("Run") placeholder
+
+  BUILD SYSTEM:
+  - build_mac.sh updated: compiles cocoa_editor.mm with -std=c++17
+  - Links -lscintilla -llexilla -framework QuartzCore
+  - Auto-builds Scintilla static libs if not present
+
+  FILES ADDED:
+  - backends/cocoa/cocoa_editor.mm ....... Scintilla editor (Objective-C++)
+  - resources/scintilla_src/ ............. Scintilla 5.5.3 + Lexilla 5.4.0 source
+  - resources/scintilla_src/build_scintilla_mac.sh .. static library build script
+  - resources/scintilla_src/build/libscintilla.a .... compiled static library
+  - resources/scintilla_src/build/liblexilla.a ...... compiled static library
+
+  FILES MODIFIED:
+  - backends/cocoa/cocoa_core.m .......... removed NSTextView editor code,
+                                           EnsureNSApp made non-static
+  - samples/build_mac.sh ................. Scintilla includes + linking
+  - samples/hbbuilder_macos.prg .......... menu wiring, dark mode, Run fix
+
+
 2026-04-03 (Session 5: Linux IDE Panels, Dialogs, Dark Mode)
 --------------------------------------------------------------
 
