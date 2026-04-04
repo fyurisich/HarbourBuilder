@@ -33,14 +33,14 @@ function InspectorPopulateCombo( hForm )
    INS_ComboClear( h )
    INS_SetFormCtrl( h, hForm )
 
-   // Add the form itself
+   // Add the form itself: "oForm1 AS TForm1"
    cName  := UI_GetProp( hForm, "cName" )
    cClass := UI_GetProp( hForm, "cClassName" )
    if Empty( cName ); cName := "Form1"; endif
-   cEntry := cName + " AS " + cClass
+   cEntry := "o" + cName + " AS T" + cName
    INS_ComboAdd( h, cEntry )
 
-   // Add all child controls
+   // Add all child controls: "oTimer1 AS Timer"
    nCount := UI_GetChildCount( hForm )
    for i := 1 to nCount
       hChild := UI_GetChild( hForm, i )
@@ -48,7 +48,7 @@ function InspectorPopulateCombo( hForm )
          cName  := UI_GetProp( hChild, "cName" )
          cClass := UI_GetProp( hChild, "cClassName" )
          if Empty( cName ); cName := "ctrl" + LTrim( Str( i ) ); endif
-         cEntry := cName + " AS " + cClass
+         cEntry := "o" + cName + " AS " + cClass
          INS_ComboAdd( h, cEntry )
       endif
    next

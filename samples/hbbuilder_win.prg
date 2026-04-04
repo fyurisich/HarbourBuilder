@@ -72,13 +72,12 @@ function Main()
    // Enable dark mode for all IDE windows (Windows 10/11)
    W32_SetDarkMode( UI_FormGetHwnd( oIDE:hCpp ), .T. )
 
-   // Inspector and editor: right below IDE window (3px overlap to close gap)
-   nInsTop  := W32_GetWindowBottom( UI_FormGetHwnd( oIDE:hCpp ) ) - 3
+   // Inspector and editor: compensate DWM invisible borders (~8px each side)
+   nInsTop  := W32_GetWindowBottom( UI_FormGetHwnd( oIDE:hCpp ) ) - 10
    nEditorTop := nInsTop
-   nEditorX := nInsW - 5
-   nEditorW := nScreenW - nEditorX
-   // Both inspector and editor end at same bottom position
-   nBottomY := W32_GetWorkAreaHeight()           // screen minus taskbar
+   nEditorX := nInsW - 14
+   nEditorW := nScreenW - nEditorX + 24     // +24 to cover right DWM border
+   nBottomY := W32_GetWorkAreaHeight() + 16  // +16 to cover bottom DWM border
    nEditorH := nBottomY - nEditorTop
 
    // Form Designer: centered in editor area, slightly above center
@@ -201,31 +200,59 @@ function Main()
 
    // Menu bitmaps (16x16 from Lazarus IDE icon set)
    cIcoDir := HB_DirBase() + "..\resources\menu_icons\"
-   // File menu
-   UI_MenuSetBitmapByPos( oFile, 0, cIcoDir + "menu_new.png" )          // New
-   UI_MenuSetBitmapByPos( oFile, 2, cIcoDir + "menu_open.png" )         // Open
-   UI_MenuSetBitmapByPos( oFile, 3, cIcoDir + "menu_save.png" )         // Save
-   UI_MenuSetBitmapByPos( oFile, 4, cIcoDir + "menu_saveas.png" )       // Save As
-   UI_MenuSetBitmapByPos( oFile, 6, cIcoDir + "menu_exit.png" )         // Exit
-   // Edit menu
-   UI_MenuSetBitmapByPos( oEdit, 0, cIcoDir + "menu_undo.png" )         // Undo
-   UI_MenuSetBitmapByPos( oEdit, 1, cIcoDir + "menu_redo.png" )         // Redo
-   UI_MenuSetBitmapByPos( oEdit, 3, cIcoDir + "menu_cut.png" )          // Cut
-   UI_MenuSetBitmapByPos( oEdit, 4, cIcoDir + "menu_copy.png" )         // Copy
-   UI_MenuSetBitmapByPos( oEdit, 5, cIcoDir + "menu_paste.png" )        // Paste
-   // Search menu
-   UI_MenuSetBitmapByPos( oSearch, 0, cIcoDir + "menu_search_find.png" )    // Find
-   UI_MenuSetBitmapByPos( oSearch, 1, cIcoDir + "menu_search_replace.png" ) // Replace
-   // View menu
-   UI_MenuSetBitmapByPos( oView, 2, cIcoDir + "menu_view_inspector.png" )   // Inspector
-   UI_MenuSetBitmapByPos( oView, 3, cIcoDir + "menu_project_inspector.png" )// Project Inspector
-   // Run menu
-   UI_MenuSetBitmapByPos( oRun, 0, cIcoDir + "menu_run.png" )           // Run
-   UI_MenuSetBitmapByPos( oRun, 4, cIcoDir + "menu_stepover.png" )      // Step Over
-   UI_MenuSetBitmapByPos( oRun, 5, cIcoDir + "menu_stepinto.png" )      // Step Into
-   UI_MenuSetBitmapByPos( oRun, 6, cIcoDir + "menu_stop.png" )          // Stop
-   // Tools menu
-   UI_MenuSetBitmapByPos( oTools, 1, cIcoDir + "menu_environment_options.png" ) // Env Options
+   // File menu (0:New, 1:NewForm, -sep-, 3:Open, 4:Save, 5:SaveAs, -sep-, 7:Exit)
+   UI_MenuSetBitmapByPos( oFile:hPopup, 0, cIcoDir + "menu_new.png" )
+   UI_MenuSetBitmapByPos( oFile:hPopup, 1, cIcoDir + "menu_new_form.png" )
+   UI_MenuSetBitmapByPos( oFile:hPopup, 3, cIcoDir + "menu_open.png" )
+   UI_MenuSetBitmapByPos( oFile:hPopup, 4, cIcoDir + "menu_save.png" )
+   UI_MenuSetBitmapByPos( oFile:hPopup, 5, cIcoDir + "menu_saveas.png" )
+   UI_MenuSetBitmapByPos( oFile:hPopup, 7, cIcoDir + "menu_exit.png" )
+   // Edit menu (0:Undo, 1:Redo, -sep-, 3:Cut, 4:Copy, 5:Paste, -sep-, 7:UndoDesign, 8:CopyCtrl, 9:PasteCtrl)
+   UI_MenuSetBitmapByPos( oEdit:hPopup, 0, cIcoDir + "menu_undo.png" )
+   UI_MenuSetBitmapByPos( oEdit:hPopup, 1, cIcoDir + "menu_redo.png" )
+   UI_MenuSetBitmapByPos( oEdit:hPopup, 3, cIcoDir + "menu_cut.png" )
+   UI_MenuSetBitmapByPos( oEdit:hPopup, 4, cIcoDir + "menu_copy.png" )
+   UI_MenuSetBitmapByPos( oEdit:hPopup, 5, cIcoDir + "menu_paste.png" )
+   UI_MenuSetBitmapByPos( oEdit:hPopup, 7, cIcoDir + "menu_edit_undo_design.png" )
+   // Search menu (0:Find, 1:Replace, -sep-, 3:FindNext, 4:FindPrev, -sep-, 6:AutoComplete)
+   UI_MenuSetBitmapByPos( oSearch:hPopup, 0, cIcoDir + "menu_search_find.png" )
+   UI_MenuSetBitmapByPos( oSearch:hPopup, 1, cIcoDir + "menu_search_replace.png" )
+   UI_MenuSetBitmapByPos( oSearch:hPopup, 3, cIcoDir + "menu_search_findnext.png" )
+   UI_MenuSetBitmapByPos( oSearch:hPopup, 4, cIcoDir + "menu_search_findprev.png" )
+   // View menu (0:Forms, 1:CodeEditor, 2:Inspector, 3:ProjInspector, 4:Debugger)
+   UI_MenuSetBitmapByPos( oView:hPopup, 0, cIcoDir + "menu_view_forms.png" )
+   UI_MenuSetBitmapByPos( oView:hPopup, 1, cIcoDir + "menu_view_editor.png" )
+   UI_MenuSetBitmapByPos( oView:hPopup, 2, cIcoDir + "menu_view_inspector.png" )
+   UI_MenuSetBitmapByPos( oView:hPopup, 3, cIcoDir + "menu_project_inspector.png" )
+   // Project menu (0:Add, 1:Remove, -sep-, 3:Options)
+   UI_MenuSetBitmapByPos( oProject:hPopup, 0, cIcoDir + "menu_project_add.png" )
+   UI_MenuSetBitmapByPos( oProject:hPopup, 1, cIcoDir + "menu_project_remove.png" )
+   UI_MenuSetBitmapByPos( oProject:hPopup, 3, cIcoDir + "menu_project_options.png" )
+   // Run menu (0:Run, 1:Debug, -sep-, 3:Continue, 4:StepOver, 5:StepInto, 6:Stop, -sep-, 8:ToggleBP, 9:ClearBP)
+   UI_MenuSetBitmapByPos( oRun:hPopup, 0, cIcoDir + "menu_run.png" )
+   UI_MenuSetBitmapByPos( oRun:hPopup, 1, cIcoDir + "menu_debug.png" )
+   UI_MenuSetBitmapByPos( oRun:hPopup, 3, cIcoDir + "menu_continue.png" )
+   UI_MenuSetBitmapByPos( oRun:hPopup, 4, cIcoDir + "menu_stepover.png" )
+   UI_MenuSetBitmapByPos( oRun:hPopup, 5, cIcoDir + "menu_stepinto.png" )
+   UI_MenuSetBitmapByPos( oRun:hPopup, 6, cIcoDir + "menu_stop.png" )
+   // Tools menu (0:EditorColors, 1:EnvOptions, 2:DarkMode, -sep-, 4:AI, 5:Report, -sep-, 7:GenIcons)
+   UI_MenuSetBitmapByPos( oTools:hPopup, 0, cIcoDir + "menu_editor_colors.png" )
+   UI_MenuSetBitmapByPos( oTools:hPopup, 1, cIcoDir + "menu_environment_options.png" )
+   UI_MenuSetBitmapByPos( oTools:hPopup, 2, cIcoDir + "menu_darkmode.png" )
+   UI_MenuSetBitmapByPos( oTools:hPopup, 4, cIcoDir + "menu_ai.png" )
+   UI_MenuSetBitmapByPos( oTools:hPopup, 5, cIcoDir + "menu_report.png" )
+   // Git menu (0:Init, 1:Clone, -sep-, 3:Status, 4:Commit, 5:Push, 6:Pull, ...)
+   UI_MenuSetBitmapByPos( oGit:hPopup, 0, cIcoDir + "menu_git_init.png" )
+   UI_MenuSetBitmapByPos( oGit:hPopup, 1, cIcoDir + "menu_git_clone.png" )
+   UI_MenuSetBitmapByPos( oGit:hPopup, 3, cIcoDir + "menu_git_status.png" )
+   UI_MenuSetBitmapByPos( oGit:hPopup, 4, cIcoDir + "menu_git_commit.png" )
+   UI_MenuSetBitmapByPos( oGit:hPopup, 5, cIcoDir + "menu_git_push.png" )
+   UI_MenuSetBitmapByPos( oGit:hPopup, 6, cIcoDir + "menu_git_pull.png" )
+   UI_MenuSetBitmapByPos( oGit:hPopup, 8, cIcoDir + "menu_git_branch.png" )
+   UI_MenuSetBitmapByPos( oGit:hPopup, 12, cIcoDir + "menu_git_stash.png" )
+   UI_MenuSetBitmapByPos( oGit:hPopup, 14, cIcoDir + "menu_git_log.png" )
+   // Help menu (0:Docs, 1:QuickStart, 2:Controls, -sep-, 4:About)
+   UI_MenuSetBitmapByPos( oHelp:hPopup, 4, cIcoDir + "menu_about.png" )
 
    // Speedbar (toolbar with 28x28 icon-sized buttons)
    DEFINE TOOLBAR oTB OF oIDE
@@ -245,9 +272,8 @@ function Main()
    // Load toolbar icons (Silk icon set by famfamfam, CC BY 2.5)
    UI_ToolBarLoadImages( oTB:hCpp, HB_DirBase() + "..\resources\toolbar.bmp" )
 
-   // Row 2: Run & Debug speedbar
+   // Row 2: Debug speedbar (Run is already in row 1)
    DEFINE TOOLBAR oTB2 OF oIDE
-   BUTTON "Run"   OF oTB2 TOOLTIP "Run (F9)"               ACTION TBRun()
    BUTTON "Debug" OF oTB2 TOOLTIP "Debug (F8)"              ACTION TBDebugRun()
    SEPARATOR OF oTB2
    BUTTON "Step"  OF oTB2 TOOLTIP "Step Into (F7)"          ACTION DebugStepInto()
@@ -297,7 +323,7 @@ function Main()
    INS_SetOnEventDblClick( _InsGetData(), ;
       { |hCtrl, cEvent| OnEventDblClick( hCtrl, cEvent ) } )
    INS_SetOnPropChanged( _InsGetData(), { || SyncDesignerToCode() } )
-   INS_SetPos( _InsGetData(), 0, nInsTop, nInsW, nBottomY - nInsTop )
+   INS_SetPos( _InsGetData(), -8, nInsTop, nInsW + 8, nBottomY - nInsTop )
 
    WireDesignForm()
 
@@ -561,12 +587,16 @@ static function GenerateProjectCode()
    cCode += "PROCEDURE Main()" + e
    cCode += e
    cCode += "   local oApp" + e
+   for i := 1 to Len( aForms )
+      cCode += "   local o" + aForms[i][1] + "   // AS T" + aForms[i][1] + e
+   next
    cCode += e
    cCode += "   oApp := TApplication():New()" + e
    cCode += '   oApp:Title := "Project1"' + e
 
    for i := 1 to Len( aForms )
-      cCode += "   oApp:CreateForm( T" + aForms[i][1] + "():New() )" + e
+      cCode += "   o" + aForms[i][1] + " := T" + aForms[i][1] + "():New()" + e
+      cCode += "   oApp:CreateForm( o" + aForms[i][1] + " )" + e
    next
 
    cCode += "   oApp:Run()" + e
@@ -700,10 +730,15 @@ static function RegenerateFormCode( cName, hForm )
                   LTrim(Str(nL)) + ',' + LTrim(Str(nT)) + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ',' + LTrim(Str(nCH)) + e
             otherwise
-               // Generic: all other control types
-               cCreate += '   // ::o' + cCtrlName + ' (' + cCtrlClass + ') at ' + ;
-                  LTrim(Str(nL)) + ',' + LTrim(Str(nT)) + ' SIZE ' + ;
-                  LTrim(Str(nCW)) + ',' + LTrim(Str(nCH)) + e
+               // Non-visual and other components: create as object
+               if nCW == 32 .and. nCH == 32
+                  // Non-visual component (icon on form)
+                  cCreate += '   ::o' + cCtrlName + ' := ' + cCtrlClass + '():New( Self )' + e
+               else
+                  cCreate += '   // ::o' + cCtrlName + ' (' + cCtrlClass + ') at ' + ;
+                     LTrim(Str(nL)) + ',' + LTrim(Str(nT)) + ' SIZE ' + ;
+                     LTrim(Str(nCW)) + ',' + LTrim(Str(nCH)) + e
+               endif
          endcase
 
          // Scan for event handlers matching this control
@@ -1017,9 +1052,10 @@ static function OnComponentDrop( hForm, nType, nL, nT, nW, nH )
    // Two-way: regenerate entire form code from designer state
    SyncDesignerToCode()
 
-   // Refresh inspector
-   InspectorRefresh( hCtrl )
+   // Refresh inspector and select the new component
    InspectorPopulateCombo( hForm )
+   INS_ComboSelect( _InsGetData(), nCount )  // select last item (new component)
+   InspectorRefresh( hCtrl )
 
 return nil
 
@@ -3082,9 +3118,8 @@ HB_FUNC( W32_PROJECTOPTIONSDIALOG )
    }
 
    hOwner = GetActiveWindow();
-   GetWindowRect(hOwner,&rc);
-   x = rc.left+((rc.right-rc.left)-PO_DLG_W)/2;
-   y = rc.top+((rc.bottom-rc.top)-PO_DLG_H)/2;
+   x = (GetSystemMetrics(SM_CXSCREEN)-PO_DLG_W)/2;
+   y = (GetSystemMetrics(SM_CYSCREEN)-PO_DLG_H)/2;
 
    d.hDlg = CreateWindowExA(WS_EX_DLGMODALFRAME|WS_EX_TOPMOST,
       "HbProjOpt","Project Options",

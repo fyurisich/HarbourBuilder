@@ -168,9 +168,9 @@ void TForm::CreateHandle( HWND hParent )
 
       if( FAppBar )
       {
-         /* Top bar: caption + min/max/close, NO thick resize border. */
+         /* Top bar: maximized, no restore/resize allowed */
          dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
-                   WS_MAXIMIZEBOX | WS_CLIPCHILDREN;
+                   WS_CLIPCHILDREN;
       }
       else if( FToolWindow )
       {
@@ -201,6 +201,8 @@ void TForm::CreateHandle( HWND hParent )
       /* Attach menu bar if created before window */
       if( FMenuBar )
          SetMenu( FHandle, FMenuBar );
+
+      /* (DWM shadow kept for natural Windows look) */
    }
 }
 
@@ -208,6 +210,47 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
 {
    switch( msg )
    {
+      case WM_SYSCOMMAND:
+      {
+         if( FAppBar )
+         {
+            WORD cmd = (WORD)(wParam & 0xFFF0);
+            /* Block restore, move, and size for APPBAR */
+            if( cmd == SC_RESTORE || cmd == SC_MOVE || cmd == SC_SIZE )
+               return 0;
+         }
+         break;
+      }
+
+      case WM_NCLBUTTONDBLCLK:
+      {
+         /* Block double-click on title bar to prevent restore */
+         if( FAppBar )
+            return 0;
+         break;
+      }
+
+      case WM_GETMINMAXINFO:
+      {
+         if( FAppBar )
+         {
+            LPMINMAXINFO pmmi = (LPMINMAXINFO) lParam;
+            int cxScreen = GetSystemMetrics( SM_CXSCREEN );
+            /* Extend 10px past each edge to compensate DWM invisible frame */
+            pmmi->ptMaxPosition.x = -10;
+            pmmi->ptMaxPosition.y = 0;
+            pmmi->ptMaxSize.x = cxScreen + 20;
+            pmmi->ptMaxSize.y = FHeight;
+            /* Prevent resizing */
+            pmmi->ptMinTrackSize.x = cxScreen + 20;
+            pmmi->ptMinTrackSize.y = FHeight;
+            pmmi->ptMaxTrackSize.x = cxScreen + 20;
+            pmmi->ptMaxTrackSize.y = FHeight;
+            return 0;
+         }
+         break;
+      }
+
       case WM_COMMAND:
       {
          WORD wId = LOWORD(wParam);
@@ -256,11 +299,114 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                   hb_vmSend( 1 );
                }
 
-               /* Set pending control on the design form */
-               if( g_designForm )
+               /* Check if non-visual component (auto-drop, no click needed) */
                {
-                  g_designForm->FPendingControlType = ctrlType;
-                  SetCursor( LoadCursor(NULL, IDC_CROSS) );
+                  int isNonVisual = 0;
+                  if( ctrlType == CT_TIMER || ctrlType == CT_PAINTBOX ) isNonVisual = 1;
+                  if( ctrlType >= CT_OPENDIALOG && ctrlType <= CT_REPLACEDIALOG ) isNonVisual = 1;
+                  if( ctrlType >= CT_OPENAI && ctrlType <= CT_TRANSFORMER ) isNonVisual = 1;
+                  if( ctrlType >= CT_DBFTABLE && ctrlType <= CT_MONGODB ) isNonVisual = 1;
+                  if( ctrlType >= CT_THREAD && ctrlType <= CT_CHANNEL ) isNonVisual = 1;
+                  if( ctrlType >= CT_WEBSERVER && ctrlType <= CT_UDPSOCKET ) isNonVisual = 1;
+                  if( ctrlType >= CT_PREPROCESSOR && ctrlType <= CT_SCHEDULER ) isNonVisual = 1;
+                  if( ctrlType >= CT_PRINTER && ctrlType <= CT_BARCODEPRINTER ) isNonVisual = 1;
+                  if( ctrlType >= CT_WHISPER ) isNonVisual = 1; /* Whisper, Embeddings, Connectivity, Git */
+
+                  if( isNonVisual && g_designForm )
+                  {
+                     /* Auto-drop: create non-visual component */
+                     TControl * newCtrl = new TLabel();
+                     newCtrl->FControlType = (BYTE) ctrlType;
+                     /* Set correct class name from palette button tooltip */
+                     lstrcpynA( newCtrl->FClassName,
+                        FPalette->FTabs[nTab].btns[btnIdx].szTooltip,
+                        sizeof(newCtrl->FClassName) );
+
+                     /* Find next position in bottom area of form */
+                     int nNV = 0, ci;
+                     for( ci = 0; ci < g_designForm->FChildCount; ci++ )
+                        if( g_designForm->FChildren[ci]->FWidth == 32 &&
+                            g_designForm->FChildren[ci]->FHeight == 32 )
+                           nNV++;
+                     int nx = 8 + (nNV % 8) * 40;
+                     int ny = g_designForm->FHeight - 80 + (nNV / 8) * 40;
+                     if( ny < 40 ) ny = 40;
+
+                     newCtrl->FLeft = nx;
+                     newCtrl->FTop = ny;
+                     newCtrl->FWidth = 32;
+                     newCtrl->FHeight = 32;
+                     newCtrl->FFont = g_designForm->FFormFont;
+                     g_designForm->AddChild( newCtrl );
+
+                     /* Create Win32 window with palette icon */
+                     if( g_designForm->FHandle )
+                     {
+                        /* Calculate ImageList index for this component */
+                        int imgIdx = 0;
+                        { int t, b;
+                          for( t = 0; t < nTab; t++ )
+                             for( b = 0; b < FPalette->FTabs[t].nBtnCount; b++ )
+                                imgIdx++;
+                          imgIdx += btnIdx;
+                        }
+
+                        /* Try to get icon from palette ImageList */
+                        HICON hIcon = NULL;
+                        if( FPalette->FPalImageList )
+                           hIcon = ImageList_GetIcon( FPalette->FPalImageList, imgIdx, ILD_TRANSPARENT );
+
+                        if( hIcon )
+                        {
+                           /* STATIC with SS_ICON */
+                           newCtrl->FHandle = CreateWindowExA( 0, "STATIC", NULL,
+                              WS_CHILD | WS_VISIBLE | SS_ICON | SS_NOTIFY,
+                              nx, ny + g_designForm->FClientTop, 32, 32,
+                              g_designForm->FHandle, NULL, GetModuleHandle(NULL), NULL );
+                           if( newCtrl->FHandle )
+                              SendMessageA( newCtrl->FHandle, STM_SETICON, (WPARAM) hIcon, 0 );
+                        }
+                        else
+                        {
+                           /* Fallback: text label */
+                           newCtrl->FHandle = CreateWindowExA( 0, "STATIC",
+                              FPalette->FTabs[nTab].btns[btnIdx].szText,
+                              WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE |
+                              WS_BORDER | SS_NOTIFY,
+                              nx, ny + g_designForm->FClientTop, 32, 32,
+                              g_designForm->FHandle, NULL, GetModuleHandle(NULL), NULL );
+                        }
+
+                        if( newCtrl->FHandle )
+                           SetWindowLongPtr( newCtrl->FHandle, GWLP_USERDATA, (LONG_PTR) newCtrl );
+                     }
+
+                     g_designForm->SelectControl( newCtrl, FALSE );
+                     g_designForm->SubclassChildren();
+
+                     /* Fire OnComponentDrop callback */
+                     if( g_designForm->FOnComponentDrop &&
+                         HB_IS_BLOCK( g_designForm->FOnComponentDrop ) )
+                     {
+                        hb_vmPushEvalSym();
+                        hb_vmPush( g_designForm->FOnComponentDrop );
+                        hb_vmPushNumInt( (HB_PTRUINT) g_designForm );
+                        hb_vmPushInteger( ctrlType );
+                        hb_vmPushInteger( nx );
+                        hb_vmPushInteger( ny );
+                        hb_vmPushInteger( 32 );
+                        hb_vmPushInteger( 32 );
+                        hb_vmSend( 6 );
+                     }
+
+                     g_designForm->UpdateOverlay();
+                  }
+                  else if( g_designForm )
+                  {
+                     /* Visual control: set pending, wait for click */
+                     g_designForm->FPendingControlType = ctrlType;
+                     SetCursor( LoadCursor(NULL, IDC_CROSS) );
+                  }
                }
             }
             return 0;
@@ -537,12 +683,21 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
             nHandle = HitTestHandle( mx, my );
             if( nHandle >= 0 )
             {
-               FResizing = TRUE;
-               FResizeHandle = nHandle;
-               FDragStartX = mx;
-               FDragStartY = my;
-               SetCapture( FHandle );
-               return 0;
+               /* Block resize for non-visual components (32x32 icons) */
+               if( FSelCount > 0 && FSelected[0]->FWidth == 32 &&
+                   FSelected[0]->FHeight == 32 )
+               {
+                  /* Start drag instead of resize */
+               }
+               else
+               {
+                  FResizing = TRUE;
+                  FResizeHandle = nHandle;
+                  FDragStartX = mx;
+                  FDragStartY = my;
+                  SetCapture( FHandle );
+                  return 0;
+               }
             }
 
             pHit = HitTest( mx, my );
@@ -700,14 +855,28 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                for( i = 0; i < FSelCount; i++ )
                {
                   TControl * p = FSelected[i];
+                  /* Invalidate old position before moving */
+                  if( p->FHandle )
+                  {
+                     RECT rcOld;
+                     GetWindowRect( p->FHandle, &rcOld );
+                     MapWindowPoints( HWND_DESKTOP, FHandle, (LPPOINT) &rcOld, 2 );
+                     rcOld.left -= 4; rcOld.top -= 4;
+                     rcOld.right += 4; rcOld.bottom += 4;
+                     InvalidateRect( FHandle, &rcOld, TRUE );
+                  }
                   p->FLeft += dx;
                   p->FTop += dy;
                   if( p->FHandle )
-                     SetWindowPos( p->FHandle, NULL, p->FLeft, p->FTop + FClientTop,
-                        p->FWidth, p->FHeight, SWP_NOZORDER | SWP_NOSIZE );
+                  {
+                     MoveWindow( p->FHandle, p->FLeft, p->FTop + FClientTop,
+                        p->FWidth, p->FHeight, TRUE );
+                     UpdateWindow( p->FHandle );
+                  }
                }
                FDragStartX += dx;
                FDragStartY += dy;
+               UpdateWindow( FHandle );
                UpdateOverlay();
                /* Live inspector update during drag */
                if( FOnSelChange && HB_IS_BLOCK( FOnSelChange ) && FSelCount > 0 )
@@ -730,11 +899,18 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
 
             if( nH >= 0 )
             {
-               /* Resize cursors per handle: TL TC TR MR BR BC BL ML */
-               static LPCTSTR aCurs[] = {
-                  IDC_SIZENWSE, IDC_SIZENS, IDC_SIZENESW, IDC_SIZEWE,
-                  IDC_SIZENWSE, IDC_SIZENS, IDC_SIZENESW, IDC_SIZEWE };
-               cur = aCurs[nH];
+               /* Skip resize cursor for non-visual components (32x32) */
+               if( FSelCount > 0 && FSelected[0]->FWidth == 32 &&
+                   FSelected[0]->FHeight == 32 )
+                  cur = IDC_SIZEALL;  /* Move cursor instead */
+               else
+               {
+                  /* Resize cursors per handle: TL TC TR MR BR BC BL ML */
+                  static LPCTSTR aCurs[] = {
+                     IDC_SIZENWSE, IDC_SIZENS, IDC_SIZENESW, IDC_SIZEWE,
+                     IDC_SIZENWSE, IDC_SIZENS, IDC_SIZENESW, IDC_SIZEWE };
+                  cur = aCurs[nH];
+               }
             }
             else if( HitTest( mx, my ) )
                cur = IDC_SIZEALL;
@@ -1026,7 +1202,10 @@ void TForm::Show()
    if( FCenter )
       Center();
 
-   ShowWindow( FHandle, SW_SHOW );
+   if( FAppBar )
+      ShowWindow( FHandle, SW_SHOWMAXIMIZED );
+   else
+      ShowWindow( FHandle, SW_SHOW );
    UpdateWindow( FHandle );
    FRunning = TRUE;
 }
@@ -1135,8 +1314,11 @@ void TForm::SubclassChildren()
       HWND hChild = FChildren[i]->FHandle;
       if( hChild )
       {
-         WNDPROC pOld = (WNDPROC) GetWindowLongPtr( hChild, GWLP_WNDPROC );
-         SetPropA( hChild, "OldProc", (HANDLE) pOld );
+         WNDPROC pCur = (WNDPROC) GetWindowLongPtr( hChild, GWLP_WNDPROC );
+         /* Skip if already subclassed (avoid infinite recursion) */
+         if( pCur == DesignChildProc )
+            continue;
+         SetPropA( hChild, "OldProc", (HANDLE) pCur );
          SetWindowLongPtr( hChild, GWLP_WNDPROC, (LONG_PTR) DesignChildProc );
       }
    }

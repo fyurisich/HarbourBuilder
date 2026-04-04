@@ -1529,39 +1529,135 @@ HB_FUNC( UI_MENUITEMADDEX )
       hb_retni( -1 );
 }
 
-/* UI_MenuSetBitmap( hForm, nMenuIdx, cPngPath ) - set bitmap for menu item */
-HB_FUNC( UI_MENUSETBITMAP )
+/* Load PNG as HBITMAP using GDI+ flat API (C-compatible, works with BCC) */
+
+typedef int (__stdcall *PFN_GdiplusStartup)(ULONG_PTR*, void*, void*);
+typedef void (__stdcall *PFN_GdiplusShutdown)(ULONG_PTR);
+typedef int (__stdcall *PFN_GdipCreateBitmapFromFile)(const WCHAR*, void**);
+typedef int (__stdcall *PFN_GdipCreateHBITMAPFromBitmap)(void*, HBITMAP*, DWORD);
+typedef int (__stdcall *PFN_GdipDisposeImage)(void*);
+
+static HMODULE    s_hGdiPlus = NULL;
+static ULONG_PTR  s_gdipToken = 0;
+
+static HBITMAP LoadPngAsBitmap( const char * szPath )
 {
-   TForm * pForm = GetForm(1);
-   int nIdx = hb_parni(2);
-   const char * szPath = hb_parc(3);
-
-   if( !pForm || !pForm->FMenuBar || !szPath ) return;
-
-   /* Load PNG as bitmap using GDI+ */
+   WCHAR wPath[MAX_PATH];
+   void * pBitmap = NULL;
    HBITMAP hBmp = NULL;
+
+   if( !s_hGdiPlus )
    {
-      /* Use LoadImage for BMP/PNG */
-      hBmp = (HBITMAP) LoadImageA( NULL, szPath, IMAGE_BITMAP,
-         16, 16, LR_LOADFROMFILE | LR_LOADTRANSPARENT );
-      if( !hBmp )
+      s_hGdiPlus = LoadLibraryA( "gdiplus.dll" );
+      if( !s_hGdiPlus ) return NULL;
+
+      PFN_GdiplusStartup pStartup = (PFN_GdiplusStartup)
+         GetProcAddress( s_hGdiPlus, "GdiplusStartup" );
+      if( pStartup )
       {
-         /* Try GDI+ for PNG support */
-         /* For simplicity, try loading as-is. GDI+ init may be needed. */
-         hBmp = (HBITMAP) LoadImageA( NULL, szPath, IMAGE_BITMAP,
-            16, 16, LR_LOADFROMFILE );
+         /* GdiplusStartupInput: version=1, rest=0 */
+         BYTE input[16] = {0};
+         *(UINT32*)input = 1;
+         pStartup( &s_gdipToken, input, NULL );
       }
    }
-   if( !hBmp ) return;
 
-   /* Find the menu item by index and set its bitmap */
-   MENUITEMINFOA mii = { sizeof(mii) };
-   mii.fMask = MIIM_BITMAP;
-   mii.hbmpItem = hBmp;
-   SetMenuItemInfoA( pForm->FMenuBar, MENU_ID_BASE + nIdx, FALSE, &mii );
+   PFN_GdipCreateBitmapFromFile pFromFile = (PFN_GdipCreateBitmapFromFile)
+      GetProcAddress( s_hGdiPlus, "GdipCreateBitmapFromFile" );
+   PFN_GdipCreateHBITMAPFromBitmap pToHBmp = (PFN_GdipCreateHBITMAPFromBitmap)
+      GetProcAddress( s_hGdiPlus, "GdipCreateHBITMAPFromBitmap" );
+   PFN_GdipDisposeImage pDispose = (PFN_GdipDisposeImage)
+      GetProcAddress( s_hGdiPlus, "GdipDisposeImage" );
+
+   if( !pFromFile || !pToHBmp || !pDispose ) return NULL;
+
+   MultiByteToWideChar( CP_ACP, 0, szPath, -1, wPath, MAX_PATH );
+
+   if( pFromFile( wPath, &pBitmap ) != 0 || !pBitmap ) return NULL;
+
+   pToHBmp( pBitmap, &hBmp, 0x00000000 ); /* bg = transparent black */
+   pDispose( pBitmap );
+
+   return hBmp;
 }
 
-/* UI_MenuSetBitmapByPos( hPopup, nPos, cPngPath ) - set bitmap by position in popup */
+/* UI_DropNonVisual( hForm, nType, cName, cIconPath ) - place a non-visual component icon on form */
+HB_FUNC( UI_DROPNONVISUAL )
+{
+   TForm * form = GetForm(1);
+   int nType = hb_parni(2);
+   const char * cName = hb_parc(3);
+   const char * cIconPath = HB_ISCHAR(4) ? hb_parc(4) : NULL;
+
+   if( !form || !form->FHandle || !cName ) return;
+
+   /* Find next available position (grid of 40x40, bottom area of form) */
+   int nExisting = 0;
+   int i;
+   for( i = 0; i < form->FChildCount; i++ )
+   {
+      if( form->FChildren[i]->FControlType >= CT_TIMER )
+         nExisting++;
+   }
+   int col = nExisting % 8;
+   int row = nExisting / 8;
+   int x = 8 + col * 40;
+   int y = form->FHeight - 80 + row * 40;  /* bottom area of form */
+   if( y < 40 ) y = 40;
+
+   /* Create a static control with icon/text */
+   TControl * ctrl = CreateControlByType( (BYTE) nType );
+   if( !ctrl )
+   {
+      /* For unknown types, create a generic label */
+      ctrl = new TLabel();
+   }
+
+   ctrl->FLeft = x;
+   ctrl->FTop = y;
+   ctrl->FWidth = 32;
+   ctrl->FHeight = 32;
+   ctrl->FControlType = (BYTE) nType;
+   lstrcpynA( ctrl->FName, cName, sizeof(ctrl->FName) );
+   lstrcpynA( ctrl->FText, cName, sizeof(ctrl->FText) );
+
+   form->AddChild( ctrl );
+
+   /* Create as a small static window with icon or text */
+   HWND hChild = CreateWindowExA( 0, "STATIC", cName,
+      WS_CHILD | WS_VISIBLE | SS_CENTER | SS_NOTIFY,
+      x, y + form->FClientTop, 32, 32,
+      form->FHandle, NULL, GetModuleHandle(NULL), NULL );
+
+   if( hChild )
+   {
+      ctrl->FHandle = hChild;
+
+      /* Try to load icon from PNG */
+      if( cIconPath )
+      {
+         HBITMAP hBmp = LoadPngAsBitmap( cIconPath );
+         if( hBmp )
+         {
+            /* Convert STATIC to SS_BITMAP and set the image */
+            SetWindowLongA( hChild, GWL_STYLE,
+               (GetWindowLongA(hChild, GWL_STYLE) & ~0xF) | SS_BITMAP );
+            SendMessageA( hChild, STM_SETIMAGE, IMAGE_BITMAP, (LPARAM) hBmp );
+         }
+      }
+
+      /* Subclass for design-mode dragging */
+      SetWindowLongPtr( hChild, GWLP_USERDATA, (LONG_PTR) ctrl );
+   }
+
+   /* Select the new component */
+   form->SelectControl( ctrl, FALSE );
+   form->UpdateOverlay();
+
+   hb_retnint( (HB_PTRUINT) ctrl );
+}
+
+/* UI_MenuSetBitmapByPos( hPopup, nPos, cPngPath ) - set PNG bitmap on menu item */
 HB_FUNC( UI_MENUSETBITMAPBYPOS )
 {
    HMENU hPopup = (HMENU)(LONG_PTR) hb_parnint(1);
@@ -1570,14 +1666,13 @@ HB_FUNC( UI_MENUSETBITMAPBYPOS )
 
    if( !hPopup || !szPath ) return;
 
-   HBITMAP hBmp = (HBITMAP) LoadImageA( NULL, szPath, IMAGE_BITMAP,
-      16, 16, LR_LOADFROMFILE | LR_LOADTRANSPARENT );
+   HBITMAP hBmp = LoadPngAsBitmap( szPath );
    if( !hBmp ) return;
 
    MENUITEMINFOA mii = { sizeof(mii) };
    mii.fMask = MIIM_BITMAP;
    mii.hbmpItem = hBmp;
-   SetMenuItemInfoA( hPopup, nPos, TRUE, &mii );  /* TRUE = by position */
+   SetMenuItemInfoA( hPopup, nPos, TRUE, &mii );
 }
 
 /* UI_MenuSepAdd( hForm, hPopup ) */
