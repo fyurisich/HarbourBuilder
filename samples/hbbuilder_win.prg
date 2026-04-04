@@ -1076,6 +1076,9 @@ static function WireDesignForm()
    oDesignForm:OnResize := { || SyncDesignerToCode(), ;
       InspectorRefresh( oDesignForm:hCpp ) }
 
+   // When design form gets focus, bring all IDE windows to front
+   oDesignForm:OnActivate := { || RestoreAllIDEWindows() }
+
 return nil
 
 // Two-way sync: regenerate code from designer state
@@ -1240,6 +1243,16 @@ static function MenuViewForms()
 return nil
 
 // Destroy all forms on exit
+static function RestoreAllIDEWindows()
+   // Bring all IDE windows to front when any IDE window gets focus
+   W32_BringToTop( UI_FormGetHwnd( oIDE:hCpp ) )
+   INS_BringToFront( _InsGetData() )
+   CodeEditorBringToFront( hCodeEditor )
+   if oDesignForm != nil
+      W32_BringToTop( UI_FormGetHwnd( oDesignForm:hCpp ) )
+   endif
+return nil
+
 static function DestroyAllForms()
 
    local i
@@ -1487,7 +1500,8 @@ static function TBRun()
    local aCppFiles, cCppBase
    local cAllCode, nHash
    local cCompiler, cMsvcBase, cWinKit, cWinKitVer
-   local cMsvcInc, cMsvcLib, cUcrtInc, cUmInc, cUcrtLib, cUmLib
+   local cMsvcInc, cMsvcLib, cUcrtInc, cUmInc, cSharedInc, cUcrtLib, cUmLib
+   local cRsp, cRspContent
    static nLastHash := 0
 
    SaveActiveFormCode()
@@ -1528,12 +1542,13 @@ static function TBRun()
       cMsvcBase  := "c:\Program Files (x86)\Microsoft Visual Studio\2019\BuildTools\VC\Tools\MSVC\14.29.30133"
       cWinKit    := "c:\Program Files (x86)\Windows Kits\10"
       cWinKitVer := "10.0.26100.0"
-      cCC        := '"' + cMsvcBase + '\bin\Hostx86\x86\cl.exe"'
-      cLinker    := '"' + cMsvcBase + '\bin\Hostx86\x86\link.exe"'
+      cCC        := cMsvcBase + '\bin\Hostx86\x86\cl.exe'
+      cLinker    := cMsvcBase + '\bin\Hostx86\x86\link.exe'
       cMsvcInc   := cMsvcBase + "\include"
       cMsvcLib   := cMsvcBase + "\lib\x86"
       cUcrtInc   := cWinKit + "\Include\" + cWinKitVer + "\ucrt"
       cUmInc     := cWinKit + "\Include\" + cWinKitVer + "\um"
+      cSharedInc := cWinKit + "\Include\" + cWinKitVer + "\shared"
       cUcrtLib   := cWinKit + "\Lib\" + cWinKitVer + "\ucrt\x86"
       cUmLib     := cWinKit + "\Lib\" + cWinKitVer + "\um\x86"
       cHbBin     := cHbDir + "\bin\win\msvc"
@@ -1550,6 +1565,7 @@ static function TBRun()
    W32_ShellExec( 'cmd /c mkdir "' + cBuildDir + '" 2>nul' )
    // Delete old exe to avoid running stale builds
    W32_ShellExec( 'cmd /c del "' + cBuildDir + '\UserApp.exe" 2>nul' )
+   W32_ShellExec( 'cmd /c del "' + cBuildDir + '\*.obj" 2>nul' )
 
    // Show progress dialog (7 steps)
    W32_ProgressOpen( "Building Project...", 7 )
@@ -1575,13 +1591,7 @@ static function TBRun()
    for i := 1 to Len( aForms )
       cAllPrg += MemoRead( cBuildDir + "\" + aForms[i][1] + ".prg" ) + Chr(10)
    next
-   // Add DPI awareness to prevent zoom distortion on close
-   cAllPrg += Chr(10)
-   cAllPrg += "#pragma BEGINDUMP" + Chr(10)
-   cAllPrg += '#include <windows.h>' + Chr(10)
-   cAllPrg += '#include "hbapi.h"' + Chr(10)
-   cAllPrg += "HB_FUNC( SETDPIAWARE ) { SetProcessDPIAware(); }" + Chr(10)
-   cAllPrg += "#pragma ENDDUMP" + Chr(10)
+   // Note: SetDPIAware() is provided by hbbridge.cpp, no #pragma BEGINDUMP needed
    MemoWrit( cBuildDir + "\main.prg", cAllPrg )
 
    // Step 3: Compile user code with Harbour
@@ -1616,20 +1626,27 @@ static function TBRun()
       W32_ProgressStep( "Compiling C sources..." )
       cLog += "[5] Compiling C sources..." + Chr(10)
       if cCompiler == "msvc"
-         cCppBase := cCC + ' /c /O2 /W0 /EHsc' + ;
-                 ' /I"' + cHbInc + '"' + ;
-                 ' /I"' + cMsvcInc + '"' + ;
-                 ' /I"' + cUcrtInc + '"' + ;
-                 ' /I"' + cUmInc + '"' + ;
-                 ' /I"' + cProjDir + '\cpp\include" '
-         cCmd := cCppBase + '"' + cBuildDir + '\main.c" /Fo"' + cBuildDir + '\main.obj"'
+         // Use response file for cl.exe (avoids quoting issues with spaces in paths)
+         cRspContent := "/c /O2 /W0 /EHsc" + Chr(10)
+         cRspContent += '/I"' + cHbInc + '"' + Chr(10)
+         cRspContent += '/I"' + cMsvcInc + '"' + Chr(10)
+         cRspContent += '/I"' + cUcrtInc + '"' + Chr(10)
+         cRspContent += '/I"' + cUmInc + '"' + Chr(10)
+         cRspContent += '/I"' + cSharedInc + '"' + Chr(10)
+         cRspContent += '/I"' + cProjDir + '\cpp\include"' + Chr(10)
+
+         cRsp := cBuildDir + "\cl_main.rsp"
+         MemoWrit( cRsp, cRspContent + '"' + cBuildDir + '\main.c"' + Chr(10) + '/Fo"' + cBuildDir + '\main.obj"' )
+         cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
          cOutput := W32_ShellExec( cCmd )
          if "error" $ Lower( cOutput )
             cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
             lError := .T.
          endif
          if ! lError
-            cCmd := cCppBase + '"' + cBuildDir + '\classes.c" /Fo"' + cBuildDir + '\classes.obj"'
+            cRsp := cBuildDir + "\cl_classes.rsp"
+            MemoWrit( cRsp, cRspContent + '"' + cBuildDir + '\classes.c"' + Chr(10) + '/Fo"' + cBuildDir + '\classes.obj"' )
+            cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
             W32_ShellExec( cCmd )
          endif
       else
@@ -1659,12 +1676,13 @@ static function TBRun()
       cLog += "[6] Compiling C++ core..." + Chr(10)
       aCppFiles := { "tcontrol", "tform", "tcontrols", "hbbridge" }
       if cCompiler == "msvc"
-         cCppBase := cCC + ' /c /O2 /W0 /EHsc' + ;
-                 ' /I"' + cHbInc + '"' + ;
-                 ' /I"' + cMsvcInc + '"' + ;
-                 ' /I"' + cUcrtInc + '"' + ;
-                 ' /I"' + cUmInc + '"' + ;
-                 ' /I"' + cProjDir + '\cpp\include" '
+         cCppBase := "/c /O2 /W0 /EHsc" + Chr(10) + ;
+                 '/I"' + cHbInc + '"' + Chr(10) + ;
+                 '/I"' + cMsvcInc + '"' + Chr(10) + ;
+                 '/I"' + cUcrtInc + '"' + Chr(10) + ;
+                 '/I"' + cUmInc + '"' + Chr(10) + ;
+                 '/I"' + cSharedInc + '"' + Chr(10) + ;
+                 '/I"' + cProjDir + '\cpp\include"' + Chr(10)
       else
          cCppBase := " -c -O2 -tW -w- -I" + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
@@ -1672,8 +1690,10 @@ static function TBRun()
       endif
       for k := 1 to Len( aCppFiles )
          if cCompiler == "msvc"
-            cCmd := cCppBase + '"' + cProjDir + "\cpp\src\" + aCppFiles[k] + '.cpp"' + ;
-                    ' /Fo"' + cBuildDir + "\" + aCppFiles[k] + '.obj"'
+            cRsp := cBuildDir + "\cl_" + aCppFiles[k] + ".rsp"
+            MemoWrit( cRsp, cCppBase + '"' + cProjDir + "\cpp\src\" + aCppFiles[k] + '.cpp"' + Chr(10) + ;
+                     '/Fo"' + cBuildDir + "\" + aCppFiles[k] + '.obj"' )
+            cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
          else
             cCmd := cCC + cCppBase + ;
                     cProjDir + "\cpp\src\" + aCppFiles[k] + ".cpp" + ;
@@ -1700,23 +1720,28 @@ static function TBRun()
                cBuildDir + "\tcontrols.obj " + ;
                cBuildDir + "\hbbridge.obj"
       if cCompiler == "msvc"
-         cCmd := cLinker + " /NOLOGO /SUBSYSTEM:WINDOWS" + ;
-                 ' /LIBPATH:"' + cMsvcLib + '"' + ;
-                 ' /LIBPATH:"' + cUcrtLib + '"' + ;
-                 ' /LIBPATH:"' + cUmLib + '"' + ;
-                 ' /LIBPATH:"' + cHbLib + '"' + ;
-                 " /OUT:" + cBuildDir + "\UserApp.exe" + ;
-                 " " + cObjs + ;
-                 " hbrtl.lib hbvm.lib hbcpage.lib hblang.lib hbrdd.lib" + ;
-                 " hbmacro.lib hbpp.lib hbcommon.lib hbcplr.lib hbct.lib" + ;
-                 " hbhsx.lib hbsix.lib hbusrrdd.lib" + ;
-                 " rddntx.lib rddnsx.lib rddcdx.lib rddfpt.lib" + ;
-                 " hbdebug.lib hbpcre.lib hbzlib.lib" + ;
-                 " hbsqlit3.lib sqlite3.lib" + ;
-                 " gtwin.lib gtwvt.lib gtgui.lib" + ;
-                 " user32.lib gdi32.lib comctl32.lib comdlg32.lib shell32.lib" + ;
-                 " ole32.lib oleaut32.lib advapi32.lib ws2_32.lib winmm.lib" + ;
-                 " msimg32.lib gdiplus.lib ucrt.lib vcruntime.lib msvcrt.lib"
+         // Write link response file (avoids cmd line length/quoting issues)
+         cRsp := cBuildDir + "\link.rsp"
+         cRspContent := ""
+         cRspContent += "/NOLOGO /SUBSYSTEM:WINDOWS /NODEFAULTLIB:LIBCMT" + Chr(10)
+         cRspContent += '/OUT:"' + cBuildDir + '\UserApp.exe"' + Chr(10)
+         cRspContent += '/LIBPATH:"' + cMsvcLib + '"' + Chr(10)
+         cRspContent += '/LIBPATH:"' + cUcrtLib + '"' + Chr(10)
+         cRspContent += '/LIBPATH:"' + cUmLib + '"' + Chr(10)
+         cRspContent += '/LIBPATH:"' + cHbLib + '"' + Chr(10)
+         cRspContent += cObjs + Chr(10)
+         cRspContent += "hbrtl.lib hbvm.lib hbcpage.lib hblang.lib hbrdd.lib" + Chr(10)
+         cRspContent += "hbmacro.lib hbpp.lib hbcommon.lib hbcplr.lib hbct.lib" + Chr(10)
+         cRspContent += "hbhsx.lib hbsix.lib hbusrrdd.lib" + Chr(10)
+         cRspContent += "rddntx.lib rddnsx.lib rddcdx.lib rddfpt.lib" + Chr(10)
+         cRspContent += "hbdebug.lib hbpcre.lib hbzlib.lib" + Chr(10)
+         cRspContent += "hbsqlit3.lib sqlite3.lib" + Chr(10)
+         cRspContent += "gtwin.lib gtwvt.lib gtgui.lib" + Chr(10)
+         cRspContent += "user32.lib gdi32.lib comctl32.lib comdlg32.lib shell32.lib" + Chr(10)
+         cRspContent += "ole32.lib oleaut32.lib advapi32.lib ws2_32.lib winmm.lib" + Chr(10)
+         cRspContent += "msimg32.lib gdiplus.lib ucrt.lib vcruntime.lib msvcrt.lib" + Chr(10)
+         MemoWrit( cRsp, cRspContent )
+         cCmd := 'cmd /S /c ""' + cLinker + '" @"' + cRsp + '" 2>&1"'
       else
          cObjs := "c0w32.obj " + cObjs
          cCmd := cLinker + ' -Gn -aa -Tpe' + ;

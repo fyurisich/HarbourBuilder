@@ -542,11 +542,16 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
       }
 
       case WM_ACTIVATE:
-         if( !FDesignMode )
+         if( LOWORD(wParam) != WA_INACTIVE )
          {
-            if( LOWORD(wParam) != WA_INACTIVE )
+            if( !FDesignMode )
                FireEvent( FOnActivate );
             else
+               FireEvent( FOnActivate );  /* Design mode: also fire to restore IDE */
+         }
+         else
+         {
+            if( !FDesignMode )
                FireEvent( FOnDeactivate );
          }
          break;
