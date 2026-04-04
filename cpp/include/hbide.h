@@ -83,6 +83,17 @@ class TComponentPalette;
 #define CT_TRANSFORMER 52
 #define CT_WHISPER    110
 #define CT_EMBEDDINGS 111
+/* Source Control (Git) */
+#define CT_GITREPO    121
+#define CT_GITCOMMIT  122
+#define CT_GITBRANCH  123
+#define CT_GITLOG     124
+#define CT_GITDIFF    125
+#define CT_GITREMOTE  126
+#define CT_GITSTASH   127
+#define CT_GITTAG     128
+#define CT_GITBLAME   129
+#define CT_GITMERGE   130
 /* Connectivity (language/runtime interop) */
 #define CT_PYTHON     112
 #define CT_SWIFT      113

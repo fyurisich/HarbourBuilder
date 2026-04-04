@@ -377,6 +377,19 @@ static function CreatePalette()
    oPal:AddComp( nTab, "Lua",  "Lua",         119 )
    oPal:AddComp( nTab, "Rby",  "Ruby",        120 )
 
+   // Source Control tab (Git)
+   nTab := oPal:AddTab( "Git" )
+   oPal:AddComp( nTab, "Rpo",  "GitRepo",     121 )
+   oPal:AddComp( nTab, "Cmt",  "GitCommit",   122 )
+   oPal:AddComp( nTab, "Bch",  "GitBranch",   123 )
+   oPal:AddComp( nTab, "Log",  "GitLog",      124 )
+   oPal:AddComp( nTab, "Dif",  "GitDiff",     125 )
+   oPal:AddComp( nTab, "Rem",  "GitRemote",   126 )
+   oPal:AddComp( nTab, "Sth",  "GitStash",    127 )
+   oPal:AddComp( nTab, "Tag",  "GitTag",      128 )
+   oPal:AddComp( nTab, "Blm",  "GitBlame",    129 )
+   oPal:AddComp( nTab, "Mrg",  "GitMerge",    130 )
+
    UI_PaletteLoadImages( oPal:hCpp, "../resources/palette.bmp" )
 
 return nil
@@ -702,7 +715,9 @@ static function OnComponentDrop( hForm, nType, nL, nT, nW, nH )
       "Printer", "Report", "Labels", "PrintPreview", ;
       "PageSetup", "PrintDialog", "ReportViewer", "BarcodePrinter", ;
       "Whisper", "Embeddings", ;
-      "Python", "Swift", "Go", "Node", "Rust", "Java", "DotNet", "Lua", "Ruby" }
+      "Python", "Swift", "Go", "Node", "Rust", "Java", "DotNet", "Lua", "Ruby", ;
+      "GitRepo", "GitCommit", "GitBranch", "GitLog", "GitDiff", ;
+      "GitRemote", "GitStash", "GitTag", "GitBlame", "GitMerge" }
 
    if aCnt == nil; aCnt := Array(120); AFill(aCnt,0); endif
    if nType < 1 .or. nType > Len(aNames) .or. Empty(aNames[nType]); return nil; endif

@@ -3,6 +3,8 @@
 function InspectorOpen()
    if _InsGetData() == 0
       _InsSetData( INS_Create() )
+   else
+      INS_BringToFront( _InsGetData() )
    endif
 return nil
 

@@ -3929,3 +3929,579 @@ HB_FUNC( RPT_PREVIEWRENDER )
    RptPrvUpdateLabel();
    if( s_rptPreview ) InvalidateRect( s_rptPreview, NULL, FALSE );
 }
+
+/* ================================================================
+ * GIT INTEGRATION - Wraps git.exe CLI commands
+ * Returns output as Harbour strings/arrays.
+ * ================================================================ */
+
+/* Helper: run a git command and capture stdout */
+static char * GitExec( const char * szArgs, const char * szWorkDir )
+{
+   HANDLE hReadPipe, hWritePipe;
+   SECURITY_ATTRIBUTES sa = { sizeof(sa), NULL, TRUE };
+   PROCESS_INFORMATION pi = {0};
+   STARTUPINFOA si = { sizeof(si) };
+   char cmdLine[1024];
+   char * pBuf = NULL;
+   DWORD dwRead, dwTotal = 0, dwBufSize = 4096;
+
+   if( !CreatePipe( &hReadPipe, &hWritePipe, &sa, 0 ) ) return NULL;
+   SetHandleInformation( hReadPipe, HANDLE_FLAG_INHERIT, 0 );
+
+   si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+   si.hStdOutput = hWritePipe;
+   si.hStdError  = hWritePipe;
+   si.hStdInput  = NULL;
+   si.wShowWindow = SW_HIDE;
+
+   snprintf( cmdLine, sizeof(cmdLine), "git %s", szArgs );
+
+   if( !CreateProcessA( NULL, cmdLine, NULL, NULL, TRUE,
+      CREATE_NO_WINDOW, NULL, szWorkDir, &si, &pi ) )
+   {
+      CloseHandle( hReadPipe );
+      CloseHandle( hWritePipe );
+      return NULL;
+   }
+   CloseHandle( hWritePipe );
+
+   pBuf = (char *) malloc( dwBufSize );
+   pBuf[0] = 0;
+
+   while( ReadFile( hReadPipe, pBuf + dwTotal, dwBufSize - dwTotal - 1, &dwRead, NULL ) && dwRead > 0 )
+   {
+      dwTotal += dwRead;
+      if( dwTotal >= dwBufSize - 256 )
+      {
+         dwBufSize *= 2;
+         pBuf = (char *) realloc( pBuf, dwBufSize );
+      }
+   }
+   pBuf[dwTotal] = 0;
+
+   WaitForSingleObject( pi.hProcess, 5000 );
+   CloseHandle( pi.hProcess );
+   CloseHandle( pi.hThread );
+   CloseHandle( hReadPipe );
+
+   return pBuf;
+}
+
+/* GIT_Exec( cArgs, [cWorkDir] ) -> cOutput
+ * Run any git command and return raw output */
+HB_FUNC( GIT_EXEC )
+{
+   const char * szArgs = hb_parc(1);
+   const char * szDir  = HB_ISCHAR(2) ? hb_parc(2) : ".";
+   if( !szArgs ) { hb_retc(""); return; }
+   char * pOut = GitExec( szArgs, szDir );
+   if( pOut ) { hb_retc( pOut ); free( pOut ); }
+   else hb_retc( "" );
+}
+
+/* GIT_Status( [cWorkDir] ) -> { { cStatus, cFile }, ... }
+ * Parse `git status --porcelain` into array of {status, filename} */
+HB_FUNC( GIT_STATUS )
+{
+   const char * szDir = HB_ISCHAR(1) ? hb_parc(1) : ".";
+   char * pOut = GitExec( "status --porcelain", szDir );
+   PHB_ITEM pArray = hb_itemArrayNew( 0 );
+
+   if( pOut )
+   {
+      char * p = pOut;
+      while( *p )
+      {
+         char * eol = strchr( p, '\n' );
+         if( !eol ) eol = p + strlen(p);
+
+         if( eol - p >= 4 )
+         {
+            PHB_ITEM pEntry = hb_itemArrayNew( 2 );
+            char status[4] = { p[0], p[1], 0 };
+            char file[512];
+            int fLen = (int)(eol - p - 3);
+            if( fLen > 511 ) fLen = 511;
+            strncpy( file, p + 3, fLen );
+            file[fLen] = 0;
+
+            hb_arraySetC( pEntry, 1, status );
+            hb_arraySetC( pEntry, 2, file );
+            hb_arrayAdd( pArray, pEntry );
+            hb_itemRelease( pEntry );
+         }
+         p = ( *eol ) ? eol + 1 : eol;
+      }
+      free( pOut );
+   }
+   hb_itemReturnRelease( pArray );
+}
+
+/* GIT_Log( [nCount], [cWorkDir] ) -> { { cHash, cAuthor, cDate, cMessage }, ... } */
+HB_FUNC( GIT_LOG )
+{
+   int nCount = HB_ISNUM(1) ? hb_parni(1) : 20;
+   const char * szDir = HB_ISCHAR(2) ? hb_parc(2) : ".";
+   char args[256];
+   snprintf( args, sizeof(args),
+      "log --oneline --format=%%H|%%an|%%ar|%%s -n %d", nCount );
+
+   char * pOut = GitExec( args, szDir );
+   PHB_ITEM pArray = hb_itemArrayNew( 0 );
+
+   if( pOut )
+   {
+      char * p = pOut;
+      while( *p )
+      {
+         char * eol = strchr( p, '\n' );
+         if( !eol ) eol = p + strlen(p);
+
+         if( eol > p )
+         {
+            /* Parse: hash|author|date|message */
+            char line[1024];
+            int len = (int)(eol - p);
+            if( len > 1023 ) len = 1023;
+            strncpy( line, p, len ); line[len] = 0;
+
+            char * f1 = line;
+            char * f2 = strchr(f1, '|'); if(f2) *f2++ = 0; else f2 = (char*)"";
+            char * f3 = strchr(f2, '|'); if(f3) *f3++ = 0; else f3 = (char*)"";
+            char * f4 = strchr(f3, '|'); if(f4) *f4++ = 0; else f4 = (char*)"";
+
+            PHB_ITEM pEntry = hb_itemArrayNew( 4 );
+            hb_arraySetC( pEntry, 1, f1 );
+            hb_arraySetC( pEntry, 2, f2 );
+            hb_arraySetC( pEntry, 3, f3 );
+            hb_arraySetC( pEntry, 4, f4 );
+            hb_arrayAdd( pArray, pEntry );
+            hb_itemRelease( pEntry );
+         }
+         p = ( *eol ) ? eol + 1 : eol;
+      }
+      free( pOut );
+   }
+   hb_itemReturnRelease( pArray );
+}
+
+/* GIT_Diff( [cFile], [cWorkDir] ) -> cDiffText */
+HB_FUNC( GIT_DIFF )
+{
+   const char * szFile = HB_ISCHAR(1) ? hb_parc(1) : "";
+   const char * szDir  = HB_ISCHAR(2) ? hb_parc(2) : ".";
+   char args[512];
+   if( szFile[0] )
+      snprintf( args, sizeof(args), "diff -- \"%s\"", szFile );
+   else
+      snprintf( args, sizeof(args), "diff" );
+
+   char * pOut = GitExec( args, szDir );
+   if( pOut ) { hb_retc( pOut ); free( pOut ); }
+   else hb_retc( "" );
+}
+
+/* GIT_BranchList( [cWorkDir] ) -> { { cName, lCurrent }, ... } */
+HB_FUNC( GIT_BRANCHLIST )
+{
+   const char * szDir = HB_ISCHAR(1) ? hb_parc(1) : ".";
+   char * pOut = GitExec( "branch --no-color", szDir );
+   PHB_ITEM pArray = hb_itemArrayNew( 0 );
+
+   if( pOut )
+   {
+      char * p = pOut;
+      while( *p )
+      {
+         char * eol = strchr( p, '\n' );
+         if( !eol ) eol = p + strlen(p);
+
+         if( eol - p >= 2 )
+         {
+            PHB_ITEM pEntry = hb_itemArrayNew( 2 );
+            int isCurrent = ( p[0] == '*' ) ? 1 : 0;
+            char name[256];
+            char * start = p + 2;
+            int nLen = (int)(eol - start);
+            if( nLen > 255 ) nLen = 255;
+            strncpy( name, start, nLen ); name[nLen] = 0;
+            /* Trim trailing spaces */
+            while( nLen > 0 && name[nLen-1] == ' ' ) name[--nLen] = 0;
+
+            hb_arraySetC( pEntry, 1, name );
+            hb_arraySetL( pEntry, 2, isCurrent ? HB_TRUE : HB_FALSE );
+            hb_arrayAdd( pArray, pEntry );
+            hb_itemRelease( pEntry );
+         }
+         p = ( *eol ) ? eol + 1 : eol;
+      }
+      free( pOut );
+   }
+   hb_itemReturnRelease( pArray );
+}
+
+/* GIT_CurrentBranch( [cWorkDir] ) -> cBranchName */
+HB_FUNC( GIT_CURRENTBRANCH )
+{
+   const char * szDir = HB_ISCHAR(1) ? hb_parc(1) : ".";
+   char * pOut = GitExec( "rev-parse --abbrev-ref HEAD", szDir );
+   if( pOut )
+   {
+      /* Remove trailing newline */
+      int len = (int)strlen(pOut);
+      while( len > 0 && (pOut[len-1] == '\n' || pOut[len-1] == '\r') ) pOut[--len] = 0;
+      hb_retc( pOut );
+      free( pOut );
+   }
+   else hb_retc( "" );
+}
+
+/* GIT_Blame( cFile, [cWorkDir] ) -> cBlameOutput */
+HB_FUNC( GIT_BLAME )
+{
+   const char * szFile = hb_parc(1);
+   const char * szDir  = HB_ISCHAR(2) ? hb_parc(2) : ".";
+   if( !szFile ) { hb_retc(""); return; }
+   char args[512];
+   snprintf( args, sizeof(args), "blame --date=short \"%s\"", szFile );
+   char * pOut = GitExec( args, szDir );
+   if( pOut ) { hb_retc( pOut ); free( pOut ); }
+   else hb_retc( "" );
+}
+
+/* GIT_IsRepo( [cWorkDir] ) -> lIsGitRepo */
+HB_FUNC( GIT_ISREPO )
+{
+   const char * szDir = HB_ISCHAR(1) ? hb_parc(1) : ".";
+   char * pOut = GitExec( "rev-parse --is-inside-work-tree", szDir );
+   if( pOut )
+   {
+      hb_retl( strstr(pOut, "true") != NULL );
+      free( pOut );
+   }
+   else hb_retl( HB_FALSE );
+}
+
+/* GIT_RemoteList( [cWorkDir] ) -> { { cName, cUrl }, ... } */
+HB_FUNC( GIT_REMOTELIST )
+{
+   const char * szDir = HB_ISCHAR(1) ? hb_parc(1) : ".";
+   char * pOut = GitExec( "remote -v", szDir );
+   PHB_ITEM pArray = hb_itemArrayNew( 0 );
+
+   if( pOut )
+   {
+      char * p = pOut;
+      while( *p )
+      {
+         char * eol = strchr( p, '\n' );
+         if( !eol ) eol = p + strlen(p);
+
+         /* Only take (fetch) lines to avoid duplicates */
+         if( eol > p && strstr( p, "(fetch)" ) )
+         {
+            char line[512];
+            int len = (int)(eol - p);
+            if( len > 511 ) len = 511;
+            strncpy( line, p, len ); line[len] = 0;
+
+            char * tab = strchr( line, '\t' );
+            if( tab )
+            {
+               *tab = 0;
+               char * url = tab + 1;
+               char * sp = strstr( url, " (fetch)" );
+               if( sp ) *sp = 0;
+
+               PHB_ITEM pEntry = hb_itemArrayNew( 2 );
+               hb_arraySetC( pEntry, 1, line );
+               hb_arraySetC( pEntry, 2, url );
+               hb_arrayAdd( pArray, pEntry );
+               hb_itemRelease( pEntry );
+            }
+         }
+         p = ( *eol ) ? eol + 1 : eol;
+      }
+      free( pOut );
+   }
+   hb_itemReturnRelease( pArray );
+}
+
+/* ================================================================
+ * GIT PANEL UI - Source Control window with WinAPI
+ * ================================================================ */
+
+#define GIT_PANEL_CLASS "HbGitPanel"
+#define GIT_ID_REFRESH  4001
+#define GIT_ID_COMMIT   4002
+#define GIT_ID_PUSH     4003
+#define GIT_ID_PULL     4004
+#define GIT_ID_STASH    4005
+#define GIT_ID_MSGEDIT  4010
+
+static HWND s_hGitWnd = NULL;
+static HWND s_gitBranchLbl = NULL;
+static HWND s_gitChangesLV = NULL;
+static HWND s_gitMsgEdit = NULL;
+
+static LRESULT CALLBACK GitPanelProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+   switch( msg )
+   {
+      case WM_SIZE:
+      {
+         int w = LOWORD(lParam), h = HIWORD(lParam);
+         int y = 32;
+         if( s_gitBranchLbl ) MoveWindow( s_gitBranchLbl, 4, 6, w - 8, 20, TRUE );
+         if( s_gitChangesLV ) MoveWindow( s_gitChangesLV, 4, y, w - 8, h - y - 100, TRUE );
+         int msgY = h - 96;
+         if( s_gitMsgEdit ) MoveWindow( s_gitMsgEdit, 4, msgY, w - 8, 54, TRUE );
+         /* Buttons at bottom */
+         {
+            HWND hChild = GetWindow( hWnd, GW_CHILD );
+            int bx = 4, btnY = h - 34;
+            while( hChild )
+            {
+               int id = GetDlgCtrlID( hChild );
+               if( id >= GIT_ID_REFRESH && id <= GIT_ID_STASH )
+               {
+                  MoveWindow( hChild, bx, btnY, 60, 28, TRUE );
+                  bx += 64;
+               }
+               hChild = GetWindow( hChild, GW_HWNDNEXT );
+            }
+         }
+         return 0;
+      }
+
+      case WM_COMMAND:
+      {
+         int id = LOWORD(wParam);
+         /* Commit, Push, Pull etc are handled from Harbour via menu actions */
+         if( id == GIT_ID_REFRESH )
+         {
+            /* Trigger Harbour-level refresh */
+            PHB_DYNS pSym = hb_dynsymFind( "GITREFRESHPANEL" );
+            if( pSym ) { hb_vmPushDynSym(pSym); hb_vmPushNil(); hb_vmDo(0); }
+         }
+         else if( id == GIT_ID_COMMIT )
+         {
+            PHB_DYNS pSym = hb_dynsymFind( "GITCOMMIT" );
+            if( pSym ) { hb_vmPushDynSym(pSym); hb_vmPushNil(); hb_vmDo(0); }
+         }
+         else if( id == GIT_ID_PUSH )
+         {
+            PHB_DYNS pSym = hb_dynsymFind( "GITPUSH" );
+            if( pSym ) { hb_vmPushDynSym(pSym); hb_vmPushNil(); hb_vmDo(0); }
+         }
+         else if( id == GIT_ID_PULL )
+         {
+            PHB_DYNS pSym = hb_dynsymFind( "GITPULL" );
+            if( pSym ) { hb_vmPushDynSym(pSym); hb_vmPushNil(); hb_vmDo(0); }
+         }
+         return 0;
+      }
+
+      case WM_CTLCOLORSTATIC:
+      case WM_CTLCOLOREDIT:
+      case WM_CTLCOLORLISTBOX:
+      {
+         HDC hdc = (HDC)wParam;
+         SetTextColor( hdc, RGB(212,212,212) );
+         SetBkColor( hdc, RGB(30,30,30) );
+         static HBRUSH hBrDark = NULL;
+         if( !hBrDark ) hBrDark = CreateSolidBrush( RGB(30,30,30) );
+         return (LRESULT)hBrDark;
+      }
+
+      case WM_CLOSE:
+         ShowWindow( hWnd, SW_HIDE );
+         return 0;
+
+      case WM_ERASEBKGND:
+      {
+         HDC hdc = (HDC)wParam;
+         RECT rc; GetClientRect( hWnd, &rc );
+         HBRUSH hBr = CreateSolidBrush( RGB(37,37,38) );
+         FillRect( hdc, &rc, hBr );
+         DeleteObject( hBr );
+         return 1;
+      }
+   }
+   return DefWindowProc( hWnd, msg, wParam, lParam );
+}
+
+/* W32_GitPanel() - create/show the Source Control panel */
+HB_FUNC( W32_GITPANEL )
+{
+   if( s_hGitWnd ) {
+      ShowWindow( s_hGitWnd, SW_SHOW );
+      SetForegroundWindow( s_hGitWnd );
+      return;
+   }
+
+   {  WNDCLASSEXA wc = { sizeof(WNDCLASSEXA) };
+      wc.lpfnWndProc = GitPanelProc;
+      wc.hInstance = GetModuleHandle(NULL);
+      wc.lpszClassName = GIT_PANEL_CLASS;
+      wc.hCursor = LoadCursor( NULL, IDC_ARROW );
+      wc.hbrBackground = CreateSolidBrush( RGB(37,37,38) );
+      RegisterClassExA( &wc );
+   }
+
+   s_hGitWnd = CreateWindowExA( WS_EX_TOOLWINDOW, GIT_PANEL_CLASS,
+      "Source Control",
+      WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+      80, 100, 380, 520, NULL, NULL, GetModuleHandle(NULL), NULL );
+
+   /* Dark title bar */
+   {  typedef HRESULT (WINAPI *PFN)(HWND, DWORD, LPCVOID, DWORD);
+      HMODULE hDwm = LoadLibraryA("dwmapi.dll");
+      if( hDwm ) {
+         PFN pFn = (PFN)GetProcAddress(hDwm, "DwmSetWindowAttribute");
+         if( pFn ) { BOOL val = TRUE; pFn( s_hGitWnd, 20, &val, sizeof(val) ); }
+         FreeLibrary( hDwm );
+      }
+   }
+
+   HFONT hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
+
+   /* Branch label */
+   s_gitBranchLbl = CreateWindowExA( 0, "STATIC", "Branch: (none)",
+      WS_CHILD | WS_VISIBLE | SS_LEFT,
+      4, 6, 360, 20, s_hGitWnd, NULL, GetModuleHandle(NULL), NULL );
+   SendMessageA( s_gitBranchLbl, WM_SETFONT, (WPARAM)hFont, TRUE );
+
+   /* Changes ListView */
+   s_gitChangesLV = CreateWindowExA( 0, WC_LISTVIEWA, "",
+      WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_NOSORTHEADER,
+      4, 32, 364, 300, s_hGitWnd, NULL, GetModuleHandle(NULL), NULL );
+   ListView_SetExtendedListViewStyle( s_gitChangesLV,
+      LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER );
+   ListView_SetBkColor( s_gitChangesLV, RGB(30,30,30) );
+   ListView_SetTextBkColor( s_gitChangesLV, RGB(30,30,30) );
+   ListView_SetTextColor( s_gitChangesLV, RGB(212,212,212) );
+
+   { LVCOLUMNA col = { 0 };
+     col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
+     col.pszText = (LPSTR)"St"; col.cx = 30; col.fmt = LVCFMT_LEFT;
+     ListView_InsertColumn( s_gitChangesLV, 0, &col );
+     col.pszText = (LPSTR)"File"; col.cx = 320;
+     ListView_InsertColumn( s_gitChangesLV, 1, &col );
+   }
+
+   /* Commit message edit */
+   s_gitMsgEdit = CreateWindowExA( WS_EX_CLIENTEDGE, "EDIT", "",
+      WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL,
+      4, 340, 364, 54, s_hGitWnd, (HMENU)(LONG_PTR)GIT_ID_MSGEDIT,
+      GetModuleHandle(NULL), NULL );
+   SendMessageA( s_gitMsgEdit, WM_SETFONT, (WPARAM)hFont, TRUE );
+   SendMessageA( s_gitMsgEdit, EM_SETCUEBANNER, TRUE, (LPARAM)L"Commit message..." );
+
+   /* Action buttons */
+   { const char * labels[] = { "Refresh", "Commit", "Push", "Pull", "Stash" };
+     int ids[] = { GIT_ID_REFRESH, GIT_ID_COMMIT, GIT_ID_PUSH, GIT_ID_PULL, GIT_ID_STASH };
+     int bx = 4;
+     for( int i = 0; i < 5; i++ )
+     {
+        HWND hBtn = CreateWindowExA( 0, "BUTTON", labels[i],
+           WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+           bx, 400, 60, 28, s_hGitWnd, (HMENU)(LONG_PTR)ids[i],
+           GetModuleHandle(NULL), NULL );
+        SendMessageA( hBtn, WM_SETFONT, (WPARAM)hFont, TRUE );
+        bx += 64;
+     }
+   }
+
+   /* Force layout */
+   { RECT rc; GetClientRect( s_hGitWnd, &rc );
+     SendMessage( s_hGitWnd, WM_SIZE, 0, MAKELPARAM(rc.right, rc.bottom) );
+   }
+}
+
+/* W32_GitSetBranch( cBranch ) - update branch label */
+HB_FUNC( W32_GITSETBRANCH )
+{
+   if( s_gitBranchLbl && HB_ISCHAR(1) )
+   {
+      char buf[256];
+      snprintf( buf, sizeof(buf), "Branch: %s", hb_parc(1) );
+      SetWindowTextA( s_gitBranchLbl, buf );
+   }
+}
+
+/* W32_GitSetChanges( aChanges ) - populate changes ListView */
+HB_FUNC( W32_GITSETCHANGES )
+{
+   PHB_ITEM pArray = hb_param( 1, HB_IT_ARRAY );
+   if( !s_gitChangesLV || !pArray ) return;
+
+   ListView_DeleteAllItems( s_gitChangesLV );
+
+   int n = (int) hb_arrayLen( pArray );
+   for( int i = 1; i <= n; i++ )
+   {
+      PHB_ITEM pEntry = hb_arrayGetItemPtr( pArray, i );
+      if( !pEntry || hb_arrayLen(pEntry) < 2 ) continue;
+
+      LVITEMA item = { 0 };
+      item.mask = LVIF_TEXT;
+      item.iItem = i - 1;
+      item.pszText = (LPSTR)hb_arrayGetCPtr( pEntry, 1 );
+      ListView_InsertItem( s_gitChangesLV, &item );
+      ListView_SetItemText( s_gitChangesLV, i - 1, 1,
+         (LPSTR)hb_arrayGetCPtr( pEntry, 2 ) );
+   }
+}
+
+/* W32_GitGetMessage() -> cMessage - get text from commit message edit */
+HB_FUNC( W32_GITGETMESSAGE )
+{
+   if( s_gitMsgEdit )
+   {
+      char buf[2048] = "";
+      GetWindowTextA( s_gitMsgEdit, buf, sizeof(buf) );
+      hb_retc( buf );
+   }
+   else hb_retc( "" );
+}
+
+/* W32_GitClearMessage() - clear the commit message edit */
+HB_FUNC( W32_GITCLEARMESSAGE )
+{
+   if( s_gitMsgEdit )
+      SetWindowTextA( s_gitMsgEdit, "" );
+}
+
+/* GIT_StashList( [cWorkDir] ) -> { cStash1, cStash2, ... } */
+HB_FUNC( GIT_STASHLIST )
+{
+   const char * szDir = HB_ISCHAR(1) ? hb_parc(1) : ".";
+   char * pOut = GitExec( "stash list", szDir );
+   PHB_ITEM pArray = hb_itemArrayNew( 0 );
+
+   if( pOut )
+   {
+      char * p = pOut;
+      while( *p )
+      {
+         char * eol = strchr( p, '\n' );
+         if( !eol ) eol = p + strlen(p);
+         if( eol > p )
+         {
+            char line[256];
+            int len = (int)(eol - p);
+            if( len > 255 ) len = 255;
+            strncpy( line, p, len ); line[len] = 0;
+
+            PHB_ITEM pStr = hb_itemPutC( NULL, line );
+            hb_arrayAdd( pArray, pStr );
+            hb_itemRelease( pStr );
+         }
+         p = ( *eol ) ? eol + 1 : eol;
+      }
+      free( pOut );
+   }
+   hb_itemReturnRelease( pArray );
+}

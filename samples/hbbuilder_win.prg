@@ -35,7 +35,7 @@ static lDarkMode := .T.   // Dark mode state for toggle
 
 function Main()
 
-   local oTB, oTB2, oFile, oEdit, oSearch, oView, oProject, oRun, oFormat, oComp, oTools, oHelp
+   local oTB, oTB2, oFile, oEdit, oSearch, oView, oProject, oRun, oFormat, oComp, oTools, oGit, oHelp
    local nBarH, nInsW, nEditorX, nEditorW, nEditorH
    local nFormX, nFormY, nInsTop, nEditorTop, nBottomY
 
@@ -170,6 +170,26 @@ function Main()
    MENUITEM "&Report Designer"        OF oTools ACTION OpenReportDesigner()
    MENUSEPARATOR OF oTools
    MENUITEM "&Generate Palette Icons" OF oTools ACTION ( W32_GeneratePaletteIcons( .F. ), W32_GenerateToolbarIcons( .F. ) )
+
+   DEFINE POPUP oGit PROMPT "&Git" OF oIDE
+   MENUITEM "&Init Repository"      OF oGit ACTION GitInit()
+   MENUITEM "&Clone..."             OF oGit ACTION GitClone()
+   MENUSEPARATOR OF oGit
+   MENUITEM "&Status"               OF oGit ACTION GitShowPanel()
+   MENUITEM "C&ommit..."            OF oGit ACTION GitCommit()
+   MENUITEM "&Push"                 OF oGit ACTION GitPush()
+   MENUITEM "Pu&ll"                 OF oGit ACTION GitPull()
+   MENUSEPARATOR OF oGit
+   MENUITEM "&Branch >  Create..."  OF oGit ACTION GitBranchCreate()
+   MENUITEM "Branc&h >  Switch..."  OF oGit ACTION GitBranchSwitch()
+   MENUITEM "Branch >  &Merge..."   OF oGit ACTION GitMerge()
+   MENUSEPARATOR OF oGit
+   MENUITEM "S&tash"                OF oGit ACTION GitStash()
+   MENUITEM "Stash P&op"            OF oGit ACTION GitStashPop()
+   MENUSEPARATOR OF oGit
+   MENUITEM "&Log / History"        OF oGit ACTION GitLogShow()
+   MENUITEM "&Diff"                 OF oGit ACTION GitDiffShow()
+   MENUITEM "B&lame"                OF oGit ACTION GitBlameShow()
 
    DEFINE POPUP oHelp PROMPT "&Help" OF oIDE
    MENUITEM "&Documentation"        OF oHelp ACTION W32_OpenDocs( "en" )
@@ -418,6 +438,19 @@ static function CreatePalette()
    oPal:AddComp( nTab, "Net",  "DotNet",      118 )
    oPal:AddComp( nTab, "Lua",  "Lua",         119 )
    oPal:AddComp( nTab, "Rby",  "Ruby",        120 )
+
+   // Source Control tab (Git)
+   nTab := oPal:AddTab( "Git" )
+   oPal:AddComp( nTab, "Rpo",  "GitRepo",     121 )
+   oPal:AddComp( nTab, "Cmt",  "GitCommit",   122 )
+   oPal:AddComp( nTab, "Bch",  "GitBranch",   123 )
+   oPal:AddComp( nTab, "Log",  "GitLog",      124 )
+   oPal:AddComp( nTab, "Dif",  "GitDiff",     125 )
+   oPal:AddComp( nTab, "Rem",  "GitRemote",   126 )
+   oPal:AddComp( nTab, "Sth",  "GitStash",    127 )
+   oPal:AddComp( nTab, "Tag",  "GitTag",      128 )
+   oPal:AddComp( nTab, "Blm",  "GitBlame",    129 )
+   oPal:AddComp( nTab, "Mrg",  "GitMerge",    130 )
 
    // Load palette icons (includes Connectivity language logos)
    UI_PaletteLoadImages( oPal:hCpp, HB_DirBase() + "..\resources\palette.bmp" )
@@ -870,6 +903,17 @@ static function OnComponentDrop( hForm, nType, nL, nT, nW, nH )
       case nType == 118; cName := "DotNet"        + LTrim(Str(aCnt[nType]))
       case nType == 119; cName := "Lua"           + LTrim(Str(aCnt[nType]))
       case nType == 120; cName := "Ruby"          + LTrim(Str(aCnt[nType]))
+      // Source Control tab
+      case nType == 121; cName := "GitRepo"       + LTrim(Str(aCnt[nType]))
+      case nType == 122; cName := "GitCommit"     + LTrim(Str(aCnt[nType]))
+      case nType == 123; cName := "GitBranch"     + LTrim(Str(aCnt[nType]))
+      case nType == 124; cName := "GitLog"        + LTrim(Str(aCnt[nType]))
+      case nType == 125; cName := "GitDiff"       + LTrim(Str(aCnt[nType]))
+      case nType == 126; cName := "GitRemote"     + LTrim(Str(aCnt[nType]))
+      case nType == 127; cName := "GitStash"      + LTrim(Str(aCnt[nType]))
+      case nType == 128; cName := "GitTag"        + LTrim(Str(aCnt[nType]))
+      case nType == 129; cName := "GitBlame"      + LTrim(Str(aCnt[nType]))
+      case nType == 130; cName := "GitMerge"      + LTrim(Str(aCnt[nType]))
       // Data Access tab
       case nType == 53; cName := "DBFTable"       + LTrim(Str(aCnt[nType]))
       case nType == 54; cName := "MySQL"          + LTrim(Str(aCnt[nType]))
@@ -1708,6 +1752,137 @@ static function CheckHarbourInstall()
                "Compiler Not Found" )
    endif
 
+return nil
+
+// === Git Integration ===
+
+static function GitInit()
+   local cDir := cCurrentFile
+   if Empty( cDir )
+      cDir := HB_DirBase() + "..\"
+   else
+      cDir := SubStr( cDir, 1, RAt( "\", cDir ) )
+   endif
+   GIT_Exec( "init", cDir )
+   MsgInfo( "Git repository initialized in " + cDir )
+return nil
+
+static function GitClone()
+   local cUrl := ""
+   // TODO: input dialog for URL
+   MsgInfo( "Use: git clone <url> from the terminal" )
+return nil
+
+static function GitShowPanel()
+   W32_GitPanel()
+   GitRefreshPanel()
+return nil
+
+function GitRefreshPanel()
+   local cDir, aChanges, cBranch
+   cDir := HB_DirBase() + "..\"
+   if ! GIT_IsRepo( cDir )
+      W32_GitSetBranch( "(not a git repo)" )
+      return nil
+   endif
+   cBranch := GIT_CurrentBranch( cDir )
+   W32_GitSetBranch( cBranch )
+   aChanges := GIT_Status( cDir )
+   W32_GitSetChanges( aChanges )
+return nil
+
+function GitCommit()
+   local cMsg, cDir, cOutput
+   cDir := HB_DirBase() + "..\"
+   cMsg := W32_GitGetMessage()
+   if Empty( cMsg )
+      MsgInfo( "Please enter a commit message" )
+      return nil
+   endif
+   // Stage all changes
+   GIT_Exec( "add -A", cDir )
+   // Commit
+   cOutput := GIT_Exec( 'commit -m "' + cMsg + '"', cDir )
+   W32_GitClearMessage()
+   GitRefreshPanel()
+   MsgInfo( cOutput )
+return nil
+
+function GitPush()
+   local cDir := HB_DirBase() + "..\"
+   local cOutput := GIT_Exec( "push", cDir )
+   MsgInfo( iif( Empty(cOutput), "Push completed", cOutput ) )
+   GitRefreshPanel()
+return nil
+
+function GitPull()
+   local cDir := HB_DirBase() + "..\"
+   local cOutput := GIT_Exec( "pull", cDir )
+   MsgInfo( iif( Empty(cOutput), "Already up to date", cOutput ) )
+   GitRefreshPanel()
+return nil
+
+static function GitBranchCreate()
+   local cName := ""
+   // TODO: input dialog
+   MsgInfo( "Use: Git > Status panel or terminal to create branches" )
+return nil
+
+static function GitBranchSwitch()
+   local cDir := HB_DirBase() + "..\"
+   local aBranches := GIT_BranchList( cDir )
+   local aNames := {}, i, nSel
+   for i := 1 to Len( aBranches )
+      AAdd( aNames, iif( aBranches[i][2], "* ", "  " ) + aBranches[i][1] )
+   next
+   if Len( aNames ) == 0
+      MsgInfo( "No branches found" )
+      return nil
+   endif
+   nSel := W32_SelectFromList( "Switch Branch", aNames )
+   if nSel > 0
+      GIT_Exec( "checkout " + AllTrim( aBranches[nSel][1] ), cDir )
+      GitRefreshPanel()
+   endif
+return nil
+
+static function GitMerge()
+   MsgInfo( "Use: git merge <branch> from the terminal" )
+return nil
+
+static function GitStash()
+   local cDir := HB_DirBase() + "..\"
+   GIT_Exec( "stash", cDir )
+   GitRefreshPanel()
+   MsgInfo( "Changes stashed" )
+return nil
+
+static function GitStashPop()
+   local cDir := HB_DirBase() + "..\"
+   local cOutput := GIT_Exec( "stash pop", cDir )
+   GitRefreshPanel()
+   MsgInfo( iif( Empty(cOutput), "Stash popped", cOutput ) )
+return nil
+
+static function GitLogShow()
+   local cDir := HB_DirBase() + "..\"
+   local aLog := GIT_Log( 30, cDir )
+   local cText := "", i
+   for i := 1 to Len( aLog )
+      cText += SubStr( aLog[i][1], 1, 7 ) + " " + ;
+               aLog[i][3] + " " + aLog[i][4] + Chr(13) + Chr(10)
+   next
+   MsgInfo( iif( Empty(cText), "No commits found", cText ), "Git Log" )
+return nil
+
+static function GitDiffShow()
+   local cDir := HB_DirBase() + "..\"
+   local cDiff := GIT_Diff( "", cDir )
+   MsgInfo( iif( Empty(cDiff), "No changes", Left(cDiff, 2000) ), "Git Diff" )
+return nil
+
+static function GitBlameShow()
+   MsgInfo( "Select a file first, then use Git > Blame" )
 return nil
 
 // === Helpers ===
