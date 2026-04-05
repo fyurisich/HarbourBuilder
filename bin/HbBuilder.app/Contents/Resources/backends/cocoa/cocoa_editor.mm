@@ -32,6 +32,11 @@
 /* Lexilla CreateLexer (linked statically from liblexilla.a) */
 extern "C" Scintilla::ILexer5 * CreateLexer(const char *name);
 
+/* Forward declarations */
+static const char * CE_FindClassMembers( const char * cls );
+static const char * CE_ResolveVarClass( ScintillaView * sv, sptr_t colonPos );
+static const char * CE_FindCurrentClass( ScintillaView * sv, sptr_t fromLine );
+
 /* -----------------------------------------------------------------------
  * Helpers
  * ----------------------------------------------------------------------- */
@@ -74,6 +79,7 @@ typedef struct {
 
 /* Forward declarations for messages panel (defined at end of file) */
 static CODEEDITOR * s_msgEditor = nil;
+static CODEEDITOR * s_keyMonitorEd = nil;  /* editor with key monitor installed */
 
 /* -----------------------------------------------------------------------
  * Harbour-aware code folding
@@ -432,6 +438,25 @@ static HBSciTabTarget * s_sciTabTarget = nil;
                SciMsg( ed->sciView, SCI_GOTOPOS, (uptr_t)indentPos, 0 );
             }
          }
+         /* ':' typed — show class member dropdown */
+         else if( scn->ch == ':' )
+         {
+            sptr_t pos = SciMsg0( ed->sciView, SCI_GETCURRENTPOS );
+            const char * cls = CE_ResolveVarClass( ed->sciView, pos - 1 );
+            /* fprintf(stderr, "AUTOCOMPLETE: cls=%s\n", cls ? cls : "(null)"); */
+            if( cls )
+            {
+               const char * members = CE_FindClassMembers( cls );
+               /* debug removed */
+               if( members )
+               {
+                  SciMsg( ed->sciView, SCI_AUTOCSETIGNORECASE, 1, 0 );
+                  SciMsg( ed->sciView, SCI_AUTOCSETSEPARATOR, ' ', 0 );
+                  SciMsg( ed->sciView, SCI_AUTOCSETORDER, 1, 0 );  /* SC_ORDER_PERFORMSORT */
+                  SciMsg( ed->sciView, SCI_AUTOCSHOW, 0, (sptr_t) members );
+               }
+            }
+         }
          break;
       }
 
@@ -502,6 +527,474 @@ static HBSciDelegate * s_sciDelegate = nil;
 /* We can't subclass SCIContentView easily (it's internal).
  * Instead, use an NSEvent monitor installed when editor is created. */
 
+/* -----------------------------------------------------------------------
+ * Class member autocomplete — triggered when ':' is typed after a variable
+ * ----------------------------------------------------------------------- */
+
+typedef struct {
+   const char * className;
+   const char * members;      /* space-separated, sorted alphabetically */
+} ClassMembers;
+
+/* Members include inherited TControl properties + class-specific ones */
+static const char * s_controlMembers =
+   "Height Left Name OnChange OnClick OnClose Text Top Width";
+
+static ClassMembers s_classMembers[] = {
+   { "TForm",
+     "Activate AlphaBlend AlphaBlendValue AppBar AutoScroll BorderIcons "
+     "BorderStyle BorderWidth ClientHeight ClientWidth Close Color Cursor "
+     "Destroy DoubleBuffered FontName FontSize FormStyle Height Hint "
+     "KeyPreview Left ModalResult Name OnActivate OnChange OnClick OnClose "
+     "OnCloseQuery OnCreate OnDblClick OnDeactivate OnDestroy OnHide "
+     "OnKeyDown OnKeyPress OnKeyUp OnMouseDown OnMouseMove OnMouseUp "
+     "OnMouseWheel OnPaint OnResize OnShow Position Show ShowHint "
+     "Sizable Text Title ToolWindow Top Width WindowState" },
+   { "TLabel",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TEdit",
+     "Height Left Name OnChange OnClick OnClose Text Top Value Width" },
+   { "TMemo",
+     "Height Left Name OnChange OnClick OnClose Text Top Value Width" },
+   { "TButton",
+     "Cancel Default Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TCheckBox",
+     "Checked Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TRadioButton",
+     "Checked Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TComboBox",
+     "AddItem Height Left Name OnChange OnClick OnClose Text Top Value Width" },
+   { "TListBox",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TGroupBox",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TToolBar",
+     "AddButton AddSeparator Height Left Name Text Top Width" },
+   { "TTimer",
+     "Height Left Name OnChange OnClick OnClose OnTimer Text Top Width" },
+   { "TApplication",
+     "CreateForm Run Title" },
+   { "TPanel",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TProgressBar",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TTabControl",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TTreeView",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TListView",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TImage",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TDatabase",
+     "Close Exec Field FieldCount FieldName FreeResult Goto Host Name "
+     "Open Password Port Query RecCount RecNo Server Skip Table User" },
+   { "TSQLite",
+     "Close Exec Field FieldCount FieldName FreeResult Goto Host Name "
+     "Open Password Port Query RecCount RecNo Server Skip Table User" },
+   { "TReport",
+     "Preview Print" },
+   { "TWebServer",
+     "Get Post Run" },
+   { "THttpClient",
+     "Get Post" },
+   { "TThread",
+     "Join Start" },
+   { NULL, NULL }
+};
+
+/* Collect DATA member names from a CLASS definition in the editor.
+ * Scans from classLine+1 until ENDCLASS, extracts DATA names into buf.
+ * Returns number of chars written. */
+static int CE_CollectUserData( ScintillaView * sv, sptr_t classLine, char * buf, int bufSize )
+{
+   int pos = 0;
+   sptr_t totalLines = SciMsg0( sv, SCI_GETLINECOUNT );
+   for( sptr_t l = classLine + 1; l < totalLines; l++ )
+   {
+      char line[512];
+      sptr_t len = SciMsg( sv, SCI_LINELENGTH, (uptr_t)l, 0 );
+      if( len <= 0 || len >= (sptr_t)sizeof(line) ) continue;
+      SciMsg( sv, SCI_GETLINE, (uptr_t)l, (sptr_t)line );
+      line[len] = 0;
+
+      const char * p = line;
+      while( *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n' ) p++;
+      if( *p == 0 ) continue;  /* empty line */
+
+      /* Stop at ENDCLASS */
+      if( strncasecmp( p, "ENDCLASS", 8 ) == 0 ) break;
+
+      /* Match DATA or ACCESS or METHOD */
+      BOOL isData = ( strncasecmp( p, "DATA ", 5 ) == 0 );
+      BOOL isAccess = ( strncasecmp( p, "ACCESS ", 7 ) == 0 );
+      BOOL isMethod = ( strncasecmp( p, "METHOD ", 7 ) == 0 );
+      /* debug removed */
+      if( !isData && !isAccess && !isMethod ) continue;
+
+      if( isData ) p += 5;
+      else p += 7;  /* ACCESS or METHOD */
+      while( *p == ' ' ) p++;
+
+      /* Extract member name */
+      char name[64];
+      int ni = 0;
+      while( ni < 63 && (isalnum((unsigned char)p[ni]) || p[ni] == '_') )
+         { name[ni] = p[ni]; ni++; }
+      name[ni] = 0;
+      if( ni == 0 ) continue;
+
+      /* Append to buf (space-separated) */
+      if( pos > 0 && pos < bufSize - 1 ) buf[pos++] = ' ';
+      int remaining = bufSize - pos - 1;
+      if( ni > remaining ) break;
+      memcpy( buf + pos, name, (size_t)ni );
+      pos += ni;
+   }
+   buf[pos] = 0;
+   return pos;
+}
+
+/* Find class members by class name (case-insensitive).
+ * Combines standard class members with user-defined DATA from the editor.
+ * For user classes (e.g. TForm1 INHERIT TForm), includes parent members + user DATA. */
+static const char * CE_FindClassMembers( const char * cls )
+{
+   static char s_combinedMembers[4096];
+   const char * standardMembers = NULL;
+
+   /* Direct lookup in standard table */
+   for( int i = 0; s_classMembers[i].className; i++ )
+      if( strcasecmp( cls, s_classMembers[i].className ) == 0 )
+         { standardMembers = s_classMembers[i].members; break; }
+
+   /* Search editor for CLASS definition to find user DATA and/or parent class */
+   char userMembers[2048] = "";
+   sptr_t classLine = -1;
+
+   if( s_keyMonitorEd && s_keyMonitorEd->sciView )
+   {
+      ScintillaView * sv = s_keyMonitorEd->sciView;
+      sptr_t totalLines = SciMsg0( sv, SCI_GETLINECOUNT );
+
+      /* Find CLASS declaration matching cls or inheriting from cls */
+      for( sptr_t l = 0; l < totalLines; l++ )
+      {
+         char buf[512];
+         sptr_t len = SciMsg( sv, SCI_LINELENGTH, (uptr_t)l, 0 );
+         if( len <= 0 || len >= (sptr_t)sizeof(buf) ) continue;
+         SciMsg( sv, SCI_GETLINE, (uptr_t)l, (sptr_t)buf );
+         buf[len] = 0;
+
+         const char * cp = buf;
+         while( *cp == ' ' || *cp == '\t' ) cp++;
+         if( strncasecmp( cp, "CLASS ", 6 ) != 0 ) continue;
+         cp += 6;
+         while( *cp == ' ' ) cp++;
+
+         /* Extract class name from line */
+         char foundCls[64];
+         int fi = 0;
+         while( fi < 63 && (isalnum((unsigned char)cp[fi]) || cp[fi] == '_') )
+            { foundCls[fi] = cp[fi]; fi++; }
+         foundCls[fi] = 0;
+         /* debug removed */
+
+         /* Case 1: exact match (CLASS TForm1, cls="TForm1") */
+         if( strcasecmp( foundCls, cls ) == 0 )
+         {
+            classLine = l;
+            /* Also check for INHERIT/FROM to get parent standard members */
+            cp += fi;
+            while( *cp == ' ' ) cp++;
+            if( strncasecmp( cp, "INHERIT ", 8 ) == 0 ) cp += 8;
+            else if( strncasecmp( cp, "FROM ", 5 ) == 0 ) cp += 5;
+            else cp = NULL;
+            if( cp )
+            {
+               while( *cp == ' ' ) cp++;
+               char parent[64];
+               int pi = 0;
+               while( pi < 63 && (isalnum((unsigned char)cp[pi]) || cp[pi] == '_') )
+                  { parent[pi] = cp[pi]; pi++; }
+               parent[pi] = 0;
+               if( !standardMembers )
+               {
+                  for( int i = 0; s_classMembers[i].className; i++ )
+                     if( strcasecmp( parent, s_classMembers[i].className ) == 0 )
+                        { standardMembers = s_classMembers[i].members; break; }
+               }
+            }
+            break;
+         }
+
+         /* Case 2: this class inherits from cls (CLASS TForm1 INHERIT/FROM TForm, cls="TForm") */
+         cp += fi;
+         while( *cp == ' ' ) cp++;
+         if( strncasecmp( cp, "INHERIT ", 8 ) == 0 ) cp += 8;
+         else if( strncasecmp( cp, "FROM ", 5 ) == 0 ) cp += 5;
+         else cp = NULL;
+         if( cp )
+         {
+            while( *cp == ' ' ) cp++;
+            char parent[64];
+            int pi = 0;
+            while( pi < 63 && (isalnum((unsigned char)cp[pi]) || cp[pi] == '_') )
+               { parent[pi] = cp[pi]; pi++; }
+            parent[pi] = 0;
+            /* debug removed */
+            if( strcasecmp( parent, cls ) == 0 )
+            {
+               classLine = l;
+               break;
+            }
+         }
+      }
+
+      /* debug removed */
+
+      /* Collect user DATA/ACCESS/METHOD from CLASS..ENDCLASS */
+      if( classLine >= 0 )
+      {
+         int n = CE_CollectUserData( sv, classLine, userMembers, (int)sizeof(userMembers) );
+         /* debug removed */
+      }
+   }
+
+   /* Combine standard + user members */
+   if( standardMembers && userMembers[0] )
+   {
+      snprintf( s_combinedMembers, sizeof(s_combinedMembers),
+                "%s %s", standardMembers, userMembers );
+      return s_combinedMembers;
+   }
+   if( standardMembers ) return standardMembers;
+   if( userMembers[0] ) { strncpy( s_combinedMembers, userMembers, sizeof(s_combinedMembers)-1 ); return s_combinedMembers; }
+
+   return NULL;
+}
+
+/* Scan backwards from line to find current CLASS name (e.g., "CLASS TForm1" → "TForm1") */
+static const char * CE_FindCurrentClass( ScintillaView * sv, sptr_t fromLine )
+{
+   static char s_curClass[64];
+   for( sptr_t l = fromLine; l >= 0; l-- )
+   {
+      char buf[512];
+      sptr_t len = SciMsg( sv, SCI_LINELENGTH, (uptr_t)l, 0 );
+      if( len <= 0 || len >= (sptr_t)sizeof(buf) ) continue;
+      SciMsg( sv, SCI_GETLINE, (uptr_t)l, (sptr_t)buf );
+      buf[len] = 0;
+
+      const char * cp = buf;
+      while( *cp == ' ' || *cp == '\t' ) cp++;
+      if( strncasecmp( cp, "CLASS ", 6 ) == 0 )
+      {
+         cp += 6;
+         while( *cp == ' ' ) cp++;
+         int ci = 0;
+         while( ci < 63 && (isalnum((unsigned char)cp[ci]) || cp[ci] == '_') )
+            { s_curClass[ci] = cp[ci]; ci++; }
+         s_curClass[ci] = 0;
+         if( ci > 0 ) return s_curClass;
+         break;
+      }
+   }
+   return NULL;
+}
+
+/* Scan the editor text backwards from cursor to find variable name before ':'
+ * Returns class name if determinable, or NULL */
+static const char * CE_ResolveVarClass( ScintillaView * sv, sptr_t colonPos )
+{
+   static char s_resolvedClass[64];
+
+   /* Get text of the current line to find the variable name before ':' */
+   sptr_t line = SciMsg( sv, SCI_LINEFROMPOSITION, (uptr_t)colonPos, 0 );
+   sptr_t lineStart = SciMsg( sv, SCI_POSITIONFROMLINE, (uptr_t)line, 0 );
+   sptr_t lineLen = colonPos - lineStart;
+   if( lineLen <= 0 || lineLen > 500 ) return NULL;
+
+   char lineBuf[512];
+   Sci_TextRange tr;
+   tr.chrg.cpMin = (Sci_PositionCR)lineStart;
+   tr.chrg.cpMax = (Sci_PositionCR)colonPos;
+   tr.lpstrText = lineBuf;
+   SciMsg( sv, SCI_GETTEXTRANGE, 0, (sptr_t)&tr );
+   lineBuf[lineLen] = 0;
+
+   /* Walk backwards from end of lineBuf to find variable name */
+   int end = (int)lineLen - 1;
+
+   /* Skip trailing ':' if there's a second one (::var case) */
+   while( end >= 0 && lineBuf[end] == ':' ) end--;
+
+   /* Find the variable name: alphanumeric + underscore */
+   int nameEnd = end;
+   while( end >= 0 && (isalnum((unsigned char)lineBuf[end]) || lineBuf[end] == '_') ) end--;
+   int nameStart = end + 1;
+   if( nameStart > nameEnd ) return NULL;
+
+   char varName[128];
+   int varLen = nameEnd - nameStart + 1;
+   if( varLen <= 0 || varLen >= (int)sizeof(varName) ) return NULL;
+   memcpy( varName, &lineBuf[nameStart], (size_t)varLen );
+   varName[varLen] = 0;
+
+   /* Detect if the variable had :: prefix (instance variable access) */
+   BOOL hasDblColon = ( nameStart >= 2 &&
+      lineBuf[nameStart-1] == ':' && lineBuf[nameStart-2] == ':' );
+
+   /* "Self:" — show members of current CLASS */
+   if( strcasecmp( varName, "Self" ) == 0 )
+   {
+      const char * cls = CE_FindCurrentClass( sv, line );
+      return cls;
+   }
+
+   /* For any variable (with or without :: prefix), try to resolve its class.
+    * Strategies: 1) DATA comment  2) assignment pattern  3) current class members */
+
+   /* Strategy 1: search DATA declarations with class comment: DATA oName // TClassName */
+   {
+      sptr_t totalLines = SciMsg0( sv, SCI_GETLINECOUNT );
+      for( sptr_t l = 0; l < totalLines; l++ )
+      {
+         char buf[512];
+         sptr_t len = SciMsg( sv, SCI_LINELENGTH, (uptr_t)l, 0 );
+         if( len <= 0 || len >= (sptr_t)sizeof(buf) ) continue;
+         SciMsg( sv, SCI_GETLINE, (uptr_t)l, (sptr_t)buf );
+         buf[len] = 0;
+
+         /* Match "DATA varName" */
+         const char * dp = buf;
+         while( *dp == ' ' || *dp == '\t' ) dp++;
+         if( strncasecmp( dp, "DATA ", 5 ) != 0 ) continue;
+         dp += 5;
+         while( *dp == ' ' ) dp++;
+
+         if( strncasecmp( dp, varName, (size_t)varLen ) != 0 ) continue;
+         dp += varLen;
+         if( isalnum((unsigned char)*dp) || *dp == '_' ) continue;  /* partial match */
+
+         /* Found DATA varName — look for "// TClassName" comment */
+         const char * cmt = strstr( dp, "//" );
+         if( !cmt ) continue;
+         cmt += 2;
+         while( *cmt == ' ' ) cmt++;
+
+         if( *cmt == 'T' && isalpha((unsigned char)cmt[1]) )
+         {
+            int ci = 0;
+            while( ci < 63 && (isalnum((unsigned char)cmt[ci]) || cmt[ci] == '_') )
+               { s_resolvedClass[ci] = cmt[ci]; ci++; }
+            s_resolvedClass[ci] = 0;
+            return s_resolvedClass;
+         }
+      }
+   }
+
+   /* Strategy 2: search for "varName := TClassName():New" assignment pattern */
+   {
+      sptr_t totalLines = SciMsg0( sv, SCI_GETLINECOUNT );
+      for( sptr_t l = 0; l < totalLines; l++ )
+      {
+         char buf[512];
+         sptr_t len = SciMsg( sv, SCI_LINELENGTH, (uptr_t)l, 0 );
+         if( len <= 0 || len >= (sptr_t)sizeof(buf) ) continue;
+         SciMsg( sv, SCI_GETLINE, (uptr_t)l, (sptr_t)buf );
+         buf[len] = 0;
+
+         const char * vp = strstr( buf, varName );
+         if( !vp ) continue;
+         vp += varLen;
+         while( *vp == ' ' ) vp++;
+         if( *vp != ':' || vp[1] != '=' ) continue;
+         vp += 2;
+         while( *vp == ' ' ) vp++;
+
+         if( *vp == 'T' && isalpha((unsigned char)vp[1]) )
+         {
+            int ci = 0;
+            while( ci < 63 && (isalnum((unsigned char)vp[ci]) || vp[ci] == '_') )
+               { s_resolvedClass[ci] = vp[ci]; ci++; }
+            s_resolvedClass[ci] = 0;
+            /* Remove trailing "()" if present */
+            int slen = (int)strlen( s_resolvedClass );
+            if( slen > 2 && s_resolvedClass[slen-1] == ')' && s_resolvedClass[slen-2] == '(' )
+               s_resolvedClass[slen-2] = 0;
+            return s_resolvedClass;
+         }
+      }
+   }
+
+   /* Strategy 3: if :: prefix and no class found, show current class members
+    * (handles ::Width, ::Title, etc. — direct member access on Self) */
+   if( hasDblColon )
+   {
+      const char * cls = CE_FindCurrentClass( sv, line );
+      return cls;
+   }
+
+   /* Strategy 4: naming convention — oForm→TForm, oButton→TButton, etc.
+    * Handles function parameters and local variables without type info. */
+   {
+      static struct { const char * prefix; const char * cls; } s_nameMap[] = {
+         { "Form",        "TForm" },
+         { "Button",      "TButton" },
+         { "Edit",        "TEdit" },
+         { "Label",       "TLabel" },
+         { "Memo",        "TMemo" },
+         { "CheckBox",    "TCheckBox" },
+         { "RadioButton", "TRadioButton" },
+         { "ComboBox",    "TComboBox" },
+         { "ListBox",     "TListBox" },
+         { "GroupBox",    "TGroupBox" },
+         { "Panel",       "TPanel" },
+         { "Timer",       "TTimer" },
+         { "ToolBar",     "TToolBar" },
+         { "ProgressBar", "TProgressBar" },
+         { "TabControl",  "TTabControl" },
+         { "TreeView",    "TTreeView" },
+         { "ListView",    "TListView" },
+         { "Image",       "TImage" },
+         { "Database",    "TDatabase" },
+         { "SQLite",      "TSQLite" },
+         { "Report",      "TReport" },
+         { "WebServer",   "TWebServer" },
+         { "HttpClient",  "THttpClient" },
+         { "Thread",      "TThread" },
+         { "App",         "TApplication" },
+         { NULL, NULL }
+      };
+
+      /* Skip leading 'o' or 'n' or 'c' prefix (Hungarian notation) */
+      const char * base = varName;
+      if( (base[0] == 'o' || base[0] == 'O') && isupper((unsigned char)base[1]) )
+         base++;
+
+      for( int i = 0; s_nameMap[i].prefix; i++ )
+      {
+         int plen = (int)strlen( s_nameMap[i].prefix );
+         if( strncasecmp( base, s_nameMap[i].prefix, (size_t)plen ) == 0 )
+         {
+            /* Match if base equals prefix or prefix is followed by a digit/end
+             * (oForm, oForm1, oFormMain all match "Form") */
+            char next = base[plen];
+            if( next == 0 || isdigit((unsigned char)next) ||
+                isupper((unsigned char)next) || next == '_' )
+            {
+               strncpy( s_resolvedClass, s_nameMap[i].cls, 63 );
+               s_resolvedClass[63] = 0;
+               return s_resolvedClass;
+            }
+         }
+      }
+   }
+
+   return NULL;
+}
+
 /* Auto-complete word list (must be before key monitor that references it) */
 static const char * s_harbourAutoComplete =
    "AAdd Access ACopy AClone ADel AEval AFill AIns Alert AllTrim Array "
@@ -534,7 +1027,6 @@ static const char * s_harbourAutoComplete =
    "While With "
    "Year";
 
-static CODEEDITOR * s_keyMonitorEd = nil;
 static id s_keyMonitor = nil;
 
 static void CE_ToggleLineComment( ScintillaView * sv )

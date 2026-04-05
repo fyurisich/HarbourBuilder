@@ -15,5 +15,26 @@
 
 - [x] TMemo not appearing at runtime. Cause: no `MEMO` command in `hbbuilder.ch`, no TMemo class in `classes.prg`, no `UI_MemoNew` in cocoa_core.m, and `RegenerateFormCode` sent Memo to the `otherwise` (comment) case. Fix: added all four pieces + parser in `RestoreFormFromCode`.
 
+- [x] RadioButton palette bitmap is incorrect — shows wrong icon in the component palette. Fix: Memo icon at strip position 3 shifted CheckBox/ComboBox/GroupBox/RadioButton icons off by one. Rearranged palette.bmp to match CT_ constants: pos 3=CheckBox, 4=ComboBox, 5=GroupBox, 6=ListBox, 7=RadioButton. Also moved Memo icon to position 23 (CT_MEMO=24).
+
+- [x] RadioButton does not appear at the correct position on the form at runtime. Fix: used deprecated `NSRadioButton` constant (replaced with `NSButtonTypeRadio`), missing black text color attribute (added attributed title like CheckBox), and height defaulted to 24 (HBControl init) instead of 20 (now set explicitly before param checks in `UI_RadioButtonNew`).
+
+- [x] Before loading a project (`TBOpen`), ask the user if they want to save the current work. Fix: added `MsgYesNoCancel()` function (NSAlert with Yes/No/Cancel buttons) to cocoa_core.m. `TBOpen()` now prompts when forms are open — Yes saves first, No proceeds, Cancel aborts.
+
+- [x] Toggle Form/Code button in toolbar: added after Run button (with separator) in the top speedbar. Checks if form is the key window via `UI_FormIsKeyWindow()` (`[FWindow isKeyWindow]`) — if form is in front brings code editor, otherwise brings form. Previous approach using `isVisible` failed because both windows are always visible (just layered); `isKeyWindow` correctly detects which is active/frontmost. Custom form/window icon at position 9 in `toolbar.bmp`. Function: `ToggleFormCode()` in `hbbuilder_macos.prg`.
+
+- [x] TApplication runtime error handler following Harbour errorsys.prg pattern. `AppShowError()` handles recoverable errors silently: EG_ZERODIV→return 0 (substitute), EG_LOCK→return .T. (retry), EG_OPEN/EG_APPENDLOCK→NetErr(.T.)+return .F. (default). Non-recoverable errors show `MAC_RuntimeErrorDialog` (NSAlert with scrollable mono memo + Copy to Clipboard). Buttons are dynamic: always "Quit", plus "Retry" if canRetry, "Default" if canDefault. Copy button loops without closing. Quit calls `MAC_AppTerminate()` (forces `[NSApp terminate:nil]` to end the Cocoa run loop) then `ErrorLevel(1); QUIT`. Without `MAC_AppTerminate()` the NSApp run loop kept the process alive after Harbour's QUIT. Implemented in `harbour/classes.prg` + `cocoa_core.m`.
+
+- [x] README link: Antonio Linares link now points to `https://github.com/FiveTechSoft` (was `AntoninoLinares`).
+
+- [x] Code editor class member dropdown: 4 strategies to resolve variable class when `:` is typed: 1) `Self:` → current CLASS via `CE_FindCurrentClass()`, 2) DATA comment (`DATA oBtn // TButton`), 3) assignment pattern (`oVar := TForm():New()`), 4) naming convention fallback (`oForm`→TForm, `oButton`→TButton, etc.). `CE_FindClassMembers()` now combines standard class members + user-defined DATA/ACCESS/METHOD from the editor. For `oForm:oButton1` — resolves oForm→TForm, finds `CLASS TForm1 INHERIT TForm` in editor, scans its DATA/ACCESS/METHOD declarations (oButton1, oEdit1, etc.) via `CE_CollectUserData()`, and merges both lists into the dropdown. Also works for the exact class case (Self: in TForm1 shows both TForm members and user DATA).
+
+- [x] MsgInfo() acepta cualquier tipo de valor: nil→"nil", ""→'""', N→Str, L→".T."/".F.", D→DToC, A→"{Array(n)}", O→"{Object:ClassName}", B→"{Block}", C→tal cual. Usa `ValToStr()` helper en `classes.prg`. Strings vacíos muestran '""' en vez de un cuadrado vacío.
+
+- [x] Dropdown no mostraba DATA del usuario (oButton1, etc.): Scintilla usa `SC_ORDER_PRESORTED` por defecto (búsqueda binaria), así que la lista combinada (miembros estándar A-Z + DATA del usuario al final) no estaba ordenada y Scintilla no encontraba los DATA. Fix: `SCI_AUTOCSETORDER` con `SC_ORDER_PERFORMSORT` (=1) para que Scintilla ordene la lista antes de mostrarla.
+
+- [x] Dropdown no buscaba `FROM` (solo `INHERIT`): el código generado por RegenerateFormCode usa `CLASS TForm1 FROM TForm`, no `INHERIT`. Fix: `CE_FindClassMembers()` ahora acepta ambas keywords (`INHERIT` y `FROM`) en los dos puntos donde busca la cláusula de herencia.
+
+- [x] Form OnClick no se disparaba en runtime: el content view del form (`HBFlippedView`) no tenía handler de mouse. Fix: creado `HBFormContentView` (subclase de `HBFlippedView`) con `mouseDown:`/`mouseUp:` que dispara `FOnClick`, `FOnMouseDown`, `FOnMouseUp` del form. Solo en runtime (no en design mode). El form ahora usa `HBFormContentView` como content view.
+
 ## Open
-- [ ] Before loading a project (`TBOpen`), ask the user if they want to save the current work. If the project has unsaved changes (modified code, added controls, etc.), prompt "Save current project before opening?" with Yes/No/Cancel. Cancel aborts the open.

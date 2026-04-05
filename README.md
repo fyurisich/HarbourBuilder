@@ -586,6 +586,6 @@ MIT License — free for personal and commercial use.
 
 **⭐ Star this repo if you believe in the future of Harbour development!**
 
-Made with ❤️ by [Antonio Linares](https://github.com/AntoninoLinares) and [Claude Code](https://claude.ai/claude-code)
+Made with ❤️ by [Antonio Linares](https://github.com/FiveTechSoft) and [Claude Code](https://claude.ai/claude-code)
 
 </div>

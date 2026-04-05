@@ -132,6 +132,23 @@
       <oCtrl> := TComboBox():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight> ) ;
       [; AEval( <aItems>, { |x| <oCtrl>:AddItem( x ) } ) ]
 
+// RadioButton
+#xcommand @ <nTop>, <nLeft> RADIOBUTTON <oCtrl> ;
+      PROMPT <cText> ;
+      OF <oParent> ;
+      SIZE <nWidth> ;
+      [ <checked: CHECKED> ] ;
+   => ;
+      <oCtrl> := TRadioButton():New( <oParent>, <cText>, <nLeft>, <nTop>, <nWidth> ) ;
+      [; <oCtrl>:Checked := <.checked.> ]
+
+// ListBox
+#xcommand @ <nTop>, <nLeft> LISTBOX <oCtrl> ;
+      [ OF <oParent> ] ;
+      [ SIZE <nWidth>, <nHeight> ] ;
+   => ;
+      <oCtrl> := TListBox():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight> )
+
 // GroupBox
 #xcommand @ <nTop>, <nLeft> GROUPBOX <oCtrl> ;
       [ PROMPT <cText> ] ;

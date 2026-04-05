@@ -244,6 +244,8 @@ void EnsureNSApp( void )
 - (BOOL)isFlipped { return YES; }
 @end
 
+/* HBFormContentView: declared here, implemented after HBForm @interface */
+
 /* Dot grid view for design-time (drawn as first subview of content) */
 @interface HBDotGridView : NSView
 {
@@ -428,6 +430,14 @@ void EnsureNSApp( void )
 - (void)notifySelChange;
 @end
 
+/* Form content view: fires form OnClick/OnMouseDown/OnMouseUp events at runtime */
+@interface HBFormContentView : HBFlippedView
+{
+@public
+   HBForm * __unsafe_unretained form;
+}
+@end
+
 /* --- HBLabel --- */
 @interface HBLabel : HBControl
 @end
@@ -515,6 +525,26 @@ void EnsureNSApp( void )
  * ALL @implementation sections
  * ====================================================================== */
 
+/* --- HBFormContentView implementation --- */
+
+@implementation HBFormContentView
+- (BOOL)acceptsFirstMouse:(NSEvent *)event { return YES; }
+- (void)mouseDown:(NSEvent *)event {
+   if( form && !form->FDesignMode ) {
+      if( ((HBControl *)form)->FOnClick )
+         [((HBControl *)form) fireEvent:((HBControl *)form)->FOnClick];
+      if( form->FOnMouseDown )
+         [((HBControl *)form) fireEvent:form->FOnMouseDown];
+   }
+}
+- (void)mouseUp:(NSEvent *)event {
+   if( form && !form->FDesignMode ) {
+      if( form->FOnMouseUp )
+         [((HBControl *)form) fireEvent:form->FOnMouseUp];
+   }
+}
+@end
+
 /* --- HBControl implementation --- */
 
 @implementation HBControl
@@ -579,7 +609,11 @@ void EnsureNSApp( void )
       }
       case CT_RADIO: {
          NSButton * rb = [[NSButton alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
-         [rb setButtonType:NSRadioButton]; [rb setTitle:[NSString stringWithUTF8String:FText]];
+         [rb setButtonType:NSButtonTypeRadio];
+         NSMutableAttributedString * rbTitle = [[NSMutableAttributedString alloc]
+            initWithString:[NSString stringWithUTF8String:FText]
+            attributes:@{ NSForegroundColorAttributeName: [NSColor blackColor] }];
+         [rb setAttributedTitle:rbTitle];
          v = rb; break;
       }
       case CT_SCROLLBAR: {
@@ -1979,7 +2013,9 @@ static HBPaletteTarget * s_palTarget = nil;
    if( FAlphaBlend )
       [FWindow setAlphaValue:FAlphaBlendValue / 255.0];
 
-   FContentView = [[HBFlippedView alloc] initWithFrame:[[FWindow contentView] bounds]];
+   HBFormContentView * fcv = [[HBFormContentView alloc] initWithFrame:[[FWindow contentView] bounds]];
+   fcv->form = self;
+   FContentView = fcv;
    [FContentView setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
 
    /* Design-time dot grid (first subview, behind all controls) */
@@ -2404,6 +2440,8 @@ HB_FUNC( UI_FORMRUN )       { HBForm * p = GetForm(1); if( p ) [p run]; }
 HB_FUNC( UI_FORMSHOW )      { HBForm * p = GetForm(1); if( p ) [p showOnly]; }
 HB_FUNC( UI_FORMCLOSE )     { HBForm * p = GetForm(1); if( p ) [p close]; }
 HB_FUNC( UI_FORMHIDE )      { HBForm * p = GetForm(1); if( p && p->FWindow ) [p->FWindow orderOut:nil]; }
+HB_FUNC( UI_FORMISVISIBLE ) { HBForm * p = GetForm(1); hb_retl( p && p->FWindow && [p->FWindow isVisible] ); }
+HB_FUNC( UI_FORMISKEYWINDOW ) { HBForm * p = GetForm(1); hb_retl( p && p->FWindow && [p->FWindow isKeyWindow] ); }
 HB_FUNC( UI_FORMDESTROY )   { HBForm * p = GetForm(1); if( p ) [s_allControls removeObject:p]; }
 HB_FUNC( UI_FORMRESULT )    { HBForm * p = GetForm(1); hb_retni( p ? p->FModalResult : 0 ); }
 
@@ -2511,12 +2549,16 @@ HB_FUNC( UI_LISTBOXNEW )
    if( pForm ) [pForm addChild:p]; RetCtrl( p );
 }
 
+/* UI_RadioButtonNew( hParent, cText, nLeft, nTop, nWidth, nHeight ) --> hCtrl */
 HB_FUNC( UI_RADIOBUTTONNEW )
 {
    HBForm * pForm = GetForm(1); HBControl * p = [[HBControl alloc] init];
    p->FControlType = CT_RADIO;
-   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
-   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);  if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   p->FWidth = 120; p->FHeight = 20;  /* RadioButton defaults */
+   if( HB_ISCHAR(2) ) [p setText:hb_parc(2)];
+   if( HB_ISNUM(3) ) p->FLeft = hb_parni(3);   if( HB_ISNUM(4) ) p->FTop = hb_parni(4);
+   if( HB_ISNUM(5) ) p->FWidth = hb_parni(5);  if( HB_ISNUM(6) ) p->FHeight = hb_parni(6);
+   strncpy( p->FClassName, "TRadioButton", sizeof(p->FClassName) - 1 );
    if( pForm ) [pForm addChild:p]; RetCtrl( p );
 }
 
@@ -3806,6 +3848,84 @@ HB_FUNC( UI_MSGBOX )
    [alert addButtonWithTitle:@"OK"];
    [alert setAlertStyle:NSAlertStyleInformational];
    [alert runModal];
+}
+
+/* MAC_RuntimeErrorDialog( cTitle, cMsg, aButtons ) --> nChoice
+ * Shows error text in a scrollable memo with Copy button + dynamic action buttons.
+ * Returns the 1-based index of the pressed button (1=first, 2=second, etc.) */
+HB_FUNC( MAC_RUNTIMEERRORDIALOG )
+{
+   EnsureNSApp();
+   const char * cTitle = HB_ISCHAR(1) ? hb_parc(1) : "Error";
+   const char * cMsg   = HB_ISCHAR(2) ? hb_parc(2) : "";
+   PHB_ITEM pButtons   = hb_param(3, HB_IT_ARRAY);
+
+   NSAlert * alert = [[NSAlert alloc] init];
+   [alert setMessageText:[NSString stringWithUTF8String:cTitle]];
+   [alert setAlertStyle:NSAlertStyleCritical];
+
+   /* Add action buttons from array */
+   int nBtns = pButtons ? (int) hb_arrayLen( pButtons ) : 0;
+   for( int i = 1; i <= nBtns; i++ )
+      [alert addButtonWithTitle:[NSString stringWithUTF8String:hb_arrayGetCPtr( pButtons, i )]];
+   if( nBtns == 0 )
+      [alert addButtonWithTitle:@"OK"];
+
+   /* Add "Copy to Clipboard" button at the end */
+   [alert addButtonWithTitle:@"Copy to Clipboard"];
+
+   /* Scrollable text view as accessory (monospaced, dark, read-only) */
+   NSScrollView * sv = [[NSScrollView alloc] initWithFrame:NSMakeRect(0, 0, 500, 280)];
+   [sv setHasVerticalScroller:YES];
+   [sv setHasHorizontalScroller:YES];
+   [sv setBorderType:NSBezelBorder];
+
+   NSTextView * tv = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, 500, 280)];
+   [tv setEditable:NO];
+   [tv setSelectable:YES];
+   [tv setFont:[NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightRegular]];
+   [tv setString:[NSString stringWithUTF8String:cMsg]];
+   [sv setDocumentView:tv];
+   [alert setAccessoryView:sv];
+
+   /* Run modal — loop to handle Copy button without closing */
+   NSModalResponse r;
+   int copyIdx = NSAlertFirstButtonReturn + (nBtns > 0 ? nBtns : 1);
+   do {
+      r = [alert runModal];
+      if( (int)r == copyIdx ) {
+         /* Copy to clipboard */
+         NSPasteboard * pb = [NSPasteboard generalPasteboard];
+         [pb clearContents];
+         [pb setString:[NSString stringWithUTF8String:cMsg] forType:NSPasteboardTypeString];
+      }
+   } while( (int)r == copyIdx );
+
+   /* Return 1-based button index */
+   hb_retni( (int)(r - NSAlertFirstButtonReturn) + 1 );
+}
+
+/* MAC_AppTerminate() — force quit the macOS application (NSApp terminate) */
+HB_FUNC( MAC_APPTERMINATE )
+{
+   [NSApp terminate:nil];
+}
+
+/* MsgYesNoCancel( cText [, cTitle] ) --> nResult  (1=Yes, 2=No, 0=Cancel) */
+HB_FUNC( MSGYESNOCANCEL )
+{
+   EnsureNSApp();
+   NSAlert * alert = [[NSAlert alloc] init];
+   [alert setMessageText:[NSString stringWithUTF8String:HB_ISCHAR(2) ? hb_parc(2) : "Confirm"]];
+   [alert setInformativeText:[NSString stringWithUTF8String:HB_ISCHAR(1) ? hb_parc(1) : ""]];
+   [alert addButtonWithTitle:@"Yes"];
+   [alert addButtonWithTitle:@"No"];
+   [alert addButtonWithTitle:@"Cancel"];
+   [alert setAlertStyle:NSAlertStyleWarning];
+   NSModalResponse r = [alert runModal];
+   if( r == NSAlertFirstButtonReturn )       hb_retni( 1 );  /* Yes */
+   else if( r == NSAlertSecondButtonReturn )  hb_retni( 2 );  /* No */
+   else                                       hb_retni( 0 );  /* Cancel */
 }
 
 /* MAC_ShellExec( cCommand ) --> cOutput

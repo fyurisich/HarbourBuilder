@@ -215,6 +215,8 @@ function Main()
    BUTTON "Redo"  OF oTB TOOLTIP "Redo (Cmd+Y)"         ACTION CodeEditorRedo( hCodeEditor )
    SEPARATOR OF oTB
    BUTTON "Run"   OF oTB TOOLTIP "Run project (F9)"      ACTION TBRun()
+   SEPARATOR OF oTB
+   BUTTON "Form"  OF oTB TOOLTIP "Toggle Form/Code"     ACTION ToggleFormCode()
 
    // Load toolbar icons (Silk icon set by famfamfam, CC BY 2.5)
    UI_ToolBarLoadImages( oTB:hCpp, ResPath( "toolbar.bmp" ) )
@@ -634,6 +636,14 @@ static function RegenerateFormCode( cName, hForm )
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' GROUPBOX ::o' + cCtrlName + ' PROMPT "' + cText + '" OF Self SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
+            case nType == 7  // ListBox
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' LISTBOX ::o' + cCtrlName + ' OF Self SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
+            case nType == 8  // RadioButton
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' RADIOBUTTON ::o' + cCtrlName + ' PROMPT "' + cText + '" OF Self SIZE ' + ;
+                  LTrim(Str(nCW)) + e
             case nType == 24  // Memo
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' MEMO ::o' + cCtrlName + ' OF Self SIZE ' + ;
@@ -1186,6 +1196,23 @@ static function DestroyAllForms()
 
 return nil
 
+// Toggle Form/Code: if form is in front bring code editor, otherwise bring form
+static function ToggleFormCode()
+
+   if oDesignForm == nil
+      return nil
+   endif
+
+   if UI_FormIsKeyWindow( oDesignForm:hCpp )
+      // Form is the active window — switch to code editor
+      CodeEditorBringToFront( hCodeEditor )
+   else
+      // Code editor (or other) is active — switch to design form
+      UI_FormBringToFront( oDesignForm:hCpp )
+   endif
+
+return nil
+
 // === Toolbar actions ===
 
 // New Application: reset everything (like C++Builder File > New > Application)
@@ -1236,9 +1263,20 @@ return nil
 // Open Project: load a .hbp project file
 static function TBOpen()
 
-   local cFile, cContent, cDir, cLine, aLines, i
+   local cFile, cContent, cDir, cLine, aLines, i, nAns
    local cFormName, cFormCode, nFormX, nFormY
    local nInsW, nInsTop, nEditorTop, nEditorX, nEditorW, nEditorH
+
+   // Ask to save current work if there are forms open
+   if Len( aForms ) > 0
+      nAns := MsgYesNoCancel( "Save current project before opening?", "HbBuilder" )
+      if nAns == 0  // Cancel
+         return nil
+      elseif nAns == 1  // Yes
+         TBSave()
+      endif
+      // nAns == 2 (No) → proceed without saving
+   endif
 
    cFile := MAC_OpenFileDialog( "Open HbBuilder Project", "hbp" )
    if Empty( cFile )

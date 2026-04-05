@@ -1,6 +1,50 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-05 (Session 10f: IDE polish, autocomplete, error handling, form events)
+
+  PALETTE & RADIOBUTTON FIXES:
+  - Rearranged palette.bmp to match CT_ constants (Memo icon at pos 3 shifted
+    CheckBox/ComboBox/GroupBox/RadioButton off by one)
+  - RadioButton: NSRadioButton→NSButtonTypeRadio, black text attribute, height default 20
+
+  TOOLBAR TOGGLE FORM/CODE:
+  - New "Form" button after Run (with separator) toggles between design form and
+    code editor using UI_FormIsKeyWindow() to detect which is active/frontmost
+  - Custom form/window icon (blue title bar, traffic light dots, form fields)
+
+  CODE EDITOR AUTOCOMPLETE (`:` trigger):
+  - Scintilla dropdown when typing `:` after a variable name
+  - 4 resolution strategies: Self→current CLASS, DATA comment, assignment pattern,
+    naming convention (oForm→TForm, oButton→TButton, etc.)
+  - CE_FindClassMembers() combines standard class members + user DATA/ACCESS/METHOD
+    from the editor via CE_CollectUserData()
+  - Follows INHERIT and FROM clauses for user classes (TForm1→TForm)
+  - SCI_AUTOCSETORDER=SC_ORDER_PERFORMSORT to handle unsorted combined lists
+
+  TAPPLICATION ERROR HANDLER:
+  - ErrorBlock() in TApplication:Run() installs AppShowError() as global handler
+  - Follows Harbour errorsys.prg: EG_ZERODIV→return 0, EG_LOCK→retry,
+    EG_OPEN/EG_APPENDLOCK→NetErr()+default
+  - MAC_RuntimeErrorDialog: NSAlert with scrollable mono memo, Copy to Clipboard,
+    dynamic buttons (Quit + Retry if canRetry + Default if canDefault)
+  - Quit calls MAC_AppTerminate() ([NSApp terminate:nil]) then ErrorLevel(1); QUIT
+
+  FORM ONCLICK AT RUNTIME:
+  - HBFormContentView subclass with mouseDown:/mouseUp: handlers
+  - Fires FOnClick, FOnMouseDown, FOnMouseUp on the form at runtime (not design mode)
+
+  MSGINFO IMPROVEMENTS:
+  - Accepts any value type: nil→"nil", ""→'""', N→Str, L→".T."/".F.",
+    D→DToC, A→"{Array(n)}", O→"{Object:ClassName}", B→"{Block}"
+  - Default title "Information" instead of empty string
+
+  SAVE BEFORE OPEN:
+  - TBOpen() prompts MsgYesNoCancel() when forms are open before loading a project
+
+  README:
+  - Antonio Linares link updated to https://github.com/FiveTechSoft
+
 2026-04-05 (Session 10e: Project Save/Load, TMemo support)
 
   PROJECT SAVE/LOAD:

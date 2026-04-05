@@ -336,6 +336,49 @@ METHOD New( oParent, cText, nLeft, nTop, nWidth, nHeight ) CLASS TGroupBox
 return Self
 
 //----------------------------------------------------------------------------//
+// TRadioButton
+//----------------------------------------------------------------------------//
+
+CLASS TRadioButton INHERIT TControl
+
+   ACCESS Checked      INLINE UI_GetProp( ::hCpp, "lChecked" )
+   ASSIGN Checked( l ) INLINE UI_SetProp( ::hCpp, "lChecked", l )
+
+   METHOD New( oParent, cText, nLeft, nTop, nWidth, nHeight )
+
+ENDCLASS
+
+METHOD New( oParent, cText, nLeft, nTop, nWidth, nHeight ) CLASS TRadioButton
+
+   if nWidth == nil;  nWidth := 120; endif
+   if nHeight == nil; nHeight := 20; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_RadioButtonNew( oParent:hCpp, cText, nLeft, nTop, nWidth, nHeight )
+
+return Self
+
+//----------------------------------------------------------------------------//
+// TListBox
+//----------------------------------------------------------------------------//
+
+CLASS TListBox INHERIT TControl
+
+   METHOD New( oParent, nLeft, nTop, nWidth, nHeight )
+
+ENDCLASS
+
+METHOD New( oParent, nLeft, nTop, nWidth, nHeight ) CLASS TListBox
+
+   if nWidth == nil;  nWidth := 120; endif
+   if nHeight == nil; nHeight := 80; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_ListBoxNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight )
+
+return Self
+
+//----------------------------------------------------------------------------//
 // TComponentPalette
 //----------------------------------------------------------------------------//
 
@@ -457,12 +500,112 @@ return Self
 
 METHOD Run() CLASS TApplication
 
+   // Install global error handler — shows errors in a dialog instead of console
+   ErrorBlock( { |oError| AppShowError( oError ) } )
+
    // Show and activate the main form (enters NSApp run loop)
    if ::oMainForm != nil
       ::oMainForm:Activate()
    endif
 
 return Self
+
+//----------------------------------------------------------------------------//
+// AppShowError — global runtime error handler for TApplication
+// Formats the Error object with full details + call stack into a dialog
+//----------------------------------------------------------------------------//
+
+static function AppShowError( oError )
+
+   local cMsg := "", i, cArgs, nChoice, aOptions
+
+   // Following Harbour errorsys.prg: handle recoverable errors silently
+   // Division by zero → substitute 0
+   if oError:GenCode == 5 .and. oError:CanSubstitute  // EG_ZERODIV
+      return 0
+   endif
+
+   // Lock error → auto-retry
+   if oError:GenCode == 41 .and. oError:CanRetry  // EG_LOCK
+      return .t.
+   endif
+
+   // Open error (shared file) → set NetErr() and continue
+   if oError:GenCode == 21 .and. oError:OsCode == 32 .and. oError:CanDefault  // EG_OPEN
+      NetErr( .t. )
+      return .f.
+   endif
+
+   // Append lock error → set NetErr() and continue
+   if oError:GenCode == 40 .and. oError:CanDefault  // EG_APPENDLOCK
+      NetErr( .t. )
+      return .f.
+   endif
+
+   // Build error message with full details
+   cMsg += If( oError:Severity != nil .and. oError:Severity > 1, "ERROR", "Warning" )
+   cMsg += ": " + If( oError:Description != nil, oError:Description, "(no description)" ) + Chr(10)
+   cMsg += Replicate( "-", 60 ) + Chr(10)
+
+   // Error details
+   cMsg += "Subsystem:   " + If( oError:SubSystem != nil, oError:SubSystem, "" ) + Chr(10)
+   cMsg += "SubCode:     " + If( oError:SubCode != nil, LTrim( Str( oError:SubCode ) ), "" ) + Chr(10)
+   cMsg += "Operation:   " + If( oError:Operation != nil, oError:Operation, "" ) + Chr(10)
+   cMsg += "Severity:    " + If( oError:Severity != nil, LTrim( Str( oError:Severity ) ), "" ) + Chr(10)
+   cMsg += "GenCode:     " + If( oError:GenCode != nil, LTrim( Str( oError:GenCode ) ), "" ) + Chr(10)
+   cMsg += "OsCode:      " + If( oError:OsCode != nil, LTrim( Str( oError:OsCode ) ), "" ) + Chr(10)
+   cMsg += "FileName:    " + If( oError:FileName != nil, oError:FileName, "" ) + Chr(10)
+
+   // Arguments
+   if oError:Args != nil .and. ValType( oError:Args ) == "A" .and. Len( oError:Args ) > 0
+      cArgs := ""
+      for i := 1 to Len( oError:Args )
+         if i > 1; cArgs += ", "; endif
+         cArgs += hb_ValToStr( oError:Args[i] )
+      next
+      cMsg += "Args:        " + cArgs + Chr(10)
+   endif
+
+   // Call stack
+   cMsg += Chr(10) + "CALL STACK:" + Chr(10)
+   cMsg += Replicate( "-", 60 ) + Chr(10)
+   i := 1
+   do while ! Empty( ProcName( i ) )
+      cMsg += "  " + ProcName( i ) + "(" + LTrim( Str( ProcLine( i ) ) ) + ")"
+      if ! Empty( ProcFile( i ) )
+         cMsg += " in " + ProcFile( i )
+      endif
+      cMsg += Chr(10)
+      i++
+   enddo
+
+   // Build button options (following errorsys.prg)
+   aOptions := { "Quit" }
+   if oError:CanRetry
+      AAdd( aOptions, "Retry" )
+   endif
+   if oError:CanDefault
+      AAdd( aOptions, "Default" )
+   endif
+
+   // Show error dialog with Copy + action buttons
+   // Returns: 1=Quit, 2=Retry(if present), 3=Default(if present)
+   nChoice := MAC_RuntimeErrorDialog( "Runtime Error", cMsg, aOptions )
+
+   if nChoice > 1 .and. nChoice <= Len( aOptions )
+      if aOptions[ nChoice ] == "Retry"
+         return .t.   // retry the operation
+      elseif aOptions[ nChoice ] == "Default"
+         return .f.   // use default behavior
+      endif
+   endif
+
+   // "Quit" or dialog closed — terminate the application
+   ErrorLevel( 1 )
+   MAC_AppTerminate()   // force NSApp terminate (ends Cocoa run loop)
+   QUIT
+
+return .f.
 
 //============================================================================//
 //  DATA CONTROLS (visual, Data Controls tab - bind to TDatabase)
@@ -715,12 +858,28 @@ return nil
 // MsgInfo - cross-platform message box
 //----------------------------------------------------------------------------//
 
-function MsgInfo( cText, cTitle )
+function MsgInfo( xText, cTitle )
 
-   if cTitle == nil; cTitle := ""; endif
-   UI_MsgBox( cText, cTitle )
+   if cTitle == nil; cTitle := "Information"; endif
+   UI_MsgBox( ValToStr( xText ), ValToStr( cTitle ) )
 
 return nil
+
+static function ValToStr( xVal )
+   local cType := ValType( xVal )
+   do case
+      case xVal == nil;      return "nil"
+      case cType == "C"
+         if Empty( xVal );   return '""'; endif
+         return xVal
+      case cType == "N";     return LTrim( Str( xVal ) )
+      case cType == "L";     return If( xVal, ".T.", ".F." )
+      case cType == "D";     return DToC( xVal )
+      case cType == "A";     return "{Array(" + LTrim( Str( Len( xVal ) ) ) + ")}"
+      case cType == "O";     return "{Object:" + xVal:ClassName() + "}"
+      case cType == "B";     return "{Block}"
+   endcase
+return hb_ValToStr( xVal )
 
 //============================================================================//
 //  DATABASE COMPONENTS (non-visual, Data Access tab)
