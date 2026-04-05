@@ -157,7 +157,7 @@ function Main()
    MENUITEM "About HbBuilder..." OF oHelp ACTION ShowAbout()
 
    // Menu icons (same as Windows)
-   cIcoDir := HB_DirBase() + "../resources/menu_icons/"
+   cIcoDir := ResPath( "menu_icons" ) + "/"
 
    UI_MenuSetBitmapByPos( oFile:hPopup, 0, cIcoDir + "menu_new.png" )
    UI_MenuSetBitmapByPos( oFile:hPopup, 1, cIcoDir + "menu_new_form.png" )
@@ -217,7 +217,7 @@ function Main()
    BUTTON "Run"   OF oTB TOOLTIP "Run project (F9)"      ACTION TBRun()
 
    // Load toolbar icons (Silk icon set by famfamfam, CC BY 2.5)
-   UI_ToolBarLoadImages( oTB:hCpp, "../resources/toolbar.bmp" )
+   UI_ToolBarLoadImages( oTB:hCpp, ResPath( "toolbar.bmp" ) )
 
    // Row 2: Run & Debug speedbar
    DEFINE TOOLBAR oTB2 OF oIDE
@@ -230,7 +230,7 @@ function Main()
    SEPARATOR OF oTB2
    BUTTON "Exit"  OF oTB2 TOOLTIP "Exit IDE"                ACTION oIDE:Close()
 
-   UI_ToolBarLoadImages( oTB2:hCpp, "../resources/toolbar_debug.bmp" )
+   UI_ToolBarLoadImages( oTB2:hCpp, ResPath( "toolbar_debug.bmp" ) )
 
    // Component Palette (icon grid, tabbed, right of splitter)
    CreatePalette()
@@ -453,7 +453,7 @@ static function CreatePalette()
    oPal:AddComp( nTab, "Mrg",  "GitMerge",    130 )
 
    // Load palette icons (Silk icon set by famfamfam, CC BY 2.5)
-   UI_PaletteLoadImages( oPal:hCpp, "../resources/palette.bmp" )
+   UI_PaletteLoadImages( oPal:hCpp, ResPath( "palette.bmp" ) )
 
 return nil
 
@@ -1760,7 +1760,7 @@ static function ShowAbout()
    cMsg += Chr(10)
    cMsg += "Vibe coded 100% using Claude Code" + Chr(10)
 
-   MAC_AboutDialog( "About HbBuilder", cMsg, "../resources/harbour_logo.png" )
+   MAC_AboutDialog( "About HbBuilder", cMsg, ResPath( "harbour_logo.png" ) )
 
 return nil
 
@@ -1774,6 +1774,14 @@ function _InsGetEditorCode()
    endif
 
 return ""
+
+// Locate a resource file/dir: checks bundle Resources/ first, then relative path
+static function ResPath( cFile )
+   local cBundle := HB_DirBase() + "../Resources/" + cFile
+   if File( cBundle ) .or. hb_DirExists( cBundle )
+      return cBundle
+   endif
+return "../resources/" + cFile
 
 // Framework
 #include "../harbour/classes.prg"

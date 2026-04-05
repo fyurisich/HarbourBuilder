@@ -120,10 +120,13 @@ fi
 
 if [ "$NEED_LINK" -eq 0 ] && [ -f "${PROG}" ]; then
    echo "[4/4] ${PROG} — up to date (nothing changed)"
-   echo ""
-   echo "-- ${PROG} is up to date (incremental build) --"
-   echo "Run with: ./${PROG}"
-   exit 0
+   # Still create .app bundle if missing
+   if [ -d "$PROJDIR/bin/${PROG}.app" ]; then
+      echo ""
+      echo "-- ${PROG} is up to date (incremental build) --"
+      echo "Run with: open $PROJDIR/bin/${PROG}.app"
+      exit 0
+   fi
 fi
 
 echo "[4/4] Linking ${PROG}..."
@@ -143,6 +146,70 @@ clang++ -o ${PROG} \
    -framework UniformTypeIdentifiers \
    -lm -lpthread -lc++ -lsqlite3
 
+# [5/5] Create .app bundle
+APP="$PROJDIR/bin/${PROG}.app"
+echo "[5/5] Creating ${PROG}.app bundle..."
+mkdir -p "$APP/Contents/MacOS"
+mkdir -p "$APP/Contents/Resources"
+cp "${PROG}" "$APP/Contents/MacOS/${PROG}"
+cp "$PROJDIR/resources/HbBuilder.icns" "$APP/Contents/Resources/" 2>/dev/null
+cp "$PROJDIR/resources/toolbar.bmp" "$APP/Contents/Resources/" 2>/dev/null
+cp "$PROJDIR/resources/toolbar_debug.bmp" "$APP/Contents/Resources/" 2>/dev/null
+cp "$PROJDIR/resources/palette.bmp" "$APP/Contents/Resources/" 2>/dev/null
+cp "$PROJDIR/resources/harbour_logo.png" "$APP/Contents/Resources/" 2>/dev/null
+cp -R "$PROJDIR/resources/menu_icons" "$APP/Contents/Resources/" 2>/dev/null
+# Copy Harbour source files needed for building user projects
+cp "$PROJDIR/harbour/classes.prg" "$APP/Contents/Resources/" 2>/dev/null
+cp "$PROJDIR/harbour/hbbuilder.ch" "$APP/Contents/Resources/" 2>/dev/null
+# Copy backends for user project compilation
+mkdir -p "$APP/Contents/Resources/backends/cocoa"
+cp "$PROJDIR/backends/cocoa/cocoa_core.m" "$APP/Contents/Resources/backends/cocoa/" 2>/dev/null
+cp "$PROJDIR/backends/cocoa/cocoa_editor.mm" "$APP/Contents/Resources/backends/cocoa/" 2>/dev/null
+cp "$PROJDIR/backends/cocoa/gt_dummy.c" "$APP/Contents/Resources/backends/cocoa/" 2>/dev/null
+# Copy Scintilla includes and libs for user project compilation
+mkdir -p "$APP/Contents/Resources/scintilla/include"
+mkdir -p "$APP/Contents/Resources/scintilla/cocoa"
+mkdir -p "$APP/Contents/Resources/scintilla/lexilla"
+mkdir -p "$APP/Contents/Resources/scintilla/build"
+cp "$SCIINC"/*.h "$APP/Contents/Resources/scintilla/include/" 2>/dev/null
+cp "$SCICOCOA"/*.h "$APP/Contents/Resources/scintilla/cocoa/" 2>/dev/null
+cp "$LEXINC"/*.h "$APP/Contents/Resources/scintilla/lexilla/" 2>/dev/null
+cp "$SCIBUILD"/lib*.a "$APP/Contents/Resources/scintilla/build/" 2>/dev/null
+# Info.plist
+cat > "$APP/Contents/Info.plist" << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>HbBuilder</string>
+	<key>CFBundleDisplayName</key>
+	<string>HbBuilder</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.fivetechsoft.hbbuilder</string>
+	<key>CFBundleVersion</key>
+	<string>1.0</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleExecutable</key>
+	<string>HbBuilder</string>
+	<key>CFBundleIconFile</key>
+	<string>HbBuilder</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.15</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 FiveTech Software. MIT License.</string>
+</dict>
+</plist>
+PLIST
+# Also copy raw binary to bin/
+cp "${PROG}" "$PROJDIR/bin/${PROG}"
+
 echo ""
 echo "-- ${PROG} built successfully (with Scintilla editor) --"
-echo "Run with: ./${PROG}"
+echo "Run with: open $APP"
+echo "   or:    ./${PROG}"

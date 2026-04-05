@@ -1,6 +1,15 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-05 (Session 10c: macOS .app Bundle)
+
+  APP BUNDLE:
+  - build_mac.sh creates HbBuilder.app with icon, Info.plist, all resources
+  - Harbour anchor logo as .icns app icon (16x16 to 512x512)
+  - ResPath() helper: finds resources in bundle or relative path
+  - App is self-contained and can be moved to any folder
+  - Resources embedded: toolbar, palette, menu icons, harbour sources, Scintilla
+
 2026-04-05 (Session 10b: Linux GTK3 Parity with macOS/Windows)
 
   PHASE A - macOS PARITY:
