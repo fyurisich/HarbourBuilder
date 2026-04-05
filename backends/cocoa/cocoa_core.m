@@ -4146,3 +4146,6 @@ HB_FUNC( UI_FORMTABORDERDIALOG )
    (void)resp;
    /* TODO: implement Move Up/Down with repeated dialog */
 }
+
+/* --- DPI stub (macOS handles Retina natively) --- */
+HB_FUNC( SETDPIAWARE ) { /* no-op on macOS */ }
