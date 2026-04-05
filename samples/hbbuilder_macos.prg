@@ -1768,9 +1768,22 @@ static function TBDebugRun()
       endif
    endif
 
-   // Step 5: Compile Cocoa backend + gt_dummy (same as TBRun)
+   // Step 5: Compile Cocoa backend + dbghook + gt_dummy
    if ! lError
-      cLog += "[5] Cocoa backend..." + Chr(10)
+      cLog += "[5] Cocoa backend + dbghook..." + Chr(10)
+
+      // Compile dbghook.c (C-level debug hook wrapper)
+      if File( cResDir + "/dbghook.c" )
+         cCmd := "clang -c -O2 -I" + cHbInc + ;
+                 " " + cResDir + "/dbghook.c" + ;
+                 " -o " + cBuildDir + "/dbghook.o 2>&1"
+      else
+         cCmd := "clang -c -O2 -I" + cHbInc + ;
+                 " " + cProjDir + "/harbour/dbghook.c" + ;
+                 " -o " + cBuildDir + "/dbghook.o 2>&1"
+      endif
+      MAC_ShellExec( cCmd )
+
       cCmd := "clang -c -O2 -fobjc-arc -I" + cHbInc + ;
               " " + cBackends + "/cocoa_core.m" + ;
               " -o " + cBuildDir + "/cocoa_core.o 2>&1"
@@ -1792,6 +1805,7 @@ static function TBDebugRun()
       cLog += "[6] Linking..." + Chr(10)
       cCmd := "clang++ -o " + cBuildDir + "/DebugApp" + ;
               " " + cBuildDir + "/debug_main.o" + ;
+              " " + cBuildDir + "/dbghook.o" + ;
               " " + cBuildDir + "/cocoa_core.o" + ;
               " " + cBuildDir + "/cocoa_editor.o" + ;
               " " + cBuildDir + "/gt_dummy.o" + ;

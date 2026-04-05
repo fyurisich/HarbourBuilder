@@ -3069,7 +3069,9 @@ HB_FUNC( IDE_DEBUGSTART2 )
    const char * cExePath = hb_parc(1);
    PHB_ITEM pOnPause = hb_param(2, HB_IT_BLOCK);
 
-   if( !cExePath || s_dbgState != DBG_IDLE ) { hb_retl( HB_FALSE ); return; }
+   setbuf(stderr, NULL);  /* unbuffer stderr for debug traces */
+   fprintf(stderr, "IDE-DBG: IDE_DebugStart2 called exe='%s'\n", cExePath ? cExePath : "(null)");
+   if( !cExePath || s_dbgState != DBG_IDLE ) { fprintf(stderr, "IDE-DBG: rejected (null=%d state=%d)\n", !cExePath, s_dbgState); hb_retl( HB_FALSE ); return; }
 
    if( s_dbgOnPause ) { hb_itemRelease( s_dbgOnPause ); s_dbgOnPause = NULL; }
    if( pOnPause ) s_dbgOnPause = hb_itemNew( pOnPause );
@@ -3084,15 +3086,18 @@ HB_FUNC( IDE_DEBUGSTART2 )
 
    s_dbgState = DBG_STEPPING;
    s_nBreakpoints = 0;
+   fprintf(stderr, "IDE-DBG: server started on 19800\n");
    DbgOutput( "=== Debug session started (socket) ===\n" );
    DbgOutput( "Listening on port 19800...\n" );
 
    /* Launch user executable */
    {
       char cmd[1024];
-      snprintf( cmd, sizeof(cmd), "\"%s\" &", cExePath );
+      snprintf( cmd, sizeof(cmd), "\"%s\" 2>/tmp/hb_debugapp.txt &", cExePath );
+      fprintf(stderr, "IDE-DBG: launching: %s\n", cmd);
       system( cmd );
    }
+   fprintf(stderr, "IDE-DBG: waiting for connection...\n");
    DbgOutput( "Launched debug process. Waiting for connection...\n" );
 
    if( s_dbgStatusLbl )
@@ -3101,30 +3106,35 @@ HB_FUNC( IDE_DEBUGSTART2 )
    /* Accept connection */
    if( DbgServerAccept( 30.0 ) != 0 )
    {
+      fprintf(stderr, "IDE-DBG: accept FAILED\n");
       DbgOutput( "ERROR: Client did not connect within 30s\n" );
       DbgServerStop();
       s_dbgState = DBG_IDLE;
       hb_retl( HB_FALSE );
       return;
    }
+   fprintf(stderr, "IDE-DBG: client connected!\n");
    DbgOutput( "Client connected.\n" );
 
    /* Command loop */
    char recvBuf[4096];
    s_dbgState = DBG_PAUSED;
+   fprintf(stderr, "IDE-DBG: entering command loop\n");
 
    while( s_dbgState != DBG_IDLE && s_dbgState != DBG_STOPPED )
    {
       int n = DbgServerRecv( recvBuf, sizeof(recvBuf) );
+      fprintf(stderr, "IDE-DBG: recv n=%d buf='%.80s'\n", n, n > 0 ? recvBuf : "");
       if( n <= 0 ) {
+         fprintf(stderr, "IDE-DBG: client disconnected\n");
          DbgOutput( "Client disconnected.\n" );
          break;
       }
 
       if( strncmp( recvBuf, "HELLO", 5 ) == 0 )
       {
+         fprintf(stderr, "IDE-DBG: got HELLO, sending STEP\n");
          DbgOutput( recvBuf ); DbgOutput( "\n" );
-         /* Tell client to start stepping */
          DbgServerSend( "STEP" );
          s_dbgState = DBG_PAUSED;
          continue;
@@ -3132,9 +3142,10 @@ HB_FUNC( IDE_DEBUGSTART2 )
 
       if( strncmp( recvBuf, "PAUSE ", 6 ) == 0 )
       {
+         fprintf(stderr, "IDE-DBG: got PAUSE '%s'\n", recvBuf);
          /* Parse module:line */
          char * colon = strrchr( recvBuf + 6, ':' );
-         if( !colon ) continue;
+         if( !colon ) { fprintf(stderr, "IDE-DBG: no colon in PAUSE\n"); continue; }
          *colon = 0;
          const char * module = recvBuf + 6;
          int line = atoi( colon + 1 );
@@ -3142,6 +3153,8 @@ HB_FUNC( IDE_DEBUGSTART2 )
          strncpy( s_dbgModule, module, sizeof(s_dbgModule) - 1 );
          s_dbgLine = line;
          s_dbgState = DBG_PAUSED;
+
+         fprintf(stderr, "IDE-DBG: paused at %s:%d\n", module, line);
 
          /* Update status */
          if( s_dbgStatusLbl ) {
@@ -3153,6 +3166,7 @@ HB_FUNC( IDE_DEBUGSTART2 )
          /* Get locals */
          DbgServerSend( "GETLOCALS" );
          n = DbgServerRecv( recvBuf, sizeof(recvBuf) );
+         fprintf(stderr, "IDE-DBG: locals recv n=%d\n", n);
          if( n > 0 && strncmp( recvBuf, "LOCALS", 6 ) == 0 ) {
             DbgOutput( recvBuf ); DbgOutput( "\n" );
          }

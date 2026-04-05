@@ -162,6 +162,7 @@ cp -R "$PROJDIR/resources/menu_icons" "$APP/Contents/Resources/" 2>/dev/null
 cp "$PROJDIR/harbour/classes.prg" "$APP/Contents/Resources/" 2>/dev/null
 cp "$PROJDIR/harbour/hbbuilder.ch" "$APP/Contents/Resources/" 2>/dev/null
 cp "$PROJDIR/harbour/dbgclient.prg" "$APP/Contents/Resources/" 2>/dev/null
+cp "$PROJDIR/harbour/dbghook.c" "$APP/Contents/Resources/" 2>/dev/null
 # Copy backends for user project compilation
 mkdir -p "$APP/Contents/Resources/backends/cocoa"
 cp "$PROJDIR/backends/cocoa/cocoa_core.m" "$APP/Contents/Resources/backends/cocoa/" 2>/dev/null
