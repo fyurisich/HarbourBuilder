@@ -85,6 +85,16 @@ if [ -f "$RESDIR/libscintilla.so" ]; then
    echo "  Copied libscintilla.so + liblexilla.so to build directory"
 fi
 
+echo "[7/7] Installing to bin/..."
+BINDIR="$PROJDIR/bin"
+mkdir -p "$BINDIR"
+cp -f "${PROG}" "$BINDIR/"
+if [ -f "$RESDIR/libscintilla.so" ]; then
+   cp -u "$RESDIR/libscintilla.so" "$BINDIR/"
+   cp -u "$RESDIR/liblexilla.so" "$BINDIR/"
+fi
+echo "  Installed ${PROG} + libs to bin/"
+
 echo ""
 echo "-- ${PROG} built successfully --"
-echo "Run with: LD_LIBRARY_PATH=. ./${PROG}"
+echo "Run with: cd $BINDIR && LD_LIBRARY_PATH=. ./${PROG}"

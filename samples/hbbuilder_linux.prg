@@ -695,9 +695,6 @@ static function OnComponentDrop( hForm, nType, nL, nT, nW, nH )
 
    local cName, nCount, hCtrl
    static aCnt := nil
-
-   // Push undo before adding control
-   UI_FormUndoPush( hForm )
    static aNames := { ;
       "Label", "Edit", "Button", "CheckBox", "ComboBox", "GroupBox", ;
       "ListBox", "RadioButton", "", "", "", "BitBtn", "SpeedButton", ;
@@ -727,6 +724,9 @@ static function OnComponentDrop( hForm, nType, nL, nT, nW, nH )
       "Python", "Swift", "Go", "Node", "Rust", "Java", "DotNet", "Lua", "Ruby", ;
       "GitRepo", "GitCommit", "GitBranch", "GitLog", "GitDiff", ;
       "GitRemote", "GitStash", "GitTag", "GitBlame", "GitMerge" }
+
+   // Push undo before adding control
+   UI_FormUndoPush( hForm )
 
    if aCnt == nil; aCnt := Array(120); AFill(aCnt,0); endif
    if nType < 1 .or. nType > Len(aNames) .or. Empty(aNames[nType]); return nil; endif
@@ -1069,12 +1069,17 @@ static function TBRun()
    cHbBin   := cHbDir + "/bin/linux/gcc"
    cHbInc   := cHbDir + "/include"
    cHbLib   := cHbDir + "/lib/linux/gcc"
-   cProjDir := GetEnv( "HOME" ) + "/hbcpp"
+   cProjDir := GetEnv( "HOME" ) + "/harbourbuilder"
    cLog     := ""
    lError   := .F.
 
    GTK_ShellExec( "mkdir -p " + cBuildDir )
 
+   // Show progress dialog (7 steps)
+   GTK_ProgressOpen( "Building Project...", 7 )
+
+   // Step 1: Save files
+   GTK_ProgressStep( "Saving project files..." )
    cLog += "[1] Saving project files..." + Chr(10)
    MemoWrit( cBuildDir + "/Project1.prg", CodeEditorGetTabText( hCodeEditor, 1 ) )
    for i := 1 to Len( aForms )
@@ -1084,6 +1089,8 @@ static function TBRun()
    GTK_ShellExec( "cp " + cProjDir + "/harbour/classes.prg " + cBuildDir + "/" )
    GTK_ShellExec( "cp " + cProjDir + "/harbour/hbbuilder.ch " + cBuildDir + "/" )
 
+   // Step 2: Assemble main.prg
+   GTK_ProgressStep( "Assembling main.prg..." )
    cLog += "[2] Building main.prg..." + Chr(10)
    cAllPrg := '#include "hbbuilder.ch"' + Chr(10) + Chr(10)
    cAllPrg += StrTran( MemoRead( cBuildDir + "/Project1.prg" ), ;
@@ -1093,7 +1100,9 @@ static function TBRun()
    next
    MemoWrit( cBuildDir + "/main.prg", cAllPrg )
 
+   // Step 3: Compile Harbour code
    if ! lError
+      GTK_ProgressStep( "Compiling Harbour code..." )
       cLog += "[3] Compiling main.prg..." + Chr(10)
       cCmd := cHbBin + "/harbour " + cBuildDir + "/main.prg -n -w -q" + ;
               " -I" + cHbInc + " -I" + cBuildDir + ;
@@ -1107,7 +1116,9 @@ static function TBRun()
       endif
    endif
 
+   // Step 4: Compile framework
    if ! lError
+      GTK_ProgressStep( "Compiling framework..." )
       cLog += "[4] Compiling framework..." + Chr(10)
       cCmd := cHbBin + "/harbour " + cBuildDir + "/classes.prg -n -w -q" + ;
               " -I" + cHbInc + " -I" + cBuildDir + ;
@@ -1116,7 +1127,9 @@ static function TBRun()
       cLog += "    OK" + Chr(10)
    endif
 
+   // Step 5: Compile C sources
    if ! lError
+      GTK_ProgressStep( "Compiling C sources..." )
       cLog += "[5] Compiling C sources..." + Chr(10)
       cCmd := "gcc -c -O2 -Wno-unused-value -I" + cHbInc + ;
               " " + cBuildDir + "/main.c -o " + cBuildDir + "/main.o 2>&1"
@@ -1131,7 +1144,9 @@ static function TBRun()
       cLog += "    OK" + Chr(10)
    endif
 
+   // Step 6: Compile GTK3 backend
    if ! lError
+      GTK_ProgressStep( "Compiling GTK3 backend..." )
       cLog += "[6] Compiling GTK3 backend..." + Chr(10)
       cCmd := "gcc -c -O2 -I" + cHbInc + ;
               " $(pkg-config --cflags gtk+-3.0)" + ;
@@ -1141,7 +1156,9 @@ static function TBRun()
       cLog += "    OK" + Chr(10)
    endif
 
+   // Step 7: Link
    if ! lError
+      GTK_ProgressStep( "Linking executable..." )
       cLog += "[7] Linking..." + Chr(10)
       cCmd := "gcc -o " + cBuildDir + "/UserApp" + ;
               " " + cBuildDir + "/main.o" + ;
@@ -1154,10 +1171,11 @@ static function TBRun()
               " -lhbct -lhbextern" + ;
               " -lrddntx -lrddnsx -lrddcdx -lrddfpt" + ;
               " -lhbhsx -lhbsix -lhbusrrdd" + ;
+              " -lhbsqlit3 -lsddsqlt3 -lrddsql" + ;
               " -lgttrm -lhbpcre" + ;
               " -Wl,--end-group" + ;
               " $(pkg-config --libs gtk+-3.0)" + ;
-              " -lm -lpthread -ldl -lrt -lncurses 2>&1"
+              " -lm -lpthread -ldl -lrt -lsqlite3 -lncurses 2>&1"
       cOutput := GTK_ShellExec( cCmd )
       if "error" $ Lower( cOutput )
          cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
@@ -1167,8 +1185,10 @@ static function TBRun()
       endif
    endif
 
+   GTK_ProgressClose()
+
    if lError
-      MsgInfo( "Build FAILED:" + Chr(10) + Chr(10) + cLog )
+      GTK_BuildErrorDialog( "Build Failed", cLog )
    else
       cLog += Chr(10) + "Build succeeded. Running..." + Chr(10)
       GTK_ShellExec( cBuildDir + "/UserApp 2>/tmp/userapp_debug.log &" )
