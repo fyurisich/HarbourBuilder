@@ -29,6 +29,11 @@
 #include "hbapidbg.h"
 #include "hbapierr.h"
 
+/* Socket debug server */
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+
 /* Lexilla CreateLexer (linked statically from liblexilla.a) */
 extern "C" Scintilla::ILexer5 * CreateLexer(const char *name);
 
@@ -2605,6 +2610,94 @@ static NSTableView * s_dbgStackTV = nil;
 static NSMutableArray * s_dbgLocalsData = nil;
 static NSMutableArray * s_dbgStackData = nil;
 
+/* Socket debug server */
+static int s_dbgServerFD = -1;
+static int s_dbgClientFD = -1;
+
+static int DbgServerStart( int port )
+{
+   int fd = socket( AF_INET, SOCK_STREAM, 0 );
+   if( fd < 0 ) return -1;
+   int yes = 1;
+   setsockopt( fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes) );
+   struct sockaddr_in addr;
+   memset( &addr, 0, sizeof(addr) );
+   addr.sin_family = AF_INET;
+   addr.sin_addr.s_addr = htonl( INADDR_LOOPBACK );
+   addr.sin_port = htons( (uint16_t)port );
+   if( bind( fd, (struct sockaddr *)&addr, sizeof(addr) ) < 0 ||
+       listen( fd, 1 ) < 0 ) { close( fd ); return -1; }
+   s_dbgServerFD = fd;
+   return 0;
+}
+
+static int DbgServerAccept( double timeoutSec )
+{
+   fd_set fds;
+   struct timeval tv;
+   double elapsed = 0;
+   while( elapsed < timeoutSec )
+   {
+      FD_ZERO( &fds );
+      FD_SET( s_dbgServerFD, &fds );
+      tv.tv_sec = 0; tv.tv_usec = 200000;
+      if( select( s_dbgServerFD + 1, &fds, NULL, NULL, &tv ) > 0 )
+      {
+         s_dbgClientFD = accept( s_dbgServerFD, NULL, NULL );
+         if( s_dbgClientFD >= 0 ) return 0;
+      }
+      @autoreleasepool {
+         NSEvent * ev = [NSApp nextEventMatchingMask:NSEventMaskAny
+            untilDate:[NSDate dateWithTimeIntervalSinceNow:0.05]
+            inMode:NSDefaultRunLoopMode dequeue:YES];
+         if( ev ) [NSApp sendEvent:ev];
+      }
+      if( s_dbgState == DBG_STOPPED ) return -1;
+      elapsed += 0.25;
+   }
+   return -1;
+}
+
+static void DbgServerSend( const char * cmd )
+{
+   if( s_dbgClientFD < 0 ) return;
+   char buf[512];
+   snprintf( buf, sizeof(buf), "%s\n", cmd );
+   send( s_dbgClientFD, buf, strlen(buf), 0 );
+}
+
+static int DbgServerRecv( char * buf, int bufSize )
+{
+   if( s_dbgClientFD < 0 ) return -1;
+   fd_set fds; struct timeval tv;
+   while(1) {
+      FD_ZERO( &fds );
+      FD_SET( s_dbgClientFD, &fds );
+      tv.tv_sec = 0; tv.tv_usec = 100000;
+      int r = select( s_dbgClientFD + 1, &fds, NULL, NULL, &tv );
+      if( r > 0 ) {
+         ssize_t n = recv( s_dbgClientFD, buf, (size_t)(bufSize - 1), 0 );
+         if( n <= 0 ) return -1;
+         buf[n] = 0;
+         while( n > 0 && (buf[n-1] == '\n' || buf[n-1] == '\r') ) buf[--n] = 0;
+         return (int)n;
+      }
+      @autoreleasepool {
+         NSEvent * ev = [NSApp nextEventMatchingMask:NSEventMaskAny
+            untilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]
+            inMode:NSDefaultRunLoopMode dequeue:YES];
+         if( ev ) [NSApp sendEvent:ev];
+      }
+      if( s_dbgState == DBG_STOPPED ) return -1;
+   }
+}
+
+static void DbgServerStop(void)
+{
+   if( s_dbgClientFD >= 0 ) { close( s_dbgClientFD ); s_dbgClientFD = -1; }
+   if( s_dbgServerFD >= 0 ) { close( s_dbgServerFD ); s_dbgServerFD = -1; }
+}
+
 /* -----------------------------------------------------------------------
  * Breakpoint check
  * ----------------------------------------------------------------------- */
@@ -2639,6 +2732,12 @@ static void IDE_DebugHook( int nMode, int nLine, const char * szName,
                             int nIndex, PHB_ITEM pFrame )
 {
    (void)nIndex; (void)pFrame;
+
+   static int s_hookCount = 0;
+   s_hookCount++;
+   if( s_hookCount <= 5 || s_hookCount % 100 == 0 )
+      fprintf( stderr, "HOOK: mode=%d line=%d name=%s state=%d count=%d\n",
+               nMode, nLine, szName ? szName : "?", s_dbgState, s_hookCount );
 
    /* Mode 1 = HB_DBG_MODULENAME: track current module */
    if( nMode == 1 && szName )
@@ -2924,23 +3023,187 @@ HB_FUNC( IDE_DEBUGSTART )
    s_dbgState = DBG_STEPPING;
    s_nBreakpoints = 0;
 
+   fprintf( stderr, "DBG: session start, file=%s\n", cHrbFile );
    DbgOutput( "=== Debug session started ===\n" );
 
    /* Execute user .hrb file in IDE VM */
    {
+      PHB_DYNS pDyn = hb_dynsymFind( "HB_HRBRUN" );
+      fprintf( stderr, "DBG: HB_HRBRUN sym=%p\n", (void*)pDyn );
+      if( !pDyn )
+      {
+         DbgOutput( "ERROR: HB_HRBRUN symbol not found (hbrun not linked)\n" );
+         if( s_dbgStatusLbl )
+            [s_dbgStatusLbl setStringValue:@"Error: HB_HRBRUN not available"];
+         hb_dbg_SetEntry( NULL );
+         s_dbgState = DBG_IDLE;
+         hb_retl( HB_FALSE );
+         return;
+      }
+      fprintf( stderr, "DBG: calling HB_HRBRUN('%s')...\n", cHrbFile );
+
       PHB_ITEM pFile = hb_itemPutC( NULL, cHrbFile );
-      hb_vmPushDynSym( hb_dynsymFind( "HB_HRBRUN" ) );
+      hb_vmPushDynSym( pDyn );
       hb_vmPushNil();
       hb_vmPush( pFile );
       hb_vmDo( 1 );
       hb_itemRelease( pFile );
+      fprintf( stderr, "DBG: HB_HRBRUN returned\n" );
    }
 
    /* Cleanup */
+   fprintf( stderr, "DBG: cleanup\n" );
    hb_dbg_SetEntry( NULL );
    s_dbgState = DBG_IDLE;
    DbgOutput( "=== Debug session ended ===\n" );
 
+   if( s_dbgStatusLbl )
+      [s_dbgStatusLbl setStringValue:@"Ready"];
+
+   hb_retl( HB_TRUE );
+}
+
+/* IDE_DebugStart2( cExePath, bOnPause ) — socket-based debug session */
+HB_FUNC( IDE_DEBUGSTART2 )
+{
+   const char * cExePath = hb_parc(1);
+   PHB_ITEM pOnPause = hb_param(2, HB_IT_BLOCK);
+
+   if( !cExePath || s_dbgState != DBG_IDLE ) { hb_retl( HB_FALSE ); return; }
+
+   if( s_dbgOnPause ) { hb_itemRelease( s_dbgOnPause ); s_dbgOnPause = NULL; }
+   if( pOnPause ) s_dbgOnPause = hb_itemNew( pOnPause );
+
+   /* Start TCP server */
+   if( DbgServerStart( 19800 ) != 0 )
+   {
+      DbgOutput( "ERROR: Could not start debug server on port 19800\n" );
+      hb_retl( HB_FALSE );
+      return;
+   }
+
+   s_dbgState = DBG_STEPPING;
+   s_nBreakpoints = 0;
+   DbgOutput( "=== Debug session started (socket) ===\n" );
+   DbgOutput( "Listening on port 19800...\n" );
+
+   /* Launch user executable */
+   {
+      char cmd[1024];
+      snprintf( cmd, sizeof(cmd), "\"%s\" &", cExePath );
+      system( cmd );
+   }
+   DbgOutput( "Launched debug process. Waiting for connection...\n" );
+
+   if( s_dbgStatusLbl )
+      [s_dbgStatusLbl setStringValue:@"Waiting for debug client..."];
+
+   /* Accept connection */
+   if( DbgServerAccept( 30.0 ) != 0 )
+   {
+      DbgOutput( "ERROR: Client did not connect within 30s\n" );
+      DbgServerStop();
+      s_dbgState = DBG_IDLE;
+      hb_retl( HB_FALSE );
+      return;
+   }
+   DbgOutput( "Client connected.\n" );
+
+   /* Command loop */
+   char recvBuf[4096];
+   s_dbgState = DBG_PAUSED;
+
+   while( s_dbgState != DBG_IDLE && s_dbgState != DBG_STOPPED )
+   {
+      int n = DbgServerRecv( recvBuf, sizeof(recvBuf) );
+      if( n <= 0 ) {
+         DbgOutput( "Client disconnected.\n" );
+         break;
+      }
+
+      if( strncmp( recvBuf, "HELLO", 5 ) == 0 )
+      {
+         DbgOutput( recvBuf ); DbgOutput( "\n" );
+         /* Tell client to start stepping */
+         DbgServerSend( "STEP" );
+         s_dbgState = DBG_PAUSED;
+         continue;
+      }
+
+      if( strncmp( recvBuf, "PAUSE ", 6 ) == 0 )
+      {
+         /* Parse module:line */
+         char * colon = strrchr( recvBuf + 6, ':' );
+         if( !colon ) continue;
+         *colon = 0;
+         const char * module = recvBuf + 6;
+         int line = atoi( colon + 1 );
+
+         strncpy( s_dbgModule, module, sizeof(s_dbgModule) - 1 );
+         s_dbgLine = line;
+         s_dbgState = DBG_PAUSED;
+
+         /* Update status */
+         if( s_dbgStatusLbl ) {
+            char status[512];
+            snprintf(status, sizeof(status), "Paused at %s:%d", module, line);
+            [s_dbgStatusLbl setStringValue:[NSString stringWithUTF8String:status]];
+         }
+
+         /* Get locals */
+         DbgServerSend( "GETLOCALS" );
+         n = DbgServerRecv( recvBuf, sizeof(recvBuf) );
+         if( n > 0 && strncmp( recvBuf, "LOCALS", 6 ) == 0 ) {
+            DbgOutput( recvBuf ); DbgOutput( "\n" );
+         }
+
+         /* Get stack */
+         DbgServerSend( "GETSTACK" );
+         n = DbgServerRecv( recvBuf, sizeof(recvBuf) );
+         if( n > 0 && strncmp( recvBuf, "STACK", 5 ) == 0 ) {
+            DbgOutput( recvBuf ); DbgOutput( "\n" );
+         }
+
+         /* Call Harbour callback for UI update */
+         if( s_dbgOnPause && HB_IS_BLOCK( s_dbgOnPause ) )
+         {
+            PHB_ITEM pMod  = hb_itemPutC( NULL, module );
+            PHB_ITEM pLine = hb_itemPutNI( NULL, line );
+            hb_itemDo( s_dbgOnPause, 2, pMod, pLine );
+            hb_itemRelease( pMod );
+            hb_itemRelease( pLine );
+         }
+
+         /* Wait for user action (Step/Go/Stop via debug panel buttons) */
+         while( s_dbgState == DBG_PAUSED )
+         {
+            @autoreleasepool {
+               NSEvent * ev = [NSApp nextEventMatchingMask:NSEventMaskAny
+                  untilDate:[NSDate dateWithTimeIntervalSinceNow:0.05]
+                  inMode:NSDefaultRunLoopMode dequeue:YES];
+               if( ev ) [NSApp sendEvent:ev];
+            }
+         }
+
+         /* Send command based on state */
+         if( s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER )
+            DbgServerSend( "STEP" );
+         else if( s_dbgState == DBG_RUNNING )
+            DbgServerSend( "GO" );
+         else if( s_dbgState == DBG_STOPPED )
+            DbgServerSend( "QUIT" );
+
+         /* Reset to paused for next PAUSE message */
+         if( s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER )
+            s_dbgState = DBG_PAUSED;
+      }
+   }
+
+   /* Cleanup */
+   DbgServerSend( "QUIT" );
+   DbgServerStop();
+   s_dbgState = DBG_IDLE;
+   DbgOutput( "=== Debug session ended ===\n" );
    if( s_dbgStatusLbl )
       [s_dbgStatusLbl setStringValue:@"Ready"];
 
@@ -2967,6 +3230,10 @@ HB_FUNC( IDE_DEBUGSTEPOVER )
 /* IDE_DebugStop() */
 HB_FUNC( IDE_DEBUGSTOP )
 { if( s_dbgState != DBG_IDLE ) s_dbgState = DBG_STOPPED; }
+
+/* IDE_IsDebugMode() --> .T. if debugger is active (state != IDLE) */
+HB_FUNC( IDE_ISDEBUGMODE )
+{ hb_retl( s_dbgState != DBG_IDLE ); }
 
 /* IDE_DebugGetState() --> nState (0=idle,1=running,2=paused,3=stepping,4=stepover,5=stopped) */
 HB_FUNC( IDE_DEBUGGETSTATE )

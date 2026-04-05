@@ -1667,77 +1667,170 @@ return nil
 static function TBDebugRun()
 
    local cBuildDir, cOutput, cLog, i, lError
-   local cHbDir, cHbBin, cHbInc, cProjDir
-   local cAllPrg, cCmd
+   local cHbDir, cHbBin, cHbInc, cHbLib, cProjDir
+   local cAllPrg, cCmd, cMainPrg
+   local cBackends, cSciInc, cSciCocoa, cLexInc, cSciLib, cResDir
 
    SaveActiveFormCode()
 
-   cBuildDir := "/tmp/hbbuilder_build"
+   cBuildDir := "/tmp/hbbuilder_debug"
    cHbDir   := GetEnv( "HOME" ) + "/harbour"
    cHbInc   := cHbDir + "/include"
    cProjDir := HB_DirBase() + ".."
    cLog     := ""
    lError   := .F.
 
-   // Detect Harbour directory layout
    if File( cHbDir + "/bin/darwin/clang/harbour" )
       cHbBin := cHbDir + "/bin/darwin/clang"
+      cHbLib := cHbDir + "/lib/darwin/clang"
    else
       cHbBin := cHbDir + "/bin"
+      cHbLib := cHbDir + "/lib"
+   endif
+
+   // Resolve paths (same as TBRun)
+   cResDir := HB_DirBase() + "../Resources"
+   if hb_DirExists( cResDir + "/backends" )
+      cBackends := cResDir + "/backends/cocoa"
+      cSciInc   := cResDir + "/scintilla/include"
+      cSciCocoa := cResDir + "/scintilla/cocoa"
+      cLexInc   := cResDir + "/scintilla/lexilla"
+      cSciLib   := cResDir + "/scintilla/build"
+   else
+      cBackends := cProjDir + "/backends/cocoa"
+      cSciInc   := cProjDir + "/resources/scintilla_src/scintilla/include"
+      cSciCocoa := cProjDir + "/resources/scintilla_src/scintilla/cocoa"
+      cLexInc   := cProjDir + "/resources/scintilla_src/lexilla/include"
+      cSciLib   := cProjDir + "/resources/scintilla_src/build"
    endif
 
    MAC_ShellExec( "mkdir -p " + cBuildDir )
 
-   // Step 1: Save files
-   cLog += "[1] Saving project files..." + Chr(10)
-   MemoWrit( cBuildDir + "/Project1.prg", CodeEditorGetTabText( hCodeEditor, 1 ) )
+   // Step 1: Save user code + copy framework
+   cLog += "[1] Saving files..." + Chr(10)
    for i := 1 to Len( aForms )
-      MemoWrit( cBuildDir + "/" + aForms[i][1] + ".prg", aForms[i][3] )
+      MemoWrit( cBuildDir + "/" + aForms[i][1] + ".prg", ;
+         CodeEditorGetTabText( hCodeEditor, i + 1 ) )
    next
-   // Copy framework files (bundle Resources/ or source tree harbour/)
-   if File( HB_DirBase() + "../Resources/classes.prg" )
-      MAC_ShellExec( "cp " + HB_DirBase() + "../Resources/classes.prg " + cBuildDir + "/" )
-      MAC_ShellExec( "cp " + HB_DirBase() + "../Resources/hbbuilder.ch " + cBuildDir + "/" )
+   if File( cResDir + "/classes.prg" )
+      MAC_ShellExec( "cp " + cResDir + "/classes.prg " + cBuildDir + "/" )
+      MAC_ShellExec( "cp " + cResDir + "/hbbuilder.ch " + cBuildDir + "/" )
+      MAC_ShellExec( "cp " + cResDir + "/dbgclient.prg " + cBuildDir + "/" )
    else
       MAC_ShellExec( "cp " + cProjDir + "/harbour/classes.prg " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/harbour/hbbuilder.ch " + cBuildDir + "/" )
+      MAC_ShellExec( "cp " + cProjDir + "/harbour/dbgclient.prg " + cBuildDir + "/" )
    endif
 
    // Step 2: Assemble debug_main.prg
-   cLog += "[2] Building debug_main.prg..." + Chr(10)
-   cAllPrg := '#include "hbbuilder.ch"' + Chr(10) + Chr(10)
-   cAllPrg += StrTran( MemoRead( cBuildDir + "/Project1.prg" ), ;
-                       '#include "hbbuilder.ch"', "" ) + Chr(10)
+   cLog += "[2] Assembling debug_main.prg..." + Chr(10)
+   cAllPrg := '#include "hbbuilder.ch"' + Chr(10)
+   cAllPrg += "REQUEST HB_GT_NUL_DEFAULT" + Chr(10) + Chr(10)
+
+   // Project1.prg — inject DbgClientStart() before oApp:Run()
+   cMainPrg := CodeEditorGetTabText( hCodeEditor, 1 )
+   cMainPrg := StrTran( cMainPrg, '#include "hbbuilder.ch"', "" )
+   cMainPrg := StrTran( cMainPrg, "oApp:Run()", ;
+      "DbgClientStart( 19800 )" + Chr(10) + "   oApp:Run()" )
+   cAllPrg += cMainPrg + Chr(10)
+
    for i := 1 to Len( aForms )
       cAllPrg += MemoRead( cBuildDir + "/" + aForms[i][1] + ".prg" ) + Chr(10)
    next
-   // Include classes.prg for self-contained .hrb
    cAllPrg += MemoRead( cBuildDir + "/classes.prg" ) + Chr(10)
+   cAllPrg += MemoRead( cBuildDir + "/dbgclient.prg" ) + Chr(10)
    MemoWrit( cBuildDir + "/debug_main.prg", cAllPrg )
 
-   // Step 3: Compile to .hrb bytecode with debug info
-   cLog += "[3] Compiling to .hrb (harbour -gh -b)..." + Chr(10)
-   cCmd := cHbBin + "/harbour " + cBuildDir + "/debug_main.prg -gh -b -n -w -q" + ;
+   // Step 3: Harbour compile → C
+   cLog += "[3] Harbour compile..." + Chr(10)
+   cCmd := cHbBin + "/harbour " + cBuildDir + "/debug_main.prg -b -n -w -q" + ;
            " -I" + cHbInc + " -I" + cBuildDir + ;
-           " -o" + cBuildDir + "/debug_main.hrb 2>&1"
+           " -o" + cBuildDir + "/debug_main.c 2>&1"
    cOutput := MAC_ShellExec( cCmd )
    if "Error" $ cOutput
-      cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
-      lError := .T.
+      cLog += cOutput + Chr(10)
+      lError := .t.
    else
       cLog += "    OK" + Chr(10)
    endif
 
+   // Step 4: Compile C sources
+   if ! lError
+      cLog += "[4] C compile..." + Chr(10)
+      cCmd := "clang -c -O0 -g " + cBuildDir + "/debug_main.c" + ;
+              " -I" + cHbInc + " -o " + cBuildDir + "/debug_main.o 2>&1"
+      cOutput := MAC_ShellExec( cCmd )
+      if "error:" $ Lower( cOutput )
+         cLog += cOutput + Chr(10)
+         lError := .t.
+      else
+         cLog += "    OK" + Chr(10)
+      endif
+   endif
+
+   // Step 5: Compile Cocoa backend + gt_dummy (same as TBRun)
+   if ! lError
+      cLog += "[5] Cocoa backend..." + Chr(10)
+      cCmd := "clang -c -O2 -fobjc-arc -I" + cHbInc + ;
+              " " + cBackends + "/cocoa_core.m" + ;
+              " -o " + cBuildDir + "/cocoa_core.o 2>&1"
+      MAC_ShellExec( cCmd )
+      cCmd := "clang++ -c -O2 -std=c++17 -fobjc-arc -I" + cHbInc + ;
+              " -I" + cSciInc + " -I" + cSciCocoa + " -I" + cLexInc + ;
+              " " + cBackends + "/cocoa_editor.mm" + ;
+              " -o " + cBuildDir + "/cocoa_editor.o 2>&1"
+      MAC_ShellExec( cCmd )
+      cCmd := "clang -c -O2 -I" + cHbInc + ;
+              " " + cBackends + "/gt_dummy.c" + ;
+              " -o " + cBuildDir + "/gt_dummy.o 2>&1"
+      MAC_ShellExec( cCmd )
+      cLog += "    OK" + Chr(10)
+   endif
+
+   // Step 6: Link native executable
+   if ! lError
+      cLog += "[6] Linking..." + Chr(10)
+      cCmd := "clang++ -o " + cBuildDir + "/DebugApp" + ;
+              " " + cBuildDir + "/debug_main.o" + ;
+              " " + cBuildDir + "/cocoa_core.o" + ;
+              " " + cBuildDir + "/cocoa_editor.o" + ;
+              " " + cBuildDir + "/gt_dummy.o" + ;
+              " " + cSciLib + "/libscintilla.a" + ;
+              " " + cSciLib + "/liblexilla.a" + ;
+              " -L" + cHbLib + ;
+              " -lhbvm -lhbrtl -lhbcommon -lhbcpage -lhblang" + ;
+              " -lhbmacro -lhbpp -lhbrdd -lhbcplr -lhbdebug" + ;
+              " -lhbct -lhbextern -lhbsqlit3" + ;
+              " -lrddntx -lrddnsx -lrddcdx -lrddfpt" + ;
+              " -lhbhsx -lhbsix -lhbusrrdd" + ;
+              " -lgtcgi -lgtstd" + ;
+              " -framework Cocoa -framework UniformTypeIdentifiers -framework QuartzCore" + ;
+              " -lm -lpthread -lc++ -lsqlite3 2>&1"
+      cOutput := MAC_ShellExec( cCmd )
+      if "error" $ Lower( cOutput )
+         cLog += cOutput + Chr(10)
+         lError := .t.
+      else
+         cLog += "    OK" + Chr(10)
+      endif
+   endif
+
    if lError
-      MsgInfo( "Debug build FAILED:" + Chr(10) + Chr(10) + cLog )
+      MAC_BuildErrorDialog( "Debug Build Failed", cLog )
       return nil
    endif
 
-   // Step 4: Open debugger panel and run
-   MAC_DebugPanel()
-   MAC_DebugSetStatus( "Starting debug session..." )
+   if ! File( cBuildDir + "/DebugApp" )
+      cLog += "ERROR: DebugApp not created" + Chr(10)
+      MAC_BuildErrorDialog( "Debug Build Failed", cLog )
+      return nil
+   endif
 
-   IDE_DebugStart( cBuildDir + "/debug_main.hrb", ;
+   // Step 7: Launch socket debug session
+   MAC_DebugPanel()
+   MAC_DebugSetStatus( "Building done. Starting debug..." )
+
+   IDE_DebugStart2( cBuildDir + "/DebugApp", ;
       { |cModule, nLine| OnDebugPause( cModule, nLine ) } )
 
 return nil
@@ -1745,23 +1838,8 @@ return nil
 // === Debug Pause Callback (called from C hook) ===
 
 static function OnDebugPause( cModule, nLine )
-   local aLocals, aStack, i
-
+   // Socket debugger: status update only — locals/stack come from TCP
    MAC_DebugSetStatus( "Paused at " + cModule + ":" + LTrim(Str(nLine)) )
-
-   // Get and display locals
-   aLocals := IDE_DebugGetLocals( 1 )
-   MAC_DebugUpdateLocals( aLocals )
-
-   // Build and display call stack
-   aStack := { { "0", ProcName(2), cModule, LTrim(Str(nLine)) } }
-   for i := 3 to 8
-      if ! Empty( ProcName(i) )
-         AAdd( aStack, { LTrim(Str(i-2)), ProcName(i), "", LTrim(Str(ProcLine(i))) } )
-      endif
-   next
-   MAC_DebugUpdateStack( aStack )
-
 return nil
 
 // === AI Assistant ===
@@ -1802,7 +1880,7 @@ return nil
 
 static function DebugStepOver()
    if IDE_DebugGetState() == 2  // DBG_PAUSED
-      IDE_DebugStepOver()
+      IDE_DebugStep()   // socket mode: STEP sent by command loop
    else
       MAC_DebugPanel()
       MAC_DebugSetStatus( "Start debug with Run > Debug" )
@@ -1811,7 +1889,7 @@ return nil
 
 static function DebugStepInto()
    if IDE_DebugGetState() == 2  // DBG_PAUSED
-      IDE_DebugStep()
+      IDE_DebugStep()   // socket mode: STEP sent by command loop
    else
       MAC_DebugPanel()
       MAC_DebugSetStatus( "Start debug with Run > Debug" )

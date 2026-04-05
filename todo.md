@@ -37,4 +37,6 @@
 
 - [x] Form OnClick no se disparaba en runtime: el content view del form (`HBFlippedView`) no tenía handler de mouse. Fix: creado `HBFormContentView` (subclase de `HBFlippedView`) con `mouseDown:`/`mouseUp:` que dispara `FOnClick`, `FOnMouseDown`, `FOnMouseUp` del form. Solo en runtime (no en design mode). El form ahora usa `HBFormContentView` como content view.
 
+- [x] Socket-based debugger: replaced broken .hrb in-process debugger with TCP socket protocol. IDE starts TCP server on port 19800, compiles user project as native exe (with `dbgclient.prg` injected), launches process, accepts connection. `dbgclient.prg` installs `__dbgSetEntry` hook, sends PAUSE module:line on each source line, receives STEP/GO/QUIT/GETLOCALS/GETSTACK commands. Uses static array via `DbgState()` to avoid Harbour E0004 ("STATIC follows executable") when concatenated. IDE side: `DbgServerStart/Accept/Send/Recv/Stop` in cocoa_editor.mm, `IDE_DebugStart2` command loop with Cocoa event pump. Debug panel buttons (Step/Go/Stop) change `s_dbgState` which the loop reads.
+
 ## Open
