@@ -7436,3 +7436,97 @@ HB_FUNC( UI_FORMUNDO )
    UndoRestoreSnapshot( pForm, &s_undoStack[s_undoPos] );
 }
 
+/* ======================================================================
+ * Clipboard for Copy/Paste controls
+ * ====================================================================== */
+
+#define MAX_CLIPBOARD 32
+
+static struct {
+   int nType;
+   int nLeft, nTop, nWidth, nHeight;
+   char szText[128];
+} s_clipboard[MAX_CLIPBOARD];
+static int s_clipCount = 0;
+
+/* UI_FormCopySelected( hForm ) — copy selected controls to clipboard */
+HB_FUNC( UI_FORMCOPYSELECTED )
+{
+   HBForm * pForm = GetForm(1);
+   if( !pForm ) return;
+
+   s_clipCount = 0;
+   for( int i = 0; i < pForm->FSelCount && s_clipCount < MAX_CLIPBOARD; i++ )
+   {
+      HBControl * c = pForm->FSelected[i];
+      s_clipboard[s_clipCount].nType   = c->FControlType;
+      s_clipboard[s_clipCount].nLeft   = c->FLeft;
+      s_clipboard[s_clipCount].nTop    = c->FTop;
+      s_clipboard[s_clipCount].nWidth  = c->FWidth;
+      s_clipboard[s_clipCount].nHeight = c->FHeight;
+      strncpy( s_clipboard[s_clipCount].szText, c->FText, 127 );
+      s_clipCount++;
+   }
+   hb_retni( s_clipCount );
+}
+
+/* UI_FormPasteControls( hForm ) --> nPasted — paste with +16px offset */
+HB_FUNC( UI_FORMPASTECONTROLS )
+{
+   HBForm * pForm = GetForm(1);
+   if( !pForm || s_clipCount == 0 ) { hb_retni(0); return; }
+
+   UndoPushSnapshot( pForm );  /* push undo before paste */
+
+   for( int i = 0; i < s_clipCount; i++ )
+   {
+      HBControl * c = NULL;
+      int t = s_clipboard[i].nType;
+      int sz = sizeof(HBControl);
+
+      if( t == CT_LABEL )         sz = sizeof(HBLabel);
+      else if( t == CT_EDIT )     sz = sizeof(HBEdit);
+      else if( t == CT_BUTTON )   sz = sizeof(HBButton);
+      else if( t == CT_CHECKBOX ) sz = sizeof(HBCheckBox);
+      else if( t == CT_COMBOBOX ) sz = sizeof(HBComboBox);
+      else if( t == CT_GROUPBOX ) sz = sizeof(HBGroupBox);
+
+      c = (HBControl *) calloc( 1, sz );
+      if( !c ) continue;
+      HBControl_Init( c );
+      c->FControlType = t;
+      c->FLeft   = s_clipboard[i].nLeft + 16;
+      c->FTop    = s_clipboard[i].nTop + 16;
+      c->FWidth  = s_clipboard[i].nWidth;
+      c->FHeight = s_clipboard[i].nHeight;
+      strncpy( c->FText, s_clipboard[i].szText, sizeof(c->FText) - 1 );
+
+      switch( t ) {
+         case CT_LABEL:    strcpy( c->FClassName, "TLabel" ); break;
+         case CT_EDIT:     strcpy( c->FClassName, "TEdit" ); break;
+         case CT_BUTTON:   strcpy( c->FClassName, "TButton" ); break;
+         case CT_CHECKBOX: strcpy( c->FClassName, "TCheckBox" ); break;
+         case CT_COMBOBOX: strcpy( c->FClassName, "TComboBox" ); break;
+         case CT_GROUPBOX: strcpy( c->FClassName, "TGroupBox" ); break;
+         default:          strcpy( c->FClassName, "TControl" ); break;
+      }
+
+      HBControl_AddChild( &pForm->base, c );
+      KeepAlive( c );
+
+      if( pForm->FSelCount < MAX_CHILDREN )
+         pForm->FSelected[pForm->FSelCount++] = c;
+   }
+
+   if( pForm->FOverlay )
+      gtk_widget_queue_draw( pForm->FOverlay );
+
+   hb_retni( s_clipCount );
+}
+
+/* UI_FormGetClipCount() --> nCount */
+HB_FUNC( UI_FORMGETCLIPCOUNT )
+{
+   hb_retni( s_clipCount );
+}
+

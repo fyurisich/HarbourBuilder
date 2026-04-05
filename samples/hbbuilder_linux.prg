@@ -87,6 +87,8 @@ function Main()
    MENUITEM "Paste" OF oEdit ACTION CodeEditorPaste( hCodeEditor ) ACCEL "v"
    MENUSEPARATOR OF oEdit
    MENUITEM "Form Undo"  OF oEdit ACTION FormUndo()
+   MENUITEM "Copy Controls"  OF oEdit ACTION CopyControls()
+   MENUITEM "Paste Controls" OF oEdit ACTION PasteControls()
 
    DEFINE POPUP oSearch PROMPT "Search" OF oIDE
    MENUITEM "Find..."        OF oSearch ACTION CodeEditorFind( hCodeEditor )          ACCEL "f"
@@ -1465,6 +1467,21 @@ static function FormUndo()
    if oDesignForm != nil
       UI_FormUndo( oDesignForm:hCpp )
       InspectorRefresh( oDesignForm:hCpp )
+      SyncDesignerToCode()
+   endif
+return nil
+
+static function CopyControls()
+   if oDesignForm != nil
+      UI_FormCopySelected( oDesignForm:hCpp )
+   endif
+return nil
+
+static function PasteControls()
+   if oDesignForm != nil .and. UI_FormGetClipCount() > 0
+      UI_FormPasteControls( oDesignForm:hCpp )
+      InspectorRefresh( oDesignForm:hCpp )
+      InspectorPopulateCombo( oDesignForm:hCpp )
       SyncDesignerToCode()
    endif
 return nil
