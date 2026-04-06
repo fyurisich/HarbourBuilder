@@ -16,6 +16,12 @@
 #include <stdlib.h>
 #include <strings.h>
 #include <ctype.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#include <sys/select.h>
+#include <signal.h>
+#include <errno.h>
 
 /* Control types - must match all platforms */
 #define CT_FORM       0
@@ -2541,6 +2547,42 @@ HB_FUNC( UI_SETPROP )
    }
 }
 
+/* Stubs for controls not yet implemented on Linux */
+HB_FUNC( UI_MEMONEW )
+{
+   /* TMemo — reuse TEdit with multiline GtkTextView */
+   HBForm * pForm = GetForm(1);
+   HBEdit * p = (HBEdit *) calloc( 1, sizeof(HBEdit) );
+   HBControl_Init( &p->base );
+   strcpy( p->base.FClassName, "TMemo" );
+   p->base.FControlType = CT_EDIT; p->base.FWidth = 200; p->base.FHeight = 100;
+   p->FReadOnly = 0; p->FPassword = 0;
+   if( HB_ISCHAR(2) ) HBControl_SetText( &p->base, hb_parc(2) );
+   if( HB_ISNUM(3) ) p->base.FLeft = hb_parni(3);   if( HB_ISNUM(4) ) p->base.FTop = hb_parni(4);
+   if( HB_ISNUM(5) ) p->base.FWidth = hb_parni(5);  if( HB_ISNUM(6) ) p->base.FHeight = hb_parni(6);
+   if( pForm ) HBControl_AddChild( &pForm->base, &p->base );
+   RetCtrl( &p->base );
+}
+
+HB_FUNC( UI_LISTBOXNEW )
+{
+   /* TListBox — stub, reuse combo for now */
+   HBForm * pForm = GetForm(1);
+   HBControl * p = (HBControl *) calloc( 1, sizeof(HBControl) );
+   HBControl_Init( p );
+   strcpy( p->FClassName, "TListBox" );
+   p->FControlType = CT_LISTBOX; p->FWidth = 120; p->FHeight = 100;
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);  if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( pForm ) HBControl_AddChild( &pForm->base, p );
+   KeepAlive( p );
+   RetCtrl( p );
+}
+
+/* macOS-only stubs (called from classes.prg error handler) */
+HB_FUNC( MAC_RUNTIMEERRORDIALOG ) { hb_retni(0); }
+HB_FUNC( MAC_APPTERMINATE ) { }
+
 HB_FUNC( UI_GETPROP )
 {
    HBControl * p = GetCtrl(1);
@@ -3473,6 +3515,11 @@ HB_FUNC( GTK_GETWINDOWBOTTOM )
 #define SCI_MARKERDEFINE       2040
 #define SCI_MARKERSETFORE      2041
 #define SCI_MARKERSETBACK      2042
+#define SCI_MARKERADD          2043
+#define SCI_MARKERDELETE       2044
+#define SCI_MARKERDELETEALL    2046
+#define SCI_SETFIRSTVISIBLELINE 2613
+#define SC_MARK_BACKGROUND     22
 #define SCI_SETAUTOMATICFOLD   2663
 #define SC_AUTOMATICFOLD_SHOW  0x01
 #define SC_AUTOMATICFOLD_CLICK 0x02
@@ -3728,6 +3775,10 @@ static void ConfigureScintilla( GtkWidget * sci )
         SciMsg( sci, SCI_MARKERSETBACK, m, SciRGB(37,37,38) );
      }
    }
+
+   /* Debug execution line marker (marker 11) - yellow background */
+   SciMsg( sci, SCI_MARKERDEFINE, 11, SC_MARK_BACKGROUND );
+   SciMsg( sci, SCI_MARKERSETBACK, 11, SciRGB(60,60,0) );
 
    /* Enable folding property */
    SciMsg( sci, SCI_SETPROPERTY, (uintptr_t) "fold",              (intptr_t) "1" );
@@ -4987,6 +5038,65 @@ HB_FUNC( UI_FORMBRINGTOFRONT )
       gtk_window_present( GTK_WINDOW(p->FWindow) );
 }
 
+/* UI_FormHide( hForm ) */
+HB_FUNC( UI_FORMHIDE )
+{
+   HBForm * p = GetForm(1);
+   if( p && p->FWindow )
+      gtk_widget_hide( p->FWindow );
+}
+
+/* UI_ToolBtnHighlight( hToolbar, nBtn, lHighlight ) */
+HB_FUNC( UI_TOOLBTNHIGHLIGHT )
+{
+   HBToolBar * p = (HBToolBar *)(HB_PTRUINT) hb_parnint(1);
+   int nBtn = hb_parni(2) - 1;
+   HB_BOOL bHigh = hb_parl(3);
+   if( !p || p->base.FControlType != CT_TOOLBAR || !p->FToolBarWidget ) return;
+
+   /* Walk through toolbar items to find the nth non-separator button */
+   GList * children = gtk_container_get_children( GTK_CONTAINER(p->FToolBarWidget) );
+   int idx = 0;
+   for( GList * l = children; l; l = l->next )
+   {
+      GtkWidget * item = GTK_WIDGET(l->data);
+      if( GTK_IS_TOOL_BUTTON(item) )
+      {
+         if( idx == nBtn )
+         {
+            /* Get the actual button widget inside the GtkToolButton */
+            GtkWidget * btn = gtk_bin_get_child( GTK_BIN(item) );
+            if( !btn ) btn = item;
+
+            if( bHigh )
+            {
+               GtkCssProvider * cp = gtk_css_provider_new();
+               gtk_css_provider_load_from_data( cp,
+                  "* { background-color: rgba(200,50,50,0.5); }", -1, NULL );
+               gtk_style_context_add_provider(
+                  gtk_widget_get_style_context( btn ),
+                  GTK_STYLE_PROVIDER(cp), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 1 );
+               g_object_set_data_full( G_OBJECT(item), "dbg-highlight", cp, g_object_unref );
+            }
+            else
+            {
+               GtkCssProvider * cp = g_object_get_data( G_OBJECT(item), "dbg-highlight" );
+               if( cp )
+               {
+                  gtk_style_context_remove_provider(
+                     gtk_widget_get_style_context( btn ),
+                     GTK_STYLE_PROVIDER(cp) );
+                  g_object_set_data( G_OBJECT(item), "dbg-highlight", NULL );
+               }
+            }
+            break;
+         }
+         idx++;
+      }
+   }
+   g_list_free( children );
+}
+
 /* UI_FormClearChildren( hForm ) - remove all child controls */
 HB_FUNC( UI_FORMCLEARCHILDREN )
 {
@@ -5221,6 +5331,50 @@ HB_FUNC( CODEEDITORSELECTTAB )
    gtk_notebook_set_current_page( GTK_NOTEBOOK(ed->tabBar), nTab );
    g_signal_handlers_unblock_matched( ed->tabBar, G_SIGNAL_MATCH_FUNC,
       0, 0, NULL, (gpointer)on_editor_tab_switched, NULL );
+}
+
+/* CodeEditorShowDebugLine( hEditor, nLine ) — highlight execution line
+ * Clears previous marker, sets marker 11 on nLine, scrolls to it.
+ * nLine is 1-based (Harbour convention). Pass 0 to clear. */
+static int s_dbgPrevLine = -1;
+
+HB_FUNC( CODEEDITORSHOWDEBUGLINE )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   int nLine = hb_parni(2) - 1;  /* convert to 0-based */
+   if( !ed || !ed->sciWidget ) return;
+
+   /* Delete previous marker explicitly, then delete all as safety net */
+   if( s_dbgPrevLine >= 0 )
+      SciMsg( ed->sciWidget, SCI_MARKERDELETE, (uintptr_t)s_dbgPrevLine, 11 );
+   SciMsg( ed->sciWidget, SCI_MARKERDELETEALL, 11, 0 );
+
+   if( nLine >= 0 )
+   {
+      /* Set marker on the line */
+      SciMsg( ed->sciWidget, SCI_MARKERADD, (uintptr_t)nLine, 11 );
+      s_dbgPrevLine = nLine;
+
+      /* Scroll to make line visible and position cursor */
+      SciMsg( ed->sciWidget, SCI_GOTOLINE, (uintptr_t)nLine, 0 );
+      SciMsg( ed->sciWidget, SCI_SETFIRSTVISIBLELINE,
+              (uintptr_t)(nLine > 5 ? nLine - 5 : 0), 0 );
+
+      /* Bring editor window to front */
+      if( ed->window )
+         gtk_window_present( GTK_WINDOW(ed->window) );
+   }
+   else
+   {
+      s_dbgPrevLine = -1;
+   }
+
+   /* Force Scintilla to fully repaint */
+   {
+      ssize_t len = SciMsg( ed->sciWidget, SCI_GETLENGTH, 0, 0 );
+      SciMsg( ed->sciWidget, 4003, 0, len );  /* SCI_COLOURISE */
+   }
+   gtk_widget_queue_draw( ed->sciWidget );
 }
 
 /* CodeEditorClearTabs( hEditor ) - reset to single Project1.prg tab */
@@ -5795,6 +5949,144 @@ HB_FUNC( GTK_DEBUGSETSTATUS )
 {
    if( s_dbgStatusLbl && HB_ISCHAR(1) )
       gtk_label_set_text( GTK_LABEL(s_dbgStatusLbl), hb_parc(1) );
+}
+
+/* GTK_DebugUpdateLocalsStr( cVars ) - parse VARS string and update Locals tab
+ * Format: "VARS [PUBLIC] name=val name=val [PRIVATE] ... [LOCAL] ..." */
+HB_FUNC( GTK_DEBUGUPDATELOCALSSTR )
+{
+   const char * cVars = hb_parc(1);
+   if( !s_dbgLocalsTV || !cVars ) return;
+
+   GtkListStore * store = GTK_LIST_STORE( gtk_tree_view_get_model( GTK_TREE_VIEW(s_dbgLocalsTV) ) );
+   gtk_list_store_clear( store );
+
+   /* Skip "VARS " prefix */
+   const char * p = cVars;
+   if( strncmp( p, "VARS", 4 ) == 0 ) p += 4;
+
+   char category[32] = "";
+   while( *p )
+   {
+      while( *p == ' ' ) p++;
+      if( !*p ) break;
+
+      /* Check for [CATEGORY] header */
+      if( *p == '[' )
+      {
+         const char * end = strchr( p, ']' );
+         if( end )
+         {
+            int len = (int)(end - p - 1);
+            if( len > 0 && len < 30 )
+            {
+               memcpy( category, p + 1, (size_t)len );
+               category[len] = 0;
+            }
+            /* Add category header row */
+            GtkTreeIter iter;
+            gtk_list_store_append( store, &iter );
+            gtk_list_store_set( store, &iter,
+               0, category, 1, "", 2, "---", -1 );
+            p = end + 1;
+            continue;
+         }
+      }
+
+      /* Parse "name=value(type)" or "name=value" token */
+      const char * tokStart = p;
+      /* Find end of token (next space or end) */
+      while( *p && *p != ' ' ) p++;
+      int tokLen = (int)(p - tokStart);
+      if( tokLen <= 0 ) continue;
+
+      char token[512];
+      if( tokLen >= (int)sizeof(token) ) tokLen = (int)sizeof(token) - 1;
+      memcpy( token, tokStart, (size_t)tokLen );
+      token[tokLen] = 0;
+
+      /* Split at '=' */
+      char * eq = strchr( token, '=' );
+      if( eq )
+      {
+         *eq = 0;
+         const char * name = token;
+         const char * value = eq + 1;
+
+         GtkTreeIter iter;
+         gtk_list_store_append( store, &iter );
+         gtk_list_store_set( store, &iter,
+            0, name, 1, value, 2, category, -1 );
+      }
+   }
+}
+
+/* GTK_DebugUpdateStackStr( cStack ) - parse STACK string and update Call Stack tab
+ * Format: "STACK FUNC(line) FUNC2(line2) ..." */
+HB_FUNC( GTK_DEBUGUPDATESTACKSTR )
+{
+   const char * cStack = hb_parc(1);
+   if( !s_dbgStackTV || !cStack ) return;
+
+   GtkListStore * store = GTK_LIST_STORE( gtk_tree_view_get_model( GTK_TREE_VIEW(s_dbgStackTV) ) );
+   gtk_list_store_clear( store );
+
+   /* Skip "STACK " prefix */
+   const char * p = cStack;
+   if( strncmp( p, "STACK", 5 ) == 0 ) p += 5;
+
+   int idx = 0;
+   while( *p )
+   {
+      while( *p == ' ' ) p++;
+      if( !*p ) break;
+
+      /* Read token: "FUNCNAME(line)" */
+      const char * tokStart = p;
+      while( *p && *p != ' ' ) p++;
+      int tokLen = (int)(p - tokStart);
+      if( tokLen <= 0 ) continue;
+
+      char token[256];
+      if( tokLen >= (int)sizeof(token) ) tokLen = (int)sizeof(token) - 1;
+      memcpy( token, tokStart, (size_t)tokLen );
+      token[tokLen] = 0;
+
+      /* Split FUNC(line) */
+      char funcName[128] = "";
+      char lineStr[32] = "";
+      char * paren = strchr( token, '(' );
+      if( paren )
+      {
+         int fLen = (int)(paren - token);
+         if( fLen >= (int)sizeof(funcName) ) fLen = (int)sizeof(funcName) - 1;
+         memcpy( funcName, token, (size_t)fLen );
+         funcName[fLen] = 0;
+
+         char * cp = paren + 1;
+         char * ep = strchr( cp, ')' );
+         if( ep )
+         {
+            int lLen = (int)(ep - cp);
+            if( lLen >= (int)sizeof(lineStr) ) lLen = (int)sizeof(lineStr) - 1;
+            memcpy( lineStr, cp, (size_t)lLen );
+            lineStr[lLen] = 0;
+         }
+      }
+      else
+      {
+         strncpy( funcName, token, sizeof(funcName) - 1 );
+      }
+
+      char idxStr[8];
+      snprintf( idxStr, sizeof(idxStr), "%d", idx );
+
+      GtkTreeIter iter;
+      gtk_list_store_append( store, &iter );
+      gtk_list_store_set( store, &iter,
+         0, idxStr, 1, funcName, 2, "", 3, lineStr, -1 );
+      idx++;
+   }
 }
 
 /* ======================================================================
@@ -6501,6 +6793,316 @@ HB_FUNC( IDE_DEBUGSETOUTPUTTV )
    if( !sw ) return;
    GtkWidget * child = gtk_bin_get_child( GTK_BIN(sw) );
    if( GTK_IS_TEXT_VIEW(child) ) s_dbgOutputTV = child;
+}
+
+/* ======================================================================
+ * Socket-based debugger (IDE_DebugStart2) — port from macOS
+ * ====================================================================== */
+
+static int s_dbgServerFD = -1;
+static int s_dbgClientFD = -1;
+static char s_dbgRecvBuf[8192];
+static int  s_dbgRecvLen = 0;
+
+static int DbgServerStart( int port )
+{
+   int fd = socket( AF_INET, SOCK_STREAM, 0 );
+   if( fd < 0 ) return -1;
+   int yes = 1;
+   setsockopt( fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes) );
+   struct sockaddr_in addr;
+   memset( &addr, 0, sizeof(addr) );
+   addr.sin_family = AF_INET;
+   addr.sin_addr.s_addr = htonl( INADDR_LOOPBACK );
+   addr.sin_port = htons( (uint16_t)port );
+   if( bind( fd, (struct sockaddr *)&addr, sizeof(addr) ) < 0 ||
+       listen( fd, 1 ) < 0 ) { close( fd ); return -1; }
+   s_dbgServerFD = fd;
+   return 0;
+}
+
+static int DbgServerAccept( double timeoutSec )
+{
+   fd_set fds;
+   struct timeval tv;
+   double elapsed = 0;
+   while( elapsed < timeoutSec )
+   {
+      FD_ZERO( &fds );
+      FD_SET( s_dbgServerFD, &fds );
+      tv.tv_sec = 0; tv.tv_usec = 200000;
+      if( select( s_dbgServerFD + 1, &fds, NULL, NULL, &tv ) > 0 )
+      {
+         s_dbgClientFD = accept( s_dbgServerFD, NULL, NULL );
+         if( s_dbgClientFD >= 0 ) return 0;
+      }
+      /* Pump GTK events while waiting */
+      while( gtk_events_pending() )
+         gtk_main_iteration_do( FALSE );
+      if( s_dbgState == DBG_STOPPED ) return -1;
+      elapsed += 0.25;
+   }
+   return -1;
+}
+
+static void DbgServerSend( const char * cmd )
+{
+   if( s_dbgClientFD < 0 ) return;
+   char buf[512];
+   snprintf( buf, sizeof(buf), "%s\n", cmd );
+   send( s_dbgClientFD, buf, strlen(buf), MSG_NOSIGNAL );
+}
+
+/* Receive one complete line from the debug client (line-buffered).
+ * Returns length of line (without \n), or -1 on disconnect. */
+static int DbgServerRecv( char * buf, int bufSize )
+{
+   if( s_dbgClientFD < 0 ) return -1;
+
+   while(1) {
+      /* Check if we already have a complete line in the buffer */
+      int i;
+      for( i = 0; i < s_dbgRecvLen; i++ )
+      {
+         if( s_dbgRecvBuf[i] == '\n' )
+         {
+            int lineLen = i;
+            /* Strip trailing \r */
+            while( lineLen > 0 && s_dbgRecvBuf[lineLen-1] == '\r' ) lineLen--;
+            if( lineLen >= bufSize ) lineLen = bufSize - 1;
+            memcpy( buf, s_dbgRecvBuf, (size_t)lineLen );
+            buf[lineLen] = 0;
+            /* Remove consumed data from buffer */
+            int consumed = i + 1;
+            s_dbgRecvLen -= consumed;
+            if( s_dbgRecvLen > 0 )
+               memmove( s_dbgRecvBuf, s_dbgRecvBuf + consumed, (size_t)s_dbgRecvLen );
+            return lineLen;
+         }
+      }
+
+      /* No complete line yet — read more data */
+      fd_set fds; struct timeval tv;
+      FD_ZERO( &fds );
+      FD_SET( s_dbgClientFD, &fds );
+      tv.tv_sec = 0; tv.tv_usec = 100000;
+      int r = select( s_dbgClientFD + 1, &fds, NULL, NULL, &tv );
+      if( r > 0 ) {
+         int space = (int)sizeof(s_dbgRecvBuf) - s_dbgRecvLen - 1;
+         if( space <= 0 ) { s_dbgRecvLen = 0; continue; }  /* overflow: reset */
+         ssize_t n = recv( s_dbgClientFD, s_dbgRecvBuf + s_dbgRecvLen, (size_t)space, 0 );
+         if( n <= 0 ) return -1;
+         s_dbgRecvLen += (int)n;
+      }
+
+      /* Pump GTK events while waiting */
+      while( gtk_events_pending() )
+         gtk_main_iteration_do( FALSE );
+      if( s_dbgState == DBG_STOPPED ) return -1;
+   }
+}
+
+static void DbgServerStop(void)
+{
+   if( s_dbgClientFD >= 0 ) { close( s_dbgClientFD ); s_dbgClientFD = -1; }
+   if( s_dbgServerFD >= 0 ) { close( s_dbgServerFD ); s_dbgServerFD = -1; }
+   s_dbgRecvLen = 0;
+}
+
+/* IDE_DebugStart2( cExePath, bOnPause ) — socket-based debug session */
+HB_FUNC( IDE_DEBUGSTART2 )
+{
+   const char * cExePath = hb_parc(1);
+   PHB_ITEM pOnPause = hb_param(2, HB_IT_BLOCK);
+
+   setbuf(stderr, NULL);
+   fprintf(stderr, "IDE-DBG: IDE_DebugStart2 called exe='%s'\n", cExePath ? cExePath : "(null)");
+   if( !cExePath || s_dbgState != DBG_IDLE ) { fprintf(stderr, "IDE-DBG: rejected (null=%d state=%d)\n", !cExePath, s_dbgState); hb_retl( HB_FALSE ); return; }
+
+   /* Ignore SIGPIPE — prevents crash when debug client disconnects */
+   signal( SIGPIPE, SIG_IGN );
+
+   /* Clean up any previous debug session */
+   DbgServerStop();
+   system( "killall DebugApp 2>/dev/null" );
+
+   if( s_dbgOnPause ) { hb_itemRelease( s_dbgOnPause ); s_dbgOnPause = NULL; }
+   if( pOnPause ) s_dbgOnPause = hb_itemNew( pOnPause );
+
+   /* Start TCP server */
+   fprintf(stderr, "IDE-DBG: starting server on port 19800...\n");
+   int startResult = DbgServerStart( 19800 );
+   fprintf(stderr, "IDE-DBG: DbgServerStart returned %d\n", startResult);
+   if( startResult != 0 )
+   {
+      fprintf(stderr, "IDE-DBG: SERVER START FAILED errno=%d\n", errno);
+      DbgOutput( "ERROR: Could not start debug server on port 19800\n" );
+      hb_retl( HB_FALSE );
+      return;
+   }
+
+   s_dbgState = DBG_STEPPING;
+   s_nBreakpoints = 0;
+   DbgOutput( "=== Debug session started (socket) ===\n" );
+   DbgOutput( "Listening on port 19800...\n" );
+
+   /* Launch user executable */
+   {
+      char cmd[1024];
+      snprintf( cmd, sizeof(cmd), "\"%s\" 2>/tmp/hb_debugapp.txt &", cExePath );
+      system( cmd );
+   }
+   DbgOutput( "Launched debug process. Waiting for connection...\n" );
+
+   if( s_dbgStatusLbl )
+      gtk_label_set_text( GTK_LABEL(s_dbgStatusLbl), "Waiting for debug client..." );
+
+   /* Accept connection */
+   fprintf(stderr, "IDE-DBG: waiting for connection...\n");
+   if( DbgServerAccept( 30.0 ) != 0 )
+   {
+      fprintf(stderr, "IDE-DBG: accept FAILED\n");
+      DbgOutput( "ERROR: Client did not connect within 30s\n" );
+      DbgServerStop();
+      s_dbgState = DBG_IDLE;
+      hb_retl( HB_FALSE );
+      return;
+   }
+   fprintf(stderr, "IDE-DBG: client connected!\n");
+   DbgOutput( "Client connected.\n" );
+
+   /* Command loop */
+   char recvBuf[4096];
+   s_dbgState = DBG_PAUSED;
+   fprintf(stderr, "IDE-DBG: entering command loop\n");
+
+   while( s_dbgState != DBG_IDLE && s_dbgState != DBG_STOPPED )
+   {
+      int n = DbgServerRecv( recvBuf, sizeof(recvBuf) );
+      fprintf(stderr, "IDE-DBG: recv n=%d buf='%.80s'\n", n, n > 0 ? recvBuf : "");
+      if( n <= 0 ) {
+         fprintf(stderr, "IDE-DBG: client disconnected\n");
+         DbgOutput( "Client disconnected.\n" );
+         break;
+      }
+
+      if( strncmp( recvBuf, "HELLO", 5 ) == 0 )
+      {
+         DbgOutput( recvBuf ); DbgOutput( "\n" );
+         DbgServerSend( "STEP" );
+         s_dbgState = DBG_PAUSED;
+         continue;
+      }
+
+      if( strncmp( recvBuf, "PAUSE ", 6 ) == 0 )
+      {
+         /* Format: PAUSE filepath:FUNCNAME:line|VARS ...|STACK ... */
+         char localsStr[4096] = "VARS";
+         char stackStr[4096] = "STACK";
+
+         char * pipe1 = strchr( recvBuf, '|' );
+         if( pipe1 ) {
+            *pipe1 = 0;
+            char * pipe2 = strchr( pipe1 + 1, '|' );
+            if( pipe2 ) {
+               *pipe2 = 0;
+               strncpy( localsStr, pipe1 + 1, sizeof(localsStr) - 1 );
+               strncpy( stackStr, pipe2 + 1, sizeof(stackStr) - 1 );
+            } else {
+               strncpy( localsStr, pipe1 + 1, sizeof(localsStr) - 1 );
+            }
+         }
+
+         /* Parse PAUSE filepath:FUNCNAME:line */
+         char * lastColon = strrchr( recvBuf + 6, ':' );
+         if( !lastColon ) continue;
+         int line = atoi( lastColon + 1 );
+         *lastColon = 0;
+
+         char * funcColon = strrchr( recvBuf + 6, ':' );
+         const char * funcName = "";
+         if( funcColon ) {
+            funcName = funcColon + 1;
+         }
+
+         s_dbgLine = line;
+
+         /* In RUNNING mode, skip pause */
+         if( s_dbgState == DBG_RUNNING )
+         {
+            DbgServerSend( "GO" );
+            continue;
+         }
+
+         /* === STEPPING/PAUSED: show state and wait for user === */
+         s_dbgState = DBG_PAUSED;
+
+         /* Call Harbour callback: ( cFuncName, nLine, cLocals, cStack )
+          * Returns .T. if user code (should pause), .F. if framework (auto-step). */
+         HB_BOOL shouldPause = HB_TRUE;
+         if( s_dbgOnPause && HB_IS_BLOCK( s_dbgOnPause ) )
+         {
+            PHB_ITEM pFunc   = hb_itemPutC( NULL, funcName );
+            PHB_ITEM pLine   = hb_itemPutNI( NULL, line );
+            PHB_ITEM pLocals = hb_itemPutC( NULL, localsStr );
+            PHB_ITEM pStack  = hb_itemPutC( NULL, stackStr );
+            PHB_ITEM pResult = hb_itemDo( s_dbgOnPause, 4, pFunc, pLine, pLocals, pStack );
+            if( pResult && HB_IS_LOGICAL( pResult ) )
+               shouldPause = hb_itemGetL( pResult );
+            else
+               shouldPause = HB_TRUE;
+            hb_itemRelease( pFunc );
+            hb_itemRelease( pLine );
+            hb_itemRelease( pLocals );
+            hb_itemRelease( pStack );
+            if( pResult ) hb_itemRelease( pResult );
+         }
+
+         /* Framework code — auto-step */
+         if( !shouldPause )
+         {
+            DbgServerSend( "STEP" );
+            s_dbgState = DBG_PAUSED;
+            continue;
+         }
+
+         /* Update status */
+         if( s_dbgStatusLbl ) {
+            char status[512];
+            snprintf(status, sizeof(status), "Paused at %s() line %d", funcName, line);
+            gtk_label_set_text( GTK_LABEL(s_dbgStatusLbl), status );
+         }
+
+         /* Wait for user action (Step/Go/Stop via debug panel buttons) */
+         while( s_dbgState == DBG_PAUSED )
+         {
+            gtk_main_iteration_do( TRUE );
+         }
+
+         /* Send command based on new state */
+         if( s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER )
+         {
+            DbgServerSend( "STEP" );
+            s_dbgState = DBG_PAUSED;
+         }
+         else if( s_dbgState == DBG_RUNNING )
+            DbgServerSend( "GO" );
+         else if( s_dbgState == DBG_STOPPED )
+            DbgServerSend( "QUIT" );
+      }
+   }
+
+   /* Cleanup */
+   DbgServerSend( "QUIT" );
+   DbgServerStop();
+
+   /* Kill any remaining DebugApp process */
+   system( "killall DebugApp 2>/dev/null" );
+
+   s_dbgState = DBG_IDLE;
+   s_dbgRecvLen = 0;
+
+   hb_retl( HB_TRUE );
 }
 
 /* ======================================================================

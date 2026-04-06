@@ -29,10 +29,12 @@ static cCurrentFile  // Current file path (empty = untitled)
 // Each entry: { cName, oForm, cCode, nFormX, nFormY }
 static aForms        // Array of form entries
 static nActiveForm   // Index of active form (1-based)
+static oTB2          // Debug toolbar (for highlighting Debug button)
+static aDbgOffsets   // line offset tracking for debug_main.prg sections
 
 function Main()
 
-   local oTB, oTB2, oFile, oEdit, oSearch, oView, oProject, oRun, oFormat, oComp, oTools, oHelp
+   local oTB, oFile, oEdit, oSearch, oView, oProject, oRun, oFormat, oComp, oTools, oHelp
    local nBarH, nInsW, nEditorX, nEditorW, nEditorH
    local nFormX, nFormY, nInsTop, nEditorTop, nBottomY
    local cIcoDir
@@ -105,7 +107,7 @@ function Main()
    MENUITEM "Code Editor"  OF oView ACTION CodeEditorBringToFront( hCodeEditor )
    MENUITEM "Inspector"        OF oView ACTION InspectorOpen()
    MENUITEM "Project Inspector" OF oView ACTION ShowProjectInspector()
-   MENUITEM "Debugger"          OF oView ACTION GTK_DebugPanel()
+   MENUITEM "Debugger"          OF oView ACTION TBDebugRun()
 
    DEFINE POPUP oProject PROMPT "Project" OF oIDE
    MENUITEM "Add to Project..."    OF oProject ACTION AddToProject()
@@ -1299,95 +1301,383 @@ static function TBRun()
 
 return nil
 
-// === Debug Run (executes user code inside the IDE with debug hooks) ===
+// === Debug Run (socket-based, compiles native exe with dbgclient.prg) ===
 
 static function TBDebugRun()
 
-   local cBuildDir, cOutput, cLog, cAllPrg, cCmd, i
-   local cHbDir, cHbBin, cHbInc
-   local lError := .F.
+   local cBuildDir, cOutput, cLog, i, lError
+   local cHbDir, cHbBin, cHbInc, cHbLib, cProjDir
+   local cAllPrg, cCmd, cMainPrg, cSection
+   local nCurLine
 
    SaveActiveFormCode()
 
+
    cBuildDir := "/tmp/hbbuilder_debug"
-   cHbDir   := GetEnv( "HBDIR" )
-   if Empty( cHbDir ); cHbDir := GetEnv( "HOME" ) + "/harbour"; endif
-   cHbBin   := cHbDir + "/bin/linux/gcc"
+   cHbDir   := GetEnv( "HOME" ) + "/harbour"
    cHbInc   := cHbDir + "/include"
+   cProjDir := GetEnv( "HOME" ) + "/harbourbuilder"
+   cLog     := ""
+   lError   := .F.
+
+   // Detect Harbour directory layout
+   if File( cHbDir + "/bin/linux/gcc/harbour" )
+      cHbBin := cHbDir + "/bin/linux/gcc"
+      cHbLib := cHbDir + "/lib/linux/gcc"
+   else
+      cHbBin := cHbDir + "/bin"
+      cHbLib := cHbDir + "/lib"
+   endif
 
    GTK_ShellExec( "mkdir -p " + cBuildDir )
 
-   // Open debugger panel
-   GTK_DebugPanel()
-   GTK_DebugSetStatus( "Compiling..." )
-
-   // Save all project files
+   // Step 1: Save user code + copy framework
+   cLog += "[1] Saving files..." + Chr(10)
    MemoWrit( cBuildDir + "/Project1.prg", CodeEditorGetTabText( hCodeEditor, 1 ) )
    for i := 1 to Len( aForms )
-      MemoWrit( cBuildDir + "/" + aForms[i][1] + ".prg", aForms[i][3] )
+      MemoWrit( cBuildDir + "/" + aForms[i][1] + ".prg", ;
+         CodeEditorGetTabText( hCodeEditor, i + 1 ) )
+   next
+   GTK_ShellExec( "cp " + cProjDir + "/harbour/classes.prg " + cBuildDir + "/" )
+   GTK_ShellExec( "cp " + cProjDir + "/harbour/hbbuilder.ch " + cBuildDir + "/" )
+   GTK_ShellExec( "cp " + cProjDir + "/harbour/dbgclient.prg " + cBuildDir + "/" )
+
+   // Step 2: Assemble debug_main.prg (tracking line offsets for each section)
+   cLog += "[2] Assembling debug_main.prg..." + Chr(10)
+
+   // Header: #include + GT + INIT PROCEDURE to start debug client
+   cAllPrg := '#include "hbbuilder.ch"' + Chr(10)
+   cAllPrg += "REQUEST HB_GT_NUL_DEFAULT" + Chr(10)
+   cAllPrg += "INIT PROCEDURE __DbgInit" + Chr(10)
+   cAllPrg += "   DbgClientStart( 19800 )" + Chr(10)
+   cAllPrg += "return" + Chr(10) + Chr(10)
+   nCurLine := 7
+
+   aDbgOffsets := {}
+
+   // Project1.prg — #include removed (StrTran leaves empty line, offsets match)
+   AAdd( aDbgOffsets, { nCurLine, "Project1.prg", 1, 1 } )
+   cMainPrg := CodeEditorGetTabText( hCodeEditor, 1 )
+   cMainPrg := StrTran( cMainPrg, '#include "hbbuilder.ch"', "" )
+   cAllPrg += cMainPrg + Chr(10)
+   nCurLine += NumLines( cMainPrg ) + 1
+
+   // Form files
+   for i := 1 to Len( aForms )
+      AAdd( aDbgOffsets, { nCurLine, aForms[i][1] + ".prg", i + 1, 2 } )
+      cSection := MemoRead( cBuildDir + "/" + aForms[i][1] + ".prg" )
+      cAllPrg += cSection + Chr(10)
+      nCurLine += NumLines( cSection ) + 1
    next
 
-   // Build single .prg with all code
-   cAllPrg := '#include "hbbuilder.ch"' + Chr(10) + Chr(10)
-   cAllPrg += StrTran( MemoRead( cBuildDir + "/Project1.prg" ), ;
-                       '#include "hbbuilder.ch"', "" ) + Chr(10)
-   for i := 1 to Len( aForms )
-      cAllPrg += MemoRead( cBuildDir + "/" + aForms[i][1] + ".prg" ) + Chr(10)
-   next
+   // classes.prg (framework — not in editor)
+   AAdd( aDbgOffsets, { nCurLine, "classes.prg", 0, 0 } )
+   cSection := MemoRead( cBuildDir + "/classes.prg" )
+   cAllPrg += cSection + Chr(10)
+   nCurLine += NumLines( cSection ) + 1
+
+   // dbgclient.prg (debug — not in editor)
+   AAdd( aDbgOffsets, { nCurLine, "dbgclient.prg", 0, 0 } )
+   cAllPrg += MemoRead( cBuildDir + "/dbgclient.prg" ) + Chr(10)
+
    MemoWrit( cBuildDir + "/debug_main.prg", cAllPrg )
 
-   // Compile to .hrb (portable bytecode) with debug info
-   cCmd := cHbBin + "/harbour " + cBuildDir + "/debug_main.prg -gh -b -n -w -q" + ;
-           " -I" + cHbInc + " -I" + cBuildDir + ;
-           " -o" + cBuildDir + "/debug_main.hrb 2>&1"
-   cOutput := GTK_ShellExec( cCmd )
+   // Step 3: Harbour compile → C
+   cLog += "[3] Harbour compile..." + Chr(10)
 
-   if "Error" $ cOutput .or. ! File( cBuildDir + "/debug_main.hrb" )
-      GTK_DebugSetStatus( "Compile FAILED" )
-      MsgInfo( "Debug compile failed:" + Chr(10) + cOutput )
+   cCmd := cHbBin + "/harbour " + cBuildDir + "/debug_main.prg -b -n -w -q" + ;
+           " -I" + cHbInc + " -I" + cBuildDir + ;
+           " -o" + cBuildDir + "/debug_main.c 2>&1"
+   cOutput := GTK_ShellExec( cCmd )
+   if "Error" $ cOutput
+      cLog += cOutput + Chr(10)
+      lError := .t.
+   else
+      cLog += "    OK" + Chr(10)
+   endif
+
+   // Step 4: Compile C sources
+   if ! lError
+      cLog += "[4] C compile..." + Chr(10)
+
+      cCmd := "gcc -c -O0 -g -Wno-unused-value -I" + cHbInc + ;
+              " " + cBuildDir + "/debug_main.c" + ;
+              " -o " + cBuildDir + "/debug_main.o 2>&1"
+      cOutput := GTK_ShellExec( cCmd )
+      if "error:" $ Lower( cOutput )
+         cLog += cOutput + Chr(10)
+         lError := .t.
+      else
+         cLog += "    OK" + Chr(10)
+      endif
+   endif
+
+   // Step 5: Compile dbghook.c + reuse prebuilt gtk3_core.o and gtk3_inspector.o
+   if ! lError
+      cLog += "[5] dbghook + backend (prebuilt)..." + Chr(10)
+
+      cCmd := "gcc -c -O2 -I" + cHbInc + ;
+              " " + cProjDir + "/harbour/dbghook.c" + ;
+              " -o " + cBuildDir + "/dbghook.o 2>&1"
+      GTK_ShellExec( cCmd )
+
+      // Reuse prebuilt gtk3_core.o and gtk3_inspector.o from IDE build
+      GTK_ShellExec( "cp " + cProjDir + "/samples/gtk3_core.o " + cBuildDir + "/" )
+      GTK_ShellExec( "cp " + cProjDir + "/samples/gtk3_inspector.o " + cBuildDir + "/" )
+      cLog += "    OK" + Chr(10)
+   endif
+
+   // Step 6: Link native executable
+   if ! lError
+      cLog += "[6] Linking..." + Chr(10)
+
+      cCmd := "gcc -o " + cBuildDir + "/DebugApp" + ;
+              " " + cBuildDir + "/debug_main.o" + ;
+              " " + cBuildDir + "/dbghook.o" + ;
+              " " + cBuildDir + "/gtk3_core.o" + ;
+              " " + cBuildDir + "/gtk3_inspector.o" + ;
+              " -L" + cHbLib + ;
+              " -Wl,--start-group" + ;
+              " -lhbvm -lhbrtl -lhbcommon -lhbcpage -lhblang" + ;
+              " -lhbmacro -lhbpp -lhbrdd -lhbcplr -lhbdebug" + ;
+              " -lhbct -lhbextern" + ;
+              " -lrddntx -lrddnsx -lrddcdx -lrddfpt" + ;
+              " -lhbhsx -lhbsix -lhbusrrdd" + ;
+              " -lhbsqlit3 -lsddsqlt3 -lrddsql" + ;
+              " -lgttrm -lhbpcre" + ;
+              " -Wl,--end-group" + ;
+              " $(pkg-config --libs gtk+-3.0)" + ;
+              " -lm -lpthread -ldl -lrt -lsqlite3 -lncurses 2>&1"
+      cOutput := GTK_ShellExec( cCmd )
+      if "error" $ Lower( cOutput )
+         cLog += cOutput + Chr(10)
+         lError := .t.
+      else
+         cLog += "    OK" + Chr(10)
+      endif
+   endif
+
+
+   if lError
+      GTK_BuildErrorDialog( "Debug Build Failed", cLog )
       return nil
    endif
 
-   GTK_DebugSetStatus( "Running (debugger active)..." )
+   if ! File( cBuildDir + "/DebugApp" )
+      GTK_BuildErrorDialog( "Debug Build Failed", cLog + "ERROR: DebugApp not created" + Chr(10) )
+      return nil
+   endif
 
-   // Execute .hrb inside IDE VM with debug hooks
-   IDE_DebugStart( cBuildDir + "/debug_main.hrb", ;
-      { |cModule, nLine| OnDebugPause( cModule, nLine ) } )
 
-   GTK_DebugSetStatus( "Ready" )
+   // Step 7: Hide design form, highlight Debug button, switch inspector to debug, launch
+   if oDesignForm != nil
+      UI_FormHide( oDesignForm:hCpp )
+   endif
+   if oTB2 != nil
+      UI_ToolBtnHighlight( oTB2:hCpp, 1, .t. )
+   endif
+   InspectorOpen()
+   INS_SetDebugMode( _InsGetData(), .t. )
+   CodeEditorSelectTab( hCodeEditor, 1 )  // switch to Project1.prg
+
+   IDE_DebugStart2( cBuildDir + "/DebugApp", ;
+      { |cFunc, nLine, cLocals, cStack| OnDebugPause( cFunc, nLine, cLocals, cStack ) } )
+
+   // Restore: clear debug marker, unhighlight, restore inspector, show design form
+   CodeEditorShowDebugLine( hCodeEditor, 0 )  // clear yellow marker
+   if oTB2 != nil
+      UI_ToolBtnHighlight( oTB2:hCpp, 1, .f. )
+   endif
+   INS_SetDebugMode( _InsGetData(), .f. )
+   if oDesignForm != nil
+      UI_FormBringToFront( oDesignForm:hCpp )
+   endif
 
 return nil
 
-// Called by debug hook when execution pauses at a line
-static function OnDebugPause( cModule, nLine )
+// Convert stack line numbers from debug_main.prg to editor tab line numbers
+static function DbgFixStackLines( cStack )
+   local cOut := "STACK", cToken, nPos, nLine, nTabLine, i, nP1, nP2
 
-   local aLocals, aStack, i
+   // Parse "STACK FUNC(line) FUNC2(line2) ..."
+   cStack := AllTrim( cStack )
+   if Left( cStack, 5 ) == "STACK"; cStack := SubStr( cStack, 6 ); endif
 
-   GTK_DebugSetStatus( "Paused at " + cModule + ":" + LTrim(Str(nLine)) )
+   do while ! Empty( cStack )
+      cStack := LTrim( cStack )
+      nPos := At( " ", cStack )
+      if nPos == 0
+         cToken := cStack
+         cStack := ""
+      else
+         cToken := Left( cStack, nPos - 1 )
+         cStack := SubStr( cStack, nPos + 1 )
+      endif
 
-   // Update Locals tab
-   aLocals := IDE_DebugGetLocals( 1 )
-   GTK_DebugUpdateLocals( aLocals )
+      // Extract line from "FUNC(line)"
+      nP1 := At( "(", cToken )
+      nP2 := At( ")", cToken )
+      if nP1 > 0 .and. nP2 > nP1
+         nLine := Val( SubStr( cToken, nP1 + 1, nP2 - nP1 - 1 ) )
+         // Convert using offsets
+         nTabLine := nLine
+         if aDbgOffsets != nil
+            for i := Len( aDbgOffsets ) to 1 step -1
+               if nLine >= aDbgOffsets[i][1] .and. aDbgOffsets[i][3] > 0
+                  nTabLine := nLine - aDbgOffsets[i][1] + aDbgOffsets[i][4]
+                  exit
+               endif
+            next
+         endif
+         cOut += " " + Left( cToken, nP1 ) + LTrim( Str( nTabLine ) ) + ")"
+      else
+         cOut += " " + cToken
+      endif
+   enddo
 
-   // Update Call Stack tab (basic: show current position)
-   aStack := { { "0", ProcName(2), cModule, LTrim(Str(nLine)) } }
-   for i := 3 to 8
-      if ! Empty( ProcName(i) )
-         AAdd( aStack, { LTrim(Str(i-2)), ProcName(i), "", LTrim(Str(ProcLine(i))) } )
+return cOut
+
+// Replace "local1", "local2" etc with real variable names from source
+static function DbgMapLocalNames( cVars, cFunc, nTab )
+   local cCode, aLines, cLine, i, aNames, nPos, cName, cTrim, lInFunc, c
+   local cTag, nP, nEnd
+
+   cCode := CodeEditorGetTabText( hCodeEditor, nTab )
+   if Empty( cCode ); return cVars; endif
+
+   aLines := HB_ATokens( cCode, Chr(10) )
+   aNames := {}
+   lInFunc := .f.
+
+   for i := 1 to Len( aLines )
+      cTrim := Upper( AllTrim( aLines[i] ) )
+      // Look for PROCEDURE/FUNCTION/METHOD matching cFunc
+      if ! lInFunc
+         if ( "PROCEDURE " $ cTrim .or. "FUNCTION " $ cTrim .or. "METHOD " $ cTrim ) .and. ;
+            Upper( cFunc ) $ cTrim
+            lInFunc := .t.
+         endif
+         loop
+      endif
+      // Inside the function — collect local declarations
+      if Left( cTrim, 6 ) == "LOCAL "
+         cLine := AllTrim( SubStr( AllTrim( aLines[i] ), 7 ) )
+         // Parse comma-separated names: "oApp, nVal, cText"
+         do while ! Empty( cLine )
+            cLine := LTrim( cLine )
+            cName := ""
+            nPos := 1
+            do while nPos <= Len( cLine )
+               c := SubStr( cLine, nPos, 1 )
+               if c == "," .or. c == " " .or. c == ":" .or. c == Chr(13) .or. c == Chr(10)
+                  exit
+               endif
+               cName += c
+               nPos++
+            enddo
+            if ! Empty( cName )
+               AAdd( aNames, cName )
+            endif
+            nPos := At( ",", cLine )
+            if nPos > 0
+               cLine := SubStr( cLine, nPos + 1 )
+            else
+               exit
+            endif
+         enddo
+      elseif ! Empty( cTrim ) .and. Left( cTrim, 2 ) != "//" .and. ;
+             Left( cTrim, 6 ) != "LOCAL " .and. Left( cTrim, 7 ) != "STATIC "
+         // First non-local, non-comment line = end of declarations
+         exit
       endif
    next
-   GTK_DebugUpdateStack( aStack )
 
-return nil
+   // Replace "localN" with real names and remove unmapped extras
+   for i := 1 to Len( aNames )
+      cVars := StrTran( cVars, "local" + LTrim(Str(i)) + "=", aNames[i] + "=" )
+   next
+
+   // Remove any remaining "localN=..." entries (VM internal extras)
+   for i := Len( aNames ) + 1 to 30
+      cTag := " local" + LTrim(Str(i)) + "="
+      nP := At( cTag, cVars )
+      if nP > 0
+         nEnd := At( " ", SubStr( cVars, nP + 1 ) )
+         if nEnd > 0
+            cVars := Left( cVars, nP - 1 ) + SubStr( cVars, nP + nEnd )
+         else
+            cVars := Left( cVars, nP - 1 )
+         endif
+      else
+         exit
+      endif
+   next
+
+return cVars
+
+static function NumLines( cText )
+   local n := 1, i
+   for i := 1 to Len( cText )
+      if SubStr( cText, i, 1 ) == Chr(10); n++; endif
+   next
+return n
+
+// === Debug Pause Callback (called from socket command loop) ===
+
+static function OnDebugPause( cFunc, nLine, cLocals, cStack )
+
+   local i, nTab, nTabLine, hIns
+
+
+   // Map debug_main.prg line number to the correct editor tab and line
+   nTab := 0
+   nTabLine := 0
+   if aDbgOffsets != nil
+      for i := Len( aDbgOffsets ) to 1 step -1
+         if nLine >= aDbgOffsets[i][1]
+            nTab := aDbgOffsets[i][3]
+            nTabLine := nLine - aDbgOffsets[i][1] + aDbgOffsets[i][4]
+            exit
+         endif
+      next
+   endif
+
+   // Framework code (nTab == 0) — skip, don't pause, don't update
+   if nTab == 0
+      return .f.
+   endif
+
+   // Select the tab and highlight the line
+   if nTabLine > 0
+      CodeEditorSelectTab( hCodeEditor, nTab )
+      CodeEditorShowDebugLine( hCodeEditor, nTabLine )
+   endif
+
+   // Map local index names to real names from source code
+   if cLocals != nil .and. nTab > 0
+      cLocals := DbgMapLocalNames( cLocals, cFunc, nTab )
+   endif
+
+   // Update inspector with locals and call stack
+   hIns := _InsGetData()
+   if hIns != 0
+      if cLocals != nil
+         INS_SetDebugLocals( hIns, cLocals )
+      endif
+      if cStack != nil
+         INS_SetDebugStack( hIns, DbgFixStackLines( cStack ) )
+      endif
+   endif
+
+return .t.  // pause here — user code
 
 // === Debugger ===
 
 static function DebugStepOver()
    if IDE_DebugGetState() == 2  // DBG_PAUSED
-      IDE_DebugStepOver()
+      IDE_DebugStep()
    else
-      GTK_DebugPanel()
-      GTK_DebugSetStatus( "Start debug with Run > Run (F9)" )
+      MsgInfo( "Start debug first with Debug button" )
    endif
 return nil
 
@@ -1395,8 +1685,7 @@ static function DebugStepInto()
    if IDE_DebugGetState() == 2  // DBG_PAUSED
       IDE_DebugStep()
    else
-      GTK_DebugPanel()
-      GTK_DebugSetStatus( "Start debug with Run > Run (F9)" )
+      MsgInfo( "Start debug first with Debug button" )
    endif
 return nil
 
@@ -1405,12 +1694,12 @@ static function ToggleBreakpoint()
    local cFile := aForms[ nActiveForm ][ 1 ] + ".prg"
    AAdd( aBreakpoints, { cFile, 1 } )
    IDE_DebugAddBreakpoint( cFile, 1 )
-   GTK_DebugSetStatus( "Breakpoints: " + LTrim(Str(Len(aBreakpoints))) )
+   MsgInfo( "Breakpoints: " + LTrim(Str(Len(aBreakpoints))) )
 return nil
 
 static function ClearBreakpoints()
    IDE_DebugClearBreakpoints()
-   GTK_DebugSetStatus( "All breakpoints cleared" )
+   MsgInfo( "All breakpoints cleared" )
 return nil
 
 // === Components ===

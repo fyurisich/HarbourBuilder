@@ -62,6 +62,16 @@ typedef struct {
    /* Callbacks */
    PHB_ITEM     pOnEventDblClick;  /* double-click on event row */
    PHB_ITEM     pOnPropChanged;    /* after property edit (two-way sync) */
+   /* Debug mode */
+   int          bDebugMode;
+   IROW         dbgLocalsRows[MAX_ROWS];
+   int          nDbgLocalsRows;
+   int          dbgLocalsMap[MAX_ROWS];
+   int          nDbgLocalsVisible;
+   IROW         dbgStackRows[MAX_ROWS];
+   int          nDbgStackRows;
+   int          dbgStackMap[MAX_ROWS];
+   int          nDbgStackVisible;
 } INSDATA;
 
 /* Columns in the GtkListStore */
@@ -287,7 +297,30 @@ static void on_value_edited( GtkCellRendererText * renderer,
 /* Activate the current tab: swap rows/map/nVisible for display */
 static void InsActivateTab( INSDATA * d )
 {
-   if( d->nTab == 1 )
+   if( d->bDebugMode )
+   {
+      /* Debug mode tabs: 0=Vars, 1=Call Stack, 2=Watch */
+      if( d->nTab == 0 )
+      {
+         memcpy( d->rows, d->dbgLocalsRows, sizeof(IROW) * (size_t)d->nDbgLocalsRows );
+         d->nRows = d->nDbgLocalsRows;
+         d->nVisible = d->nDbgLocalsVisible;
+         for( int k = 0; k < d->nRows; k++ ) d->map[k] = k;
+      }
+      else if( d->nTab == 1 )
+      {
+         memcpy( d->rows, d->dbgStackRows, sizeof(IROW) * (size_t)d->nDbgStackRows );
+         d->nRows = d->nDbgStackRows;
+         d->nVisible = d->nDbgStackVisible;
+         for( int k = 0; k < d->nRows; k++ ) d->map[k] = k;
+      }
+      else
+      {
+         d->nRows = 0;
+         d->nVisible = 0;
+      }
+   }
+   else if( d->nTab == 1 )
    {
       /* Show event rows */
       memcpy( d->rows, d->evRows, sizeof(d->evRows) );
@@ -318,11 +351,26 @@ static void on_inspector_tab_switched( GtkNotebook * nb, GtkWidget * page, guint
    if( cols )
    {
       GtkTreeViewColumn * nameCol = (GtkTreeViewColumn *)cols->data;
-      gtk_tree_view_column_set_title( nameCol, d->nTab == 0 ? "Property" : "Event" );
-      if( cols->next )
+      GtkTreeViewColumn * valCol = cols->next ? (GtkTreeViewColumn *)cols->next->data : NULL;
+
+      if( d->bDebugMode )
       {
-         GtkTreeViewColumn * valCol = (GtkTreeViewColumn *)cols->next->data;
-         gtk_tree_view_column_set_title( valCol, d->nTab == 0 ? "Value" : "Handler" );
+         if( d->nTab == 0 ) {
+            gtk_tree_view_column_set_title( nameCol, "Variable" );
+            if( valCol ) gtk_tree_view_column_set_title( valCol, "Value" );
+         } else if( d->nTab == 1 ) {
+            gtk_tree_view_column_set_title( nameCol, "#" );
+            if( valCol ) gtk_tree_view_column_set_title( valCol, "Function(Line)" );
+         } else {
+            gtk_tree_view_column_set_title( nameCol, "Expression" );
+            if( valCol ) gtk_tree_view_column_set_title( valCol, "Value" );
+         }
+      }
+      else
+      {
+         gtk_tree_view_column_set_title( nameCol, d->nTab == 0 ? "Property" : "Event" );
+         if( valCol )
+            gtk_tree_view_column_set_title( valCol, d->nTab == 0 ? "Value" : "Handler" );
       }
       g_list_free( cols );
    }
@@ -817,5 +865,227 @@ HB_FUNC( INS_SETONPROPCHANGED )
    {
       if( d->pOnPropChanged ) hb_itemRelease( d->pOnPropChanged );
       d->pOnPropChanged = pBlock ? hb_itemNew( pBlock ) : NULL;
+   }
+}
+
+/* ======================================================================
+ * Debug mode: switch inspector to Locals/CallStack/Watch tabs
+ * ====================================================================== */
+
+/* INS_SetDebugMode( hInsData, lDebug )
+ * .T. = switch to debug tabs (Vars/CallStack/Watch), hide combo
+ * .F. = restore Properties/Events tabs, show combo */
+HB_FUNC( INS_SETDEBUGMODE )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   HB_BOOL bDebug = hb_parl(2);
+   if( !d ) return;
+
+   d->bDebugMode = bDebug;
+
+   if( bDebug )
+   {
+      /* Block tab switch signal to avoid recursive callbacks */
+      g_signal_handlers_block_matched( d->tabWidget, G_SIGNAL_MATCH_FUNC,
+         0, 0, NULL, (gpointer)on_inspector_tab_switched, NULL );
+
+      /* Remove existing tabs, add debug tabs */
+      while( gtk_notebook_get_n_pages( GTK_NOTEBOOK(d->tabWidget) ) > 0 )
+         gtk_notebook_remove_page( GTK_NOTEBOOK(d->tabWidget), 0 );
+
+      GtkWidget * d0 = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+      GtkWidget * d1 = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+      GtkWidget * d2 = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+      gtk_widget_show( d0 ); gtk_widget_show( d1 ); gtk_widget_show( d2 );
+      gtk_notebook_append_page( GTK_NOTEBOOK(d->tabWidget), d0, gtk_label_new("Vars") );
+      gtk_notebook_append_page( GTK_NOTEBOOK(d->tabWidget), d1, gtk_label_new("Call Stack") );
+      gtk_notebook_append_page( GTK_NOTEBOOK(d->tabWidget), d2, gtk_label_new("Watch") );
+      gtk_notebook_set_current_page( GTK_NOTEBOOK(d->tabWidget), 0 );
+
+      g_signal_handlers_unblock_matched( d->tabWidget, G_SIGNAL_MATCH_FUNC,
+         0, 0, NULL, (gpointer)on_inspector_tab_switched, NULL );
+
+      d->nTab = 0;
+      gtk_widget_hide( d->combo );
+      gtk_window_set_title( GTK_WINDOW(d->window), "Debugger" );
+
+      /* Set column headers for Vars tab */
+      GList * cols = gtk_tree_view_get_columns( GTK_TREE_VIEW(d->treeView) );
+      if( cols )
+      {
+         gtk_tree_view_column_set_title( (GtkTreeViewColumn *)cols->data, "Variable" );
+         if( cols->next )
+            gtk_tree_view_column_set_title( (GtkTreeViewColumn *)cols->next->data, "Value" );
+         g_list_free( cols );
+      }
+
+      /* Clear display */
+      d->nDbgLocalsRows = 0; d->nDbgLocalsVisible = 0;
+      d->nDbgStackRows = 0; d->nDbgStackVisible = 0;
+      d->nRows = 0; d->nVisible = 0;
+      InsRebuildStore( d );
+   }
+   else
+   {
+      /* Restore Properties/Events tabs */
+      g_signal_handlers_block_matched( d->tabWidget, G_SIGNAL_MATCH_FUNC,
+         0, 0, NULL, (gpointer)on_inspector_tab_switched, NULL );
+
+      while( gtk_notebook_get_n_pages( GTK_NOTEBOOK(d->tabWidget) ) > 0 )
+         gtk_notebook_remove_page( GTK_NOTEBOOK(d->tabWidget), 0 );
+
+      GtkWidget * p0 = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+      GtkWidget * p1 = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 0 );
+      gtk_widget_show( p0 ); gtk_widget_show( p1 );
+      gtk_notebook_append_page( GTK_NOTEBOOK(d->tabWidget), p0, gtk_label_new("Properties") );
+      gtk_notebook_append_page( GTK_NOTEBOOK(d->tabWidget), p1, gtk_label_new("Events") );
+      gtk_notebook_set_current_page( GTK_NOTEBOOK(d->tabWidget), 0 );
+
+      g_signal_handlers_unblock_matched( d->tabWidget, G_SIGNAL_MATCH_FUNC,
+         0, 0, NULL, (gpointer)on_inspector_tab_switched, NULL );
+
+      d->nTab = 0;
+      gtk_widget_show( d->combo );
+      gtk_window_set_title( GTK_WINDOW(d->window), "Inspector" );
+
+      /* Restore column headers */
+      GList * cols = gtk_tree_view_get_columns( GTK_TREE_VIEW(d->treeView) );
+      if( cols )
+      {
+         gtk_tree_view_column_set_title( (GtkTreeViewColumn *)cols->data, "Property" );
+         if( cols->next )
+            gtk_tree_view_column_set_title( (GtkTreeViewColumn *)cols->next->data, "Value" );
+         g_list_free( cols );
+      }
+
+      /* Restore property rows */
+      memcpy( d->rows, d->propRows, sizeof(d->propRows) );
+      d->nRows = d->nPropRows;
+      memcpy( d->map, d->propMap, sizeof(d->propMap) );
+      d->nVisible = d->nPropVisible;
+      InsRebuildStore( d );
+   }
+}
+
+/* INS_SetDebugLocals( hInsData, cVarsStr )
+ * Format: "VARS [PUBLIC] name=val ... [PRIVATE] name=val ... [LOCAL] name=val ..." */
+HB_FUNC( INS_SETDEBUGLOCALS )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   const char * str = hb_parc(2);
+   if( !d || !str ) return;
+
+   d->nDbgLocalsRows = 0;
+   d->nDbgLocalsVisible = 0;
+
+   /* Skip prefix */
+   if( strncmp( str, "VARS", 4 ) == 0 ) str += 4;
+   while( *str == ' ' ) str++;
+
+   while( *str )
+   {
+      if( d->nDbgLocalsRows >= MAX_ROWS ) break;
+
+      /* Check for category header [PUBLIC], [PRIVATE], [LOCAL] */
+      if( *str == '[' )
+      {
+         IROW * r = &d->dbgLocalsRows[d->nDbgLocalsRows];
+         memset( r, 0, sizeof(IROW) );
+         r->bIsCat = 1;
+         r->bVisible = 1;
+         r->bCollapsed = 0;
+         str++;
+         int ni = 0;
+         while( *str && *str != ']' && ni < 31 ) r->szName[ni++] = *str++;
+         r->szName[ni] = 0;
+         if( *str == ']' ) str++;
+         while( *str == ' ' ) str++;
+         d->dbgLocalsMap[d->nDbgLocalsRows] = d->nDbgLocalsRows;
+         d->nDbgLocalsRows++;
+         d->nDbgLocalsVisible++;
+         continue;
+      }
+
+      /* Parse "name=value" token */
+      IROW * r = &d->dbgLocalsRows[d->nDbgLocalsRows];
+      memset( r, 0, sizeof(IROW) );
+      r->bVisible = 1;
+      r->cType = 'S';
+
+      /* Name (up to '=') */
+      int ni = 0;
+      while( *str && *str != '=' && *str != ' ' && ni < 31 ) r->szName[ni++] = *str++;
+      r->szName[ni] = 0;
+      if( *str == '=' ) str++;
+
+      /* Value (up to next space) */
+      int vi = 0;
+      while( *str && *str != ' ' && vi < 255 ) r->szValue[vi++] = *str++;
+      r->szValue[vi] = 0;
+      while( *str == ' ' ) str++;
+
+      if( ni > 0 )
+      {
+         d->dbgLocalsMap[d->nDbgLocalsRows] = d->nDbgLocalsRows;
+         d->nDbgLocalsRows++;
+         d->nDbgLocalsVisible++;
+      }
+   }
+
+   /* If showing Vars tab (tab 0), update display */
+   if( d->bDebugMode && d->nTab == 0 )
+   {
+      memcpy( d->rows, d->dbgLocalsRows, sizeof(IROW) * (size_t)d->nDbgLocalsRows );
+      d->nRows = d->nDbgLocalsRows;
+      d->nVisible = d->nDbgLocalsVisible;
+      for( int k = 0; k < d->nRows; k++ ) d->map[k] = k;
+      InsRebuildStore( d );
+   }
+}
+
+/* INS_SetDebugStack( hInsData, cStackStr )
+ * Format: "STACK func1(line1) func2(line2) ..." */
+HB_FUNC( INS_SETDEBUGSTACK )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   const char * str = hb_parc(2);
+   if( !d || !str ) return;
+
+   d->nDbgStackRows = 0;
+   d->nDbgStackVisible = 0;
+
+   if( strncmp( str, "STACK", 5 ) == 0 ) str += 5;
+   while( *str == ' ' ) str++;
+
+   while( *str )
+   {
+      if( d->nDbgStackRows >= MAX_ROWS ) break;
+      IROW * r = &d->dbgStackRows[d->nDbgStackRows];
+      memset( r, 0, sizeof(IROW) );
+      r->bVisible = 1;
+
+      /* Name column: "#N" */
+      snprintf( r->szName, sizeof(r->szName), "#%d", d->nDbgStackRows + 1 );
+
+      /* Value: "FuncName(line)" */
+      int vi = 0;
+      while( *str && *str != ' ' && vi < 255 ) r->szValue[vi++] = *str++;
+      r->szValue[vi] = 0;
+      while( *str == ' ' ) str++;
+
+      r->cType = 'S';
+      d->dbgStackMap[d->nDbgStackRows] = d->nDbgStackRows;
+      d->nDbgStackRows++;
+      d->nDbgStackVisible++;
+   }
+
+   /* If showing Call Stack tab (tab 1), update display */
+   if( d->bDebugMode && d->nTab == 1 )
+   {
+      memcpy( d->rows, d->dbgStackRows, sizeof(IROW) * (size_t)d->nDbgStackRows );
+      d->nRows = d->nDbgStackRows;
+      d->nVisible = d->nDbgStackVisible;
+      for( int k = 0; k < d->nRows; k++ ) d->map[k] = k;
+      InsRebuildStore( d );
    }
 }

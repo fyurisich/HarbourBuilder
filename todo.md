@@ -82,4 +82,6 @@
 
 - [x] Event handler double-click: al hacer doble click en un evento en el inspector, ahora cambia al tab correcto del formulario activo (`nActiveForm + 1`) antes de buscar/añadir el handler. Antes añadía el código al tab que estuviera seleccionado (ej. Project1 en vez de Form1).
 
+- [x] Linux socket-based debugger: ported macOS debugger architecture to Linux/GTK3. IDE starts TCP server on port 19800, compiles user project as native exe (with `dbgclient.prg` + `dbghook.c` injected via INIT PROCEDURE), launches process, accepts connection. Socket protocol: PAUSE path:FUNC:line|VARS...|STACK... inline format. `DbgServerStart/Accept/Send/Recv/Stop` in gtk3_core.c using `select()` + `gtk_main_iteration_do()` for non-blocking I/O. `IDE_DebugStart2` command loop. `CodeEditorShowDebugLine` with Scintilla marker 11 (yellow background). `UI_FormHide` and `UI_ToolBtnHighlight` for debug UX. `GTK_DebugUpdateLocalsStr/StackStr` parse VARS/STACK strings into existing debug panel tree views. Line offset tracking (`aDbgOffsets`), `DbgMapLocalNames()` for real variable names, `DbgFixStackLines()` for editor tab mapping, framework auto-skip.
+
 ## Open
