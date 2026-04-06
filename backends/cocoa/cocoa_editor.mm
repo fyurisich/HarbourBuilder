@@ -2646,6 +2646,8 @@ static NSMutableArray * s_dbgStackData = nil;
 /* Socket debug server */
 static int s_dbgServerFD = -1;
 static int s_dbgClientFD = -1;
+static char s_dbgRecvBuf[8192];
+static int  s_dbgRecvLen = 0;
 
 static int DbgServerStart( int port )
 {
@@ -2699,22 +2701,48 @@ static void DbgServerSend( const char * cmd )
    send( s_dbgClientFD, buf, strlen(buf), 0 );
 }
 
+/* Receive one complete line from the debug client (line-buffered).
+ * Returns length of line (without \n), or -1 on disconnect. */
 static int DbgServerRecv( char * buf, int bufSize )
 {
    if( s_dbgClientFD < 0 ) return -1;
-   fd_set fds; struct timeval tv;
+
    while(1) {
+      /* Check if we already have a complete line in the buffer */
+      for( int i = 0; i < s_dbgRecvLen; i++ )
+      {
+         if( s_dbgRecvBuf[i] == '\n' )
+         {
+            int lineLen = i;
+            /* Strip trailing \r */
+            while( lineLen > 0 && s_dbgRecvBuf[lineLen-1] == '\r' ) lineLen--;
+            if( lineLen >= bufSize ) lineLen = bufSize - 1;
+            memcpy( buf, s_dbgRecvBuf, (size_t)lineLen );
+            buf[lineLen] = 0;
+            /* Remove consumed data from buffer */
+            int consumed = i + 1;
+            s_dbgRecvLen -= consumed;
+            if( s_dbgRecvLen > 0 )
+               memmove( s_dbgRecvBuf, s_dbgRecvBuf + consumed, (size_t)s_dbgRecvLen );
+            return lineLen;
+         }
+      }
+
+      /* No complete line yet — read more data */
+      fd_set fds; struct timeval tv;
       FD_ZERO( &fds );
       FD_SET( s_dbgClientFD, &fds );
       tv.tv_sec = 0; tv.tv_usec = 100000;
       int r = select( s_dbgClientFD + 1, &fds, NULL, NULL, &tv );
       if( r > 0 ) {
-         ssize_t n = recv( s_dbgClientFD, buf, (size_t)(bufSize - 1), 0 );
+         int space = (int)sizeof(s_dbgRecvBuf) - s_dbgRecvLen - 1;
+         if( space <= 0 ) { s_dbgRecvLen = 0; continue; }  /* overflow: reset */
+         ssize_t n = recv( s_dbgClientFD, s_dbgRecvBuf + s_dbgRecvLen, (size_t)space, 0 );
          if( n <= 0 ) return -1;
-         buf[n] = 0;
-         while( n > 0 && (buf[n-1] == '\n' || buf[n-1] == '\r') ) buf[--n] = 0;
-         return (int)n;
+         s_dbgRecvLen += (int)n;
       }
+
+      /* Pump Cocoa events while waiting */
       @autoreleasepool {
          NSEvent * ev = [NSApp nextEventMatchingMask:NSEventMaskAny
             untilDate:[NSDate dateWithTimeIntervalSinceNow:0.02]
@@ -2729,6 +2757,7 @@ static void DbgServerStop(void)
 {
    if( s_dbgClientFD >= 0 ) { close( s_dbgClientFD ); s_dbgClientFD = -1; }
    if( s_dbgServerFD >= 0 ) { close( s_dbgServerFD ); s_dbgServerFD = -1; }
+   s_dbgRecvLen = 0;
 }
 
 /* -----------------------------------------------------------------------
@@ -3190,9 +3219,20 @@ HB_FUNC( IDE_DEBUGSTART2 )
          }
 
          s_dbgLine = line;
-         s_dbgState = DBG_PAUSED;
 
-         /* Update status with function name and line */
+         /* In RUNNING mode, skip pause — just send GO immediately
+          * (TODO: check breakpoints here) */
+         if( s_dbgState == DBG_RUNNING )
+         {
+            DbgServerSend( "GO" );
+            continue;
+         }
+
+         /* === STEPPING/PAUSED: show state and wait for user === */
+         s_dbgState = DBG_PAUSED;
+         fprintf(stderr, "IDE-PAUSE: func=%s line=%d state=%d\n", funcName, line, s_dbgState);
+
+         /* Update status */
          if( s_dbgStatusLbl ) {
             char status[512];
             snprintf(status, sizeof(status), "Paused at %s() line %d", funcName, line);
@@ -3200,31 +3240,35 @@ HB_FUNC( IDE_DEBUGSTART2 )
          }
 
          /* Get locals */
+         char localsStr[4096] = "LOCALS";
          DbgServerSend( "GETLOCALS" );
          n = DbgServerRecv( recvBuf, sizeof(recvBuf) );
-         if( n > 0 && strncmp( recvBuf, "LOCALS", 6 ) == 0 ) {
-            DbgOutput( recvBuf ); DbgOutput( "\n" );
-         }
+         if( n > 0 && strncmp( recvBuf, "LOCALS", 6 ) == 0 )
+            strncpy( localsStr, recvBuf, sizeof(localsStr) - 1 );
 
          /* Get stack */
+         char stackStr[4096] = "STACK";
          DbgServerSend( "GETSTACK" );
          n = DbgServerRecv( recvBuf, sizeof(recvBuf) );
-         if( n > 0 && strncmp( recvBuf, "STACK", 5 ) == 0 ) {
-            DbgOutput( recvBuf ); DbgOutput( "\n" );
-         }
+         if( n > 0 && strncmp( recvBuf, "STACK", 5 ) == 0 )
+            strncpy( stackStr, recvBuf, sizeof(stackStr) - 1 );
 
-         /* Call Harbour callback: ( cFuncName, nLine )
-          * The callback highlights the line in the code editor */
+         /* Call Harbour callback: ( cFuncName, nLine, cLocals, cStack ) */
          if( s_dbgOnPause && HB_IS_BLOCK( s_dbgOnPause ) )
          {
-            PHB_ITEM pFunc = hb_itemPutC( NULL, funcName );
-            PHB_ITEM pLine = hb_itemPutNI( NULL, line );
-            hb_itemDo( s_dbgOnPause, 2, pFunc, pLine );
+            PHB_ITEM pFunc   = hb_itemPutC( NULL, funcName );
+            PHB_ITEM pLine   = hb_itemPutNI( NULL, line );
+            PHB_ITEM pLocals = hb_itemPutC( NULL, localsStr );
+            PHB_ITEM pStack  = hb_itemPutC( NULL, stackStr );
+            hb_itemDo( s_dbgOnPause, 4, pFunc, pLine, pLocals, pStack );
             hb_itemRelease( pFunc );
             hb_itemRelease( pLine );
+            hb_itemRelease( pLocals );
+            hb_itemRelease( pStack );
          }
 
          /* Wait for user action (Step/Go/Stop via debug panel buttons) */
+         fprintf(stderr, "IDE-PAUSE: waiting for user (state=%d)\n", s_dbgState);
          while( s_dbgState == DBG_PAUSED )
          {
             @autoreleasepool {
@@ -3235,17 +3279,16 @@ HB_FUNC( IDE_DEBUGSTART2 )
             }
          }
 
-         /* Send command based on state */
+         /* Send command based on new state */
          if( s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER )
+         {
             DbgServerSend( "STEP" );
+            s_dbgState = DBG_PAUSED;  /* reset for next PAUSE */
+         }
          else if( s_dbgState == DBG_RUNNING )
             DbgServerSend( "GO" );
          else if( s_dbgState == DBG_STOPPED )
             DbgServerSend( "QUIT" );
-
-         /* Reset to paused for next PAUSE message */
-         if( s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER )
-            s_dbgState = DBG_PAUSED;
       }
    }
 

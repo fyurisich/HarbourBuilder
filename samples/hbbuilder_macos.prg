@@ -29,6 +29,7 @@ static cCurrentFile  // Current file path (empty = untitled)
 // Each entry: { cName, oForm, cCode, nFormX, nFormY }
 static aForms        // Array of form entries
 static nActiveForm   // Index of active form (1-based)
+static aDbgOffsets   // Debug line offsets: { {startLine, "tabName", nTabIndex}, ... }
 
 function Main()
 
@@ -1670,6 +1671,7 @@ static function TBDebugRun()
    local cHbDir, cHbBin, cHbInc, cHbLib, cProjDir
    local cAllPrg, cCmd, cMainPrg
    local cBackends, cSciInc, cSciCocoa, cLexInc, cSciLib, cResDir
+   local nCurLine, cSection
 
    SaveActiveFormCode()
 
@@ -1722,23 +1724,42 @@ static function TBDebugRun()
       MAC_ShellExec( "cp " + cProjDir + "/harbour/dbgclient.prg " + cBuildDir + "/" )
    endif
 
-   // Step 2: Assemble debug_main.prg
+   // Step 2: Assemble debug_main.prg (tracking line offsets for each section)
    cLog += "[2] Assembling debug_main.prg..." + Chr(10)
+
    cAllPrg := '#include "hbbuilder.ch"' + Chr(10)
    cAllPrg += "REQUEST HB_GT_NUL_DEFAULT" + Chr(10) + Chr(10)
+   nCurLine := 3
 
-   // Project1.prg — inject DbgClientStart() before oApp:Run()
+   aDbgOffsets := {}
+
+   // Project1.prg
+   AAdd( aDbgOffsets, { nCurLine, "Project1.prg", 1 } )
    cMainPrg := CodeEditorGetTabText( hCodeEditor, 1 )
    cMainPrg := StrTran( cMainPrg, '#include "hbbuilder.ch"', "" )
    cMainPrg := StrTran( cMainPrg, "oApp:Run()", ;
       "DbgClientStart( 19800 )" + Chr(10) + "   oApp:Run()" )
    cAllPrg += cMainPrg + Chr(10)
+   nCurLine += NumLines( cMainPrg ) + 1
 
+   // Form files
    for i := 1 to Len( aForms )
-      cAllPrg += MemoRead( cBuildDir + "/" + aForms[i][1] + ".prg" ) + Chr(10)
+      AAdd( aDbgOffsets, { nCurLine, aForms[i][1] + ".prg", i + 1 } )
+      cSection := MemoRead( cBuildDir + "/" + aForms[i][1] + ".prg" )
+      cAllPrg += cSection + Chr(10)
+      nCurLine += NumLines( cSection ) + 1
    next
-   cAllPrg += MemoRead( cBuildDir + "/classes.prg" ) + Chr(10)
+
+   // classes.prg (framework — not in editor)
+   AAdd( aDbgOffsets, { nCurLine, "classes.prg", 0 } )
+   cSection := MemoRead( cBuildDir + "/classes.prg" )
+   cAllPrg += cSection + Chr(10)
+   nCurLine += NumLines( cSection ) + 1
+
+   // dbgclient.prg (debug — not in editor)
+   AAdd( aDbgOffsets, { nCurLine, "dbgclient.prg", 0 } )
    cAllPrg += MemoRead( cBuildDir + "/dbgclient.prg" ) + Chr(10)
+
    MemoWrit( cBuildDir + "/debug_main.prg", cAllPrg )
 
    // Step 3: Harbour compile → C
@@ -1840,38 +1861,62 @@ static function TBDebugRun()
       return nil
    endif
 
-   // Step 7: Launch socket debug session
-   MAC_DebugPanel()
-   MAC_DebugSetStatus( "Building done. Starting debug..." )
+   // Step 7: Switch inspector to debug mode and launch
+   InspectorOpen()
+   INS_SetDebugMode( _InsGetData(), .t. )
 
    IDE_DebugStart2( cBuildDir + "/DebugApp", ;
-      { |cModule, nLine| OnDebugPause( cModule, nLine ) } )
+      { |cFunc, nLine, cLocals, cStack| OnDebugPause( cFunc, nLine, cLocals, cStack ) } )
+
+   // Restore inspector to normal mode when debug ends
+   INS_SetDebugMode( _InsGetData(), .f. )
 
 return nil
 
+static function NumLines( cText )
+   local n := 1, i
+   for i := 1 to Len( cText )
+      if SubStr( cText, i, 1 ) == Chr(10); n++; endif
+   next
+return n
+
 // === Debug Pause Callback (called from C hook) ===
 
-static function OnDebugPause( cFunc, nLine )
+static function OnDebugPause( cFunc, nLine, cLocals, cStack )
 
-   local i, nTab, cTabCode
+   local i, nTab, nTabLine, hIns
 
-   // Find which editor tab contains this function and select it
+   // Map debug_main.prg line number to the correct editor tab and line
    nTab := 0
-   if ! Empty( cFunc )
-      for i := 1 to Len( aForms ) + 1
-         cTabCode := CodeEditorGetTabText( hCodeEditor, i )
-         if Upper( cFunc ) $ Upper( cTabCode )
-            nTab := i
+   nTabLine := 0
+   if aDbgOffsets != nil
+      for i := Len( aDbgOffsets ) to 1 step -1
+         if nLine >= aDbgOffsets[i][1]
+            nTab := aDbgOffsets[i][3]
+            nTabLine := nLine - aDbgOffsets[i][1] + 1
             exit
          endif
       next
    endif
 
    // Select the tab and highlight the line
-   if nTab > 0
+   if nTab > 0 .and. nTabLine > 0
       CodeEditorSelectTab( hCodeEditor, nTab )
+      CodeEditorShowDebugLine( hCodeEditor, nTabLine )
+   else
+      CodeEditorShowDebugLine( hCodeEditor, 0 )
    endif
-   CodeEditorShowDebugLine( hCodeEditor, nLine )
+
+   // Update inspector with locals and call stack
+   hIns := _InsGetData()
+   if hIns != 0
+      if cLocals != nil
+         INS_SetDebugLocals( hIns, cLocals )
+      endif
+      if cStack != nil
+         INS_SetDebugStack( hIns, cStack )
+      endif
+   endif
 
 return nil
 
@@ -1913,19 +1958,17 @@ return nil
 
 static function DebugStepOver()
    if IDE_DebugGetState() == 2  // DBG_PAUSED
-      IDE_DebugStep()   // socket mode: STEP sent by command loop
+      IDE_DebugStep()
    else
-      MAC_DebugPanel()
-      MAC_DebugSetStatus( "Start debug with Run > Debug" )
+      MsgInfo( "Start debug first with Debug button" )
    endif
 return nil
 
 static function DebugStepInto()
    if IDE_DebugGetState() == 2  // DBG_PAUSED
-      IDE_DebugStep()   // socket mode: STEP sent by command loop
+      IDE_DebugStep()
    else
-      MAC_DebugPanel()
-      MAC_DebugSetStatus( "Start debug with Run > Debug" )
+      MsgInfo( "Start debug first with Debug button" )
    endif
 return nil
 

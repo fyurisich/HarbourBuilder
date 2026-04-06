@@ -55,6 +55,16 @@ typedef struct {
    PHB_ITEM     pOnEventDblClick;
    /* Callback after property edit (two-way sync) */
    PHB_ITEM     pOnPropChanged;
+   /* Debug mode */
+   BOOL         bDebugMode;
+   IROW         dbgLocalsRows[MAX_ROWS];
+   int          nDbgLocalsRows;
+   int          dbgLocalsMap[MAX_ROWS];
+   int          nDbgLocalsVisible;
+   IROW         dbgStackRows[MAX_ROWS];
+   int          nDbgStackRows;
+   int          dbgStackMap[MAX_ROWS];
+   int          nDbgStackVisible;
 } INSDATA;
 
 /* Forward declarations */
@@ -481,15 +491,17 @@ static HBFontPickerTarget * s_fontTarget = nil;
       {
          [cell setFont:d->boldFont];
          [cell setDrawsBackground:YES];
-         [cell setBackgroundColor:[NSColor colorWithCalibratedWhite:0.90 alpha:1.0]];
+         [cell setBackgroundColor:[NSColor colorWithCalibratedWhite:0.20 alpha:1.0]];
+         [cell setTextColor:[NSColor colorWithCalibratedWhite:0.85 alpha:1.0]];
       }
    }
    else
    {
       [cell setFont:d->font];
+      [cell setTextColor:[NSColor colorWithCalibratedWhite:0.82 alpha:1.0]];
       [cell setDrawsBackground:( row % 2 == 1 )];
       if( row % 2 == 1 )
-         [cell setBackgroundColor:[NSColor colorWithCalibratedWhite:0.97 alpha:1.0]];
+         [cell setBackgroundColor:[NSColor colorWithCalibratedWhite:0.18 alpha:1.0]];
 
       /* Color swatch for value column on color properties */
       if( [[col identifier] isEqualToString:@"value"] && d->rows[nReal].cType == 'C' )
@@ -586,18 +598,45 @@ static HBFontPickerTarget * s_fontTarget = nil;
    }
 }
 
-/* Tab changed (Properties / Events) */
+/* Tab changed (Properties / Events / Debug tabs) */
 - (void)tabChanged:(id)sender
 {
    if( !d || !d->tabCtrl ) return;
    d->nTab = (int)[d->tabCtrl selectedSegment];
 
-   /* Update column headers */
    NSTableColumn * nameCol = [d->tableView tableColumnWithIdentifier:@"name"];
+   NSTableColumn * valCol = [d->tableView tableColumnWithIdentifier:@"value"];
+
+   if( d->bDebugMode )
+   {
+      /* Debug mode tabs: 0=Locals, 1=Call Stack, 2=Watch */
+      if( d->nTab == 0 ) {
+         if( nameCol ) [[nameCol headerCell] setStringValue:@"Variable"];
+         if( valCol )  [[valCol headerCell] setStringValue:@"Value"];
+         d->nVisible = d->nDbgLocalsVisible;
+         memcpy( d->rows, d->dbgLocalsRows, sizeof(IROW) * (size_t)d->nDbgLocalsRows );
+         memcpy( d->map, d->dbgLocalsMap, sizeof(int) * (size_t)d->nDbgLocalsVisible );
+         d->nRows = d->nDbgLocalsRows;
+      } else if( d->nTab == 1 ) {
+         if( nameCol ) [[nameCol headerCell] setStringValue:@"#"];
+         if( valCol )  [[valCol headerCell] setStringValue:@"Function"];
+         d->nVisible = d->nDbgStackVisible;
+         memcpy( d->rows, d->dbgStackRows, sizeof(IROW) * (size_t)d->nDbgStackRows );
+         memcpy( d->map, d->dbgStackMap, sizeof(int) * (size_t)d->nDbgStackVisible );
+         d->nRows = d->nDbgStackRows;
+      } else {
+         if( nameCol ) [[nameCol headerCell] setStringValue:@"Expression"];
+         if( valCol )  [[valCol headerCell] setStringValue:@"Value"];
+         d->nVisible = 0; d->nRows = 0;
+      }
+      [d->tableView reloadData];
+      [d->tableView setNeedsDisplay:YES];
+      return;
+   }
+
+   /* Normal mode: Properties / Events */
    if( nameCol )
       [[nameCol headerCell] setStringValue: d->nTab == 0 ? @"Property" : @"Event"];
-
-   NSTableColumn * valCol = [d->tableView tableColumnWithIdentifier:@"value"];
    if( valCol )
       [[valCol headerCell] setStringValue: d->nTab == 0 ? @"Value" : @"Handler"];
 
@@ -987,7 +1026,7 @@ HB_FUNC( INS_CREATE )
    [d->window setTitle:@"Inspector"];
    [d->window setReleasedWhenClosed:NO];
    if( [NSAppearance respondsToSelector:@selector(appearanceNamed:)] )
-      [d->window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameAqua]];
+      [d->window setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameDarkAqua]];
 
    /* Control selection combo at top */
    NSRect contentFrame = [[d->window contentView] bounds];
@@ -1053,6 +1092,10 @@ HB_FUNC( INS_CREATE )
       [btnCol setDataCell:bc];
    }
    [d->tableView addTableColumn:btnCol];
+
+   /* Dark theme for table */
+   [d->tableView setBackgroundColor:[NSColor colorWithCalibratedWhite:0.15 alpha:1.0]];
+   [d->scrollView setBackgroundColor:[NSColor colorWithCalibratedWhite:0.15 alpha:1.0]];
 
    /* Delegate */
    s_delegate = [[HBInspectorDelegate alloc] init];
@@ -1276,5 +1319,150 @@ HB_FUNC( INS_SETONPROPCHANGED )
    {
       if( d->pOnPropChanged ) hb_itemRelease( d->pOnPropChanged );
       d->pOnPropChanged = pBlock ? hb_itemNew( pBlock ) : NULL;
+   }
+}
+
+/* ======================================================================
+ * Debug mode: switch inspector to show Variables / Call Stack / Watch
+ * ====================================================================== */
+
+/* INS_SetDebugMode( hInsData, lDebug )
+ * .T. = switch tabs to Locals/CallStack/Watch, hide combo
+ * .F. = restore Properties/Events tabs, show combo */
+HB_FUNC( INS_SETDEBUGMODE )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   BOOL bDebug = hb_parl(2);
+   if( !d ) return;
+
+   d->bDebugMode = bDebug;
+   if( bDebug )
+   {
+      [d->tabCtrl setSegmentCount:3];
+      [d->tabCtrl setLabel:@"Locals" forSegment:0];
+      [d->tabCtrl setLabel:@"Call Stack" forSegment:1];
+      [d->tabCtrl setLabel:@"Watch" forSegment:2];
+      [d->tabCtrl setSelectedSegment:0];
+      d->nTab = 0;
+      [d->combo setHidden:YES];
+      [d->window setTitle:@"Debugger"];
+
+      /* Clear locals display */
+      d->nDbgLocalsRows = 0;
+      d->nDbgLocalsVisible = 0;
+      d->nDbgStackRows = 0;
+      d->nDbgStackVisible = 0;
+      d->nVisible = 0;
+      [d->tableView reloadData];
+   }
+   else
+   {
+      [d->tabCtrl setSegmentCount:2];
+      [d->tabCtrl setLabel:@"Properties" forSegment:0];
+      [d->tabCtrl setLabel:@"Events" forSegment:1];
+      [d->tabCtrl setSelectedSegment:0];
+      d->nTab = 0;
+      [d->combo setHidden:NO];
+      [d->window setTitle:@"Inspector"];
+      [d->tableView reloadData];
+   }
+}
+
+/* INS_SetDebugLocals( hInsData, cLocalsStr )
+ * Format: "LOCALS name=val(T) name2=val2(T) ..." */
+HB_FUNC( INS_SETDEBUGLOCALS )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   const char * str = hb_parc(2);
+   if( !d || !str ) return;
+
+   d->nDbgLocalsRows = 0;
+   d->nDbgLocalsVisible = 0;
+
+   /* Skip "LOCALS " prefix */
+   if( strncmp( str, "LOCALS", 6 ) == 0 ) str += 6;
+   while( *str == ' ' ) str++;
+
+   /* Parse "name=value(T) name2=value2(T) ..." */
+   while( *str )
+   {
+      if( d->nDbgLocalsRows >= MAX_ROWS ) break;
+      IROW * r = &d->dbgLocalsRows[d->nDbgLocalsRows];
+      memset( r, 0, sizeof(IROW) );
+      r->bVisible = YES;
+
+      /* Extract name */
+      int ni = 0;
+      while( *str && *str != '=' && ni < 31 ) r->szName[ni++] = *str++;
+      r->szName[ni] = 0;
+      if( *str == '=' ) str++;
+
+      /* Extract value(type) */
+      int vi = 0;
+      while( *str && *str != ' ' && vi < 255 ) r->szValue[vi++] = *str++;
+      r->szValue[vi] = 0;
+      while( *str == ' ' ) str++;
+
+      r->cType = 'S';
+      d->dbgLocalsMap[d->nDbgLocalsRows] = d->nDbgLocalsRows;
+      d->nDbgLocalsRows++;
+      d->nDbgLocalsVisible++;
+   }
+
+   /* If currently showing Locals tab, update display */
+   if( d->bDebugMode && d->nTab == 0 )
+   {
+      d->nVisible = d->nDbgLocalsVisible;
+      memcpy( d->rows, d->dbgLocalsRows, sizeof(IROW) * (size_t)d->nDbgLocalsRows );
+      memcpy( d->map, d->dbgLocalsMap, sizeof(int) * (size_t)d->nDbgLocalsVisible );
+      d->nRows = d->nDbgLocalsRows;
+      [d->tableView reloadData];
+   }
+}
+
+/* INS_SetDebugStack( hInsData, cStackStr )
+ * Format: "STACK func1(line1) func2(line2) ..." */
+HB_FUNC( INS_SETDEBUGSTACK )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   const char * str = hb_parc(2);
+   if( !d || !str ) return;
+
+   d->nDbgStackRows = 0;
+   d->nDbgStackVisible = 0;
+
+   if( strncmp( str, "STACK", 5 ) == 0 ) str += 5;
+   while( *str == ' ' ) str++;
+
+   while( *str )
+   {
+      if( d->nDbgStackRows >= MAX_ROWS ) break;
+      IROW * r = &d->dbgStackRows[d->nDbgStackRows];
+      memset( r, 0, sizeof(IROW) );
+      r->bVisible = YES;
+
+      /* Name column: "#N" */
+      snprintf( r->szName, sizeof(r->szName), "#%d", d->nDbgStackRows + 1 );
+
+      /* Value: "FuncName(line)" */
+      int vi = 0;
+      while( *str && *str != ' ' && vi < 255 ) r->szValue[vi++] = *str++;
+      r->szValue[vi] = 0;
+      while( *str == ' ' ) str++;
+
+      r->cType = 'S';
+      d->dbgStackMap[d->nDbgStackRows] = d->nDbgStackRows;
+      d->nDbgStackRows++;
+      d->nDbgStackVisible++;
+   }
+
+   /* If showing Call Stack tab, update display */
+   if( d->bDebugMode && d->nTab == 1 )
+   {
+      d->nVisible = d->nDbgStackVisible;
+      memcpy( d->rows, d->dbgStackRows, sizeof(IROW) * (size_t)d->nDbgStackRows );
+      memcpy( d->map, d->dbgStackMap, sizeof(int) * (size_t)d->nDbgStackVisible );
+      d->nRows = d->nDbgStackRows;
+      [d->tableView reloadData];
    }
 }

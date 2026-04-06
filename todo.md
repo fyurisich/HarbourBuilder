@@ -39,4 +39,10 @@
 
 - [x] Socket-based debugger: replaced broken .hrb in-process debugger with TCP socket protocol. IDE starts TCP server on port 19800, compiles user project as native exe (with `dbgclient.prg` injected), launches process, accepts connection. `dbgclient.prg` installs `__dbgSetEntry` hook, sends PAUSE module:line on each source line, receives STEP/GO/QUIT/GETLOCALS/GETSTACK commands. Uses static array via `DbgState()` to avoid Harbour E0004 ("STATIC follows executable") when concatenated. IDE side: `DbgServerStart/Accept/Send/Recv/Stop` in cocoa_editor.mm, `IDE_DebugStart2` command loop with Cocoa event pump. Debug panel buttons (Step/Go/Stop) change `s_dbgState` which the loop reads.
 
+- [x] Debugger UX simplificado: eliminado el diálogo de debugger redundante (`MAC_DebugPanel`). Un solo click en Debug (toolbar) compila, lanza y conecta directamente. Step/Over/Go/Stop se controlan desde la toolbar inferior (oTB2). Watch/Locals/Stack se mostrarán en el Inspector. Sin diálogos intermedios.
+
+- [x] Inspector en dark mode: `NSAppearanceNameDarkAqua`, table background 0.15, category headers 0.20, text 0.82, alternating rows 0.18.
+
+- [x] Inspector modo debug: al pulsar Debug, el inspector cambia a tabs Locals/CallStack/Watch (oculta combo, título "Debugger"). `INS_SetDebugMode()`, `INS_SetDebugLocals()`, `INS_SetDebugStack()` en cocoa_inspector.m. OnDebugPause recibe 4 params (cFunc, nLine, cLocals, cStack) y actualiza inspector + editor. Al terminar debug, vuelve a Properties/Events. Sin diálogo de debugger redundante.
+
 ## Open
