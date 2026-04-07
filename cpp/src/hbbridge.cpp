@@ -2005,27 +2005,44 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
       16, 12, dlgW - 40, 20, hDlg, NULL, GetModuleHandle(NULL), NULL );
    SendMessageA( hLabel, WM_SETFONT, (WPARAM) hFont, TRUE );
 
-   /* Marquee progress bar */
+   /* Progress bar — animated manually (PBS_MARQUEE needs visual styles manifest) */
    HWND hBar = CreateWindowExA( 0, PROGRESS_CLASSA, NULL,
-      WS_CHILD | WS_VISIBLE | PBS_MARQUEE,
+      WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
       16, 40, dlgW - 40, 24, hDlg, NULL, GetModuleHandle(NULL), NULL );
-   SendMessageA( hBar, PBM_SETMARQUEE, TRUE, 30 );
+   SendMessageA( hBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100) );
+   SendMessageA( hBar, PBM_SETPOS, 0, 0 );
 
    UpdateWindow( hDlg );
 
    /* Start background thread */
    HANDLE hThread = CreateThread( NULL, 0, _BatchThreadProc, &td, 0, NULL );
 
-   /* Message pump while thread runs */
-   while( !td.bDone )
+   /* Message pump while thread runs — animate progress bar */
    {
-      MSG m;
-      while( PeekMessage( &m, NULL, 0, 0, PM_REMOVE ) )
+      int nPos = 0, nDir = 2;
+      DWORD dwLast = GetTickCount();
+
+      while( !td.bDone )
       {
-         TranslateMessage( &m );
-         DispatchMessage( &m );
+         MSG m;
+         while( PeekMessage( &m, NULL, 0, 0, PM_REMOVE ) )
+         {
+            TranslateMessage( &m );
+            DispatchMessage( &m );
+         }
+
+         /* Bounce animation: 0 → 100 → 0 → 100 ... */
+         if( GetTickCount() - dwLast >= 40 )
+         {
+            nPos += nDir;
+            if( nPos >= 100 ) { nPos = 100; nDir = -2; }
+            else if( nPos <= 0 ) { nPos = 0; nDir = 2; }
+            SendMessageA( hBar, PBM_SETPOS, nPos, 0 );
+            dwLast = GetTickCount();
+         }
+
+         Sleep( 15 );
       }
-      Sleep( 50 );
    }
 
    if( hThread ) {
