@@ -22,7 +22,8 @@
 /* C++ static initializer runs before main() and before Harbour VM */
 static struct _DpiInit {
    _DpiInit() {
-      SetProcessDPIAware();
+      /* NOTE: SetProcessDPIAware removed from here — called from Harbour Main() via SETDPIAWARE
+       * to avoid affecting DebugApp.exe which also links hbbridge.obj */
       /* Read DarkMode from INI and apply before any window is created */
       {
          char szPath[MAX_PATH], szVal[8];
@@ -2546,9 +2547,11 @@ static HWND s_dbgToolbar = NULL;
 /* Socket-based debugger (port 19800) — matches macOS/Linux architecture */
 static SOCKET       s_dbgServerSock = INVALID_SOCKET;
 static SOCKET       s_dbgClientSock = INVALID_SOCKET;
+static DWORD        s_dbgChildPID = 0;
 static char         s_dbgRecvBuf[8192];
 static int          s_dbgRecvLen = 0;
 static BOOL         s_wsaInited = FALSE;
+static int          s_dbgWaitCursor = 0;  /* 1=force wait cursor in message pumps */
 
 static void DbgWsaInit(void)
 {
@@ -2610,6 +2613,7 @@ static int DbgServerAccept( double timeoutSec )
       {
          TranslateMessage( &winMsg );
          DispatchMessage( &winMsg );
+         if( s_dbgWaitCursor ) SetCursor( LoadCursor(NULL, IDC_WAIT) );
       }
       if( s_dbgState == DBG_STOPPED ) return -1;
       elapsed += 0.25;
@@ -2673,6 +2677,7 @@ static int DbgServerRecv( char * buf, int bufSize )
       {
          TranslateMessage( &winMsg );
          DispatchMessage( &winMsg );
+         if( s_dbgWaitCursor ) SetCursor( LoadCursor(NULL, IDC_WAIT) );
       }
       if( s_dbgState == DBG_STOPPED ) return -1;
    }
@@ -2924,6 +2929,39 @@ static void DbgTrace( const char * msg )
    if( f ) { fprintf( f, "%s\n", msg ); fclose( f ); }
 }
 
+/* Force a window to foreground using AttachThreadInput trick */
+static void ForceSetForegroundWindow( HWND hWnd )
+{
+   DWORD fgThread = GetWindowThreadProcessId( GetForegroundWindow(), NULL );
+   DWORD myThread = GetCurrentThreadId();
+   if( fgThread != myThread )
+      AttachThreadInput( fgThread, myThread, TRUE );
+   SetForegroundWindow( hWnd );
+   BringWindowToTop( hWnd );
+   SetFocus( hWnd );
+   if( fgThread != myThread )
+      AttachThreadInput( fgThread, myThread, FALSE );
+}
+
+/* Bring DebugApp windows to foreground by PID */
+static BOOL CALLBACK _BringChildWnd( HWND hWnd, LPARAM lParam )
+{
+   DWORD pid = 0;
+   GetWindowThreadProcessId( hWnd, &pid );
+   if( pid == (DWORD) lParam && IsWindowVisible( hWnd ) )
+   {
+      ForceSetForegroundWindow( hWnd );
+      return FALSE; /* stop enumeration */
+   }
+   return TRUE;
+}
+
+static void BringDebugAppToFront(void)
+{
+   if( s_dbgChildPID )
+      EnumWindows( _BringChildWnd, (LPARAM) s_dbgChildPID );
+}
+
 /* IDE_DebugStart2( cExePath, bOnPause ) — socket-based debug session
  * Mirrors the macOS/Linux implementation: starts TCP server on port 19800,
  * launches user exe as separate process, communicates via socket protocol. */
@@ -2938,6 +2976,10 @@ HB_FUNC( IDE_DEBUGSTART2 )
    { char t[512]; snprintf(t,sizeof(t),"IDE_DebugStart2: exe='%s' block=%p state=%d", cExePath?cExePath:"(null)", pOnPause, s_dbgState); DbgTrace(t); }
 
    if( !cExePath || s_dbgState != DBG_IDLE ) { DbgTrace("REJECTED: null exe or state != IDLE"); hb_retl( HB_FALSE ); return; }
+
+   /* Force wait cursor from the start */
+   s_dbgWaitCursor = 1;
+   SetCursor( LoadCursor( NULL, IDC_WAIT ) );
 
    /* Clean up any previous debug session */
    DbgServerStop();
@@ -2987,10 +3029,13 @@ HB_FUNC( IDE_DEBUGSTART2 )
          return;
       }
       DbgTrace("CreateProcessA OK");
+      s_dbgChildPID = pi.dwProcessId;
+      AllowSetForegroundWindow( pi.dwProcessId );
       if( pi.hProcess ) CloseHandle( pi.hProcess );
       if( pi.hThread ) CloseHandle( pi.hThread );
    }
    DbgOutput( "Launched debug process. Waiting for connection...\r\n" );
+
 
    if( s_dbgStatusLbl )
       SetWindowTextA( s_dbgStatusLbl, "Waiting for debug client..." );
@@ -3009,8 +3054,10 @@ HB_FUNC( IDE_DEBUGSTART2 )
    DbgTrace("Client connected!");
    DbgOutput( "Client connected.\r\n" );
 
+
    /* Command loop */
    char recvBuf[4096];
+   int bFirstPause = 1;
    s_dbgState = DBG_PAUSED;
    DbgTrace("Entering command loop...");
 
@@ -3075,6 +3122,8 @@ HB_FUNC( IDE_DEBUGSTART2 )
          /* === STEPPING/PAUSED: show state and wait for user === */
          s_dbgState = DBG_PAUSED;
 
+         { char t[256]; snprintf(t,sizeof(t),"PAUSE: func='%s' line=%d -> calling callback", funcName, line); DbgTrace(t); }
+
          /* Call Harbour callback: ( cFuncName, nLine, cLocals, cStack )
           * Returns .T. if user code (should pause), .F. if framework (auto-step). */
          HB_BOOL shouldPause = HB_TRUE;
@@ -3096,12 +3145,23 @@ HB_FUNC( IDE_DEBUGSTART2 )
             if( pResult ) hb_itemRelease( pResult );
          }
 
+         { char t[128]; snprintf(t,sizeof(t),"  callback returned shouldPause=%d", shouldPause); DbgTrace(t); }
+
          /* Framework code — auto-step */
          if( !shouldPause )
          {
+            DbgTrace("  auto-step (framework)");
             DbgServerSend( "STEP" );
             s_dbgState = DBG_PAUSED;
             continue;
+         }
+
+         DbgTrace("  PAUSED - waiting for user Step/Go/Stop");
+         if( bFirstPause )
+         {
+            bFirstPause = 0;
+            s_dbgWaitCursor = 0;
+            SetCursor( LoadCursor( NULL, IDC_ARROW ) );
          }
 
          /* Update status */
@@ -3127,13 +3187,61 @@ HB_FUNC( IDE_DEBUGSTART2 )
          }
 
          /* Send command based on new state */
+         { char t[64]; snprintf(t,sizeof(t),"  user action: state=%d", s_dbgState); DbgTrace(t); }
          if( s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER )
          {
+            DbgTrace("  sending STEP");
             DbgServerSend( "STEP" );
             s_dbgState = DBG_PAUSED;
          }
          else if( s_dbgState == DBG_RUNNING )
+         {
             DbgServerSend( "GO" );
+            AllowSetForegroundWindow( s_dbgChildPID );
+
+            /* In RUNNING mode: client runs freely, doesn't send PAUSEs.
+             * Spin message pump until user clicks Step or Stop. */
+            {
+               MSG winMsg;
+               int nTicks = 0;
+               while( s_dbgState == DBG_RUNNING )
+               {
+                  if( PeekMessage( &winMsg, NULL, 0, 0, PM_REMOVE ) )
+                  {
+                     TranslateMessage( &winMsg );
+                     DispatchMessage( &winMsg );
+                  }
+                  else
+                     Sleep( 10 );
+
+                  /* Try to bring DebugApp window to front for the first ~2 seconds */
+                  nTicks++;
+                  if( nTicks >= 10 && nTicks <= 200 && (nTicks % 20) == 0 )
+                     BringDebugAppToFront();
+
+                  /* Check if client disconnected */
+                  {
+                     fd_set fds; struct timeval tv;
+                     FD_ZERO(&fds); FD_SET(s_dbgClientSock, &fds);
+                     tv.tv_sec = 0; tv.tv_usec = 0;
+                     if( select(0, &fds, NULL, NULL, &tv) > 0 ) {
+                        char peek[1];
+                        int n = recv(s_dbgClientSock, peek, 1, MSG_PEEK);
+                        if( n <= 0 ) { s_dbgState = DBG_STOPPED; break; }
+                     }
+                  }
+               }
+               /* User clicked Step or Stop while running */
+               if( s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER )
+               {
+                  DbgServerSend( "STEP" );
+                  s_dbgState = DBG_PAUSED;
+                  /* Next iteration will recv the PAUSE from client */
+               }
+               else if( s_dbgState == DBG_STOPPED )
+                  DbgServerSend( "QUIT" );
+            }
+         }
          else if( s_dbgState == DBG_STOPPED )
             DbgServerSend( "QUIT" );
       }

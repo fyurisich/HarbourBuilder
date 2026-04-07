@@ -1291,7 +1291,15 @@ void TForm::Run()
    /* Dark title bar on Windows 10 1809+ / Windows 11 */
    if( g_bDarkIDE ) SetDarkTitleBar( FHandle, TRUE );
 
-   ShowWindow( FHandle, SW_SHOW );
+   if( FAppBar )
+      ShowWindow( FHandle, SW_SHOWMAXIMIZED );
+   else
+   {
+      ShowWindow( FHandle, SW_SHOW );
+      /* Force to front: TOPMOST then NOTOPMOST trick (always works) */
+      SetWindowPos( FHandle, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
+      SetWindowPos( FHandle, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE );
+   }
    UpdateWindow( FHandle );
 
    FireEvent( FOnCreate );

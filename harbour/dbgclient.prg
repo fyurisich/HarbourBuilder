@@ -9,11 +9,12 @@
 #define DBG_CONNECTED 2
 #define DBG_READY     3
 #define DBG_STEPPING  4
+#define DBG_RUNNING   5
 
 static function DbgState()
    static s_aState := nil
    if s_aState == nil
-      s_aState := { nil, .f., .f., .t. }  // socket, connected, ready, stepping
+      s_aState := { nil, .f., .f., .t., .f. }  // socket, connected, ready, stepping, running
    endif
 return s_aState
 
@@ -85,6 +86,25 @@ static function DbgHook( nLine, cModule, cProcName )
       return nil
    endif
 
+   // In RUNNING mode: don't block — just check for STEP/QUIT non-blocking
+   if aS[ DBG_RUNNING ]
+      cCmd := DbgRecvNonBlock()
+      if cCmd != nil
+         if Left( cCmd, 4 ) == "QUIT"
+            aS[ DBG_CONNECTED ] := .f.
+            hb_socketClose( aS[ DBG_SOCKET ] )
+            QUIT
+            return nil
+         endif
+         if Left( cCmd, 4 ) == "STEP"
+            aS[ DBG_RUNNING ] := .f.
+            // Fall through to send PAUSE and wait
+         endif
+      else
+         return nil  // No command pending — continue running freely
+      endif
+   endif
+
    // Build full PAUSE message with locals and stack inline
    cMsg := "PAUSE " + cModule + ":" + LTrim( Str( nLine ) )
    cMsg += "|" + BuildLocals( cProcName )
@@ -106,7 +126,13 @@ static function DbgHook( nLine, cModule, cProcName )
          return nil
       endif
 
-      if Left( cCmd, 4 ) == "STEP" .or. Left( cCmd, 2 ) == "GO"
+      if Left( cCmd, 4 ) == "STEP"
+         aS[ DBG_RUNNING ] := .f.
+         exit
+      endif
+
+      if Left( cCmd, 2 ) == "GO"
+         aS[ DBG_RUNNING ] := .t.
          exit
       endif
    enddo
@@ -292,6 +318,35 @@ static function DbgRecv()
 
    if ! aS[ DBG_CONNECTED ] .or. aS[ DBG_SOCKET ] == nil
       return nil
+   endif
+
+   nLen := hb_socketRecv( aS[ DBG_SOCKET ], @cBuf )
+   if nLen <= 0
+      aS[ DBG_CONNECTED ] := .f.
+      return nil
+   endif
+
+   cBuf := Left( cBuf, nLen )
+   do while Right( cBuf, 1 ) == Chr(10) .or. Right( cBuf, 1 ) == Chr(13)
+      cBuf := Left( cBuf, Len( cBuf ) - 1 )
+   enddo
+
+return cBuf
+
+// Non-blocking receive: returns nil if no data available
+static function DbgRecvNonBlock()
+
+   local cBuf := Space( 256 ), nLen, aS := DbgState()
+   local lReady
+
+   if ! aS[ DBG_CONNECTED ] .or. aS[ DBG_SOCKET ] == nil
+      return nil
+   endif
+
+   // Check if data is available (0ms timeout = non-blocking)
+   lReady := hb_socketSelect( { aS[ DBG_SOCKET ] }, ,, 0 )
+   if lReady <= 0
+      return nil  // No data available
    endif
 
    nLen := hb_socketRecv( aS[ DBG_SOCKET ], @cBuf )

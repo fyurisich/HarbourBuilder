@@ -45,6 +45,9 @@ function Main()
    local nFormX, nFormY, nInsTop, nEditorTop, nBottomY
    local cIcoDir, aCI0, cCompLabel
 
+   // DPI awareness (only for IDE, not for DebugApp)
+   SetDPIAware()
+
    // Load dark mode preference from INI
    lDarkMode := ( IniRead( "IDE", "DarkMode", "1" ) == "1" )
 
@@ -2067,6 +2070,7 @@ static function TBDebugRun()
    local aCppFiles
 
    SaveActiveFormCode()
+   W32_SetWaitCursor( .T. )
 
    cBuildDir := "c:\hbbuilder_debug"
    cHbDir    := "c:\harbour"
@@ -2352,29 +2356,53 @@ static function TBDebugRun()
    cLog += "    Exists: " + iif( File( cBuildDir + "\DebugApp.exe" ), "YES", "NO" ) + Chr(10)
    MemoWrit( cBuildDir + "\debug_trace.log", cLog )
 
-   W32_DebugSetStatus( "Launching debugger..." )
-   W32_ProcessEvents()
-   CodeEditorSelectTab( hCodeEditor, 1 )  // switch to Project1.prg
+   // Hide design form during debug
+   if oDesignForm != nil
+      W32_ShowWindow( UI_FormGetHwnd( oDesignForm:hCpp ), 0 )  // SW_HIDE
+   endif
    W32_ProcessEvents()
 
-   MemoWrit( cBuildDir + "\debug_trace.log", cLog + "    Calling IDE_DebugStart2..." + Chr(10) )
+   // Switch inspector to debug mode (Vars/CallStack/Watch)
+   InspectorOpen()
+   W32_ProcessEvents()
+   INS_SetDebugMode( _InsGetData(), .t. )
+   W32_ProcessEvents()
+   CodeEditorSelectTab( hCodeEditor, 1 )
+   W32_ProcessEvents()
 
    IDE_DebugStart2( cBuildDir + "\DebugApp.exe", ;
       { |cFunc, nLine, cLocals, cStack| OnDebugPause( cFunc, nLine, cLocals, cStack ) } )
 
-   MemoWrit( cBuildDir + "\debug_trace.log", cLog + "    IDE_DebugStart2 returned." + Chr(10) )
-
-   // Restore: clear debug marker
+   // Restore: clear debug marker, restore inspector with properties
    CodeEditorShowDebugLine( hCodeEditor, 0 )
-   W32_DebugSetStatus( "Ready" )
+   INS_SetDebugMode( _InsGetData(), .f. )
+   W32_ProcessEvents()
+   if oDesignForm != nil
+      InspectorPopulateCombo( oDesignForm:hCpp )
+      InspectorRefresh( oDesignForm:hCpp )
+      W32_ShowWindow( UI_FormGetHwnd( oDesignForm:hCpp ), 5 )  // SW_SHOW
+      // Switch editor to the active form's code tab
+      CodeEditorSelectTab( hCodeEditor, nActiveForm + 1 )
+   endif
+   W32_ProcessEvents()
 
 return nil
 
 // === Debug Pause Callback (called from socket command loop) ===
 
+static function DbgLog2( cMsg )
+   local nH := FOpen( "c:\hbbuilder_debug\pause_trace.log", 1 + 16 )
+   if nH == -1; nH := FCreate( "c:\hbbuilder_debug\pause_trace.log" ); endif
+   if nH >= 0
+      FSeek( nH, 0, 2 )
+      FWrite( nH, cMsg + Chr(13) + Chr(10) )
+      FClose( nH )
+   endif
+return nil
+
 static function OnDebugPause( cFunc, nLine, cLocals, cStack )
 
-   local i, nTab, nTabLine
+   local i, nTab, nTabLine, hIns
 
    // Map debug_main.prg line number to the correct editor tab and line
    nTab := 0
@@ -2389,29 +2417,39 @@ static function OnDebugPause( cFunc, nLine, cLocals, cStack )
       next
    endif
 
+   // Append trace
+   DbgLog2( "OnDebugPause: func=" + cFunc + " line=" + LTrim(Str(nLine)) + ;
+      " -> tab=" + LTrim(Str(nTab)) + " tabLine=" + LTrim(Str(nTabLine)) )
+
    // Framework code (nTab == 0) — skip, don't pause, don't update
    if nTab == 0
       return .f.
    endif
 
-   // Select the tab and highlight the line
+
+   DbgLog2( "  step A: SelectTab" )
    if nTabLine > 0
       CodeEditorSelectTab( hCodeEditor, nTab )
+      DbgLog2( "  step B: ShowDebugLine(" + LTrim(Str(nTabLine)) + ")" )
       CodeEditorShowDebugLine( hCodeEditor, nTabLine )
+      DbgLog2( "  step C: ShowDebugLine done" )
    endif
 
-   // Map local index names to real names from source code
+   DbgLog2( "  step D: MapLocalNames" )
    if cLocals != nil .and. nTab > 0
       cLocals := DbgMapLocalNames( cLocals, cFunc, nTab )
    endif
 
-   // Update debug panel with locals and call stack
-   W32_DebugSetStatus( "Paused at " + cFunc + "() line " + LTrim(Str(nTabLine)) )
-   if cLocals != nil
-      W32_DebugUpdateLocalsStr( cLocals )
-   endif
-   if cStack != nil
-      W32_DebugUpdateStackStr( DbgFixStackLines( cStack ) )
+   // Update inspector with locals and call stack
+   DbgLog2( "  step E: UpdateInspector" )
+   hIns := _InsGetData()
+   if hIns != 0
+      if cLocals != nil
+         INS_SetDebugLocals( hIns, cLocals )
+      endif
+      if cStack != nil
+         INS_SetDebugStack( hIns, DbgFixStackLines( cStack ) )
+      endif
    endif
 
 return .t.  // pause here — user code
@@ -4737,7 +4775,8 @@ static void ConfigureScintilla( HWND hSci )
 
    /* Debug execution line marker (marker 11) - yellow background */
    SciMsg( hSci, SCI_MARKERDEFINE, 11, 22 );    /* SC_MARK_BACKGROUND = 22 */
-   SciMsg( hSci, 2042, 11, RGB(60,60,0) );       /* SCI_MARKERSETBACK */
+   SciMsg( hSci, 2042, 11, RGB(80,80,0) );       /* SCI_MARKERSETBACK - yellow-ish */
+   SciMsg( hSci, 2041, 11, RGB(0,0,0) );          /* SCI_MARKERSETFORE */
 
    /* Enable folding property */
    SciMsg( hSci, SCI_SETPROPERTY, (WPARAM) "fold", (LPARAM) "1" );
@@ -6006,36 +6045,47 @@ HB_FUNC( CODEEDITORSHOWDEBUGLINE )
    int nLine = hb_parni(2) - 1;  /* convert to 0-based */
    if( !ed || !ed->hEdit ) return;
 
-   /* Delete previous marker explicitly, then delete all as safety net */
-   if( s_dbgPrevLine >= 0 )
-      SciMsg( ed->hEdit, 2002, (WPARAM)s_dbgPrevLine, 11 );  /* SCI_MARKERDELETE */
-   SciMsg( ed->hEdit, 2003, 11, 0 );  /* SCI_MARKERDELETEALL */
+   /* Delete old marker and add new one (correct Scintilla message IDs) */
+   SciMsg( ed->hEdit, 2045, 11, 0 );  /* SCI_MARKERDELETEALL=2045 marker 11 */
 
    if( nLine >= 0 )
    {
-      SciMsg( ed->hEdit, 2043, (WPARAM)nLine, 11 );  /* SCI_MARKERADD */
+      SciMsg( ed->hEdit, 2043, (WPARAM)nLine, 11 );  /* SCI_MARKERADD=2043 */
       s_dbgPrevLine = nLine;
-
-      SciMsg( ed->hEdit, 2024, (WPARAM)nLine, 0 );   /* SCI_GOTOLINE */
-      SciMsg( ed->hEdit, 2613,                         /* SCI_SETFIRSTVISIBLELINE */
-              (WPARAM)(nLine > 5 ? nLine - 5 : 0), 0 );
-
-      if( ed->hWnd ) {
-         ShowWindow( ed->hWnd, SW_SHOW );
-         SetForegroundWindow( ed->hWnd );
-      }
+      /* Scroll via PostMessage (avoids re-entrant crash during debugger) */
+      PostMessage( ed->hEdit, 2024, (WPARAM)nLine, 0 );   /* SCI_GOTOLINE */
    }
    else
    {
       s_dbgPrevLine = -1;
    }
+}
 
-   /* Force Scintilla to fully repaint */
+/* W32_SetWaitCursor( lWait ) — set/restore wait cursor */
+static HCURSOR s_hOldCursor = NULL;
+static int s_bWaitCursor = 0;
+HB_FUNC( W32_SETWAITCURSOR )
+{
+   if( hb_parl(1) )
    {
-      LRESULT len = SciMsg( ed->hEdit, 2006, 0, 0 );  /* SCI_GETLENGTH */
-      SciMsg( ed->hEdit, 4003, 0, len );               /* SCI_COLOURISE */
+      s_hOldCursor = SetCursor( LoadCursor( NULL, IDC_WAIT ) );
+      s_bWaitCursor = 1;
    }
-   InvalidateRect( ed->hEdit, NULL, FALSE );
+   else if( s_bWaitCursor )
+   {
+      SetCursor( LoadCursor( NULL, IDC_ARROW ) );
+      s_bWaitCursor = 0;
+   }
+}
+/* Hook into WM_SETCURSOR to maintain wait cursor */
+HB_FUNC( W32_ISWAITCURSOR ) { hb_retl( s_bWaitCursor ); }
+HB_FUNC( W32_CLEARWAITCURSOR ) { s_bWaitCursor = 0; }
+
+/* W32_ShowWindow( hWnd, nCmd ) — show/hide a window */
+HB_FUNC( W32_SHOWWINDOW )
+{
+   HWND hWnd = (HWND)(LONG_PTR) hb_parnint(1);
+   if( hWnd ) ShowWindow( hWnd, hb_parni(2) );
 }
 
 /* W32_RedrawAll( hWnd ) — force repaint of window + all children */

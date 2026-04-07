@@ -163,6 +163,7 @@ typedef struct {
    int    nEditRow;     /* listview row being edited */
    WNDPROC oldEditProc;
    int    nActiveTab;   /* 0=Properties, 1=Events */
+   int    bDebugMode;  /* 1=showing Vars/CallStack/Watch */
    PHB_ITEM pOnComboSel; /* callback when combo selection changes: {|nIndex| ... } */
    PHB_ITEM pOnEventDblClick; /* callback when event double-clicked: {|hCtrl, cEvent| ... } */
    PHB_ITEM pOnPropChanged;   /* callback when property value changes: {|| ... } */
@@ -601,11 +602,19 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
                ShowWindow( d->hList, SW_SHOW );
                ShowWindow( d->hEventList, SW_HIDE );
             }
-            else
+            else if( sel == 1 )
             {
                ShowWindow( d->hList, SW_HIDE );
                ShowWindow( d->hEventList, SW_SHOW );
-               InsPopulateEvents( d );
+               /* Only populate events in normal mode, not debug mode */
+               if( !d->bDebugMode )
+                  InsPopulateEvents( d );
+            }
+            else
+            {
+               /* Tab 2 (Watch in debug mode) — both hidden for now */
+               ShowWindow( d->hList, SW_HIDE );
+               ShowWindow( d->hEventList, SW_HIDE );
             }
             return 0;
          }
@@ -1591,6 +1600,199 @@ HB_FUNC( INS_SETPOS )
    INSDATA * d = (INSDATA *) (HB_PTRUINT) hb_parnint(1);
    if( !d || !d->hWnd ) return;
    MoveWindow( d->hWnd, hb_parni(2), hb_parni(3), hb_parni(4), hb_parni(5), TRUE );
+}
+
+/* INS_SetDebugMode( hInsData, lDebug )
+ * .T. = switch to debug tabs (Vars, Call Stack, Watch), hide combo
+ * .F. = restore Properties/Events, show combo */
+HB_FUNC( INS_SETDEBUGMODE )
+{
+   INSDATA * d = (INSDATA *) (HB_PTRUINT) hb_parnint(1);
+   HB_BOOL bDebug = hb_parl(2);
+   TCITEMA tci;
+   if( !d ) return;
+
+   d->bDebugMode = bDebug ? 1 : 0;
+
+   /* Remove all tabs */
+   SendMessage( d->hTab, TCM_DELETEALLITEMS, 0, 0 );
+   memset( &tci, 0, sizeof(tci) );
+   tci.mask = TCIF_TEXT;
+
+   if( bDebug )
+   {
+      tci.pszText = "Vars";       SendMessageA( d->hTab, TCM_INSERTITEMA, 0, (LPARAM)&tci );
+      tci.pszText = "Call Stack"; SendMessageA( d->hTab, TCM_INSERTITEMA, 1, (LPARAM)&tci );
+      tci.pszText = "Watch";     SendMessageA( d->hTab, TCM_INSERTITEMA, 2, (LPARAM)&tci );
+      ShowWindow( d->hCombo, SW_HIDE );
+      SetWindowTextA( d->hWnd, "Debugger" );
+      /* Show Vars list, hide Events list */
+      ListView_DeleteAllItems( d->hList );
+      ListView_DeleteAllItems( d->hEventList );
+      ShowWindow( d->hList, SW_SHOW );
+      ShowWindow( d->hEventList, SW_HIDE );
+      /* Set column headers for debug: Vars = Variable/Value, Stack = Function/Line */
+      {
+         LVCOLUMNA lvc;
+         memset( &lvc, 0, sizeof(lvc) );
+         lvc.mask = LVCF_TEXT;
+         lvc.pszText = "Variable";
+         SendMessageA( d->hList, LVM_SETCOLUMNA, 0, (LPARAM)&lvc );
+         lvc.pszText = "Value";
+         SendMessageA( d->hList, LVM_SETCOLUMNA, 1, (LPARAM)&lvc );
+         lvc.pszText = "Function";
+         SendMessageA( d->hEventList, LVM_SETCOLUMNA, 0, (LPARAM)&lvc );
+         lvc.pszText = "Line";
+         SendMessageA( d->hEventList, LVM_SETCOLUMNA, 1, (LPARAM)&lvc );
+      }
+      d->nActiveTab = 0;
+   }
+   else
+   {
+      tci.pszText = "Properties"; SendMessageA( d->hTab, TCM_INSERTITEMA, 0, (LPARAM)&tci );
+      tci.pszText = "Events";    SendMessageA( d->hTab, TCM_INSERTITEMA, 1, (LPARAM)&tci );
+      ShowWindow( d->hCombo, SW_SHOW );
+      SetWindowTextA( d->hWnd, "Object Inspector" );
+      /* Clear debug data and show property list */
+      ListView_DeleteAllItems( d->hList );
+      ListView_DeleteAllItems( d->hEventList );
+      ShowWindow( d->hList, SW_SHOW );
+      ShowWindow( d->hEventList, SW_HIDE );
+      d->nRows = 0;
+      d->nVisible = 0;
+      /* Restore column headers */
+      {
+         LVCOLUMNA lvc;
+         memset( &lvc, 0, sizeof(lvc) );
+         lvc.mask = LVCF_TEXT;
+         lvc.pszText = "Property";
+         SendMessageA( d->hList, LVM_SETCOLUMNA, 0, (LPARAM)&lvc );
+         lvc.pszText = "Value";
+         SendMessageA( d->hList, LVM_SETCOLUMNA, 1, (LPARAM)&lvc );
+         lvc.pszText = "Event";
+         SendMessageA( d->hEventList, LVM_SETCOLUMNA, 0, (LPARAM)&lvc );
+         lvc.pszText = "Handler";
+         SendMessageA( d->hEventList, LVM_SETCOLUMNA, 1, (LPARAM)&lvc );
+      }
+      d->nActiveTab = 0;
+   }
+   SendMessage( d->hTab, TCM_SETCURSEL, 0, 0 );
+   InvalidateRect( d->hTab, NULL, TRUE );
+   InvalidateRect( d->hWnd, NULL, TRUE );
+}
+
+/* INS_SetDebugLocals( hInsData, cVarsStr )
+ * Format: "VARS [PUBLIC] name=val(T) [PRIVATE] ... [LOCAL] ..." */
+HB_FUNC( INS_SETDEBUGLOCALS )
+{
+   INSDATA * d = (INSDATA *) (HB_PTRUINT) hb_parnint(1);
+   const char * str = HB_ISCHAR(2) ? hb_parc(2) : "";
+   int row = 0;
+   if( !d || !d->bDebugMode ) return;
+
+   ListView_DeleteAllItems( d->hList );
+   if( strncmp( str, "VARS", 4 ) == 0 ) str += 4;
+
+   while( *str )
+   {
+      LVITEMA item;
+      while( *str == ' ' ) str++;
+      if( !*str ) break;
+
+      /* Category header [PUBLIC], [PRIVATE], [LOCAL] */
+      if( *str == '[' )
+      {
+         char cat[32];
+         int ci = 0;
+         str++;
+         while( *str && *str != ']' && ci < 31 ) cat[ci++] = *str++;
+         cat[ci] = 0;
+         if( *str == ']' ) str++;
+         while( *str == ' ' ) str++;
+
+         memset( &item, 0, sizeof(item) );
+         item.mask = LVIF_TEXT;
+         item.iItem = row;
+         item.pszText = cat;
+         ListView_InsertItem( d->hList, &item );
+         ListView_SetItemText( d->hList, row, 1, (LPSTR)"" );
+         row++;
+         continue;
+      }
+
+      /* Parse name=value */
+      {
+         char name[64], value[256];
+         int ni = 0, vi = 0;
+         while( *str && *str != '=' && *str != ' ' && ni < 63 ) name[ni++] = *str++;
+         name[ni] = 0;
+         if( *str == '=' ) str++;
+         while( *str && *str != ' ' && vi < 255 ) value[vi++] = *str++;
+         value[vi] = 0;
+         while( *str == ' ' ) str++;
+
+         if( ni > 0 )
+         {
+            memset( &item, 0, sizeof(item) );
+            item.mask = LVIF_TEXT;
+            item.iItem = row;
+            item.pszText = name;
+            ListView_InsertItem( d->hList, &item );
+            ListView_SetItemText( d->hList, row, 1, value );
+            row++;
+         }
+      }
+   }
+}
+
+/* INS_SetDebugStack( hInsData, cStackStr )
+ * Format: "STACK FUNC(line) FUNC2(line2) ..." */
+HB_FUNC( INS_SETDEBUGSTACK )
+{
+   INSDATA * d = (INSDATA *) (HB_PTRUINT) hb_parnint(1);
+   const char * str = HB_ISCHAR(2) ? hb_parc(2) : "";
+   int row = 0;
+   if( !d || !d->bDebugMode ) return;
+
+   /* Use hEventList for stack (hidden in normal mode, reused in debug) */
+   ListView_DeleteAllItems( d->hEventList );
+   if( strncmp( str, "STACK", 5 ) == 0 ) str += 5;
+
+   while( *str )
+   {
+      LVITEMA item;
+      char token[128], func[64], lineStr[16];
+      char * paren;
+      int ti = 0;
+
+      while( *str == ' ' ) str++;
+      if( !*str ) break;
+
+      while( *str && *str != ' ' && ti < 127 ) token[ti++] = *str++;
+      token[ti] = 0;
+
+      /* Parse FUNC(line) */
+      func[0] = 0; lineStr[0] = 0;
+      paren = strchr( token, '(' );
+      if( paren )
+      {
+         char * endP;
+         *paren = 0;
+         strncpy( func, token, 63 ); func[63] = 0;
+         endP = strchr( paren + 1, ')' );
+         if( endP ) { *endP = 0; strncpy( lineStr, paren + 1, 15 ); lineStr[15] = 0; }
+      }
+      else
+         strncpy( func, token, 63 );
+
+      memset( &item, 0, sizeof(item) );
+      item.mask = LVIF_TEXT;
+      item.iItem = row;
+      item.pszText = func;
+      ListView_InsertItem( d->hEventList, &item );
+      ListView_SetItemText( d->hEventList, row, 1, lineStr );
+      row++;
+   }
 }
 
 /* INS_RefreshTheme( hInsData ) — update colors after dark/light toggle */

@@ -19,6 +19,7 @@ static PHB_ITEM s_pDbgBlock = NULL;
 static int s_nReentrancy = 0;
 static char s_szModule[256] = "";
 static int s_nHookCalls = 0;
+static int s_nPassCount = 0;
 
 static void DbgHookTrace( const char * msg )
 {
@@ -96,10 +97,9 @@ static void DbgHookC( int nMode, int nLine, const char * szName,
 
       /* Trace: we passed all filters, about to call block */
       {
-         static int s_nPassCount = 0;
-         if( s_nPassCount < 5 ) {
+         if( s_nPassCount < 20 ) {
             char t[256];
-            snprintf(t, sizeof(t), "PASS #%d: '%s' line %d", s_nPassCount, szFull, nLine);
+            snprintf(t, sizeof(t), "PASS #%d: '%s' line %d (calling block...)", s_nPassCount, szFull, nLine);
             DbgHookTrace(t);
          }
          s_nPassCount++;
@@ -118,18 +118,22 @@ static void DbgHookC( int nMode, int nLine, const char * szName,
          hb_itemRelease( pProc );
       }
 
+      if( s_nPassCount <= 20 ) DbgHookTrace("  block returned OK");
       s_nReentrancy--;
    }
 }
 
 /* DbgHookInstall( bBlock ) — install C-level debug hook
  * bBlock receives: ( nLine, cModule ) on each source line */
+void DbgHookResetPass(void) { s_nPassCount = 0; }
+
 HB_FUNC( DBGHOOKINSTALL )
 {
    PHB_ITEM pBlock = hb_param( 1, HB_IT_BLOCK );
-   /* Clear trace log */
+   /* Clear trace log and counters */
    { FILE * f = fopen("c:\\hbbuilder_debug\\dbghook_trace.log","w"); if(f) fclose(f); }
    s_nHookCalls = 0;
+   { extern void DbgHookResetPass(void); DbgHookResetPass(); }
    DbgHookTrace( "DbgHookInstall called" );
    if( pBlock )
    {

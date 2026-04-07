@@ -1,6 +1,40 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-07 (Session 12c: Debugger UX polish)
+
+  DEBUGGER FIXES:
+  - Fixed Scintilla marker message IDs: SCI_MARKERDELETEALL=2045 (was 2003),
+    SCI_MARKERDELETE=2044 (was 2002). Old line markers now clear correctly.
+  - Fixed crash on second Step: SCI_GOTOLINE via PostMessage (async) prevents
+    re-entrant crash; SCI_COLOURISE and SetForegroundWindow removed from
+    CodeEditorShowDebugLine.
+  - Static buffers in dbghook.c prevent stack overflow in debug hook callback.
+  - Client GO mode: DbgRecvNonBlock (hb_socketSelect timeout=0) allows
+    DebugApp to run freely without blocking on every line. Client only sends
+    PAUSE in stepping mode, not running mode.
+  - IDE GO mode: message pump with disconnect detection (recv MSG_PEEK).
+    User can click Step to return to stepping, or Stop to quit.
+
+  DEBUGGER UX:
+  - Inspector debug mode: INS_SetDebugMode switches to Vars/CallStack/Watch
+    tabs, hides combo, title "Debugger". INS_SetDebugLocals parses VARS
+    string with [PUBLIC]/[PRIVATE]/[LOCAL] categories. INS_SetDebugStack
+    parses STACK string into CallStack tab (Function/Line columns).
+  - On debug end: inspector restores Properties/Events, repopulates combo
+    and properties from design form. Editor switches to form code tab.
+  - Design form hidden during debug, restored on end.
+  - Wait cursor: s_dbgWaitCursor flag forces IDC_WAIT in all message pumps
+    (Accept, Recv) until first shouldPause=TRUE callback.
+  - DebugApp window: HWND_TOPMOST/HWND_NOTOPMOST trick in TForm::Run()
+    forces window to front. AllowSetForegroundWindow + BringDebugAppToFront
+    with AttachThreadInput for Go mode.
+  - DPI: SetProcessDPIAware removed from C++ static initializer (was
+    affecting DebugApp), called from Harbour Main() only.
+  - Platform stubs (UI_MEMONEW, MAC_RUNTIMEERRORDIALOG, MAC_APPTERMINATE)
+    injected into both debug_main.prg and main.prg. iphlpapi.lib added
+    to both MSVC and BCC link steps.
+
 2026-04-07 (Session 12b: Live dark/light toggle)
 
   LIVE DARK/LIGHT MODE TOGGLE:
