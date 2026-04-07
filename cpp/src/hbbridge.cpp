@@ -1873,6 +1873,8 @@ struct _BatchThreadData {
    DWORD  dwOutputCap;
    CRITICAL_SECTION cs;
    volatile LONG bDone;
+   volatile LONG bCancelled;
+   HANDLE hProcess;  /* child process handle for cancel */
 };
 
 static DWORD WINAPI _BatchThreadProc( LPVOID pArg )
@@ -1926,6 +1928,9 @@ static DWORD WINAPI _BatchThreadProc( LPVOID pArg )
 
    CloseHandle( hWritePipe );
 
+   /* Store process handle so UI can cancel */
+   td->hProcess = pi.hProcess;
+
    /* Read output from pipe — update shared buffer incrementally */
    EnterCriticalSection( &td->cs );
    td->dwOutputCap = 65536;
@@ -1938,6 +1943,8 @@ static DWORD WINAPI _BatchThreadProc( LPVOID pArg )
 
    while( ReadFile( hReadPipe, tmp, sizeof(tmp), &nRead, NULL ) && nRead > 0 )
    {
+      if( td->bCancelled ) break;
+
       EnterCriticalSection( &td->cs );
       if( td->dwOutputLen + nRead + 1 > td->dwOutputCap )
       {
@@ -1951,9 +1958,10 @@ static DWORD WINAPI _BatchThreadProc( LPVOID pArg )
    }
    CloseHandle( hReadPipe );
 
-   WaitForSingleObject( pi.hProcess, INFINITE );
+   WaitForSingleObject( pi.hProcess, 5000 );
    CloseHandle( pi.hProcess );
    CloseHandle( pi.hThread );
+   td->hProcess = NULL;
 
    InterlockedExchange( &td->bDone, TRUE );
    return 0;
@@ -1972,6 +1980,8 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
    ZeroMemory( &td, sizeof(td) );
    lstrcpynA( td.szBatFile, cBatFile, MAX_PATH );
    td.bDone = FALSE;
+   td.bCancelled = FALSE;
+   td.hProcess = NULL;
    InitializeCriticalSection( &td.cs );
 
    /* Create progress dialog with output log */
@@ -1990,7 +2000,10 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
 
    int sw = GetSystemMetrics( SM_CXSCREEN );
    int sh = GetSystemMetrics( SM_CYSCREEN );
-   int dlgW = 560, dlgH = 420;
+   int dlgW = 560, dlgH = 460;
+   int btnH = 30, btnW = 90, margin = 16;
+   int logTop = 66;
+   int logH = dlgH - logTop - btnH - margin * 3 - GetSystemMetrics( SM_CYCAPTION );
    int x = (sw - dlgW) / 2, y = (sh - dlgH) / 2;
 
    HWND hDlg = CreateWindowExA( WS_EX_DLGMODALFRAME | WS_EX_TOPMOST,
@@ -2013,13 +2026,13 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
    /* Status label */
    HWND hLabel = CreateWindowExA( 0, "STATIC", cStatus,
       WS_CHILD | WS_VISIBLE | SS_LEFT,
-      16, 12, dlgW - 40, 20, hDlg, NULL, GetModuleHandle(NULL), NULL );
+      margin, 12, dlgW - margin * 2 - 8, 20, hDlg, NULL, GetModuleHandle(NULL), NULL );
    SendMessageA( hLabel, WM_SETFONT, (WPARAM) hFont, TRUE );
 
    /* Progress bar — animated manually */
    HWND hBar = CreateWindowExA( 0, PROGRESS_CLASSA, NULL,
       WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
-      16, 38, dlgW - 40, 20, hDlg, NULL, GetModuleHandle(NULL), NULL );
+      margin, 38, dlgW - margin * 2 - 8, 20, hDlg, NULL, GetModuleHandle(NULL), NULL );
    SendMessageA( hBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100) );
    SendMessageA( hBar, PBM_SETPOS, 0, 0 );
 
@@ -2033,11 +2046,20 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
       HWND hLog = CreateWindowExA( WS_EX_CLIENTEDGE, "EDIT", "",
          WS_CHILD | WS_VISIBLE | WS_VSCROLL |
          ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | ES_LEFT,
-         16, 66, dlgW - 40, dlgH - 90,
+         margin, logTop, dlgW - margin * 2 - 8, logH,
          hDlg, (HMENU)100, GetModuleHandle(NULL), NULL );
       SendMessageA( hLog, WM_SETFONT, (WPARAM) hLogFont, TRUE );
-      /* Dark background for the log */
-      /* (will use default colors — good enough) */
+   }
+
+   /* Cancel button — centered below the log */
+   {
+      RECT rcClient;
+      GetClientRect( hDlg, &rcClient );
+      HWND hCancelBtn = CreateWindowExA( 0, "BUTTON", "Cancel",
+         WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+         (rcClient.right - btnW) / 2, rcClient.bottom - btnH - margin, btnW, btnH,
+         hDlg, (HMENU)IDCANCEL, GetModuleHandle(NULL), NULL );
+      SendMessageA( hCancelBtn, WM_SETFONT, (WPARAM) hFont, TRUE );
    }
 
    UpdateWindow( hDlg );
@@ -2058,6 +2080,32 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
          MSG m;
          while( PeekMessage( &m, NULL, 0, 0, PM_REMOVE ) )
          {
+            /* Handle Cancel button */
+            if( m.message == WM_COMMAND && LOWORD(m.wParam) == IDCANCEL )
+            {
+               InterlockedExchange( &td.bCancelled, TRUE );
+               /* Kill the child process tree */
+               if( td.hProcess )
+               {
+                  TerminateProcess( td.hProcess, 1 );
+               }
+               /* Append cancel notice to output */
+               EnterCriticalSection( &td.cs );
+               if( td.pOutput )
+               {
+                  const char * msg = "\r\n\r\n*** Cancelled by user ***\r\n";
+                  DWORD msgLen = lstrlenA( msg );
+                  if( td.dwOutputLen + msgLen + 1 > td.dwOutputCap )
+                  {
+                     td.dwOutputCap = td.dwOutputLen + msgLen + 64;
+                     td.pOutput = (char *)HeapReAlloc( GetProcessHeap(), 0, td.pOutput, td.dwOutputCap );
+                  }
+                  CopyMemory( td.pOutput + td.dwOutputLen, msg, msgLen + 1 );
+                  td.dwOutputLen += msgLen;
+               }
+               LeaveCriticalSection( &td.cs );
+               goto batch_done;
+            }
             TranslateMessage( &m );
             DispatchMessage( &m );
          }
@@ -2120,6 +2168,7 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
          Sleep( 15 );
       }
 
+batch_done:
       /* Final update — show any remaining output */
       EnterCriticalSection( &td.cs );
       if( td.pOutput && td.dwOutputLen > dwShownLen )
