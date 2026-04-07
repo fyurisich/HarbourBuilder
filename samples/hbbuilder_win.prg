@@ -1850,6 +1850,7 @@ static function TBRun()
    static nLastHash := 0
 
    SaveActiveFormCode()
+   SyncDesignerToCode()  // Ensure event bindings are up to date
 
    cBuildDir := "c:\hbbuilder_build"
 
@@ -2316,6 +2317,7 @@ static function TBDebugRun()
    local aCppFiles
 
    SaveActiveFormCode()
+   SyncDesignerToCode()  // Ensure event bindings are up to date
    W32_SetWaitCursor( .T. )
 
    cBuildDir := "c:\hbbuilder_debug"
