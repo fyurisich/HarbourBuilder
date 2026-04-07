@@ -2049,6 +2049,8 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
          margin, logTop, dlgW - margin * 2 - 8, logH,
          hDlg, (HMENU)100, GetModuleHandle(NULL), NULL );
       SendMessageA( hLog, WM_SETFONT, (WPARAM) hLogFont, TRUE );
+      /* Default EDIT limit is ~30KB — raise to 2MB so large builds don't get truncated */
+      SendMessageA( hLog, EM_SETLIMITTEXT, 2 * 1024 * 1024, 0 );
    }
 
    /* Cancel button — centered below the log */
@@ -2080,8 +2082,10 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
          MSG m;
          while( PeekMessage( &m, NULL, 0, 0, PM_REMOVE ) )
          {
-            /* Handle Cancel button */
-            if( m.message == WM_COMMAND && LOWORD(m.wParam) == IDCANCEL )
+            /* Handle Cancel button, dialog close, or IDE exit */
+            if( ( m.message == WM_COMMAND && LOWORD(m.wParam) == IDCANCEL ) ||
+                m.message == WM_QUIT ||
+                ( m.message == WM_CLOSE && m.hwnd == hDlg ) )
             {
                InterlockedExchange( &td.bCancelled, TRUE );
                /* Kill the child process tree */
@@ -2104,6 +2108,9 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
                   td.dwOutputLen += msgLen;
                }
                LeaveCriticalSection( &td.cs );
+               /* Re-post WM_QUIT so the IDE shuts down properly */
+               if( m.message == WM_QUIT )
+                  PostQuitMessage( (int)m.wParam );
                goto batch_done;
             }
             TranslateMessage( &m );
