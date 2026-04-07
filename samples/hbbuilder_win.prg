@@ -2764,9 +2764,10 @@ static function EnsureHarbour( cCompiler, aCI )
       return cHbDir
    endif
 
-   // Install to user profile (no admin needed), source in temp
+   // Install to user profile (no admin needed), source also in user profile
+   // (%TEMP% has permission issues with MSVC compiler output)
    cHbDir := cUserProfile + "\harbour"
-   cHbSrc := cTmp + "\harbour_src"
+   cHbSrc := cUserProfile + "\harbour_src"
 
    if ! MsgYesNo( "Harbour compiler not found!" + Chr(10) + ;
                   Chr(10) + ;
