@@ -2757,6 +2757,14 @@ static function EnsureHarbour( cCompiler, aCI )
    local cZipFile, cBatFile, lHasGit, lOk
    local cTmp := GetEnv( "TEMP" )
    local cUserProfile := GetEnv( "USERPROFILE" )
+   static lBusy := .F.
+
+   // Prevent re-entry if already downloading/building
+   if lBusy
+      MsgInfo( "Harbour is already being downloaded and built." + Chr(10) + ;
+               "Please wait for it to finish.", "Please Wait" )
+      return ""
+   endif
 
    // First try to find an existing Harbour installation
    cHbDir := FindHarbour( cCompiler )
@@ -2778,6 +2786,8 @@ static function EnsureHarbour( cCompiler, aCI )
                   "Harbour Not Found" )
       return ""
    endif
+
+   lBusy := .T.
 
    // Step 1: Download Harbour source
    if ! File( cHbSrc + "\config\global.mk" )
@@ -2824,6 +2834,7 @@ static function EnsureHarbour( cCompiler, aCI )
       endif
 
       if ! File( cHbSrc + "\config\global.mk" )
+         lBusy := .F.
          W32_BuildErrorDialog( "Download Failed", ;
             "Failed to download Harbour source." + Chr(10) + Chr(10) + ;
             "Check your internet connection and try again." + Chr(10) + ;
@@ -2877,6 +2888,8 @@ static function EnsureHarbour( cCompiler, aCI )
    else
       lOk := File( cHbDir + "\bin\win\bcc\harbour.exe" )
    endif
+
+   lBusy := .F.
 
    if lOk
       MsgInfo( "Harbour installed successfully!" + Chr(10) + Chr(10) + ;
