@@ -96,6 +96,26 @@ HB_FUNC( _INSSETDATA ) { s_insData = (HB_PTRUINT) hb_parnint(1); }
 #endif
 #include <stdarg.h>
 
+/* Global dark mode flag — set by W32_SetIDEDarkMode() from Harbour */
+static int s_bDarkIDE = 1;
+
+extern int g_bDarkIDE;
+HB_FUNC( W32_SETIDEDARKMODE ) { s_bDarkIDE = hb_parl(1) ? 1 : 0; g_bDarkIDE = s_bDarkIDE; }
+
+/* Dark/light color helpers */
+#define CLR_BG       ( s_bDarkIDE ? RGB(30,30,30) : GetSysColor(COLOR_WINDOW) )
+#define CLR_BG_ALT   ( s_bDarkIDE ? RGB(38,38,38) : RGB(245,245,245) )
+#define CLR_TEXT      ( s_bDarkIDE ? RGB(212,212,212) : GetSysColor(COLOR_WINDOWTEXT) )
+#define CLR_CAT_BG   ( s_bDarkIDE ? RGB(50,50,50) : GetSysColor(COLOR_BTNFACE) )
+#define CLR_CAT_TEXT  ( s_bDarkIDE ? RGB(220,220,220) : GetSysColor(COLOR_BTNTEXT) )
+#define CLR_TAB_SEL   ( s_bDarkIDE ? RGB(50,50,50) : GetSysColor(COLOR_WINDOW) )
+#define CLR_TAB_BG    ( s_bDarkIDE ? RGB(35,35,35) : GetSysColor(COLOR_BTNFACE) )
+#define CLR_TAB_TEXT_SEL ( s_bDarkIDE ? RGB(255,255,255) : GetSysColor(COLOR_BTNTEXT) )
+#define CLR_TAB_TEXT_OFF ( s_bDarkIDE ? RGB(160,160,160) : GetSysColor(COLOR_GRAYTEXT) )
+#define CLR_EDIT_BG   ( s_bDarkIDE ? RGB(45,45,45) : GetSysColor(COLOR_WINDOW) )
+#define CLR_EDIT_TEXT  ( s_bDarkIDE ? RGB(212,212,212) : GetSysColor(COLOR_WINDOWTEXT) )
+#define CLR_WND_BG    ( s_bDarkIDE ? RGB(30,30,30) : GetSysColor(COLOR_BTNFACE) )
+
 #define MAX_ROWS 64
 #define COL_NAME_W 205
 
@@ -292,7 +312,7 @@ static LRESULT CALLBACK InsTabProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
    {
       HDC hdc = (HDC) wParam;
       RECT rc;
-      HBRUSH hbr = CreateSolidBrush( RGB(30,30,30) );
+      HBRUSH hbr = CreateSolidBrush( CLR_WND_BG );
       GetClientRect( hWnd, &rc );
       FillRect( hdc, &rc, hbr );
       DeleteObject( hbr );
@@ -322,11 +342,11 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
             tci2.cchTextMax = sizeof(txt);
             SendMessageA( di->hwndItem, TCM_GETITEMA, di->itemID, (LPARAM)&tci2 );
 
-            hbr = CreateSolidBrush( isSel ? RGB(50,50,50) : RGB(35,35,35) );
+            hbr = CreateSolidBrush( isSel ? CLR_TAB_SEL : CLR_TAB_BG );
             FillRect( di->hDC, &di->rcItem, hbr );
             DeleteObject( hbr );
 
-            SetTextColor( di->hDC, isSel ? RGB(255,255,255) : RGB(160,160,160) );
+            SetTextColor( di->hDC, isSel ? CLR_TAB_TEXT_SEL : CLR_TAB_TEXT_OFF );
             SetBkMode( di->hDC, TRANSPARENT );
             SelectObject( di->hDC, d ? d->hFont : GetStockObject(DEFAULT_GUI_FONT) );
             DrawTextA( di->hDC, txt, -1, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
@@ -342,9 +362,10 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
       {
          HDC hdc = (HDC) wParam;
          static HBRUSH s_hDarkBrush = NULL;
-         if( !s_hDarkBrush ) s_hDarkBrush = CreateSolidBrush( RGB(45,45,45) );
-         SetTextColor( hdc, RGB(212,212,212) );
-         SetBkColor( hdc, RGB(45,45,45) );
+         if( s_hDarkBrush ) DeleteObject( s_hDarkBrush );
+         s_hDarkBrush = CreateSolidBrush( CLR_EDIT_BG );
+         SetTextColor( hdc, CLR_EDIT_TEXT );
+         SetBkColor( hdc, CLR_EDIT_BG );
          return (LRESULT) s_hDarkBrush;
       }
 
@@ -387,13 +408,13 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
                   int nReal = ( d && nRow < d->nVisible ) ? d->map[nRow] : -1;
                   if( nReal >= 0 && d->rows[nReal].bIsCat )
                   {
-                     pcd->clrTextBk = RGB(50,50,50);
-                     pcd->clrText = RGB(220,220,220);
+                     pcd->clrTextBk = CLR_CAT_BG;
+                     pcd->clrText = CLR_CAT_TEXT;
                      SelectObject( pcd->nmcd.hdc, d->hBold );
                      return CDRF_NEWFONT;
                   }
-                  pcd->clrTextBk = ( nRow % 2 ) ? RGB(38,38,38) : RGB(30,30,30);
-                  pcd->clrText = RGB(212,212,212);
+                  pcd->clrTextBk = ( nRow % 2 ) ? CLR_BG_ALT : CLR_BG;
+                  pcd->clrText = CLR_TEXT;
                   return CDRF_DODEFAULT;
                }
             }
@@ -467,14 +488,14 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
                   /* Check lParam: 1=category, 0=event */
                   if( pcd->nmcd.lItemlParam == 1 || pcd->nmcd.lItemlParam == 2 )
                   {
-                     pcd->clrTextBk = RGB(50,50,50);
-                     pcd->clrText = RGB(220,220,220);
+                     pcd->clrTextBk = CLR_CAT_BG;
+                     pcd->clrText = CLR_CAT_TEXT;
                      SelectObject( pcd->nmcd.hdc, d->hBold );
                      return CDRF_NEWFONT;
                   }
                   pcd->clrTextBk = ( pcd->nmcd.dwItemSpec % 2 )
-                     ? RGB(38,38,38) : RGB(30,30,30);
-                  pcd->clrText = RGB(212,212,212);
+                     ? CLR_BG_ALT : CLR_BG;
+                  pcd->clrText = CLR_TEXT;
                   return CDRF_DODEFAULT;
                }
             }
@@ -1019,7 +1040,7 @@ HB_FUNC( INS_CREATE )
      d->hFont = CreateFontIndirectA(&lf);
      lf.lfWeight = FW_BOLD; d->hBold = CreateFontIndirectA(&lf); }
 
-   d->hBrush = CreateSolidBrush( RGB(30,30,30) );
+   d->hBrush = CreateSolidBrush( CLR_WND_BG );
 
    if( !bReg ) {
       wc.lpfnWndProc = InsWndProc; wc.hInstance = GetModuleHandle(NULL);
@@ -1088,14 +1109,15 @@ HB_FUNC( INS_CREATE )
    SendMessageA( d->hEventList, LVM_INSERTCOLUMNA, 1, (LPARAM) &lvc );
 
    /* Dark mode colors for ListViews */
-   ListView_SetBkColor( d->hList, RGB(30,30,30) );
-   ListView_SetTextBkColor( d->hList, RGB(30,30,30) );
-   ListView_SetTextColor( d->hList, RGB(212,212,212) );
-   ListView_SetBkColor( d->hEventList, RGB(30,30,30) );
-   ListView_SetTextBkColor( d->hEventList, RGB(30,30,30) );
-   ListView_SetTextColor( d->hEventList, RGB(212,212,212) );
+   ListView_SetBkColor( d->hList, CLR_BG );
+   ListView_SetTextBkColor( d->hList, CLR_BG );
+   ListView_SetTextColor( d->hList, CLR_TEXT );
+   ListView_SetBkColor( d->hEventList, CLR_BG );
+   ListView_SetTextBkColor( d->hEventList, CLR_BG );
+   ListView_SetTextColor( d->hEventList, CLR_TEXT );
 
-   /* Dark title bar */
+   /* Dark title bar (conditional) */
+   if( s_bDarkIDE )
    { BOOL useDark = TRUE; DwmSetWindowAttribute( d->hWnd, DWMWA_USE_IMMERSIVE_DARK_MODE, &useDark, sizeof(useDark) ); }
 
    ShowWindow( d->hWnd, SW_SHOW );
@@ -1569,6 +1591,43 @@ HB_FUNC( INS_SETPOS )
    INSDATA * d = (INSDATA *) (HB_PTRUINT) hb_parnint(1);
    if( !d || !d->hWnd ) return;
    MoveWindow( d->hWnd, hb_parni(2), hb_parni(3), hb_parni(4), hb_parni(5), TRUE );
+}
+
+/* INS_RefreshTheme( hInsData ) — update colors after dark/light toggle */
+HB_FUNC( INS_REFRESHTHEME )
+{
+   INSDATA * d = (INSDATA *) (HB_PTRUINT) hb_parnint(1);
+   if( !d ) return;
+
+   /* Update window brush */
+   if( d->hBrush ) DeleteObject( d->hBrush );
+   d->hBrush = CreateSolidBrush( CLR_WND_BG );
+   SetClassLongPtr( d->hWnd, GCLP_HBRBACKGROUND, (LONG_PTR) d->hBrush );
+
+   /* Update ListViews */
+   ListView_SetBkColor( d->hList, CLR_BG );
+   ListView_SetTextBkColor( d->hList, CLR_BG );
+   ListView_SetTextColor( d->hList, CLR_TEXT );
+   ListView_SetBkColor( d->hEventList, CLR_BG );
+   ListView_SetTextBkColor( d->hEventList, CLR_BG );
+   ListView_SetTextColor( d->hEventList, CLR_TEXT );
+
+   /* Dark/light title bar */
+   {
+      HMODULE hDwm = LoadLibraryA("dwmapi.dll");
+      if( hDwm ) {
+         typedef long (WINAPI *pDwmFn)(HWND,DWORD,const void*,DWORD);
+         pDwmFn fn = (pDwmFn) GetProcAddress(hDwm, "DwmSetWindowAttribute");
+         if( fn ) { BOOL val = s_bDarkIDE; fn(d->hWnd, 20, &val, sizeof(val)); }
+         FreeLibrary(hDwm);
+      }
+   }
+
+   /* Force full repaint */
+   InvalidateRect( d->hWnd, NULL, TRUE );
+   InvalidateRect( d->hList, NULL, TRUE );
+   InvalidateRect( d->hEventList, NULL, TRUE );
+   InvalidateRect( d->hTab, NULL, TRUE );
 }
 
 HB_FUNC( INS_DESTROY )

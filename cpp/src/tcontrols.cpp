@@ -6,6 +6,8 @@
 #include "hbide.h"
 #include <string.h>
 
+extern int g_bDarkIDE;
+
 /* ======================================================================
  * TLabel
  * ====================================================================== */
@@ -578,8 +580,8 @@ static LRESULT CALLBACK SplitterWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPA
             HPEN hShadow = CreatePen( PS_SOLID, 1, GetSysColor( COLOR_3DSHADOW ) );
             HPEN hOld;
             int y;
-            /* Fill background (dark) */
-            { HBRUSH hbr = CreateSolidBrush( RGB(45,45,48) );
+            /* Fill background */
+            { HBRUSH hbr = CreateSolidBrush( g_bDarkIDE ? RGB(45,45,48) : GetSysColor(COLOR_BTNFACE) );
               FillRect( hDC, &rc, hbr );
               DeleteObject( hbr ); }
             /* Draw grip dots */
@@ -1210,7 +1212,7 @@ static LRESULT CALLBACK PaletteTabSubProc( HWND hWnd, UINT msg, WPARAM wParam, L
    {
       HDC hdc = (HDC) wParam;
       RECT rc;
-      HBRUSH hbr = CreateSolidBrush( RGB(45, 45, 48) );
+      HBRUSH hbr = CreateSolidBrush( g_bDarkIDE ? RGB(45,45,48) : GetSysColor(COLOR_BTNFACE) );
       GetClientRect( hWnd, &rc );
       FillRect( hdc, &rc, hbr );
       DeleteObject( hbr );
@@ -1218,9 +1220,10 @@ static LRESULT CALLBACK PaletteTabSubProc( HWND hWnd, UINT msg, WPARAM wParam, L
    }
    if( msg == WM_CTLCOLORBTN )
    {
-      static HBRUSH s_hDarkBtnBrush = NULL;
-      if( !s_hDarkBtnBrush ) s_hDarkBtnBrush = CreateSolidBrush( RGB(45, 45, 48) );
-      return (LRESULT) s_hDarkBtnBrush;
+      static HBRUSH s_hBtnBrush = NULL;
+      if( s_hBtnBrush ) DeleteObject( s_hBtnBrush );
+      s_hBtnBrush = CreateSolidBrush( g_bDarkIDE ? RGB(45,45,48) : GetSysColor(COLOR_BTNFACE) );
+      return (LRESULT) s_hBtnBrush;
    }
    /* Owner-draw palette icon buttons */
    if( msg == WM_DRAWITEM )
@@ -1231,9 +1234,18 @@ static LRESULT CALLBACK PaletteTabSubProc( HWND hWnd, UINT msg, WPARAM wParam, L
          TComponentPalette * pal = (TComponentPalette *) GetWindowLongPtr( hWnd, GWLP_USERDATA );
          int imgIdx = (int) GetWindowLongPtr( di->hwndItem, GWLP_USERDATA );
          BOOL isHot = ( di->itemState & ODS_SELECTED );
-         HBRUSH hbr = CreateSolidBrush( isHot ? RGB(70,70,70) : RGB(50,50,53) );
-         FillRect( di->hDC, &di->rcItem, hbr );
-         DeleteObject( hbr );
+         if( g_bDarkIDE )
+         {
+            HBRUSH hbr = CreateSolidBrush( isHot ? RGB(70,70,70) : RGB(50,50,53) );
+            FillRect( di->hDC, &di->rcItem, hbr );
+            DeleteObject( hbr );
+         }
+         else
+         {
+            HBRUSH hbr = CreateSolidBrush( isHot ? GetSysColor(COLOR_BTNHIGHLIGHT) : GetSysColor(COLOR_BTNFACE) );
+            FillRect( di->hDC, &di->rcItem, hbr );
+            DeleteObject( hbr );
+         }
          /* Draw icon centered */
          if( pal && pal->FPalImageList )
          {
@@ -1244,7 +1256,7 @@ static LRESULT CALLBACK PaletteTabSubProc( HWND hWnd, UINT msg, WPARAM wParam, L
          }
          /* Subtle border */
          {
-            HPEN hPen = CreatePen( PS_SOLID, 1, RGB(65,65,65) );
+            HPEN hPen = CreatePen( PS_SOLID, 1, g_bDarkIDE ? RGB(65,65,65) : GetSysColor(COLOR_BTNSHADOW) );
             HPEN hOld = (HPEN) SelectObject( di->hDC, hPen );
             HBRUSH hNull = (HBRUSH) GetStockObject( NULL_BRUSH );
             HBRUSH hOldBr = (HBRUSH) SelectObject( di->hDC, hNull );

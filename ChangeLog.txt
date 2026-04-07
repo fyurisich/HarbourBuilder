@@ -1,6 +1,27 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-07 (Session 12b: Live dark/light toggle)
+
+  LIVE DARK/LIGHT MODE TOGGLE:
+  - Tools > Dark Mode menu item with checkmark, active by default
+  - All UI elements switch instantly without restart:
+    IDE bar, menu bar, toolbars, palette tabs/buttons/splitter,
+    inspector (ListViews, tabs, title bar, combo/edit), code editor
+    (tabs, title bar, status bar), design form (bg, grid dots, title bar)
+  - Global C flag g_bDarkIDE shared across tform.cpp, tcontrols.cpp,
+    inspector.prg, hbbuilder_win.prg via extern
+  - Inspector: INS_RefreshTheme() updates ListView colors, brush, title bar
+  - Code editor: CodeEditorRefreshTheme() updates title bar + repaints
+  - IDE bar: W32_RedrawAll() with RDW_ALLCHILDREN forces full repaint
+  - Menu bar: owner-draw items + PaintDarkMenuBar use conditional colors
+    (COLOR_MENUBAR/COLOR_MENUHILIGHT in light, dark RGB in dark)
+  - Static initializer reads DarkMode from hbbuilder.ini at C++ level
+    before any window creation for SetPreferredAppMode(ForceDark)
+  - DarkMode=1|0 saved to hbbuilder.ini on toggle
+  - W32_MenuCheck, GetSysColor, W32_RedrawAll, W32_SetIDEDarkMode,
+    CodeEditorRefreshTheme Harbour functions added
+
 2026-04-07 (Session 12: Windows socket debugger + full dark mode)
 
   SOCKET DEBUGGER PORT TO WINDOWS (macOS/Linux parity):

@@ -49,6 +49,7 @@ function Main()
    lDarkMode := ( IniRead( "IDE", "DarkMode", "1" ) == "1" )
 
    // Apply dark mode to system (menus, scrollbars) — must be before any window
+   W32_SetIDEDarkMode( lDarkMode )
    if lDarkMode
       W32_SetAppDarkMode( .T. )
    endif
@@ -2479,7 +2480,8 @@ static function ToggleDarkMode()
 
    lDarkMode := ! lDarkMode
 
-   // Update checkmark
+   // Update global C flag + checkmark
+   W32_SetIDEDarkMode( lDarkMode )
    W32_MenuCheck( hToolsPopup, 2, lDarkMode )
 
    // Save to INI
@@ -2504,10 +2506,23 @@ static function ToggleDarkMode()
       endif
    endif
 
-   MsgInfo( "Dark mode: " + iif( lDarkMode, "ON", "OFF" ) + Chr(10) + ;
-            Chr(10) + ;
-            "Some elements may require a restart to fully apply.", ;
-            "Theme Changed" )
+   // Refresh inspector theme
+   if _InsGetData() != 0
+      INS_RefreshTheme( _InsGetData() )
+   endif
+
+   // Repaint IDE bar + all children (toolbars, palette)
+   W32_RedrawAll( UI_FormGetHwnd( oIDE:hCpp ) )
+
+   // Refresh code editor: title bar + tabs + status bar
+   if hCodeEditor != nil .and. hCodeEditor != 0
+      CodeEditorRefreshTheme( hCodeEditor, lDarkMode )
+   endif
+
+   // Refresh design form title bar
+   if oDesignForm != nil
+      W32_SetWindowDarkMode( UI_FormGetHwnd( oDesignForm:hCpp ), lDarkMode )
+   endif
 
 return nil
 
@@ -5299,11 +5314,12 @@ static void UpdateStatusBar( CODEEDITOR * ed )
    SetWindowTextA( ed->hStatusBar, szStatus );
 }
 
-/* Subclass for editor tab: dark background */
+/* Subclass for editor tab: conditional dark background */
+extern int g_bDarkIDE;
 static WNDPROC s_oldEdTabProc = NULL;
 static LRESULT CALLBACK EdTabSubProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
-   if( msg == WM_ERASEBKGND )
+   if( msg == WM_ERASEBKGND && g_bDarkIDE )
    {
       HDC hdc = (HDC) wParam;
       RECT rc;
@@ -5352,11 +5368,15 @@ static LRESULT CALLBACK CodeEdWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARA
             tci2.cchTextMax = sizeof(txt);
             SendMessageA( di->hwndItem, TCM_GETITEMA, di->itemID, (LPARAM)&tci2 );
 
-            hbr = CreateSolidBrush( isSel ? RGB(50,50,50) : RGB(30,30,30) );
+            if( g_bDarkIDE ) {
+               hbr = CreateSolidBrush( isSel ? RGB(50,50,50) : RGB(30,30,30) );
+               SetTextColor( di->hDC, isSel ? RGB(255,255,255) : RGB(140,140,140) );
+            } else {
+               hbr = CreateSolidBrush( isSel ? GetSysColor(COLOR_WINDOW) : GetSysColor(COLOR_BTNFACE) );
+               SetTextColor( di->hDC, GetSysColor(COLOR_BTNTEXT) );
+            }
             FillRect( di->hDC, &di->rcItem, hbr );
             DeleteObject( hbr );
-
-            SetTextColor( di->hDC, isSel ? RGB(255,255,255) : RGB(140,140,140) );
             SetBkMode( di->hDC, TRANSPARENT );
             DrawTextA( di->hDC, txt, -1, &di->rcItem, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
             return TRUE;
@@ -5510,15 +5530,16 @@ static LRESULT CALLBACK CodeEdWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARA
          }
          break;
 
-      /* Dark status bar background */
+      /* Status bar background (dark/light) */
       case WM_CTLCOLORSTATIC:
-         if( ed && ed->hStatusBar && (HWND) lParam == ed->hStatusBar )
+         if( ed && ed->hStatusBar && (HWND) lParam == ed->hStatusBar && g_bDarkIDE )
          {
             static HBRUSH s_hSbBrush = NULL;
             HDC hdc = (HDC) wParam;
             SetTextColor( hdc, RGB(180,180,180) );
             SetBkColor( hdc, RGB(37,37,38) );
-            if( !s_hSbBrush ) s_hSbBrush = CreateSolidBrush( RGB(37,37,38) );
+            if( s_hSbBrush ) DeleteObject( s_hSbBrush );
+            s_hSbBrush = CreateSolidBrush( RGB(37,37,38) );
             return (LRESULT) s_hSbBrush;
          }
          break;
@@ -5634,7 +5655,8 @@ HB_FUNC( CODEEDITORCREATE )
       SendMessage( ed->hStatusBar, WM_SETFONT, (WPARAM) hSbFont, TRUE );
    }
 
-   /* Dark title bar for code editor window */
+   /* Dark title bar for code editor window (conditional) */
+   if( g_bDarkIDE )
    {
       HMODULE hDwm = LoadLibraryA("dwmapi.dll");
       if( hDwm ) {
@@ -6016,6 +6038,15 @@ HB_FUNC( CODEEDITORSHOWDEBUGLINE )
    InvalidateRect( ed->hEdit, NULL, FALSE );
 }
 
+/* W32_RedrawAll( hWnd ) — force repaint of window + all children */
+HB_FUNC( W32_REDRAWALL )
+{
+   HWND hWnd = (HWND)(LONG_PTR) hb_parnint(1);
+   if( hWnd )
+      RedrawWindow( hWnd, NULL, NULL,
+         RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_FRAME | RDW_UPDATENOW );
+}
+
 /* W32_MenuCheck( hPopup, nPos, lChecked ) — check/uncheck a menu item by 0-based position */
 HB_FUNC( W32_MENUCHECK )
 {
@@ -6104,6 +6135,31 @@ HB_FUNC( W32_PROCESSEVENTS )
       TranslateMessage( &msg );
       DispatchMessage( &msg );
    }
+}
+
+/* CodeEditorRefreshTheme( hEditor, lDark ) — update editor window theme */
+HB_FUNC( CODEEDITORREFRESHTHEME )
+{
+   CODEEDITOR * ed = (CODEEDITOR *) (HB_PTRUINT) hb_parnint(1);
+   BOOL bDark = hb_parl(2);
+   if( !ed || !ed->hWnd ) return;
+
+   /* Title bar */
+   {
+      HMODULE hDwm = LoadLibraryA("dwmapi.dll");
+      if( hDwm ) {
+         typedef HRESULT (WINAPI *pDwmFn)(HWND,DWORD,LPCVOID,DWORD);
+         pDwmFn fn = (pDwmFn) GetProcAddress(hDwm,"DwmSetWindowAttribute");
+         if( fn ) { BOOL val = bDark; fn(ed->hWnd, 20, &val, sizeof(val)); }
+         FreeLibrary(hDwm);
+      }
+   }
+
+   /* Repaint tabs + status bar */
+   if( ed->hTab ) InvalidateRect( ed->hTab, NULL, TRUE );
+   if( ed->hStatusBar ) InvalidateRect( ed->hStatusBar, NULL, TRUE );
+   RedrawWindow( ed->hWnd, NULL, NULL,
+      RDW_INVALIDATE | RDW_ERASE | RDW_ALLCHILDREN | RDW_FRAME | RDW_UPDATENOW );
 }
 
 /* Stubs for macOS/Linux functions referenced from classes.prg */

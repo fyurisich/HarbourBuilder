@@ -23,20 +23,40 @@
 static struct _DpiInit {
    _DpiInit() {
       SetProcessDPIAware();
-      /* Enable dark menus/scrollbars on Win10 1903+ / Win11 */
-      HMODULE hUx = LoadLibraryA("uxtheme.dll");
-      if( hUx ) {
-         /* SetPreferredAppMode: 0=Default, 1=AllowDark, 2=ForceDark, 3=ForceLight */
-         typedef int (WINAPI *fnSPAM)(int);
-         fnSPAM pfn = (fnSPAM) GetProcAddress(hUx, MAKEINTRESOURCEA(135));
-         if( pfn ) pfn( 2 ); /* ForceDark */
-
-         /* RefreshImmersiveColorPolicyState */
-         typedef void (WINAPI *fnRefresh)(void);
-         fnRefresh pfnR = (fnRefresh) GetProcAddress(hUx, MAKEINTRESOURCEA(104));
-         if( pfnR ) pfnR();
-
-         FreeLibrary( hUx );
+      /* Read DarkMode from INI and apply before any window is created */
+      {
+         char szPath[MAX_PATH], szVal[8];
+         int isDark = 1; /* default: dark */
+         GetModuleFileNameA( NULL, szPath, MAX_PATH );
+         /* Navigate to ..\hbbuilder.ini from bin\ dir */
+         char * p = strrchr( szPath, '\\' );
+         if( p ) { *p = 0; p = strrchr( szPath, '\\' ); }
+         if( p ) { strcpy( p + 1, "hbbuilder.ini" ); }
+         GetPrivateProfileStringA( NULL, "DarkMode", "1", szVal, sizeof(szVal), szPath );
+         /* INI without sections: search manually */
+         {
+            FILE * f = fopen( szPath, "r" );
+            if( f ) {
+               char line[128];
+               while( fgets(line, sizeof(line), f) ) {
+                  if( strncmp(line, "DarkMode=", 9) == 0 )
+                     { isDark = (line[9] == '1') ? 1 : 0; break; }
+               }
+               fclose( f );
+            }
+         }
+         if( isDark ) {
+            HMODULE hUx = LoadLibraryA("uxtheme.dll");
+            if( hUx ) {
+               typedef int (WINAPI *fnSPAM)(int);
+               fnSPAM pfn = (fnSPAM) GetProcAddress(hUx, MAKEINTRESOURCEA(135));
+               if( pfn ) pfn( 2 ); /* ForceDark */
+               typedef void (WINAPI *fnR)(void);
+               fnR pfnR = (fnR) GetProcAddress(hUx, MAKEINTRESOURCEA(104));
+               if( pfnR ) pfnR();
+               FreeLibrary( hUx );
+            }
+         }
       }
    }
 } _s_dpiInit;

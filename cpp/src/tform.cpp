@@ -4,6 +4,9 @@
 
 #include "hbide.h"
 #include <string.h>
+/* Global dark mode flag for forms — set from Harbour via W32_SetIDEDarkMode */
+int g_bDarkIDE = 1;
+
 /* Owner-draw dark menu item data */
 struct DARKMENUITM { char szText[64]; };
 
@@ -491,7 +494,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                FillRect( FGridDC, &rc, FBkBrush );
                for( y = FClientTop + 8; y < FGridH; y += 8 )
                   for( x = 8; x < FGridW; x += 8 )
-                     SetPixel( FGridDC, x, y, RGB(90, 90, 90) );
+                     SetPixel( FGridDC, x, y, g_bDarkIDE ? RGB(90,90,90) : RGB(200,200,200) );
             }
             BitBlt( hDC, 0, 0, FGridW, FGridH, FGridDC, 0, 0, SRCCOPY );
          }
@@ -551,18 +554,23 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
       case WM_DRAWITEM:
       {
          DRAWITEMSTRUCT * pDIS = (DRAWITEMSTRUCT *) lParam;
-         /* Owner-draw dark menu bar items — no flash since we control the painting */
+         /* Owner-draw menu bar items — dark or light depending on g_bDarkIDE */
          if( pDIS && pDIS->CtlType == ODT_MENU )
          {
             struct DARKMENUITM * dm = (struct DARKMENUITM *) pDIS->itemData;
             BOOL isSel = ( pDIS->itemState & ODS_SELECTED ) ||
                          ( pDIS->itemState & ODS_HOTLIGHT );
-            static HBRUSH s_hMiBg = NULL, s_hMiHi = NULL;
-            if( !s_hMiBg ) s_hMiBg = CreateSolidBrush( RGB(45,45,48) );
-            if( !s_hMiHi ) s_hMiHi = CreateSolidBrush( RGB(65,65,65) );
+            HBRUSH hbr;
 
-            FillRect( pDIS->hDC, &pDIS->rcItem, isSel ? s_hMiHi : s_hMiBg );
-            SetTextColor( pDIS->hDC, isSel ? RGB(255,255,255) : RGB(200,200,200) );
+            if( g_bDarkIDE ) {
+               hbr = CreateSolidBrush( isSel ? RGB(65,65,65) : RGB(45,45,48) );
+               SetTextColor( pDIS->hDC, isSel ? RGB(255,255,255) : RGB(200,200,200) );
+            } else {
+               hbr = CreateSolidBrush( isSel ? GetSysColor(COLOR_MENUHILIGHT) : GetSysColor(COLOR_MENUBAR) );
+               SetTextColor( pDIS->hDC, GetSysColor(COLOR_MENUTEXT) );
+            }
+            FillRect( pDIS->hDC, &pDIS->rcItem, hbr );
+            DeleteObject( hbr );
             SetBkMode( pDIS->hDC, TRANSPARENT );
             if( dm )
                DrawTextA( pDIS->hDC, dm->szText, -1, &pDIS->rcItem,
@@ -616,11 +624,15 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
             tci.cchTextMax = sizeof(txt);
             SendMessageA( pDIS->hwndItem, TCM_GETITEMA, pDIS->itemID, (LPARAM)&tci );
 
-            hbr = CreateSolidBrush( isSel ? RGB(60,60,60) : RGB(45,45,48) );
+            if( g_bDarkIDE ) {
+               hbr = CreateSolidBrush( isSel ? RGB(60,60,60) : RGB(45,45,48) );
+               SetTextColor( pDIS->hDC, isSel ? RGB(255,255,255) : RGB(160,160,160) );
+            } else {
+               hbr = CreateSolidBrush( isSel ? GetSysColor(COLOR_WINDOW) : GetSysColor(COLOR_BTNFACE) );
+               SetTextColor( pDIS->hDC, GetSysColor(COLOR_BTNTEXT) );
+            }
             FillRect( pDIS->hDC, &pDIS->rcItem, hbr );
             DeleteObject( hbr );
-
-            SetTextColor( pDIS->hDC, isSel ? RGB(255,255,255) : RGB(160,160,160) );
             SetBkMode( pDIS->hDC, TRANSPARENT );
             {
                HFONT hFont = (HFONT) SendMessage( pDIS->hwndItem, WM_GETFONT, 0, 0 );
@@ -749,10 +761,13 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                   case CDDS_PREPAINT:
                      return CDRF_NOTIFYITEMDRAW;
                   case CDDS_ITEMPREPAINT:
-                     pCD->clrText = RGB(212, 212, 212);
-                     pCD->clrBtnFace = RGB(45, 45, 48);
-                     SetBkMode( pCD->nmcd.hdc, TRANSPARENT );
-                     return TBCDRF_USECDCOLORS;
+                     if( g_bDarkIDE ) {
+                        pCD->clrText = RGB(212, 212, 212);
+                        pCD->clrBtnFace = RGB(45, 45, 48);
+                        SetBkMode( pCD->nmcd.hdc, TRANSPARENT );
+                        return TBCDRF_USECDCOLORS;
+                     }
+                     return CDRF_DODEFAULT;
                }
             }
          }
@@ -1274,7 +1289,7 @@ void TForm::Run()
       Center();
 
    /* Dark title bar on Windows 10 1809+ / Windows 11 */
-   SetDarkTitleBar( FHandle, TRUE );
+   if( g_bDarkIDE ) SetDarkTitleBar( FHandle, TRUE );
 
    ShowWindow( FHandle, SW_SHOW );
    UpdateWindow( FHandle );
@@ -1306,7 +1321,7 @@ void TForm::Show()
    if( FHandle )
    {
       /* Dark title bar */
-      SetDarkTitleBar( FHandle, TRUE );
+      if( g_bDarkIDE ) SetDarkTitleBar( FHandle, TRUE );
       /* AllowDarkModeForWindow - uxtheme ordinal 133 */
       {
          HMODULE hUx = GetModuleHandleA("uxtheme.dll");
@@ -1823,10 +1838,12 @@ void TForm::PaintDarkMenuBar()
       HFONT hFont = (HFONT) GetStockObject( DEFAULT_GUI_FONT );
       HFONT hOld = (HFONT) SelectObject( hdc, hFont );
 
-      if( !s_hMenuBg ) s_hMenuBg = CreateSolidBrush( RGB(45,45,48) );
-      if( !s_hMenuHi ) s_hMenuHi = CreateSolidBrush( RGB(65,65,65) );
+      if( s_hMenuBg ) DeleteObject( s_hMenuBg );
+      if( s_hMenuHi ) DeleteObject( s_hMenuHi );
+      s_hMenuBg = CreateSolidBrush( g_bDarkIDE ? RGB(45,45,48) : GetSysColor(COLOR_MENUBAR) );
+      s_hMenuHi = CreateSolidBrush( g_bDarkIDE ? RGB(65,65,65) : GetSysColor(COLOR_MENUHILIGHT) );
 
-      /* Fill entire menu bar with dark color */
+      /* Fill entire menu bar */
       rcBar.left   = mbi.rcBar.left - rcWin.left;
       rcBar.top    = mbi.rcBar.top  - rcWin.top;
       rcBar.right  = mbi.rcBar.right - rcWin.left;
@@ -1866,10 +1883,10 @@ void TForm::PaintDarkMenuBar()
          if( state & MFS_HILITE )
          {
             FillRect( hdc, &rcItem, s_hMenuHi );
-            SetTextColor( hdc, RGB(255,255,255) );
+            SetTextColor( hdc, g_bDarkIDE ? RGB(255,255,255) : GetSysColor(COLOR_HIGHLIGHTTEXT) );
          }
          else
-            SetTextColor( hdc, RGB(200,200,200) );
+            SetTextColor( hdc, g_bDarkIDE ? RGB(200,200,200) : GetSysColor(COLOR_MENUTEXT) );
 
          DrawTextA( hdc, txt, -1, &rcItem,
             DT_CENTER | DT_VCENTER | DT_SINGLELINE );
