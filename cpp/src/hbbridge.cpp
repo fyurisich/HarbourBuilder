@@ -1870,6 +1870,8 @@ struct _BatchThreadData {
    char szBatFile[MAX_PATH];
    char * pOutput;
    DWORD  dwOutputLen;
+   DWORD  dwOutputCap;
+   CRITICAL_SECTION cs;
    volatile LONG bDone;
 };
 
@@ -1883,9 +1885,11 @@ static DWORD WINAPI _BatchThreadProc( LPVOID pArg )
 
    if( !CreatePipe( &hReadPipe, &hWritePipe, &sa, 0 ) )
    {
+      EnterCriticalSection( &td->cs );
       td->pOutput = (char *)HeapAlloc( GetProcessHeap(), 0, 64 );
       lstrcpyA( td->pOutput, "Failed to create pipe." );
       td->dwOutputLen = lstrlenA( td->pOutput );
+      LeaveCriticalSection( &td->cs );
       InterlockedExchange( &td->bDone, TRUE );
       return 1;
    }
@@ -1911,40 +1915,46 @@ static DWORD WINAPI _BatchThreadProc( LPVOID pArg )
    {
       CloseHandle( hReadPipe );
       CloseHandle( hWritePipe );
+      EnterCriticalSection( &td->cs );
       td->pOutput = (char *)HeapAlloc( GetProcessHeap(), 0, 64 );
       lstrcpyA( td->pOutput, "Failed to execute batch file." );
       td->dwOutputLen = lstrlenA( td->pOutput );
+      LeaveCriticalSection( &td->cs );
       InterlockedExchange( &td->bDone, TRUE );
       return 1;
    }
 
    CloseHandle( hWritePipe );
 
-   /* Read output from pipe */
-   DWORD dwCap = 32768, dwLen = 0;
-   char * pBuf = (char *)HeapAlloc( GetProcessHeap(), 0, dwCap );
+   /* Read output from pipe — update shared buffer incrementally */
+   EnterCriticalSection( &td->cs );
+   td->dwOutputCap = 65536;
+   td->pOutput = (char *)HeapAlloc( GetProcessHeap(), 0, td->dwOutputCap );
+   td->dwOutputLen = 0;
+   LeaveCriticalSection( &td->cs );
+
    char tmp[4096];
    DWORD nRead;
 
    while( ReadFile( hReadPipe, tmp, sizeof(tmp), &nRead, NULL ) && nRead > 0 )
    {
-      if( dwLen + nRead + 1 > dwCap )
+      EnterCriticalSection( &td->cs );
+      if( td->dwOutputLen + nRead + 1 > td->dwOutputCap )
       {
-         dwCap *= 2;
-         pBuf = (char *)HeapReAlloc( GetProcessHeap(), 0, pBuf, dwCap );
+         td->dwOutputCap *= 2;
+         td->pOutput = (char *)HeapReAlloc( GetProcessHeap(), 0, td->pOutput, td->dwOutputCap );
       }
-      CopyMemory( pBuf + dwLen, tmp, nRead );
-      dwLen += nRead;
+      CopyMemory( td->pOutput + td->dwOutputLen, tmp, nRead );
+      td->dwOutputLen += nRead;
+      td->pOutput[td->dwOutputLen] = 0;
+      LeaveCriticalSection( &td->cs );
    }
-   pBuf[dwLen] = 0;
    CloseHandle( hReadPipe );
 
    WaitForSingleObject( pi.hProcess, INFINITE );
    CloseHandle( pi.hProcess );
    CloseHandle( pi.hThread );
 
-   td->pOutput = pBuf;
-   td->dwOutputLen = dwLen;
    InterlockedExchange( &td->bDone, TRUE );
    return 0;
 }
@@ -1962,8 +1972,9 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
    ZeroMemory( &td, sizeof(td) );
    lstrcpynA( td.szBatFile, cBatFile, MAX_PATH );
    td.bDone = FALSE;
+   InitializeCriticalSection( &td.cs );
 
-   /* Create marquee progress dialog */
+   /* Create progress dialog with output log */
    static BOOL bRegBatch = FALSE;
    if( !bRegBatch )
    {
@@ -1979,7 +1990,7 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
 
    int sw = GetSystemMetrics( SM_CXSCREEN );
    int sh = GetSystemMetrics( SM_CYSCREEN );
-   int dlgW = 500, dlgH = 150;
+   int dlgW = 560, dlgH = 340;
    int x = (sw - dlgW) / 2, y = (sh - dlgH) / 2;
 
    HWND hDlg = CreateWindowExA( WS_EX_DLGMODALFRAME | WS_EX_TOPMOST,
@@ -2005,22 +2016,42 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
       16, 12, dlgW - 40, 20, hDlg, NULL, GetModuleHandle(NULL), NULL );
    SendMessageA( hLabel, WM_SETFONT, (WPARAM) hFont, TRUE );
 
-   /* Progress bar — animated manually (PBS_MARQUEE needs visual styles manifest) */
+   /* Progress bar — animated manually */
    HWND hBar = CreateWindowExA( 0, PROGRESS_CLASSA, NULL,
       WS_CHILD | WS_VISIBLE | PBS_SMOOTH,
-      16, 40, dlgW - 40, 24, hDlg, NULL, GetModuleHandle(NULL), NULL );
+      16, 38, dlgW - 40, 20, hDlg, NULL, GetModuleHandle(NULL), NULL );
    SendMessageA( hBar, PBM_SETRANGE, 0, MAKELPARAM(0, 100) );
    SendMessageA( hBar, PBM_SETPOS, 0, 0 );
+
+   /* Output log — read-only multiline edit with scroll */
+   {
+      LOGFONTA lf = {0};
+      lf.lfHeight = -12; lf.lfCharSet = DEFAULT_CHARSET;
+      lstrcpyA( lf.lfFaceName, "Consolas" );
+      HFONT hLogFont = CreateFontIndirectA( &lf );
+
+      HWND hLog = CreateWindowExA( WS_EX_CLIENTEDGE, "EDIT", "",
+         WS_CHILD | WS_VISIBLE | WS_VSCROLL |
+         ES_MULTILINE | ES_READONLY | ES_AUTOVSCROLL | ES_LEFT,
+         16, 66, dlgW - 40, dlgH - 90,
+         hDlg, (HMENU)100, GetModuleHandle(NULL), NULL );
+      SendMessageA( hLog, WM_SETFONT, (WPARAM) hLogFont, TRUE );
+      /* Dark background for the log */
+      /* (will use default colors — good enough) */
+   }
 
    UpdateWindow( hDlg );
 
    /* Start background thread */
    HANDLE hThread = CreateThread( NULL, 0, _BatchThreadProc, &td, 0, NULL );
 
-   /* Message pump while thread runs — animate progress bar */
+   /* Message pump — animate progress bar + update output log */
    {
       int nPos = 0, nDir = 2;
-      DWORD dwLast = GetTickCount();
+      DWORD dwLastAnim = GetTickCount();
+      DWORD dwLastLog  = GetTickCount();
+      DWORD dwShownLen = 0;
+      HWND hLog = GetDlgItem( hDlg, 100 );
 
       while( !td.bDone )
       {
@@ -2031,17 +2062,98 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
             DispatchMessage( &m );
          }
 
-         /* Bounce animation: 0 → 100 → 0 → 100 ... */
-         if( GetTickCount() - dwLast >= 40 )
+         /* Bounce animation every 40ms */
+         if( GetTickCount() - dwLastAnim >= 40 )
          {
             nPos += nDir;
             if( nPos >= 100 ) { nPos = 100; nDir = -2; }
             else if( nPos <= 0 ) { nPos = 0; nDir = 2; }
             SendMessageA( hBar, PBM_SETPOS, nPos, 0 );
-            dwLast = GetTickCount();
+            dwLastAnim = GetTickCount();
+         }
+
+         /* Update output log every 250ms */
+         if( GetTickCount() - dwLastLog >= 250 )
+         {
+            EnterCriticalSection( &td.cs );
+            if( td.pOutput && td.dwOutputLen > dwShownLen )
+            {
+               /* Append new text to the edit control */
+               DWORD newLen = td.dwOutputLen;
+               char * pNew = (char *)HeapAlloc( GetProcessHeap(), 0, newLen - dwShownLen + 1 );
+               CopyMemory( pNew, td.pOutput + dwShownLen, newLen - dwShownLen );
+               pNew[newLen - dwShownLen] = 0;
+               LeaveCriticalSection( &td.cs );
+
+               /* Convert \n to \r\n for EDIT control */
+               int nLines = 0;
+               for( DWORD k = 0; k < newLen - dwShownLen; k++ )
+                  if( pNew[k] == '\n' ) nLines++;
+               char * pCrLf = (char *)HeapAlloc( GetProcessHeap(), 0, (newLen - dwShownLen) + nLines + 1 );
+               DWORD j = 0;
+               for( DWORD k = 0; k < newLen - dwShownLen; k++ )
+               {
+                  if( pNew[k] == '\n' && (k == 0 || pNew[k-1] != '\r') )
+                     pCrLf[j++] = '\r';
+                  pCrLf[j++] = pNew[k];
+               }
+               pCrLf[j] = 0;
+
+               /* Append to edit — move caret to end first */
+               int len = GetWindowTextLengthA( hLog );
+               SendMessageA( hLog, EM_SETSEL, len, len );
+               SendMessageA( hLog, EM_REPLACESEL, FALSE, (LPARAM) pCrLf );
+               /* Auto-scroll to bottom */
+               SendMessageA( hLog, EM_SCROLLCARET, 0, 0 );
+
+               HeapFree( GetProcessHeap(), 0, pNew );
+               HeapFree( GetProcessHeap(), 0, pCrLf );
+               dwShownLen = newLen;
+            }
+            else
+            {
+               LeaveCriticalSection( &td.cs );
+            }
+            dwLastLog = GetTickCount();
          }
 
          Sleep( 15 );
+      }
+
+      /* Final update — show any remaining output */
+      EnterCriticalSection( &td.cs );
+      if( td.pOutput && td.dwOutputLen > dwShownLen )
+      {
+         DWORD remain = td.dwOutputLen - dwShownLen;
+         char * pNew = (char *)HeapAlloc( GetProcessHeap(), 0, remain + 1 );
+         CopyMemory( pNew, td.pOutput + dwShownLen, remain );
+         pNew[remain] = 0;
+         LeaveCriticalSection( &td.cs );
+
+         int nLines = 0;
+         for( DWORD k = 0; k < remain; k++ )
+            if( pNew[k] == '\n' ) nLines++;
+         char * pCrLf = (char *)HeapAlloc( GetProcessHeap(), 0, remain + nLines + 1 );
+         DWORD j = 0;
+         for( DWORD k = 0; k < remain; k++ )
+         {
+            if( pNew[k] == '\n' && (k == 0 || pNew[k-1] != '\r') )
+               pCrLf[j++] = '\r';
+            pCrLf[j++] = pNew[k];
+         }
+         pCrLf[j] = 0;
+
+         int len = GetWindowTextLengthA( hLog );
+         SendMessageA( hLog, EM_SETSEL, len, len );
+         SendMessageA( hLog, EM_REPLACESEL, FALSE, (LPARAM) pCrLf );
+         SendMessageA( hLog, EM_SCROLLCARET, 0, 0 );
+
+         HeapFree( GetProcessHeap(), 0, pNew );
+         HeapFree( GetProcessHeap(), 0, pCrLf );
+      }
+      else
+      {
+         LeaveCriticalSection( &td.cs );
       }
    }
 
@@ -2052,6 +2164,7 @@ HB_FUNC( W32_RUNBATCHWITHPROGRESS )
 
    /* Close dialog */
    DestroyWindow( hDlg );
+   DeleteCriticalSection( &td.cs );
 
    /* Return output */
    if( td.pOutput ) {
