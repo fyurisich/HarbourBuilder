@@ -13,6 +13,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+/* From gtk3_core.c */
+extern int GTK_IsDark(void);
 #include <strings.h>
 
 /* Defined in gtk3_core.c */
@@ -196,7 +199,7 @@ static void InsRebuildStore( INSDATA * d )
             COL_VALUE, "",
             COL_EDITABLE, FALSE,
             COL_WEIGHT, PANGO_WEIGHT_BOLD,
-            COL_BG_COLOR, "#E6E6E6",
+            COL_BG_COLOR, GTK_IsDark() ? "#3C3C3C" : "#E6E6E6",
             COL_BG_SET, TRUE,
             COL_REAL_IDX, nReal,
             -1 );
@@ -218,7 +221,7 @@ static void InsRebuildStore( INSDATA * d )
          }
          else if( i % 2 == 1 )
          {
-            strcpy( bgColor, "#F8F8F8" );
+            strcpy( bgColor, GTK_IsDark() ? "#333333" : "#F8F8F8" );
             hasBg = TRUE;
          }
 

@@ -3,6 +3,15 @@ HarbourBuilder - Cross-platform visual IDE for Harbour
 
 2026-04-07 (Session 14: Linux GTK3 — ShowModal, form lifecycle & project restore)
 
+  DARK MODE (GTK3):
+  - Fixed dark/light toggle: inspector property rows now use dark-aware
+    colors (#3C3C3C/#333333 in dark, #E6E6E6/#F8F8F8 in light).
+  - Screen-wide CSS provider for dark mode (window, toolbar, toolbar
+    buttons). Properly removed when switching back to light.
+  - Inspector refreshes on toggle so property row colors update.
+  - Dark mode preference persisted to hbbuilder.ini and restored on
+    startup via LoadDarkMode()/SaveDarkMode().
+
   TOOLBAR:
   - Adjusted toolbar splitter width from 308 to 348 pixels so all buttons
     in the first row (including the new "Form" toggle) are visible.

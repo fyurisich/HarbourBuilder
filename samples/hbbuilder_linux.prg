@@ -56,6 +56,9 @@ function Main()
    UI_FormSetPos( oIDE:hCpp, 0, 0 )
    oIDE:Show()
 
+   // Restore dark mode preference from ini
+   LoadDarkMode()
+
    // Inspector: right below IDE window
    nInsTop  := GTK_GetWindowBottom( oIDE:hCpp )
    nEditorTop := nInsTop + 1
@@ -2023,12 +2026,32 @@ static function ShowTabOrder()
    endif
 return nil
 
-// === Dark Mode (toggle) ===
+// === Dark Mode (toggle + persist) ===
+
+static function GetIniPath()
+return hb_DirBase() + "hbbuilder.ini"
+
+static function LoadDarkMode()
+   local cIni := MemoRead( GetIniPath() )
+   if "DarkMode=1" $ cIni
+      GTK_SetDarkMode( .T. )
+      return .T.
+   endif
+return .F.
+
+static function SaveDarkMode( lDark )
+   MemoWrit( GetIniPath(), "DarkMode=" + If( lDark, "1", "0" ) + Chr(10) )
+return nil
 
 static function ToggleDarkMode()
-   static lDark := .F.
-   lDark := !lDark
+   local lDark
+   lDark := ! GTK_IsDarkMode()
    GTK_SetDarkMode( lDark )
+   SaveDarkMode( lDark )
+   // Refresh inspector so property colors update
+   if oDesignForm != nil
+      InspectorRefresh( oDesignForm:hCpp )
+   endif
 return nil
 
 // === Editor Settings ===

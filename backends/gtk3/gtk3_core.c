@@ -5804,14 +5804,50 @@ HB_FUNC( GTK_ABOUTDIALOG )
  * Dark Mode - apply GTK dark theme
  * ====================================================================== */
 
+static int s_bDarkMode = 0;
+static GtkCssProvider * s_darkCssProvider = NULL;
+
+/* GTK_IsDarkMode() → lDark */
+HB_FUNC( GTK_ISDARKMODE )
+{
+   hb_retl( s_bDarkMode );
+}
+
 HB_FUNC( GTK_SETDARKMODE )
 {
    EnsureGTK();
    int bDark = hb_parl(1);
+   s_bDarkMode = bDark;
    GtkSettings * settings = gtk_settings_get_default();
    if( settings )
       g_object_set( settings, "gtk-application-prefer-dark-theme", (gboolean)bDark, NULL );
+
+   /* Remove previous dark mode CSS if any */
+   if( s_darkCssProvider )
+   {
+      gtk_style_context_remove_provider_for_screen(
+         gdk_screen_get_default(), GTK_STYLE_PROVIDER(s_darkCssProvider) );
+      g_object_unref( s_darkCssProvider );
+      s_darkCssProvider = NULL;
+   }
+
+   /* Apply screen-wide dark CSS override */
+   if( bDark )
+   {
+      s_darkCssProvider = gtk_css_provider_new();
+      gtk_css_provider_load_from_data( s_darkCssProvider,
+         "window { background-color: #2D2D2D; }"
+         "toolbar { background-color: #2D2D2D; }"
+         "toolbar button { background-color: #3C3C3C; color: #D4D4D4; }"
+         , -1, NULL );
+      gtk_style_context_add_provider_for_screen(
+         gdk_screen_get_default(), GTK_STYLE_PROVIDER(s_darkCssProvider),
+         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION + 1 );
+   }
 }
+
+/* GTK_IsDarkMode accessor for inspector */
+int GTK_IsDark(void) { return s_bDarkMode; }
 
 /* ======================================================================
  * Debugger Panel - floating window with 5 tabs
