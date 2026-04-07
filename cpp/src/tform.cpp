@@ -524,91 +524,51 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
       case WM_NCPAINT:
       {
          LRESULT lr = DefWindowProc( FHandle, msg, wParam, lParam );
-         /* Paint dark menu bar background + items directly on non-client DC */
-         if( FMenuBar )
-         {
-            MENUBARINFO mbi;
-            memset( &mbi, 0, sizeof(mbi) );
-            mbi.cbSize = sizeof(mbi);
-            if( GetMenuBarInfo( FHandle, OBJID_MENU, 0, &mbi ) &&
-                mbi.rcBar.right > mbi.rcBar.left )
-            {
-               RECT rcWin, rcBar;
-               HDC hdc;
-               GetWindowRect( FHandle, &rcWin );
-               hdc = GetWindowDC( FHandle );
-               if( hdc )
-               {
-                  int i, n;
-                  HFONT hFont = (HFONT) GetStockObject( DEFAULT_GUI_FONT );
-                  HFONT hOld = (HFONT) SelectObject( hdc, hFont );
-                  HBRUSH hbr;
-
-                  /* Fill entire menu bar with dark color */
-                  rcBar.left   = mbi.rcBar.left - rcWin.left;
-                  rcBar.top    = mbi.rcBar.top  - rcWin.top;
-                  rcBar.right  = mbi.rcBar.right - rcWin.left;
-                  rcBar.bottom = mbi.rcBar.bottom - rcWin.top;
-                  hbr = CreateSolidBrush( RGB(45,45,48) );
-                  FillRect( hdc, &rcBar, hbr );
-                  DeleteObject( hbr );
-
-                  /* Draw each menu item */
-                  SetBkMode( hdc, TRANSPARENT );
-                  n = GetMenuItemCount( FMenuBar );
-                  for( i = 0; i < n; i++ )
-                  {
-                     MENUBARINFO mbItem;
-                     RECT rcItem;
-                     char txt[64];
-                     MENUITEMINFOA mii;
-                     UINT state;
-
-                     memset( &mbItem, 0, sizeof(mbItem) );
-                     mbItem.cbSize = sizeof(mbItem);
-                     if( !GetMenuBarInfo( FHandle, OBJID_MENU, i + 1, &mbItem ) )
-                        continue;
-
-                     rcItem.left   = mbItem.rcBar.left - rcWin.left;
-                     rcItem.top    = mbItem.rcBar.top  - rcWin.top;
-                     rcItem.right  = mbItem.rcBar.right - rcWin.left;
-                     rcItem.bottom = mbItem.rcBar.bottom - rcWin.top;
-
-                     /* Get item text */
-                     memset( &mii, 0, sizeof(mii) );
-                     mii.cbSize = sizeof(mii);
-                     mii.fMask = MIIM_STRING | MIIM_STATE;
-                     mii.dwTypeData = txt;
-                     mii.cch = sizeof(txt);
-                     txt[0] = 0;
-                     GetMenuItemInfoA( FMenuBar, i, TRUE, &mii );
-                     state = mii.fState;
-
-                     /* Highlight if selected/hot */
-                     if( state & MFS_HILITE )
-                     {
-                        hbr = CreateSolidBrush( RGB(65,65,65) );
-                        FillRect( hdc, &rcItem, hbr );
-                        DeleteObject( hbr );
-                        SetTextColor( hdc, RGB(255,255,255) );
-                     }
-                     else
-                        SetTextColor( hdc, RGB(200,200,200) );
-
-                     DrawTextA( hdc, txt, -1, &rcItem,
-                        DT_CENTER | DT_VCENTER | DT_SINGLELINE );
-                  }
-                  SelectObject( hdc, hOld );
-                  ReleaseDC( FHandle, hdc );
-               }
-            }
-         }
+         PaintDarkMenuBar();
          return lr;
+      }
+
+      case WM_MEASUREITEM:
+      {
+         MEASUREITEMSTRUCT * mis = (MEASUREITEMSTRUCT *) lParam;
+         if( mis && mis->CtlType == ODT_MENU )
+         {
+            struct DARKMENUITM * dm = (struct DARKMENUITM *) mis->itemData;
+            HDC hdc = GetDC( FHandle );
+            SIZE sz;
+            HFONT hFont = (HFONT) GetStockObject( DEFAULT_GUI_FONT );
+            SelectObject( hdc, hFont );
+            GetTextExtentPoint32A( hdc, dm ? dm->szText : "?",
+               dm ? (int)strlen(dm->szText) : 1, &sz );
+            ReleaseDC( FHandle, hdc );
+            mis->itemWidth = sz.cx + 12;
+            mis->itemHeight = sz.cy + 8;
+            return TRUE;
+         }
+         break;
       }
 
       case WM_DRAWITEM:
       {
          DRAWITEMSTRUCT * pDIS = (DRAWITEMSTRUCT *) lParam;
+         /* Owner-draw dark menu bar items — no flash since we control the painting */
+         if( pDIS && pDIS->CtlType == ODT_MENU )
+         {
+            struct DARKMENUITM * dm = (struct DARKMENUITM *) pDIS->itemData;
+            BOOL isSel = ( pDIS->itemState & ODS_SELECTED ) ||
+                         ( pDIS->itemState & ODS_HOTLIGHT );
+            static HBRUSH s_hMiBg = NULL, s_hMiHi = NULL;
+            if( !s_hMiBg ) s_hMiBg = CreateSolidBrush( RGB(45,45,48) );
+            if( !s_hMiHi ) s_hMiHi = CreateSolidBrush( RGB(65,65,65) );
+
+            FillRect( pDIS->hDC, &pDIS->rcItem, isSel ? s_hMiHi : s_hMiBg );
+            SetTextColor( pDIS->hDC, isSel ? RGB(255,255,255) : RGB(200,200,200) );
+            SetBkMode( pDIS->hDC, TRANSPARENT );
+            if( dm )
+               DrawTextA( pDIS->hDC, dm->szText, -1, &pDIS->rcItem,
+                  DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+            return TRUE;
+         }
          if( pDIS && pDIS->CtlType == ODT_BUTTON )
          {
             int i;
@@ -1837,6 +1797,87 @@ void TForm::StackToolBars()
 /* ======================================================================
  * Menu
  * ====================================================================== */
+
+void TForm::PaintDarkMenuBar()
+{
+   MENUBARINFO mbi;
+   RECT rcWin, rcBar;
+   HDC hdc;
+   int i, n;
+
+   if( !FMenuBar || !FHandle ) return;
+
+   memset( &mbi, 0, sizeof(mbi) );
+   mbi.cbSize = sizeof(mbi);
+   if( !GetMenuBarInfo( FHandle, OBJID_MENU, 0, &mbi ) ||
+       mbi.rcBar.right <= mbi.rcBar.left )
+      return;
+
+   GetWindowRect( FHandle, &rcWin );
+   hdc = GetWindowDC( FHandle );
+   if( !hdc ) return;
+
+   {
+      static HBRUSH s_hMenuBg = NULL;
+      static HBRUSH s_hMenuHi = NULL;
+      HFONT hFont = (HFONT) GetStockObject( DEFAULT_GUI_FONT );
+      HFONT hOld = (HFONT) SelectObject( hdc, hFont );
+
+      if( !s_hMenuBg ) s_hMenuBg = CreateSolidBrush( RGB(45,45,48) );
+      if( !s_hMenuHi ) s_hMenuHi = CreateSolidBrush( RGB(65,65,65) );
+
+      /* Fill entire menu bar with dark color */
+      rcBar.left   = mbi.rcBar.left - rcWin.left;
+      rcBar.top    = mbi.rcBar.top  - rcWin.top;
+      rcBar.right  = mbi.rcBar.right - rcWin.left;
+      rcBar.bottom = mbi.rcBar.bottom - rcWin.top;
+      FillRect( hdc, &rcBar, s_hMenuBg );
+
+      /* Draw each menu item */
+      SetBkMode( hdc, TRANSPARENT );
+      n = GetMenuItemCount( FMenuBar );
+      for( i = 0; i < n; i++ )
+      {
+         MENUBARINFO mbItem;
+         RECT rcItem;
+         char txt[64];
+         MENUITEMINFOA mii;
+         UINT state;
+
+         memset( &mbItem, 0, sizeof(mbItem) );
+         mbItem.cbSize = sizeof(mbItem);
+         if( !GetMenuBarInfo( FHandle, OBJID_MENU, i + 1, &mbItem ) )
+            continue;
+
+         rcItem.left   = mbItem.rcBar.left - rcWin.left;
+         rcItem.top    = mbItem.rcBar.top  - rcWin.top;
+         rcItem.right  = mbItem.rcBar.right - rcWin.left;
+         rcItem.bottom = mbItem.rcBar.bottom - rcWin.top;
+
+         memset( &mii, 0, sizeof(mii) );
+         mii.cbSize = sizeof(mii);
+         mii.fMask = MIIM_STRING | MIIM_STATE;
+         mii.dwTypeData = txt;
+         mii.cch = sizeof(txt);
+         txt[0] = 0;
+         GetMenuItemInfoA( FMenuBar, i, TRUE, &mii );
+         state = mii.fState;
+
+         if( state & MFS_HILITE )
+         {
+            FillRect( hdc, &rcItem, s_hMenuHi );
+            SetTextColor( hdc, RGB(255,255,255) );
+         }
+         else
+            SetTextColor( hdc, RGB(200,200,200) );
+
+         DrawTextA( hdc, txt, -1, &rcItem,
+            DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+      }
+      SelectObject( hdc, hOld );
+   }
+   ReleaseDC( FHandle, hdc );
+}
 
 void TForm::CreateMenuBar()
 {

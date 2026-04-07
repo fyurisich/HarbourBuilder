@@ -36,6 +36,7 @@ static cSelectedCompiler := ""  // "", "msvc", "bcc" (empty = auto-detect)
 static nSelectedCompIdx := 0    // index into aCompilers (0 = auto)
 static aCompilers := nil        // compiler registry from ScanCompilers()
 static aDbgOffsets              // Line offset map for debug_main.prg → editor tabs
+static hToolsPopup := 0        // Tools menu popup handle (for Dark Mode checkmark)
 
 function Main()
 
@@ -142,8 +143,6 @@ function Main()
    MENUITEM "&Inspector"       OF oView ACTION InspectorOpen()
    MENUITEM "&Project Inspector" OF oView ACTION ShowProjectInspector()
    MENUITEM "&Debugger"          OF oView ACTION W32_DebugPanel()
-   MENUSEPARATOR OF oView
-   MENUITEM "&Dark Mode"           OF oView ACTION ToggleDarkMode()
 
    DEFINE POPUP oProject PROMPT "&Project" OF oIDE
    MENUITEM "&Add to Project..."    OF oProject ACTION AddToProject()
@@ -185,6 +184,7 @@ function Main()
    MENUITEM "&Editor Colors..." OF oTools ACTION ShowEditorSettings()
    MENUITEM "&Environment Options..." OF oTools ACTION ShowProjectOptions()
    MENUITEM "&Dark Mode"              OF oTools ACTION ToggleDarkMode()
+   hToolsPopup := oTools:hPopup
    MENUSEPARATOR OF oTools
    MENUITEM "&AI Assistant..."        OF oTools ACTION ShowAIAssistant()
    MENUITEM "&Report Designer"        OF oTools ACTION OpenReportDesigner()
@@ -276,7 +276,14 @@ function Main()
    // Help menu (0:Docs, 1:QuickStart, 2:Controls, -sep-, 4:About)
    UI_MenuSetBitmapByPos( oHelp:hPopup, 4, cIcoDir + "menu_about.png" )
 
-   // Dark menu bar is painted via WM_NCPAINT in tform.cpp
+   // Dark menu bar: convert items to owner-draw + NC paint for background
+   if lDarkMode
+      UI_MenuBarSetDark( oIDE:hCpp )
+   endif
+   // Set initial checkmark on Dark Mode menu item (position 2 in Tools popup)
+   if lDarkMode
+      W32_MenuCheck( hToolsPopup, 2, .T. )
+   endif
 
    // Speedbar (toolbar with 28x28 icon-sized buttons)
    DEFINE TOOLBAR oTB OF oIDE
@@ -2472,12 +2479,34 @@ static function ToggleDarkMode()
 
    lDarkMode := ! lDarkMode
 
+   // Update checkmark
+   W32_MenuCheck( hToolsPopup, 2, lDarkMode )
+
    // Save to INI
    IniWrite( "IDE", "DarkMode", iif( lDarkMode, "1", "0" ) )
 
+   // Apply dark/light to IDE bar
+   W32_SetWindowDarkMode( UI_FormGetHwnd( oIDE:hCpp ), lDarkMode )
+   if lDarkMode
+      UI_FormSetBgColor( oIDE:hCpp, 45 + 45 * 256 + 48 * 65536 )
+      W32_SetAppDarkMode( .T. )
+   else
+      UI_FormSetBgColor( oIDE:hCpp, GetSysColor( 15 ) )  // COLOR_BTNFACE = 15
+      W32_SetAppDarkMode( .F. )
+   endif
+
+   // Apply to design form
+   if oDesignForm != nil
+      if lDarkMode
+         UI_FormSetBgColor( oDesignForm:hCpp, 45 + 45 * 256 + 45 * 65536 )
+      else
+         UI_FormSetBgColor( oDesignForm:hCpp, GetSysColor( 15 ) )
+      endif
+   endif
+
    MsgInfo( "Dark mode: " + iif( lDarkMode, "ON", "OFF" ) + Chr(10) + ;
             Chr(10) + ;
-            "Restart HbBuilder to apply the change.", ;
+            "Some elements may require a restart to fully apply.", ;
             "Theme Changed" )
 
 return nil
@@ -5985,6 +6014,22 @@ HB_FUNC( CODEEDITORSHOWDEBUGLINE )
       SciMsg( ed->hEdit, 4003, 0, len );               /* SCI_COLOURISE */
    }
    InvalidateRect( ed->hEdit, NULL, FALSE );
+}
+
+/* W32_MenuCheck( hPopup, nPos, lChecked ) — check/uncheck a menu item by 0-based position */
+HB_FUNC( W32_MENUCHECK )
+{
+   HMENU hMenu = (HMENU)(LONG_PTR) hb_parnint(1);
+   int nPos = hb_parni(2);
+   BOOL bCheck = hb_parl(3);
+   if( hMenu )
+      CheckMenuItem( hMenu, nPos, MF_BYPOSITION | ( bCheck ? MF_CHECKED : MF_UNCHECKED ) );
+}
+
+/* GetSysColor( nIndex ) --> nColor */
+HB_FUNC( GETSYSCOLOR )
+{
+   hb_retnl( (long) GetSysColor( hb_parni(1) ) );
 }
 
 /* W32_SetAppDarkMode( lDark ) — enable/disable dark menus+scrollbars (Win10 1903+) */

@@ -351,6 +351,7 @@ public:
 
    /* Menu */
    void         CreateMenuBar();
+   void         PaintDarkMenuBar();
    HMENU        AddMenuPopup( const char * szText );
    int          AddMenuItem( HMENU hPopup, const char * szText, PHB_ITEM pBlock );
    void         AddMenuSeparator( HMENU hPopup );
