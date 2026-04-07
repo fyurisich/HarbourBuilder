@@ -4703,14 +4703,14 @@ static LRESULT CALLBACK AboutDlgProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM
             RECT rcText;
             HFONT hFont, hOldFont;
             LOGFONTA lf = {0};
-            lf.lfHeight = -18; lf.lfCharSet = DEFAULT_CHARSET;
+            lf.lfHeight = -15; lf.lfCharSet = DEFAULT_CHARSET;
             lstrcpyA( lf.lfFaceName, "Segoe UI" );
             hFont = CreateFontIndirectA( &lf );
             hOldFont = (HFONT) SelectObject( hDC, hFont );
             SetTextColor( hDC, RGB(40, 40, 40) );
             SetBkMode( hDC, TRANSPARENT );
             rcText.left = 20; rcText.top = imgY;
-            rcText.right = rc.right - 20; rcText.bottom = rc.bottom - 50;
+            rcText.right = rc.right - 20; rcText.bottom = rc.bottom - 46;
             DrawTextA( hDC, s_aboutText, -1, &rcText,
                DT_LEFT | DT_WORDBREAK | DT_NOPREFIX );
             SelectObject( hDC, hOldFont );
@@ -4744,10 +4744,10 @@ HB_FUNC( W32_ABOUTDIALOG )
    static BOOL bReg = FALSE;
    WNDCLASSA wc = {0};
    HWND hDlg, hBtn, hOwner;
-   HFONT hFont;
-   int dlgW = 380, dlgH = 420;
+   HFONT hFont, hTextFont;
+   int dlgW = 380, dlgH;
    int x, y;
-   RECT rcOwner;
+   int contentH = 20; /* top padding */
    MSG msg;
 
    s_aboutText = HB_ISCHAR(2) ? hb_parc(2) : "";
@@ -4761,6 +4761,35 @@ HB_FUNC( W32_ABOUTDIALOG )
       MultiByteToWideChar( CP_ACP, 0, hb_parc(3), -1, wPath, MAX_PATH );
       GdipLoadImageFromFile( wPath, &s_aboutLogo );
    }
+
+   /* Measure content height: logo + text + button */
+   if( s_aboutLogo )
+   {
+      UINT imgH = 0;
+      GdipGetImageHeight( s_aboutLogo, &imgH );
+      contentH += (int)imgH + 16;
+   }
+
+   /* Measure text height */
+   {
+      HDC hScreen = GetDC( NULL );
+      LOGFONTA lf = {0};
+      RECT rcMeasure = { 0, 0, dlgW - 40, 0 };
+      lf.lfHeight = -15; lf.lfCharSet = DEFAULT_CHARSET;
+      lstrcpyA( lf.lfFaceName, "Segoe UI" );
+      hTextFont = CreateFontIndirectA( &lf );
+      SelectObject( hScreen, hTextFont );
+      DrawTextA( hScreen, s_aboutText, -1, &rcMeasure,
+         DT_LEFT | DT_WORDBREAK | DT_NOPREFIX | DT_CALCRECT );
+      contentH += rcMeasure.bottom + 20; /* text + spacing */
+      DeleteObject( hTextFont );
+      ReleaseDC( NULL, hScreen );
+   }
+
+   contentH += 30 + 16; /* OK button height + bottom padding */
+
+   /* Add frame (title bar + borders) */
+   dlgH = contentH + GetSystemMetrics( SM_CYCAPTION ) + GetSystemMetrics( SM_CYFIXEDFRAME ) * 2;
 
    if( !bReg )
    {
@@ -4784,13 +4813,17 @@ HB_FUNC( W32_ABOUTDIALOG )
       x, y, dlgW, dlgH,
       hOwner, NULL, GetModuleHandle(NULL), NULL );
 
-   /* OK button */
-   hFont = (HFONT) GetStockObject( DEFAULT_GUI_FONT );
-   hBtn = CreateWindowExA( 0, "BUTTON", "OK",
-      WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
-      dlgW/2 - 45, dlgH - 70, 90, 30,
-      hDlg, (HMENU)IDOK, GetModuleHandle(NULL), NULL );
-   SendMessage( hBtn, WM_SETFONT, (WPARAM) hFont, TRUE );
+   /* OK button — positioned relative to client bottom */
+   {
+      RECT rcClient;
+      GetClientRect( hDlg, &rcClient );
+      hFont = (HFONT) GetStockObject( DEFAULT_GUI_FONT );
+      hBtn = CreateWindowExA( 0, "BUTTON", "OK",
+         WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
+         (rcClient.right - 90) / 2, rcClient.bottom - 30 - 12, 90, 30,
+         hDlg, (HMENU)IDOK, GetModuleHandle(NULL), NULL );
+      SendMessage( hBtn, WM_SETFONT, (WPARAM) hFont, TRUE );
+   }
 
    /* Modal loop */
    EnableWindow( hOwner, FALSE );
