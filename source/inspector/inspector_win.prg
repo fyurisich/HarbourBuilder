@@ -617,11 +617,12 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
                   HMENU hMenu = CreatePopupMenu();
                   POINT pt;
                   char szMenu[160];
+                  int cmd;
                   wsprintfA( szMenu, "Delete %s", szHandler );
                   AppendMenuA( hMenu, MF_STRING, 1, szMenu );
                   GetCursorPos( &pt );
 
-                  int cmd = (int) TrackPopupMenu( hMenu, TPM_RETURNCMD | TPM_NONOTIFY,
+                  cmd = (int) TrackPopupMenu( hMenu, TPM_RETURNCMD | TPM_NONOTIFY,
                      pt.x, pt.y, 0, d->hWnd, NULL );
                   DestroyMenu( hMenu );
 

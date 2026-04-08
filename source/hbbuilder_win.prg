@@ -4949,7 +4949,8 @@ HB_FUNC( W32_ABOUTDIALOG )
    {
       HDC hScreen = GetDC( NULL );
       LOGFONTA lf = {0};
-      RECT rcMeasure = { 0, 0, dlgW - 40, 0 };
+      RECT rcMeasure;
+      rcMeasure.left = 0; rcMeasure.top = 0; rcMeasure.right = dlgW - 40; rcMeasure.bottom = 0;
       lf.lfHeight = -15; lf.lfCharSet = DEFAULT_CHARSET;
       lstrcpyA( lf.lfFaceName, "Segoe UI" );
       hTextFont = CreateFontIndirectA( &lf );
@@ -6633,17 +6634,19 @@ HB_FUNC( GETSYSCOLOR )
 /* W32_SetAppDarkMode( lDark ) — enable/disable dark menus+scrollbars (Win10 1903+) */
 HB_FUNC( W32_SETAPPDARKMODE )
 {
+   typedef int (WINAPI *fnSetPreferredAppMode)(int);
+   typedef void (WINAPI *fnFlushMenuThemes)(void);
    HMODULE hUx = LoadLibraryA("uxtheme.dll");
    if( hUx ) {
       /* SetPreferredAppMode = ordinal 135: 0=Default, 1=AllowDark, 2=ForceDark, 3=ForceLight */
-      typedef int (WINAPI *fnSetPreferredAppMode)(int);
       fnSetPreferredAppMode fn = (fnSetPreferredAppMode) GetProcAddress(hUx, MAKEINTRESOURCEA(135));
       if( fn ) fn( hb_parl(1) ? 1 : 0 ); /* AllowDark or Default */
 
       /* FlushMenuThemes = ordinal 136 — forces menus to refresh */
-      typedef void (WINAPI *fnFlushMenuThemes)(void);
-      fnFlushMenuThemes fn2 = (fnFlushMenuThemes) GetProcAddress(hUx, MAKEINTRESOURCEA(136));
-      if( fn2 ) fn2();
+      {
+         fnFlushMenuThemes fn2 = (fnFlushMenuThemes) GetProcAddress(hUx, MAKEINTRESOURCEA(136));
+         if( fn2 ) fn2();
+      }
 
       FreeLibrary( hUx );
    }
@@ -6671,17 +6674,19 @@ HB_FUNC( W32_SETWINDOWDARKMODE )
    hUx = LoadLibraryA("uxtheme.dll");
    if( hUx ) {
       typedef BOOL (WINAPI *fnAllowDarkModeForWindow)(HWND, BOOL);
+      typedef void (WINAPI *fnRefresh)(void);
+      typedef void (WINAPI *fnFlush)(void);
       fnAllowDarkModeForWindow fn133 = (fnAllowDarkModeForWindow) GetProcAddress(hUx, MAKEINTRESOURCEA(133));
+      fnRefresh fn104;
+      fnFlush fn136;
       if( fn133 ) fn133(hWnd, bDark);
 
       /* RefreshImmersiveColorPolicyState (ordinal 104) — apply the policy */
-      typedef void (WINAPI *fnRefresh)(void);
-      fnRefresh fn104 = (fnRefresh) GetProcAddress(hUx, MAKEINTRESOURCEA(104));
+      fn104 = (fnRefresh) GetProcAddress(hUx, MAKEINTRESOURCEA(104));
       if( fn104 ) fn104();
 
       /* FlushMenuThemes (ordinal 136) — refresh menu visuals */
-      typedef void (WINAPI *fnFlush)(void);
-      fnFlush fn136 = (fnFlush) GetProcAddress(hUx, MAKEINTRESOURCEA(136));
+      fn136 = (fnFlush) GetProcAddress(hUx, MAKEINTRESOURCEA(136));
       if( fn136 ) fn136();
 
       FreeLibrary(hUx);
