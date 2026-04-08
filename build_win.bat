@@ -227,7 +227,7 @@ for %%f in (tform hbbridge tcontrol tcontrols) do (
 
 echo === Step 3: Link ===
 set OBJS=hbbuilder_win.o tform.o hbbridge.o tcontrol.o tcontrols.o
-"%GCCBIN%\g++.exe" -mwindows -o "%OUTDIR%\hbbuilder_win.exe" %OBJS% -L"%HBLIB%" -Wl,--start-group -lhbvm -lhbrtl -lhbcommon -lhblang -lhbrdd -lhbmacro -lhbpp -lhbcpage -lrddntx -lrddcdx -lrddfpt -lhbsix -lhbpcre -lhbzlib -lgtgui -lgtwin -lgtwvt -lhbsqlit3 -lsqlite3 -lhbdebug -Wl,--end-group -luser32 -lgdi32 -lcomctl32 -lcomdlg32 -lshell32 -lole32 -loleaut32 -ladvapi32 -lws2_32 -lwinmm -lmsimg32 -lgdiplus -ldwmapi -liphlpapi -luuid -lwinspool
+"%GCCBIN%\g++.exe" -static -mwindows -o "%OUTDIR%\hbbuilder_win.exe" %OBJS% -L"%HBLIB%" -Wl,--start-group -lhbvm -lhbrtl -lhbcommon -lhblang -lhbrdd -lhbmacro -lhbpp -lhbcpage -lrddntx -lrddcdx -lrddfpt -lhbsix -lhbpcre -lhbzlib -lgtgui -lgtwin -lgtwvt -lhbsqlit3 -lsqlite3 -lhbdebug -Wl,--end-group -luser32 -lgdi32 -lcomctl32 -lcomdlg32 -lshell32 -lole32 -loleaut32 -ladvapi32 -lws2_32 -lwinmm -lmsimg32 -lgdiplus -ldwmapi -liphlpapi -luuid -lwinspool
 if errorlevel 1 (echo LINK FAILED & pause & exit /b 1)
 goto :copy_dlls
 

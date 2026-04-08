@@ -2256,7 +2256,7 @@ static function TBRun()
          MemoWrit( cRsp, cRspContent )
          cCmd := 'cmd /S /c ""' + cLinker + '" @"' + cRsp + '" 2>&1"'
       elseif cCompiler == "mingw"
-         cCmd := cLinker + " -mwindows -o " + cBuildDir + "\UserApp.exe" + ;
+         cCmd := cLinker + " -static -mwindows -o " + cBuildDir + "\UserApp.exe" + ;
                  " " + cObjs + ;
                  " -L" + cHbLib + ;
                  " -Wl,--start-group" + ;
@@ -2756,7 +2756,7 @@ static function TBDebugRun()
          MemoWrit( cRsp, cRspContent )
          cCmd := 'cmd /S /c ""' + cLinker + '" @"' + cRsp + '" 2>&1"'
       elseif cCompiler == "mingw"
-         cCmd := cLinker + " -mwindows -o " + cBuildDir + "\DebugApp.exe" + ;
+         cCmd := cLinker + " -static -mwindows -o " + cBuildDir + "\DebugApp.exe" + ;
                  " " + cObjs + ;
                  " -L" + cHbLib + ;
                  " -Wl,--start-group" + ;
