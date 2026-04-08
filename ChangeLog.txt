@@ -1,6 +1,18 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-08 (Session 26: macOS — Cross-file autocomplete + method hints)
+
+  EDITOR — AUTOCOMPLETE:
+  - Cross-file class resolution: typing oForm2: now shows members even when
+    CLASS TForm2 is defined in another open tab (searches all tabTexts[])
+  - Added CE_FindClassInText() and CE_CollectUserDataFromText() helpers
+    for parsing CLASS..ENDCLASS in plain text buffers
+  - Methods now display with () suffix in dropdown to distinguish from
+    properties (e.g. Show(), ShowModal(), Close() vs Height, Width, Title)
+  - Events remain without () as they are assigned, not invoked (OnClick, OnResize)
+  - Added ShowModal() to TForm member list
+
 2026-04-08 (Session 25: macOS — OnKeyDown fix + build cleanup)
 
   BUGFIX:

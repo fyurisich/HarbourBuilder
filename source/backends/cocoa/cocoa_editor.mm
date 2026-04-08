@@ -551,14 +551,14 @@ static const char * s_controlMembers =
 
 static ClassMembers s_classMembers[] = {
    { "TForm",
-     "Activate AlphaBlend AlphaBlendValue AppBar AutoScroll BorderIcons "
-     "BorderStyle BorderWidth ClientHeight ClientWidth Close Color Cursor "
-     "Destroy DoubleBuffered FontName FontSize FormStyle Height Hint "
+     "Activate() AlphaBlend AlphaBlendValue AppBar AutoScroll BorderIcons "
+     "BorderStyle BorderWidth ClientHeight ClientWidth Close() Color Cursor "
+     "Destroy() DoubleBuffered FontName FontSize FormStyle Height Hint "
      "KeyPreview Left ModalResult Name OnActivate OnChange OnClick OnClose "
      "OnCloseQuery OnCreate OnDblClick OnDeactivate OnDestroy OnHide "
      "OnKeyDown OnKeyPress OnKeyUp OnMouseDown OnMouseMove OnMouseUp "
-     "OnMouseWheel OnPaint OnResize OnShow Position Show ShowHint "
-     "Sizable Text Title ToolWindow Top Width WindowState" },
+     "OnMouseWheel OnPaint OnResize OnShow Position Show() ShowHint "
+     "ShowModal() Sizable Text Title ToolWindow Top Width WindowState" },
    { "TLabel",
      "Height Left Name OnChange OnClick OnClose Text Top Width" },
    { "TEdit",
@@ -572,17 +572,17 @@ static ClassMembers s_classMembers[] = {
    { "TRadioButton",
      "Checked Height Left Name OnChange OnClick OnClose Text Top Width" },
    { "TComboBox",
-     "AddItem Height Left Name OnChange OnClick OnClose Text Top Value Width" },
+     "AddItem() Height Left Name OnChange OnClick OnClose Text Top Value Width" },
    { "TListBox",
      "Height Left Name OnChange OnClick OnClose Text Top Width" },
    { "TGroupBox",
      "Height Left Name OnChange OnClick OnClose Text Top Width" },
    { "TToolBar",
-     "AddButton AddSeparator Height Left Name Text Top Width" },
+     "AddButton() AddSeparator() Height Left Name Text Top Width" },
    { "TTimer",
      "Height Left Name OnChange OnClick OnClose OnTimer Text Top Width" },
    { "TApplication",
-     "CreateForm Run Title" },
+     "CreateForm() Run() Title" },
    { "TPanel",
      "Height Left Name OnChange OnClick OnClose Text Top Width" },
    { "TProgressBar",
@@ -596,19 +596,19 @@ static ClassMembers s_classMembers[] = {
    { "TImage",
      "Height Left Name OnChange OnClick OnClose Text Top Width" },
    { "TDatabase",
-     "Close Exec Field FieldCount FieldName FreeResult Goto Host Name "
-     "Open Password Port Query RecCount RecNo Server Skip Table User" },
+     "Close() Exec() Field() FieldCount() FieldName() FreeResult() Goto() Host Name "
+     "Open() Password Port Query() RecCount() RecNo() Server Skip() Table User" },
    { "TSQLite",
-     "Close Exec Field FieldCount FieldName FreeResult Goto Host Name "
-     "Open Password Port Query RecCount RecNo Server Skip Table User" },
+     "Close() Exec() Field() FieldCount() FieldName() FreeResult() Goto() Host Name "
+     "Open() Password Port Query() RecCount() RecNo() Server Skip() Table User" },
    { "TReport",
-     "Preview Print" },
+     "Preview() Print()" },
    { "TWebServer",
-     "Get Post Run" },
+     "Get() Post() Run()" },
    { "THttpClient",
-     "Get Post" },
+     "Get() Post()" },
    { "TThread",
-     "Join Start" },
+     "Join() Start()" },
    { NULL, NULL }
 };
 
@@ -662,6 +662,134 @@ static int CE_CollectUserData( ScintillaView * sv, sptr_t classLine, char * buf,
    }
    buf[pos] = 0;
    return pos;
+}
+
+/* Collect DATA/ACCESS/METHOD from a plain text buffer starting after the CLASS line.
+ * classLineStart points to the beginning of the CLASS line within text. */
+static int CE_CollectUserDataFromText( const char * text, const char * classLineStart,
+                                        char * buf, int bufSize )
+{
+   int pos = 0;
+
+   /* Advance past the CLASS line */
+   const char * cur = classLineStart;
+   while( *cur && *cur != '\n' ) cur++;
+   if( *cur == '\n' ) cur++;
+
+   while( *cur )
+   {
+      /* Extract current line */
+      const char * lineEnd = cur;
+      while( *lineEnd && *lineEnd != '\n' ) lineEnd++;
+
+      int lineLen = (int)(lineEnd - cur);
+      if( lineLen > 0 && lineLen < 510 )
+      {
+         char line[512];
+         memcpy( line, cur, (size_t)lineLen );
+         line[lineLen] = 0;
+
+         const char * p = line;
+         while( *p == ' ' || *p == '\t' || *p == '\r' ) p++;
+
+         if( *p != 0 )
+         {
+            if( strncasecmp( p, "ENDCLASS", 8 ) == 0 ) break;
+
+            BOOL isData = ( strncasecmp( p, "DATA ", 5 ) == 0 );
+            BOOL isAccess = ( strncasecmp( p, "ACCESS ", 7 ) == 0 );
+            BOOL isMethod = ( strncasecmp( p, "METHOD ", 7 ) == 0 );
+            if( isData || isAccess || isMethod )
+            {
+               if( isData ) p += 5; else p += 7;
+               while( *p == ' ' ) p++;
+
+               char name[64];
+               int ni = 0;
+               while( ni < 63 && (isalnum((unsigned char)p[ni]) || p[ni] == '_') )
+                  { name[ni] = p[ni]; ni++; }
+               name[ni] = 0;
+
+               if( ni > 0 )
+               {
+                  if( pos > 0 && pos < bufSize - 1 ) buf[pos++] = ' ';
+                  int remaining = bufSize - pos - 1;
+                  if( ni > remaining ) break;
+                  memcpy( buf + pos, name, (size_t)ni );
+                  pos += ni;
+               }
+            }
+         }
+      }
+
+      cur = lineEnd;
+      if( *cur == '\n' ) cur++;
+   }
+   buf[pos] = 0;
+   return pos;
+}
+
+/* Search a plain text buffer for CLASS declaration matching cls.
+ * If found, returns pointer to start of the CLASS line and sets parentCls.
+ * parentCls buffer should be at least 64 bytes. */
+static const char * CE_FindClassInText( const char * text, const char * cls,
+                                         char * parentCls )
+{
+   parentCls[0] = 0;
+   const char * cur = text;
+
+   while( *cur )
+   {
+      const char * lineStart = cur;
+      const char * lineEnd = cur;
+      while( *lineEnd && *lineEnd != '\n' ) lineEnd++;
+
+      int lineLen = (int)(lineEnd - cur);
+      if( lineLen > 0 && lineLen < 510 )
+      {
+         char line[512];
+         memcpy( line, cur, (size_t)lineLen );
+         line[lineLen] = 0;
+
+         const char * p = line;
+         while( *p == ' ' || *p == '\t' ) p++;
+
+         if( strncasecmp( p, "CLASS ", 6 ) == 0 )
+         {
+            p += 6;
+            while( *p == ' ' ) p++;
+
+            char foundCls[64];
+            int fi = 0;
+            while( fi < 63 && (isalnum((unsigned char)p[fi]) || p[fi] == '_') )
+               { foundCls[fi] = p[fi]; fi++; }
+            foundCls[fi] = 0;
+
+            if( strcasecmp( foundCls, cls ) == 0 )
+            {
+               /* Check for INHERIT/FROM parent */
+               p += fi;
+               while( *p == ' ' ) p++;
+               if( strncasecmp( p, "INHERIT ", 8 ) == 0 ) p += 8;
+               else if( strncasecmp( p, "FROM ", 5 ) == 0 ) p += 5;
+               else p = NULL;
+               if( p )
+               {
+                  while( *p == ' ' ) p++;
+                  int pi = 0;
+                  while( pi < 63 && (isalnum((unsigned char)p[pi]) || p[pi] == '_') )
+                     { parentCls[pi] = p[pi]; pi++; }
+                  parentCls[pi] = 0;
+               }
+               return lineStart;
+            }
+         }
+      }
+
+      cur = lineEnd;
+      if( *cur == '\n' ) cur++;
+   }
+   return NULL;
 }
 
 /* Find class members by class name (case-insensitive).
@@ -768,6 +896,46 @@ static const char * CE_FindClassMembers( const char * cls )
          int n = CE_CollectUserData( sv, classLine, userMembers, (int)sizeof(userMembers) );
          /* debug removed */
       }
+   }
+
+   /* If not found in current editor, search all other open tabs */
+   if( classLine < 0 && s_keyMonitorEd )
+   {
+      CODEEDITOR * ed = s_keyMonitorEd;
+
+      /* First, sync active tab text so we search current content */
+      char * activeText = NULL;
+      if( ed->sciView && ed->nActiveTab >= 0 && ed->nActiveTab < ed->nTabs )
+      {
+         sptr_t len = SciMsg0( ed->sciView, SCI_GETLENGTH );
+         activeText = (char *) malloc( (size_t)len + 1 );
+         SciMsg( ed->sciView, SCI_GETTEXT, (uptr_t)(len + 1), (sptr_t) activeText );
+      }
+
+      for( int t = 0; t < ed->nTabs; t++ )
+      {
+         if( t == ed->nActiveTab ) continue;  /* already searched via ScintillaView */
+         const char * tabText = ed->tabTexts[t];
+         if( !tabText || !tabText[0] ) continue;
+
+         char parentCls[64];
+         const char * classPos = CE_FindClassInText( tabText, cls, parentCls );
+         if( classPos )
+         {
+            CE_CollectUserDataFromText( tabText, classPos, userMembers, (int)sizeof(userMembers) );
+
+            /* Resolve parent class standard members */
+            if( parentCls[0] && !standardMembers )
+            {
+               for( int i = 0; s_classMembers[i].className; i++ )
+                  if( strcasecmp( parentCls, s_classMembers[i].className ) == 0 )
+                     { standardMembers = s_classMembers[i].members; break; }
+            }
+            break;
+         }
+      }
+
+      if( activeText ) free( activeText );
    }
 
    /* Combine standard + user members */
