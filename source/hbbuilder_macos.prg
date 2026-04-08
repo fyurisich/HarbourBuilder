@@ -1927,9 +1927,11 @@ static function TBRun()
    if File( HB_DirBase() + "../Resources/classes.prg" )
       MAC_ShellExec( "cp " + HB_DirBase() + "../Resources/classes.prg " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + HB_DirBase() + "../Resources/hbbuilder.ch " + cBuildDir + "/" )
+      MAC_ShellExec( "cp " + HB_DirBase() + "../Resources/hbide.ch " + cBuildDir + "/" )
    else
       MAC_ShellExec( "cp " + cProjDir + "/source/common/classes.prg " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/include/hbbuilder.ch " + cBuildDir + "/" )
+      MAC_ShellExec( "cp " + cProjDir + "/include/hbide.ch " + cBuildDir + "/" )
    endif
 
    // Step 2: Assemble main.prg
@@ -2152,10 +2154,12 @@ static function TBDebugRun()
    if File( cResDir + "/classes.prg" )
       MAC_ShellExec( "cp " + cResDir + "/classes.prg " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cResDir + "/hbbuilder.ch " + cBuildDir + "/" )
+      MAC_ShellExec( "cp " + cResDir + "/hbide.ch " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cResDir + "/dbgclient.prg " + cBuildDir + "/" )
    else
       MAC_ShellExec( "cp " + cProjDir + "/source/common/classes.prg " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/include/hbbuilder.ch " + cBuildDir + "/" )
+      MAC_ShellExec( "cp " + cProjDir + "/include/hbide.ch " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/source/debugger/dbgclient.prg " + cBuildDir + "/" )
    endif
 
