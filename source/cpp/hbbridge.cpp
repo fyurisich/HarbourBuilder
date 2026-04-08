@@ -16,7 +16,9 @@
 #include <ws2tcpip.h>
 #include <string.h>
 
+#ifndef __GNUC__
 #pragma comment(lib, "ws2_32.lib")
+#endif
 
 /* DPI awareness + dark mode - must be called before any window is created */
 /* C++ static initializer runs before main() and before Harbour VM */

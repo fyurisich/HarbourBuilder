@@ -90,7 +90,9 @@ HB_FUNC( _INSSETDATA ) { s_insData = (HB_PTRUINT) hb_parnint(1); }
 #include <string.h>
 #include <stdio.h>
 #include <dwmapi.h>
+#ifndef __GNUC__
 #pragma comment(lib, "dwmapi.lib")
+#endif
 #ifndef DWMWA_USE_IMMERSIVE_DARK_MODE
 #define DWMWA_USE_IMMERSIVE_DARK_MODE 20
 #endif

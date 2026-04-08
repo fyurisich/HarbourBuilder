@@ -55,7 +55,7 @@ if exist %VSWHERE% (
 
 REM --- Check MinGW ---
 set MINGW_FOUND=0
-for %%d in (C:\mingw C:\mingw64 C:\msys64\mingw32 C:\msys64\mingw64 C:\TDM-GCC-64 C:\TDM-GCC-32) do (
+for %%d in (C:\gcc85 C:\mingw C:\mingw32 C:\mingw64 C:\msys64\mingw32 C:\msys64\mingw64 C:\TDM-GCC-32 C:\TDM-GCC-64) do (
    if exist "%%d\bin\gcc.exe" if !MINGW_FOUND!==0 (
       set MINGW_FOUND=1
       set MINGW_DIR=%%d
@@ -227,7 +227,7 @@ for %%f in (tform hbbridge tcontrol tcontrols) do (
 
 echo === Step 3: Link ===
 set OBJS=hbbuilder_win.o tform.o hbbridge.o tcontrol.o tcontrols.o
-"%GCCBIN%\g++.exe" -mwindows -o "%OUTDIR%\hbbuilder_win.exe" %OBJS% -L"%HBLIB%" -lhbvm -lhbrtl -lhbcommon -lhblang -lhbrdd -lhbmacro -lhbpp -lhbcpage -lrddntx -lrddcdx -lrddfpt -lhbsix -lhbpcre -lhbzlib -lgtgui -lgtwin -lhbsqlit3 -lsqlite3 -lhbdebug -luser32 -lgdi32 -lcomctl32 -lcomdlg32 -lshell32 -lole32 -loleaut32 -ladvapi32 -lws2_32 -lwinmm -lmsimg32 -lgdiplus
+"%GCCBIN%\g++.exe" -mwindows -o "%OUTDIR%\hbbuilder_win.exe" %OBJS% -L"%HBLIB%" -Wl,--start-group -lhbvm -lhbrtl -lhbcommon -lhblang -lhbrdd -lhbmacro -lhbpp -lhbcpage -lrddntx -lrddcdx -lrddfpt -lhbsix -lhbpcre -lhbzlib -lgtgui -lgtwin -lgtwvt -lhbsqlit3 -lsqlite3 -lhbdebug -Wl,--end-group -luser32 -lgdi32 -lcomctl32 -lcomdlg32 -lshell32 -lole32 -loleaut32 -ladvapi32 -lws2_32 -lwinmm -lmsimg32 -lgdiplus -ldwmapi -liphlpapi -luuid -lwinspool
 if errorlevel 1 (echo LINK FAILED & pause & exit /b 1)
 goto :copy_dlls
 

@@ -1769,7 +1769,7 @@ return nil
 static function ScanCompilers()
 
    local aMsvcPaths, aWinKitVers, aMsvcVers, i, j, k, m, cBase, cCl, cYear, cEdition, cLabel
-   local aYears, aEditions, aProgramDirs, aBccPaths, cPDir, cMsvcVer
+   local aYears, aEditions, aProgramDirs, aBccPaths, aMinGWPaths, cPDir, cMsvcVer
 
    aCompilers := {}
 
@@ -1827,6 +1827,17 @@ static function ScanCompilers()
       endif
    next
 
+   // Scan MinGW 32-bit
+   aMinGWPaths := { "c:\gcc85", "c:\mingw", "c:\mingw32", ;
+      "c:\msys64\mingw32", "c:\msys64\mingw64", ;
+      "c:\TDM-GCC-32", "c:\TDM-GCC-64" }
+   for i := 1 to Len( aMinGWPaths )
+      if File( aMinGWPaths[i] + "\bin\gcc.exe" )
+         AAdd( aCompilers, { "mingw", "MinGW GCC (" + aMinGWPaths[i] + ") 32-bit", ;
+            aMinGWPaths[i] + "\bin\gcc.exe", aMinGWPaths[i], "" } )
+      endif
+   next
+
 return nil
 
 static function DetectCompiler()
@@ -1881,7 +1892,8 @@ static function SelectCompiler()
       MsgInfo( "No compiler found!" + Chr(10) + Chr(10) + ;
                "Install:" + Chr(10) + ;
                "- Visual Studio Build Tools (free): visualstudio.microsoft.com" + Chr(10) + ;
-               "- Embarcadero BCC: embarcadero.com" )
+               "- Embarcadero BCC: embarcadero.com" + Chr(10) + ;
+               "- MinGW/TDM-GCC: jmeubank.github.io/tdm-gcc/" )
       return nil
    endif
 
@@ -1995,27 +2007,30 @@ static function TBRun()
       cSharedInc := cWinKit + "\Include\" + cWinKitVer + "\shared"
       cUcrtLib   := cWinKit + "\Lib\" + cWinKitVer + "\ucrt\x86"
       cUmLib     := cWinKit + "\Lib\" + cWinKitVer + "\um\x86"
-      // Detect actual Harbour bin/lib layout
       cHbBin := FindHarbourSub( cHbDir, "bin", "msvc", "harbour.exe" )
       cHbLib := FindHarbourSub( cHbDir, "lib", "msvc", "hbrtl.lib" )
-      cLog += "Compiler: " + aCI[2] + Chr(10)
-      cLog += "Harbour bin: " + cHbBin + Chr(10)
-      cLog += "Harbour lib: " + cHbLib + Chr(10)
+   elseif cCompiler == "mingw"
+      cCDir      := aCI[4]  // e.g. "c:\gcc85"
+      cCC        := cCDir + "\bin\gcc.exe"
+      cLinker    := cCDir + "\bin\g++.exe"
+      cHbBin := FindHarbourSub( cHbDir, "bin", "mingw", "harbour.exe" )
+      cHbLib := FindHarbourSub( cHbDir, "lib", "mingw", "libhbrtl.a" )
    else
       cCDir      := aCI[4]  // e.g. "c:\bcc77c"
       cCC        := cCDir + "\bin\bcc32.exe"
       cLinker    := cCDir + "\bin\ilink32.exe"
       cHbBin := FindHarbourSub( cHbDir, "bin", "bcc", "harbour.exe" )
       cHbLib := FindHarbourSub( cHbDir, "lib", "bcc", "hbrtl.lib" )
-      cLog += "Compiler: " + aCI[2] + Chr(10)
-      cLog += "Harbour bin: " + cHbBin + Chr(10)
-      cLog += "Harbour lib: " + cHbLib + Chr(10)
    endif
+   cLog += "Compiler: " + aCI[2] + Chr(10)
+   cLog += "Harbour bin: " + cHbBin + Chr(10)
+   cLog += "Harbour lib: " + cHbLib + Chr(10)
 
    W32_ShellExec( 'cmd /c mkdir "' + cBuildDir + '" 2>nul' )
    // Delete old exe to avoid running stale builds
    W32_ShellExec( 'cmd /c del "' + cBuildDir + '\UserApp.exe" 2>nul' )
    W32_ShellExec( 'cmd /c del "' + cBuildDir + '\*.obj" 2>nul' )
+   W32_ShellExec( 'cmd /c del "' + cBuildDir + '\*.o" 2>nul' )
 
 
    // Show progress dialog (7 steps)
@@ -2114,6 +2129,23 @@ static function TBRun()
             cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
             W32_ShellExec( cCmd )
          endif
+      elseif cCompiler == "mingw"
+         cCmd := cCC + ' -c -O2 -I' + cHbInc + ;
+                 " -I" + cProjDir + "\include" + ;
+                 " " + cBuildDir + "\main.c" + ;
+                 " -o " + cBuildDir + "\main.o"
+         cOutput := W32_ShellExec( cCmd )
+         if "error" $ Lower( cOutput )
+            cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
+            lError := .T.
+         endif
+         if ! lError
+            cCmd := cCC + ' -c -O2 -I' + cHbInc + ;
+                    " -I" + cProjDir + "\include" + ;
+                    " " + cBuildDir + "\classes.c" + ;
+                    " -o " + cBuildDir + "\classes.o"
+            W32_ShellExec( cCmd )
+         endif
       else
          cCmd := cCC + ' -c -O2 -tW -I' + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
@@ -2148,6 +2180,9 @@ static function TBRun()
                  '/I"' + cUmInc + '"' + Chr(10) + ;
                  '/I"' + cSharedInc + '"' + Chr(10) + ;
                  '/I"' + cProjDir + '\include"' + Chr(10)
+      elseif cCompiler == "mingw"
+         cCppBase := " -c -O2 -I" + cHbInc + ;
+                 " -I" + cProjDir + "\include "
       else
          cCppBase := " -c -O2 -tW -w- -I" + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
@@ -2159,6 +2194,10 @@ static function TBRun()
             MemoWrit( cRsp, cCppBase + '"' + cProjDir + "\source\cpp\" + aCppFiles[k] + '.cpp"' + Chr(10) + ;
                      '/Fo"' + cBuildDir + "\" + aCppFiles[k] + '.obj"' )
             cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
+         elseif cCompiler == "mingw"
+            cCmd := cCDir + "\bin\g++.exe" + cCppBase + ;
+                    cProjDir + "\source\cpp\" + aCppFiles[k] + ".cpp" + ;
+                    " -o " + cBuildDir + "\" + aCppFiles[k] + ".o"
          else
             cCmd := cCC + cCppBase + ;
                     cProjDir + "\source\cpp\" + aCppFiles[k] + ".cpp" + ;
@@ -2178,12 +2217,21 @@ static function TBRun()
    if ! lError
       W32_ProgressStep( "Linking executable..." )
       cLog += "[7] Linking..." + Chr(10)
-      cObjs := cBuildDir + "\main.obj " + ;
-               cBuildDir + "\classes.obj " + ;
-               cBuildDir + "\tcontrol.obj " + ;
-               cBuildDir + "\tform.obj " + ;
-               cBuildDir + "\tcontrols.obj " + ;
-               cBuildDir + "\hbbridge.obj"
+      if cCompiler == "mingw"
+         cObjs := cBuildDir + "\main.o " + ;
+                  cBuildDir + "\classes.o " + ;
+                  cBuildDir + "\tcontrol.o " + ;
+                  cBuildDir + "\tform.o " + ;
+                  cBuildDir + "\tcontrols.o " + ;
+                  cBuildDir + "\hbbridge.o"
+      else
+         cObjs := cBuildDir + "\main.obj " + ;
+                  cBuildDir + "\classes.obj " + ;
+                  cBuildDir + "\tcontrol.obj " + ;
+                  cBuildDir + "\tform.obj " + ;
+                  cBuildDir + "\tcontrols.obj " + ;
+                  cBuildDir + "\hbbridge.obj"
+      endif
       if cCompiler == "msvc"
          // Write link response file (avoids cmd line length/quoting issues)
          cRsp := cBuildDir + "\link.rsp"
@@ -2207,6 +2255,22 @@ static function TBRun()
          cRspContent += "msimg32.lib gdiplus.lib iphlpapi.lib ucrt.lib vcruntime.lib msvcrt.lib" + Chr(10)
          MemoWrit( cRsp, cRspContent )
          cCmd := 'cmd /S /c ""' + cLinker + '" @"' + cRsp + '" 2>&1"'
+      elseif cCompiler == "mingw"
+         cCmd := cLinker + " -mwindows -o " + cBuildDir + "\UserApp.exe" + ;
+                 " " + cObjs + ;
+                 " -L" + cHbLib + ;
+                 " -Wl,--start-group" + ;
+                 " -lhbvm -lhbrtl -lhbcommon -lhblang -lhbrdd" + ;
+                 " -lhbmacro -lhbpp -lhbcpage -lhbcplr -lhbct" + ;
+                 " -lhbhsx -lhbsix -lhbusrrdd" + ;
+                 " -lrddntx -lrddnsx -lrddcdx -lrddfpt" + ;
+                 " -lhbdebug -lhbpcre -lhbzlib" + ;
+                 " -lhbsqlit3 -lsqlite3" + ;
+                 " -lgtgui -lgtwin -lgtwvt" + ;
+                 " -Wl,--end-group" + ;
+                 " -luser32 -lgdi32 -lcomctl32 -lcomdlg32 -lshell32" + ;
+                 " -lole32 -loleaut32 -ladvapi32 -lws2_32 -lwinmm" + ;
+                 " -lmsimg32 -lgdiplus -liphlpapi -luuid -lwinspool -lstdc++"
       else
          cObjs := "c0w32.obj " + cObjs
          cCmd := cLinker + ' -Gn -aa -Tpe' + ;
@@ -2444,6 +2508,12 @@ static function TBDebugRun()
       cUmLib     := cWinKit + "\Lib\" + cWinKitVer + "\um\x86"
       cHbBin := FindHarbourSub( cHbDir, "bin", "msvc", "harbour.exe" )
       cHbLib := FindHarbourSub( cHbDir, "lib", "msvc", "hbrtl.lib" )
+   elseif cCompiler == "mingw"
+      cCDir      := aCI[4]
+      cCC        := cCDir + "\bin\gcc.exe"
+      cLinker    := cCDir + "\bin\g++.exe"
+      cHbBin := FindHarbourSub( cHbDir, "bin", "mingw", "harbour.exe" )
+      cHbLib := FindHarbourSub( cHbDir, "lib", "mingw", "libhbrtl.a" )
    else
       cCDir      := aCI[4]
       cCC        := cCDir + "\bin\bcc32.exe"
@@ -2455,6 +2525,7 @@ static function TBDebugRun()
    W32_ShellExec( 'cmd /c mkdir "' + cBuildDir + '" 2>nul' )
    W32_ShellExec( 'cmd /c del "' + cBuildDir + '\DebugApp.exe" 2>nul' )
    W32_ShellExec( 'cmd /c del "' + cBuildDir + '\*.obj" 2>nul' )
+   W32_ShellExec( 'cmd /c del "' + cBuildDir + '\*.o" 2>nul' )
 
    W32_DebugSetStatus( "Compiling debug build..." )
 
@@ -2550,6 +2621,11 @@ static function TBDebugRun()
          cRsp := cBuildDir + "\cl_dbg.rsp"
          MemoWrit( cRsp, cRspContent + '"' + cBuildDir + '\debug_main.c"' + Chr(10) + '/Fo"' + cBuildDir + '\debug_main.obj"' )
          cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
+      elseif cCompiler == "mingw"
+         cCmd := cCC + ' -c -O0 -g -I' + cHbInc + ;
+                 " -I" + cProjDir + "\include" + ;
+                 " " + cBuildDir + "\debug_main.c" + ;
+                 " -o " + cBuildDir + "\debug_main.o"
       else
          cCmd := cCC + ' -c -O0 -tW -w- -I' + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
@@ -2573,6 +2649,10 @@ static function TBDebugRun()
          cRsp := cBuildDir + "\cl_hook.rsp"
          MemoWrit( cRsp, cRspContent + '"' + cProjDir + '\source\debugger\dbghook.c"' + Chr(10) + '/Fo"' + cBuildDir + '\dbghook.obj"' )
          cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
+      elseif cCompiler == "mingw"
+         cCmd := cCC + ' -c -O2 -I' + cHbInc + ;
+                 " " + cProjDir + "\source\debugger\dbghook.c" + ;
+                 " -o " + cBuildDir + "\dbghook.o"
       else
          cCmd := cCC + ' -c -O2 -tW -w- -I' + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
@@ -2580,7 +2660,9 @@ static function TBDebugRun()
                  " -o" + cBuildDir + "\dbghook.obj"
       endif
       cOutput := W32_ShellExec( cCmd )
-      if "error" $ Lower( cOutput ) .or. ! File( cBuildDir + "\dbghook.obj" )
+      if "error" $ Lower( cOutput ) .or. ;
+         ( cCompiler == "mingw" .and. ! File( cBuildDir + "\dbghook.o" ) ) .or. ;
+         ( cCompiler != "mingw" .and. ! File( cBuildDir + "\dbghook.obj" ) )
          cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
          lError := .T.
       else
@@ -2600,6 +2682,9 @@ static function TBDebugRun()
                  '/I"' + cUmInc + '"' + Chr(10) + ;
                  '/I"' + cSharedInc + '"' + Chr(10) + ;
                  '/I"' + cProjDir + '\include"' + Chr(10)
+      elseif cCompiler == "mingw"
+         cCppBase := " -c -O0 -g -I" + cHbInc + ;
+                 " -I" + cProjDir + "\include "
       else
          cCppBase := " -c -O2 -tW -w- -I" + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
@@ -2611,6 +2696,10 @@ static function TBDebugRun()
             MemoWrit( cRsp, cCppBase + '"' + cProjDir + "\source\cpp\" + aCppFiles[k] + '.cpp"' + Chr(10) + ;
                      '/Fo"' + cBuildDir + "\" + aCppFiles[k] + '.obj"' )
             cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
+         elseif cCompiler == "mingw"
+            cCmd := cCDir + "\bin\g++.exe" + cCppBase + ;
+                    cProjDir + "\source\cpp\" + aCppFiles[k] + ".cpp" + ;
+                    " -o " + cBuildDir + "\" + aCppFiles[k] + ".o"
          else
             cCmd := cCC + cCppBase + ;
                     cProjDir + "\source\cpp\" + aCppFiles[k] + ".cpp" + ;
@@ -2629,12 +2718,21 @@ static function TBDebugRun()
    // Step 7: Link native executable (DebugApp.exe)
    if ! lError
       cLog += "[7] Linking DebugApp.exe..." + Chr(10)
-      cObjs := cBuildDir + "\debug_main.obj " + ;
-               cBuildDir + "\dbghook.obj " + ;
-               cBuildDir + "\tcontrol.obj " + ;
-               cBuildDir + "\tform.obj " + ;
-               cBuildDir + "\tcontrols.obj " + ;
-               cBuildDir + "\hbbridge.obj"
+      if cCompiler == "mingw"
+         cObjs := cBuildDir + "\debug_main.o " + ;
+                  cBuildDir + "\dbghook.o " + ;
+                  cBuildDir + "\tcontrol.o " + ;
+                  cBuildDir + "\tform.o " + ;
+                  cBuildDir + "\tcontrols.o " + ;
+                  cBuildDir + "\hbbridge.o"
+      else
+         cObjs := cBuildDir + "\debug_main.obj " + ;
+                  cBuildDir + "\dbghook.obj " + ;
+                  cBuildDir + "\tcontrol.obj " + ;
+                  cBuildDir + "\tform.obj " + ;
+                  cBuildDir + "\tcontrols.obj " + ;
+                  cBuildDir + "\hbbridge.obj"
+      endif
       if cCompiler == "msvc"
          cRsp := cBuildDir + "\link_dbg.rsp"
          cRspContent := ""
@@ -2657,6 +2755,22 @@ static function TBDebugRun()
          cRspContent += "msimg32.lib gdiplus.lib iphlpapi.lib ucrt.lib vcruntime.lib msvcrt.lib" + Chr(10)
          MemoWrit( cRsp, cRspContent )
          cCmd := 'cmd /S /c ""' + cLinker + '" @"' + cRsp + '" 2>&1"'
+      elseif cCompiler == "mingw"
+         cCmd := cLinker + " -mwindows -o " + cBuildDir + "\DebugApp.exe" + ;
+                 " " + cObjs + ;
+                 " -L" + cHbLib + ;
+                 " -Wl,--start-group" + ;
+                 " -lhbvm -lhbrtl -lhbcommon -lhblang -lhbrdd" + ;
+                 " -lhbmacro -lhbpp -lhbcpage -lhbcplr -lhbct" + ;
+                 " -lhbhsx -lhbsix -lhbusrrdd" + ;
+                 " -lrddntx -lrddnsx -lrddcdx -lrddfpt" + ;
+                 " -lhbdebug -lhbpcre -lhbzlib" + ;
+                 " -lhbsqlit3 -lsqlite3" + ;
+                 " -lgtgui -lgtwin -lgtwvt" + ;
+                 " -Wl,--end-group" + ;
+                 " -luser32 -lgdi32 -lcomctl32 -lcomdlg32 -lshell32" + ;
+                 " -lole32 -loleaut32 -ladvapi32 -lws2_32 -lwinmm" + ;
+                 " -lmsimg32 -lgdiplus -liphlpapi -luuid -lwinspool -lstdc++"
       else
          cObjs := "c0w32.obj " + cObjs
          cCmd := cLinker + ' -Gn -aa -Tpe' + ;
@@ -2828,12 +2942,14 @@ static function ShowNoCompilerDialog()
 
    if MsgYesNo( "No C/C++ compiler found!" + Chr(10) + Chr(10) + ;
                 "HbBuilder needs a C compiler to build projects." + Chr(10) + ;
-                "You can install one of these (both are free):" + Chr(10) + Chr(10) + ;
+                "You can install one of these (all free):" + Chr(10) + Chr(10) + ;
                 "  1. Visual Studio Build Tools (recommended)" + Chr(10) + ;
                 "     visualstudio.microsoft.com/downloads" + Chr(10) + ;
                 "     (select 'Desktop development with C++')" + Chr(10) + Chr(10) + ;
                 "  2. Embarcadero C++ Builder / BCC" + Chr(10) + ;
                 "     www.embarcadero.com/free-tools" + Chr(10) + Chr(10) + ;
+                "  3. MinGW / TDM-GCC" + Chr(10) + ;
+                "     jmeubank.github.io/tdm-gcc/" + Chr(10) + Chr(10) + ;
                 "Open the Visual Studio download page now?", ;
                 "C Compiler Not Found" )
       W32_ShellExec( 'cmd /c start "" "https://visualstudio.microsoft.com/downloads/"' )
@@ -2865,7 +2981,8 @@ static function FindHarbour( cCompiler )
    local aPaths, cSub, i, cPath
    local cUserProfile := GetEnv( "USERPROFILE" )
 
-   cSub := iif( cCompiler == "msvc", "bin\win\msvc", "bin\win\bcc" )
+   cSub := iif( cCompiler == "msvc", "bin\win\msvc", ;
+            iif( cCompiler == "mingw", "bin\win\mingw", "bin\win\bcc" ) )
 
    aPaths := { ;
       "c:\harbour", ;
