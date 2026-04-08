@@ -489,6 +489,12 @@ return Self
 
 METHOD CreateForm( oForm ) CLASS TApplication
 
+   // Install global error handler on first CreateForm call
+   // (must be before form construction, which may open files/databases)
+   if ::oMainForm == nil
+      ErrorBlock( { |oError| AppShowError( oError ) } )
+   endif
+
    AAdd( ::aForms, oForm )
    if ::oMainForm == nil
       ::oMainForm := oForm
@@ -502,9 +508,6 @@ METHOD CreateForm( oForm ) CLASS TApplication
 return Self
 
 METHOD Run() CLASS TApplication
-
-   // Install global error handler — shows errors in a dialog instead of console
-   ErrorBlock( { |oError| AppShowError( oError ) } )
 
    // Show and activate the main form (enters NSApp run loop)
    if ::oMainForm != nil

@@ -47,7 +47,7 @@ SCICOCOA="$SCIDIR/scintilla/cocoa"
 LEXINC="$SCIDIR/lexilla/include"
 
 # Download Scintilla + Lexilla source if not present
-if [ ! -f "$SCIINC/ScintillaView.h" ]; then
+if [ ! -f "$SCICOCOA/ScintillaView.h" ]; then
    echo "[0/4] Downloading Scintilla + Lexilla source..."
    mkdir -p "$SCIDIR"
    curl -L -o "$SCIDIR/scintilla556.tgz" https://www.scintilla.org/scintilla556.tgz

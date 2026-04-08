@@ -1,6 +1,16 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-08 (Session 28: macOS — ErrorBlock fix + build_mac.sh fix)
+
+  BUGFIX:
+  - ErrorBlock (GUI error dialog) now installed in TApplication:CreateForm()
+    instead of TApplication:Run() — errors during form construction (e.g.
+    missing DBF file) now show the GUI dialog instead of crashing to console
+  - build_mac.sh: fixed Scintilla download check — was looking for
+    ScintillaView.h in include/ instead of cocoa/, causing re-download
+    on every build
+
 2026-04-08 (Session 27: macOS — Non-visual components: DBFTable support)
 
   COMPONENT FRAMEWORK:
