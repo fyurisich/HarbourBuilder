@@ -914,6 +914,104 @@ static function SaveActiveFormCode()
 
 return nil
 
+// Get all code from editor (called from C inspector to check handler existence)
+function INS_GetAllCode()
+
+   local cAll := "", i
+
+   cAll := CodeEditorGetTabText( hCodeEditor, 1 )  // Project1.prg
+   for i := 1 to Len( aForms )
+      cAll += aForms[i][3]  // Form code from memory
+      cAll += CodeEditorGetTabText( hCodeEditor, i + 1 )  // Editor tab
+   next
+
+return cAll
+
+// Delete an event handler function from the code
+function INS_DeleteHandler( cHandler )
+
+   local cCode, cNew, nStart, nEnd, nLen, cSearch
+   local cLine, nLineStart, nLineEnd
+   local nSepStart, nSepLineStart
+
+   if nActiveForm < 1 .or. nActiveForm > Len( aForms )
+      return nil
+   endif
+
+   // Get current code from the editor tab
+   cCode := CodeEditorGetTabText( hCodeEditor, nActiveForm + 1 )
+   cSearch := "static function " + cHandler
+
+   // Find the function (case-insensitive)
+   nStart := At( Lower( cSearch ), Lower( cCode ) )
+   if nStart == 0
+      cSearch := "function " + cHandler
+      nStart := At( Lower( cSearch ), Lower( cCode ) )
+   endif
+   if nStart == 0
+      return nil
+   endif
+
+   // Find end of function: look for "return" line
+   nLen := Len( cCode )
+   nEnd := nStart + Len( cSearch )
+
+   do while nEnd < nLen
+      if SubStr( cCode, nEnd, 1 ) == Chr(10)
+         nLineStart := nEnd + 1
+         nLineEnd := At( Chr(10), SubStr( cCode, nLineStart ) )
+         if nLineEnd > 0
+            cLine := AllTrim( SubStr( cCode, nLineStart, nLineEnd - 1 ) )
+         else
+            cLine := AllTrim( SubStr( cCode, nLineStart ) )
+         endif
+         cLine := Lower( cLine )
+         if cLine == "return nil" .or. cLine == "return" .or. Left( cLine, 7 ) == "return "
+            if nLineEnd > 0
+               nEnd := nLineStart + nLineEnd
+               do while nEnd < nLen .and. ;
+                  ( SubStr( cCode, nEnd, 1 ) == Chr(10) .or. ;
+                    SubStr( cCode, nEnd, 1 ) == Chr(13) )
+                  nEnd++
+               enddo
+            else
+               nEnd := nLen
+            endif
+            exit
+         endif
+      endif
+      nEnd++
+   enddo
+
+   // Remove separator comment (//----) before the function
+   if nStart > 3
+      nSepStart := nStart - 1
+      do while nSepStart > 1 .and. ;
+         ( SubStr( cCode, nSepStart, 1 ) == Chr(10) .or. ;
+           SubStr( cCode, nSepStart, 1 ) == Chr(13) )
+         nSepStart--
+      enddo
+      nSepLineStart := nSepStart
+      do while nSepLineStart > 1 .and. SubStr( cCode, nSepLineStart - 1, 1 ) != Chr(10)
+         nSepLineStart--
+      enddo
+      if Left( SubStr( cCode, nSepLineStart, nSepStart - nSepLineStart + 1 ), 3 ) == "//-"
+         nStart := nSepLineStart
+      endif
+   endif
+
+   // Remove the function block
+   cNew := Left( cCode, nStart - 1 ) + SubStr( cCode, nEnd )
+
+   // Update editor and form data
+   CodeEditorSetTabText( hCodeEditor, nActiveForm + 1, cNew )
+   aForms[ nActiveForm ][ 3 ] := cNew
+
+   // Re-sync to remove event binding
+   SyncDesignerToCode()
+
+return nil
+
 // Double-click on event in inspector: generate METHOD handler
 // Follows C++Builder pattern: ComponentName + EventNameWithoutOn
 // e.g. Button1 + OnClick -> Button1Click
@@ -1429,6 +1527,93 @@ static function TBSave()
 
 return nil
 
+// Check if Harbour compiler is installed, download and build if not
+// Returns .T. if Harbour is available, .F. if user cancelled or build failed
+static function EnsureHarbour( cHbDir )
+
+   local cHbSrc := "/tmp/harbour-src"
+   local cOutput, cDiag
+   static lBusy := .F.
+
+   // Re-entry protection
+   if lBusy
+      MsgInfo( "Harbour is already being downloaded and built." + Chr(10) + ;
+         "Please wait for the current operation to finish.", "HbBuilder" )
+      return .F.
+   endif
+
+   // Ask user before downloading
+   if ! UI_MsgYesNo( ;
+      "Harbour compiler not found!" + Chr(10) + Chr(10) + ;
+      "HbBuilder needs Harbour to compile projects." + Chr(10) + Chr(10) + ;
+      "Download from GitHub and build it now?" + Chr(10) + ;
+      "(This may take several minutes)", ;
+      "HbBuilder Setup" )
+      return .F.
+   endif
+
+   lBusy := .T.
+
+   // Download source if not already present
+   if ! File( cHbSrc + "/config/global.mk" )
+      MAC_ProgressOpen( "HbBuilder Setup", 0 )
+      MAC_ShellExec( "rm -rf " + cHbSrc )
+      MAC_ShellExecLive( ;
+         "git clone --depth 1 https://github.com/harbour/core.git " + cHbSrc + " 2>&1", ;
+         "Cloning harbour/core from GitHub..." )
+      MAC_ProgressClose()
+
+      // Verify download
+      if ! File( cHbSrc + "/config/global.mk" )
+         lBusy := .F.
+         MAC_BuildErrorDialog( "Download Failed", ;
+            "Could not download Harbour source." + Chr(10) + Chr(10) + ;
+            "Please check your internet connection and try again." + Chr(10) + ;
+            "You can also install manually:" + Chr(10) + ;
+            "  git clone https://github.com/harbour/core " + cHbSrc )
+         return .F.
+      endif
+   endif
+
+   // Build and install Harbour
+   MAC_ProgressOpen( "Building Harbour...", 0 )
+   cOutput := MAC_ShellExecLive( ;
+      "cd " + cHbSrc + " && HB_INSTALL_PREFIX=" + cHbDir + ;
+      " make -j$(sysctl -n hw.ncpu) install 2>&1", ;
+      "Compiling Harbour (this may take several minutes)..." )
+   MAC_ProgressClose()
+
+   lBusy := .F.
+
+   // Verify build succeeded
+   if File( cHbDir + "/bin/harbour" ) .or. File( cHbDir + "/bin/darwin/clang/harbour" )
+      MsgInfo( "Harbour compiler installed successfully!" + Chr(10) + ;
+         "Location: " + cHbDir, "HbBuilder Setup" )
+      return .T.
+   endif
+
+   // Build failed — show diagnostic
+   cDiag := "Harbour build failed." + Chr(10) + Chr(10) + ;
+      "Install prefix: " + cHbDir + Chr(10) + ;
+      "Source dir: " + cHbSrc + Chr(10) + Chr(10) + ;
+      "Expected files:" + Chr(10) + ;
+      "  bin/harbour: " + iif( File( cHbDir + "/bin/harbour" ), "FOUND", "MISSING" ) + Chr(10) + ;
+      "  bin/darwin/clang/harbour: " + iif( File( cHbDir + "/bin/darwin/clang/harbour" ), "FOUND", "MISSING" ) + Chr(10) + ;
+      "  include/hbapi.h: " + iif( File( cHbDir + "/include/hbapi.h" ), "FOUND", "MISSING" ) + Chr(10) + Chr(10) + ;
+      "Manual build:" + Chr(10) + ;
+      "  cd " + cHbSrc + Chr(10) + ;
+      "  HB_INSTALL_PREFIX=" + cHbDir + " make install"
+
+   if ! Empty( cOutput ) .and. Len( cOutput ) > 2000
+      cDiag += Chr(10) + Chr(10) + "Last output:" + Chr(10) + Right( cOutput, 2000 )
+   elseif ! Empty( cOutput )
+      cDiag += Chr(10) + Chr(10) + "Build output:" + Chr(10) + cOutput
+   endif
+
+   MAC_BuildErrorDialog( "Build Failed", cDiag )
+
+return .F.
+
 // Run: compile and execute the project (C++Builder F9)
 static function TBRun()
 
@@ -1467,19 +1652,7 @@ static function TBRun()
 
    // Auto-download and build Harbour if not installed
    if ! File( cHbDir + "/bin/harbour" ) .and. ! File( cHbDir + "/bin/darwin/clang/harbour" )
-      MAC_ProgressOpen( "HbBuilder Setup — Installing Harbour Compiler", 0 )
-      MAC_ShellExec( "rm -rf /tmp/harbour-src" )
-      MAC_ShellExecLive( "git clone --depth 1 https://github.com/harbour/core.git /tmp/harbour-src 2>&1", ;
-         "Downloading Harbour compiler from GitHub..." )
-      MAC_ShellExecLive( "cd /tmp/harbour-src && HB_INSTALL_PREFIX=" + cHbDir + ;
-         " make -j$(sysctl -n hw.ncpu) install 2>&1", ;
-         "Building Harbour compiler (this may take a few minutes)..." )
-      MAC_ProgressClose()
-      if ! File( cHbBin + "/harbour" )
-         MAC_BuildErrorDialog( "Setup Failed", "Could not build Harbour compiler." + Chr(10) + ;
-            "Please install manually:" + Chr(10) + ;
-            "  git clone https://github.com/harbour/core /tmp/harbour-src" + Chr(10) + ;
-            "  cd /tmp/harbour-src && HB_INSTALL_PREFIX=" + cHbDir + " make install" )
+      if ! EnsureHarbour( cHbDir )
          return nil
       endif
    endif
@@ -1704,6 +1877,13 @@ static function TBDebugRun()
    cProjDir := HB_DirBase() + ".."
    cLog     := ""
    lError   := .F.
+
+   // Auto-download and build Harbour if not installed
+   if ! File( cHbDir + "/bin/harbour" ) .and. ! File( cHbDir + "/bin/darwin/clang/harbour" )
+      if ! EnsureHarbour( cHbDir )
+         return nil
+      endif
+   endif
 
    if File( cHbDir + "/bin/darwin/clang/harbour" )
       cHbBin := cHbDir + "/bin/darwin/clang"

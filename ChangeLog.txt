@@ -1,6 +1,48 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-08 (Session 17: macOS — Inspector events parity with Win32)
+
+  INSPECTOR EVENTS (MACOS):
+  - Replaced array-driven event display with Win32-style InsPopulateEvents():
+    events are now built by control type (CT_FORM, CT_BUTTON, CT_EDIT, etc.)
+    with handler name auto-generation (CtrlName + EventSuffix, e.g. Form1Click).
+  - Handler existence check: reads all code via INS_GETALLCODE() and searches
+    for "function HandlerName" (case-insensitive). Only shows handler name in
+    the inspector Value column if the function actually exists in code.
+  - INS_SETEVENTS now accepts handler names as strings from Harbour
+    (resolved by inspector_mac.prg), replacing the old "(Block)" display.
+  - Added right-click context menu "Delete HandlerName" on Events tab:
+    calls INS_DELETEHANDLER() to remove the function from code, then
+    refreshes the event list. Uses HBInspectorTableView subclass with
+    menuForEvent: override.
+  - Added hb_vmRequestReenter/Restore guards to all Harbour VM calls
+    from Cocoa callbacks (UI_GETPROP, INS_GETALLCODE, UI_GETTYPE,
+    INS_DELETEHANDLER).
+
+  NEW HARBOUR FUNCTIONS (MACOS):
+  - INS_GetAllCode() — reads Project1.prg + all form code from editor
+    tabs and aForms memory. Used by C inspector to verify handler existence.
+  - INS_DeleteHandler(cHandler) — removes a handler function (and its
+    separator comment) from the active form's code, updates editor tab
+    and re-syncs designer. Ported from Win32.
+
+  HARBOUR AUTO-INSTALL (MACOS):
+  - Extracted EnsureHarbour() from inline code in TBRun(), following
+    Win32 pattern: user confirmation dialog, re-entry protection (static
+    lBusy flag), download verification (config/global.mk), build
+    verification (bin/harbour or bin/darwin/clang/harbour), detailed
+    diagnostic on failure (paths, expected files, build output tail).
+  - Fixed bug: old code checked cHbBin before it was assigned, so the
+    post-build verification always failed silently.
+  - Added EnsureHarbour() call to TBDebugRun() as well — previously
+    debug builds would fail without Harbour with no user guidance.
+
+  MISSING FUNCTION FIX:
+  - Added UI_MSGYESNO() to cocoa_core.m — Yes/No dialog returning .T./.F.
+    Was referenced by harbour/classes.prg but never implemented for macOS,
+    causing linker failure (undefined symbol _HB_FUN_UI_MSGYESNO).
+
 2026-04-07 (Session 16: Win32 — ShowModal fix, project restore, inspector events)
 
   SHOWMODAL REWRITE (WIN32):

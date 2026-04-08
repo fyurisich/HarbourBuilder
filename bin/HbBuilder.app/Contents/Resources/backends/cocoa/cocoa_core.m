@@ -363,6 +363,7 @@ void EnsureNSApp( void )
    BOOL       FAppBar;
    int        FModalResult;
    BOOL       FRunning;
+   BOOL       FWasRunning;      /* was in modal [NSApp run] loop when close was requested */
    BOOL       FDesignMode;
    HBControl * FSelected[MAX_CHILDREN];
    int        FSelCount;
@@ -418,6 +419,7 @@ void EnsureNSApp( void )
 }
 - (void)run;
 - (void)showOnly;  /* Create + show without entering run loop */
+- (int)showModal;  /* Show as modal, block until closed, return FModalResult */
 - (void)close;
 - (void)center;
 - (void)createAllChildren;
@@ -2006,6 +2008,8 @@ static HBPaletteTarget * s_palTarget = nil;
    if( FDesignMode ) {
       [FWindow setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameDarkAqua]];
       [FWindow setBackgroundColor:[NSColor colorWithCalibratedWhite:0.18 alpha:1.0]];
+   } else if( FBgColor ) {
+      [FWindow setBackgroundColor:FBgColor];
    }
    if( FAppBar ) [FWindow setHasShadow:NO];
 
@@ -2030,6 +2034,7 @@ static HBPaletteTarget * s_palTarget = nil;
    if( FDesignMode )
    {
       HBDotGridView * grid = [[HBDotGridView alloc] initWithFrame:[FContentView bounds]];
+      if( FBgColor ) grid->bgColor = FBgColor;
       [grid setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
       [FContentView addSubview:grid];
    }
@@ -2088,10 +2093,17 @@ static HBPaletteTarget * s_palTarget = nil;
    [FWindow makeKeyAndOrderFront:nil];
    [NSApp activateIgnoringOtherApps:YES];
 
-   FRunning = YES;
+   static int s_nRunLoopDepth = 0;
    if( enterLoop ) {
-      [NSApp run];
-      FRunning = NO;
+      if( s_nRunLoopDepth > 0 ) {
+         /* Already inside [NSApp run] — don't nest, just show */
+      } else {
+         FRunning = YES;
+         s_nRunLoopDepth++;
+         [NSApp run];
+         s_nRunLoopDepth--;
+         FRunning = NO;
+      }
    }
 }
 
@@ -2100,8 +2112,17 @@ static HBPaletteTarget * s_palTarget = nil;
    [self createWindowWithRunLoop:NO];
 }
 
+- (int)showModal
+{
+   [self createWindowWithRunLoop:NO];
+   FModalResult = 0;
+   [NSApp runModalForWindow:FWindow];
+   return FModalResult;
+}
+
 - (void)close
 {
+   FWasRunning = FRunning;
    FRunning = NO;
    [FWindow close];
 }
@@ -2288,11 +2309,26 @@ static HBPaletteTarget * s_palTarget = nil;
 {
    if( FOnClose ) [self fireEvent:FOnClose];
    if( FOnHide ) [self fireEvent:FOnHide];
+
+   /* If this window is running a modal session, end it */
+   if( [NSApp modalWindow] == FWindow ) {
+      [NSApp stopModal];
+      FRunning = NO;
+      FWasRunning = NO;
+      return;
+   }
+
+   /* Only stop the run loop if this form had its own modal loop (Activate/Run) */
+   BOOL wasModal = FRunning || FWasRunning;
    FRunning = NO;
-   [NSApp stop:nil];
-   [NSApp postEvent:[NSEvent otherEventWithType:NSEventTypeApplicationDefined
-      location:NSZeroPoint modifierFlags:0 timestamp:0
-      windowNumber:0 context:nil subtype:0 data1:0 data2:0] atStart:YES];
+   FWasRunning = NO;
+
+   if( wasModal ) {
+      [NSApp stop:nil];
+      [NSApp postEvent:[NSEvent otherEventWithType:NSEventTypeApplicationDefined
+         location:NSZeroPoint modifierFlags:0 timestamp:0
+         windowNumber:0 context:nil subtype:0 data1:0 data2:0] atStart:YES];
+   }
 }
 
 - (BOOL)windowShouldClose:(NSWindow *)sender
@@ -2457,6 +2493,7 @@ HB_FUNC( UI_FORMSETDARKMODE ) {
 }
 HB_FUNC( UI_FORMRUN )       { HBForm * p = GetForm(1); if( p ) [p run]; }
 HB_FUNC( UI_FORMSHOW )      { HBForm * p = GetForm(1); if( p ) [p showOnly]; }
+HB_FUNC( UI_FORMSHOWMODAL ) { HBForm * p = GetForm(1); if( p ) hb_retni( [p showModal] ); else hb_retni(0); }
 HB_FUNC( UI_FORMCLOSE )     { HBForm * p = GetForm(1); if( p ) [p close]; }
 HB_FUNC( UI_FORMHIDE )      { HBForm * p = GetForm(1); if( p && p->FWindow ) [p->FWindow orderOut:nil]; }
 HB_FUNC( UI_FORMISVISIBLE ) { HBForm * p = GetForm(1); hb_retl( p && p->FWindow && [p->FWindow isVisible] ); }
@@ -3973,6 +4010,20 @@ HB_FUNC( MSGYESNOCANCEL )
    if( r == NSAlertFirstButtonReturn )       hb_retni( 1 );  /* Yes */
    else if( r == NSAlertSecondButtonReturn )  hb_retni( 2 );  /* No */
    else                                       hb_retni( 0 );  /* Cancel */
+}
+
+/* UI_MsgYesNo( cText [, cTitle] ) --> lYes  (.T. if Yes clicked) */
+HB_FUNC( UI_MSGYESNO )
+{
+   EnsureNSApp();
+   NSAlert * alert = [[NSAlert alloc] init];
+   [alert setMessageText:[NSString stringWithUTF8String:HB_ISCHAR(2) ? hb_parc(2) : "Confirm"]];
+   [alert setInformativeText:[NSString stringWithUTF8String:HB_ISCHAR(1) ? hb_parc(1) : ""]];
+   [alert addButtonWithTitle:@"Yes"];
+   [alert addButtonWithTitle:@"No"];
+   [alert setAlertStyle:NSAlertStyleWarning];
+   NSModalResponse r = [alert runModal];
+   hb_retl( r == NSAlertFirstButtonReturn );
 }
 
 /* MAC_ShellExec( cCommand ) --> cOutput

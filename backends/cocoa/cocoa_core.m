@@ -4012,6 +4012,20 @@ HB_FUNC( MSGYESNOCANCEL )
    else                                       hb_retni( 0 );  /* Cancel */
 }
 
+/* UI_MsgYesNo( cText [, cTitle] ) --> lYes  (.T. if Yes clicked) */
+HB_FUNC( UI_MSGYESNO )
+{
+   EnsureNSApp();
+   NSAlert * alert = [[NSAlert alloc] init];
+   [alert setMessageText:[NSString stringWithUTF8String:HB_ISCHAR(2) ? hb_parc(2) : "Confirm"]];
+   [alert setInformativeText:[NSString stringWithUTF8String:HB_ISCHAR(1) ? hb_parc(1) : ""]];
+   [alert addButtonWithTitle:@"Yes"];
+   [alert addButtonWithTitle:@"No"];
+   [alert setAlertStyle:NSAlertStyleWarning];
+   NSModalResponse r = [alert runModal];
+   hb_retl( r == NSAlertFirstButtonReturn );
+}
+
 /* MAC_ShellExec( cCommand ) --> cOutput
  * Execute a shell command and return stdout+stderr as string */
 HB_FUNC( MAC_SHELLEXEC )
