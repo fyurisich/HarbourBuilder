@@ -1,6 +1,31 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-08 (Session 32: macOS — Browse column inspector, arrow key navigation)
+
+  INSPECTOR — BROWSE COLUMNS:
+  - Browse columns appear as individual entries in inspector combo dropdown
+    (oBrowse1Col1 AS TBrwColumn, oBrowse1Col2 AS TBrwColumn)
+  - Selecting a column shows editable properties: cTitle, nWidth, nAlign
+    (Left/Center/Right dropdown), cFieldName, cFooterText
+  - Changing cTitle updates the column header live in the browse on the form
+  - New C functions: UI_BrowseColCount, UI_BrowseGetColProps, UI_BrowseSetColProp
+  - nBrowseCol field in INSDATA routes property edits to column API
+  - Combo map (_InsSetComboMap/_InsGetComboMap) tracks control vs column entries
+  - EXTERNAL declarations for C functions called via hb_dynsymFindName
+  - CT_BRWCOLUMN (87) constant added
+
+  INSPECTOR — KEYBOARD:
+  - Arrow keys (Up/Down) now skip category rows for smooth navigation
+  - keyDown: override in HBInspectorTableView
+
+  CODE GENERATION:
+  - Browse code now includes COLSIZES clause with per-column widths
+
+  BUGFIX:
+  - lIgnoreSelChange flag prevents OnDesignSelChange from overwriting
+    column selection when UI_FormSelectCtrl fires re-entrantly
+
 2026-04-08 (Session 31: macOS — TBrowse, TCompArray, TBrwColumn, array editor)
 
   TBROWSE CONTROL:

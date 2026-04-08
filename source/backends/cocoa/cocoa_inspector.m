@@ -36,6 +36,7 @@ typedef struct {
    NSFont *     font;
    NSFont *     boldFont;
    HB_PTRUINT   hCtrl;       /* currently inspected control handle */
+   int          nBrowseCol;  /* >=0 when inspecting a browse column, -1 otherwise */
    HB_PTRUINT   hFormCtrl;   /* form handle for combo enumeration */
    IROW         rows[MAX_ROWS];
    int          nRows;
@@ -302,26 +303,52 @@ static HBFontPickerTarget * s_fontTarget = nil;
 
    strncpy( d->rows[nReal].szValue, szVal, sizeof(d->rows[0].szValue) - 1 );
 
-   /* Apply value via UI_SetProp */
-   PHB_DYNS pDyn = hb_dynsymFindName( "UI_SETPROP" );
-   if( pDyn )
+   if( d->nBrowseCol >= 0 )
    {
-      hb_vmPushDynSym( pDyn ); hb_vmPushNil();
-      hb_vmPushNumInt( d->hCtrl );
-      hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
+      /* Apply value via UI_BrowseSetColProp for column properties */
+      PHB_DYNS pDyn = hb_dynsymFindName( "UI_BROWSESETCOLPROP" );
+      if( pDyn )
+      {
+         hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+         hb_vmPushNumInt( d->hCtrl );
+         hb_vmPushInteger( d->nBrowseCol );
+         hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
 
-      if( d->rows[nReal].cType == 'S' || d->rows[nReal].cType == 'F' )
-         hb_vmPushString( szVal, strlen(szVal) );
-      else if( d->rows[nReal].cType == 'N' )
-         hb_vmPushInteger( atoi(szVal) );
-      else if( d->rows[nReal].cType == 'L' )
-         hb_vmPushLogical( strcasecmp(szVal,".T.")==0 );
-      else if( d->rows[nReal].cType == 'C' )
-         hb_vmPushNumInt( (HB_MAXINT) strtoul(szVal, NULL, 10) );
-      else
-         hb_vmPushNil();
+         if( d->rows[nReal].cType == 'S' || d->rows[nReal].cType == 'F' )
+            hb_vmPushString( szVal, strlen(szVal) );
+         else if( d->rows[nReal].cType == 'N' )
+            hb_vmPushInteger( atoi(szVal) );
+         else if( d->rows[nReal].cType == 'D' )
+            hb_vmPushInteger( atoi(szVal) );
+         else
+            hb_vmPushNil();
 
-      hb_vmDo( 3 );
+         hb_vmDo( 4 );
+      }
+   }
+   else
+   {
+      /* Apply value via UI_SetProp */
+      PHB_DYNS pDyn = hb_dynsymFindName( "UI_SETPROP" );
+      if( pDyn )
+      {
+         hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+         hb_vmPushNumInt( d->hCtrl );
+         hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
+
+         if( d->rows[nReal].cType == 'S' || d->rows[nReal].cType == 'F' )
+            hb_vmPushString( szVal, strlen(szVal) );
+         else if( d->rows[nReal].cType == 'N' )
+            hb_vmPushInteger( atoi(szVal) );
+         else if( d->rows[nReal].cType == 'L' )
+            hb_vmPushLogical( strcasecmp(szVal,".T.")==0 );
+         else if( d->rows[nReal].cType == 'C' )
+            hb_vmPushNumInt( (HB_MAXINT) strtoul(szVal, NULL, 10) );
+         else
+            hb_vmPushNil();
+
+         hb_vmDo( 3 );
+      }
    }
 
    /* Fire two-way sync callback */
@@ -706,14 +733,26 @@ static int s_dropdownChoice = -1;
       snprintf( newVal, sizeof(newVal), "%d%s", i, opts ? opts : "" );
       strncpy( d->rows[nReal].szValue, newVal, sizeof(d->rows[0].szValue) - 1 );
 
-      /* Apply via UI_SetProp */
-      PHB_DYNS pDyn = hb_dynsymFindName( "UI_SETPROP" );
-      if( pDyn ) {
-         hb_vmPushDynSym( pDyn ); hb_vmPushNil();
-         hb_vmPushNumInt( d->hCtrl );
-         hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
-         hb_vmPushInteger( i );
-         hb_vmDo( 3 );
+      /* Apply via UI_BrowseSetColProp or UI_SetProp */
+      if( d->nBrowseCol >= 0 ) {
+         PHB_DYNS pDyn = hb_dynsymFindName( "UI_BROWSESETCOLPROP" );
+         if( pDyn ) {
+            hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+            hb_vmPushNumInt( d->hCtrl );
+            hb_vmPushInteger( d->nBrowseCol );
+            hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
+            hb_vmPushInteger( i );
+            hb_vmDo( 4 );
+         }
+      } else {
+         PHB_DYNS pDyn = hb_dynsymFindName( "UI_SETPROP" );
+         if( pDyn ) {
+            hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+            hb_vmPushNumInt( d->hCtrl );
+            hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
+            hb_vmPushInteger( i );
+            hb_vmDo( 3 );
+         }
       }
       if( d->pOnPropChanged && HB_IS_BLOCK( d->pOnPropChanged ) ) {
          hb_vmPushEvalSym(); hb_vmPush( d->pOnPropChanged ); hb_vmSend( 0 );
@@ -1021,6 +1060,34 @@ static int s_dropdownChoice = -1;
 @end
 
 @implementation HBInspectorTableView
+
+- (void)keyDown:(NSEvent *)event
+{
+   HBInspectorDelegate * del = (HBInspectorDelegate *)[self delegate];
+   unsigned short keyCode = [event keyCode];
+   /* Arrow Up = 126, Arrow Down = 125 */
+   if( del && del->d && (keyCode == 125 || keyCode == 126) )
+   {
+      INSDATA * dd = del->d;
+      NSInteger cur = [self selectedRow];
+      NSInteger nRows = dd->nVisible;
+      int dir = (keyCode == 125) ? 1 : -1;
+      NSInteger next = cur + dir;
+
+      /* Skip category rows */
+      while( next >= 0 && next < nRows && dd->rows[dd->map[next]].bIsCat )
+         next += dir;
+
+      if( next >= 0 && next < nRows )
+      {
+         NSIndexSet * idx = [NSIndexSet indexSetWithIndex:next];
+         [self selectRowIndexes:idx byExtendingSelection:NO];
+         [self scrollRowToVisible:next];
+      }
+      return;
+   }
+   [super keyDown:event];
+}
 
 - (NSMenu *)menuForEvent:(NSEvent *)event
 {
@@ -1541,9 +1608,24 @@ static void InsRefreshTab( INSDATA * d )
  * ====================================================================== */
 
 static HB_PTRUINT s_insData = 0;
+static PHB_ITEM s_comboMap = NULL;
 
 HB_FUNC( _INSGETDATA ) { hb_retnint( s_insData ); }
 HB_FUNC( _INSSETDATA ) { s_insData = (HB_PTRUINT) hb_parnint(1); }
+
+/* _InsSetComboMap( aMap ) / _InsGetComboMap() --> aMap
+ * Stores the combo index -> { nType, hCtrl, nColIdx } mapping array */
+HB_FUNC( _INSSETCOMBOMAP )
+{
+   PHB_ITEM pArr = hb_param(1, HB_IT_ARRAY);
+   if( s_comboMap ) { hb_itemRelease( s_comboMap ); s_comboMap = NULL; }
+   if( pArr ) s_comboMap = hb_itemNew( pArr );
+}
+HB_FUNC( _INSGETCOMBOMAP )
+{
+   if( s_comboMap ) hb_itemReturn( s_comboMap );
+   else hb_reta(0);
+}
 
 /* ======================================================================
  * INS_Create() --> hInsData
@@ -1552,6 +1634,7 @@ HB_FUNC( _INSSETDATA ) { s_insData = (HB_PTRUINT) hb_parnint(1); }
 HB_FUNC( INS_CREATE )
 {
    INSDATA * d = (INSDATA *) calloc( 1, sizeof(INSDATA) );
+   d->nBrowseCol = -1;
 
    d->font = [NSFont systemFontOfSize:12];
    d->boldFont = [NSFont boldSystemFontOfSize:12];
@@ -1682,6 +1765,7 @@ HB_FUNC( INS_REFRESHWITHDATA )
    if( !d ) return;
 
    d->hCtrl = (HB_PTRUINT) hb_parnint(2);
+   d->nBrowseCol = -1;  /* reset; INS_SetBrowseCol overrides after this call */
 
    if( d->hCtrl == 0 || !pArray || hb_arrayLen(pArray) == 0 )
    {
@@ -1710,6 +1794,13 @@ HB_FUNC( INS_REFRESHWITHDATA )
    }
 
    [d->tableView reloadData];
+}
+
+/* INS_SetBrowseCol( hInsData, nCol ) - set column index for property editing (-1 = not a column) */
+HB_FUNC( INS_SETBROWSECOL )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   if( d ) d->nBrowseCol = hb_parni(2);
 }
 
 /* ======================================================================

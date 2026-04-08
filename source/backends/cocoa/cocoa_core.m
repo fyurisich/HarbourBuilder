@@ -102,6 +102,7 @@ static void SuppressCursorWarnings(void)
 #define CT_DBCOMBOBOX 84
 #define CT_DBCHECKBOX 85
 #define CT_DBIMAGE    86
+#define CT_BRWCOLUMN  87
 #define CT_PREPROCESSOR 90
 #define CT_SCRIPTENGINE 91
 #define CT_REPORTDESIGNER 92
@@ -2766,6 +2767,105 @@ HB_FUNC( UI_BROWSEADDCOL )
    [bd->tableView addTableColumn:col];
 
    hb_retni( idx );
+}
+
+/* UI_BrowseColCount( hBrowse ) --> nCols */
+HB_FUNC( UI_BROWSECOLCOUNT )
+{
+   HBControl * p = GetCtrl(1);
+   BrowseData * bd = p ? FindBrowse(p) : NULL;
+   hb_retni( bd ? bd->nColCount : 0 );
+}
+
+/* UI_BrowseGetColProps( hBrowse, nCol ) --> { {cName,xVal,cCat,cType}, ... }
+ * Returns properties for a single column (0-based index) */
+HB_FUNC( UI_BROWSEGETCOLPROPS )
+{
+   HBControl * p = GetCtrl(1);
+   BrowseData * bd = p ? FindBrowse(p) : NULL;
+   int col = hb_parni(2);  /* 0-based */
+   if( !bd || col < 0 || col >= bd->nColCount ) { hb_reta(0); return; }
+
+   BrowseCol * c = &bd->cols[col];
+   PHB_ITEM pArray = hb_itemArrayNew(0), pRow;
+
+   #define ADDCP_S(n,v,cat) pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,n); \
+      hb_arraySetC(pRow,2,v); hb_arraySetC(pRow,3,cat); hb_arraySetC(pRow,4,"S"); \
+      hb_arrayAdd(pArray,pRow); hb_itemRelease(pRow);
+   #define ADDCP_N(n,v,cat) pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,n); \
+      hb_arraySetNI(pRow,2,v); hb_arraySetC(pRow,3,cat); hb_arraySetC(pRow,4,"N"); \
+      hb_arrayAdd(pArray,pRow); hb_itemRelease(pRow);
+   #define ADDCP_D(n,v,opts,cat) { char _db[256]; snprintf(_db,sizeof(_db),"%d|%s",v,opts); \
+      pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,n); hb_arraySetC(pRow,2,_db); \
+      hb_arraySetC(pRow,3,cat); hb_arraySetC(pRow,4,"D"); \
+      hb_arrayAdd(pArray,pRow); hb_itemRelease(pRow); }
+
+   /* First row: class name (convention for inspector title) */
+   { char colLabel[128]; snprintf(colLabel, sizeof(colLabel), "TBrwColumn");
+     pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,"cClassName"); hb_arraySetC(pRow,2,colLabel);
+     hb_arraySetC(pRow,3,""); hb_arraySetC(pRow,4,"S");
+     hb_arrayAdd(pArray,pRow); hb_itemRelease(pRow); }
+
+   ADDCP_S("cTitle", c->szTitle, "Data");
+   ADDCP_N("nWidth", c->nWidth, "Position");
+   ADDCP_D("nAlign", c->nAlign, "Left|Center|Right", "Position");
+   ADDCP_S("cFieldName", c->szFieldName, "Data");
+   ADDCP_S("cFooterText", c->szFooterText, "Appearance");
+
+   #undef ADDCP_S
+   #undef ADDCP_N
+   #undef ADDCP_D
+
+   hb_itemReturnRelease(pArray);
+}
+
+/* UI_BrowseSetColProp( hBrowse, nCol, cPropName, xValue ) */
+HB_FUNC( UI_BROWSESETCOLPROP )
+{
+   HBControl * p = GetCtrl(1);
+   BrowseData * bd = p ? FindBrowse(p) : NULL;
+   int col = hb_parni(2);  /* 0-based */
+   const char * szProp = hb_parc(3);
+   if( !bd || col < 0 || col >= bd->nColCount || !szProp ) return;
+
+   BrowseCol * c = &bd->cols[col];
+
+   if( strcasecmp(szProp,"cTitle")==0 && HB_ISCHAR(4) ) {
+      strncpy( c->szTitle, hb_parc(4), 63 ); c->szTitle[63] = 0;
+      /* Update NSTableColumn header */
+      NSArray * cols = [bd->tableView tableColumns];
+      if( col < (int)[cols count] )
+         [[[cols objectAtIndex:col] headerCell] setStringValue:
+            [NSString stringWithUTF8String:c->szTitle]];
+      [bd->tableView.headerView setNeedsDisplay:YES];
+      [bd->tableView.headerView setNeedsLayout:YES];
+      [bd->tableView reloadData];
+      /* Sync FHeaders pipe-string */
+      char buf[512]; buf[0] = 0; int pos = 0;
+      for( int i = 0; i < bd->nColCount && pos < 510; i++ ) {
+         if( i > 0 ) buf[pos++] = '|';
+         int sl = (int)strlen(bd->cols[i].szTitle);
+         if( pos+sl >= 510 ) sl = 510 - pos;
+         memcpy(buf+pos, bd->cols[i].szTitle, sl); pos += sl;
+      }
+      buf[pos] = 0;
+      strncpy( p->FHeaders, buf, sizeof(p->FHeaders)-1 );
+   }
+   else if( strcasecmp(szProp,"nWidth")==0 && HB_ISNUM(4) ) {
+      c->nWidth = hb_parni(4);
+      NSArray * cols = [bd->tableView tableColumns];
+      if( col < (int)[cols count] )
+         [[cols objectAtIndex:col] setWidth:c->nWidth];
+   }
+   else if( strcasecmp(szProp,"nAlign")==0 ) {
+      if( HB_ISNUM(4) ) c->nAlign = hb_parni(4);
+   }
+   else if( strcasecmp(szProp,"cFieldName")==0 && HB_ISCHAR(4) ) {
+      strncpy( c->szFieldName, hb_parc(4), 63 ); c->szFieldName[63] = 0;
+   }
+   else if( strcasecmp(szProp,"cFooterText")==0 && HB_ISCHAR(4) ) {
+      strncpy( c->szFooterText, hb_parc(4), 63 ); c->szFooterText[63] = 0;
+   }
 }
 
 /* UI_BrowseSetCell( hBrowse, nRow, nCol, cText ) */

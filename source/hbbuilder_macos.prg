@@ -33,6 +33,7 @@ static aModules      // Array of project modules: { { cName, cCode, cFilePath },
 static aOpenFiles    // Array of open files (not in project): { { cName, cCode, cFilePath }, ... }
 static aDbgOffsets   // Debug line offsets: { {startLine, "tabName", nTabIndex, nAdj}, ... }
 static oTB2          // Debug toolbar (for highlighting Debug button)
+static lIgnoreSelChange := .f.  // Flag to prevent re-entrant selection change
 
 function Main()
 
@@ -494,17 +495,34 @@ return nil
 
 static function OnComboSelect( nSel )
 
-   local hTarget
+   local hTarget, aMap, aEntry
 
-   if nSel == 0
-      hTarget := oDesignForm:hCpp
+   aMap := InspectorGetComboMap()
+
+   if Len( aMap ) > 0 .and. nSel + 1 <= Len( aMap )
+      aEntry := aMap[ nSel + 1 ]  // combo is 0-based, array is 1-based
+
+      if aEntry[1] == 2  // Browse column
+         lIgnoreSelChange := .t.
+         UI_FormSelectCtrl( oDesignForm:hCpp, aEntry[2] )
+         lIgnoreSelChange := .f.
+         InspectorRefreshColumn( aEntry[2], aEntry[3] )
+      else
+         hTarget := aEntry[2]
+         UI_FormSelectCtrl( oDesignForm:hCpp, hTarget )
+         InspectorRefresh( hTarget )
+      endif
    else
-      hTarget := UI_GetChild( oDesignForm:hCpp, nSel )
-   endif
-
-   if hTarget != 0
-      UI_FormSelectCtrl( oDesignForm:hCpp, hTarget )
-      InspectorRefresh( hTarget )
+      // Fallback: original behavior
+      if nSel == 0
+         hTarget := oDesignForm:hCpp
+      else
+         hTarget := UI_GetChild( oDesignForm:hCpp, nSel )
+      endif
+      if hTarget != 0
+         UI_FormSelectCtrl( oDesignForm:hCpp, hTarget )
+         InspectorRefresh( hTarget )
+      endif
    endif
 
 return nil
@@ -512,6 +530,10 @@ return nil
 static function OnDesignSelChange( hCtrl )
 
    local hTarget, i, nCount, nSel
+
+   if lIgnoreSelChange
+      return nil
+   endif
 
    hTarget := If( hCtrl == 0, oDesignForm:hCpp, hCtrl )
    InspectorRefresh( hTarget )
@@ -579,7 +601,7 @@ static function RegenerateFormCode( cName, hForm )
    local nL, nT, nCW, nCH, cText
    local cDatas := "", cCreate := "", cEvents := "", cVal
    local cExistingCode, aEvents, j, cEvName, cEvSuffix, cHandlerName
-   local aHdrs, kk
+   local aHdrs, kk, nColCount, aColProps, nColW
 
    // Read existing code to find declared event handlers
    cExistingCode := ""
@@ -674,6 +696,18 @@ static function RegenerateFormCode( cName, hForm )
                   for kk := 1 to Len( aHdrs )
                      if kk > 1; cCreate += ', '; endif
                      cCreate += '"' + AllTrim( aHdrs[kk] ) + '"'
+                  next
+               endif
+               // Column widths
+               nColCount := UI_BrowseColCount( hCtrl )
+               if nColCount > 0
+                  cCreate += ' COLSIZES '
+                  for kk := 1 to nColCount
+                     if kk > 1; cCreate += ', '; endif
+                     aColProps := UI_BrowseGetColProps( hCtrl, kk - 1 )
+                     nColW := 100
+                     if Len( aColProps ) >= 3; nColW := aColProps[3][2]; endif
+                     cCreate += LTrim( Str( nColW ) )
                   next
                endif
                cCreate += e

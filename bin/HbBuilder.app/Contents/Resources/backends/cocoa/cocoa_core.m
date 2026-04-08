@@ -94,6 +94,7 @@ static void SuppressCursorWarnings(void)
 #define CT_TCPCLIENT  77
 #define CT_UDPSOCKET  78
 #define CT_BROWSE     79
+#define CT_COMPARRAY  131
 #define CT_DBGRID     80
 #define CT_DBNAVIGATOR 81
 #define CT_DBTEXT     82
@@ -101,6 +102,7 @@ static void SuppressCursorWarnings(void)
 #define CT_DBCOMBOBOX 84
 #define CT_DBCHECKBOX 85
 #define CT_DBIMAGE    86
+#define CT_BRWCOLUMN  87
 #define CT_PREPROCESSOR 90
 #define CT_SCRIPTENGINE 91
 #define CT_REPORTDESIGNER 92
@@ -292,6 +294,10 @@ void EnsureNSApp( void )
    char FName[64];
    char FText[256];
    char FFileName[512];       /* Design-time file path (e.g. DBF file for TDBFTable) */
+   char FRdd[16];             /* RDD driver: DBFCDX, DBFNTX, DBFFPT */
+   char FHeaders[512];        /* Column headers: "Name|Age|City" */
+   char FData[4096];          /* Row data: "John|45|NYC;Mary|32|LA" */
+   char FDataSource[64];      /* Name of data component (e.g. "CompArray1") */
    BOOL FActive;              /* Design-time Active flag (auto-open on form load) */
    int  FLeft, FTop, FWidth, FHeight;
    BOOL FVisible, FEnabled, FTabStop;
@@ -580,7 +586,8 @@ void EnsureNSApp( void )
       FLeft = 0; FTop = 0; FWidth = 80; FHeight = 24;
       FVisible = YES; FEnabled = YES; FTabStop = YES;
       FControlType = 0; FView = nil; FFont = nil; FBgColor = nil;
-      FClrPane = 0xFFFFFFFF; FFileName[0] = '\0'; FActive = NO;
+      FClrPane = 0xFFFFFFFF; FFileName[0] = '\0'; strcpy(FRdd, "DBFCDX");
+      FHeaders[0] = '\0'; FData[0] = '\0'; FDataSource[0] = '\0'; FActive = NO;
       FOnClick = NULL; FOnChange = NULL; FOnInit = NULL; FOnClose = NULL;
       FCtrlParent = nil; FChildCount = 0;
       memset( FChildren, 0, sizeof(FChildren) );
@@ -754,6 +761,37 @@ void EnsureNSApp( void )
          [sv setHasVerticalScroller:YES];
          [sv setHasHorizontalScroller:YES];
          [sv setBorderType:NSBezelBorder];
+
+         /* If FHeaders was set before view creation, create columns now */
+         if( FHeaders[0] )
+         {
+            BrowseData * bd = &s_browses[bi];
+            const char * src = FHeaders;
+            while( src && *src )
+            {
+               const char * sep = strchr( src, '|' );
+               int len = sep ? (int)(sep - src) : (int)strlen(src);
+               if( len > 0 && bd->nColCount < MAX_BROWSE_COLS )
+               {
+                  int idx = bd->nColCount++;
+                  memset( bd->cols[idx].szTitle, 0, 64 );
+                  if( len > 63 ) len = 63;
+                  memcpy( bd->cols[idx].szTitle, src, (size_t)len );
+                  bd->cols[idx].nWidth = 100;
+                  bd->cols[idx].nAlign = 0;
+                  bd->cols[idx].szFieldName[0] = 0;
+
+                  NSString * ident = [NSString stringWithFormat:@"%d", idx];
+                  NSTableColumn * col = [[NSTableColumn alloc] initWithIdentifier:ident];
+                  [col setWidth:100];
+                  [[col headerCell] setStringValue:
+                     [[NSString alloc] initWithBytes:src length:len encoding:NSUTF8StringEncoding]];
+                  [tv addTableColumn:col];
+               }
+               src = sep ? sep + 1 : NULL;
+            }
+         }
+
          v = sv; break;
       }
       default: {
@@ -2702,6 +2740,7 @@ HB_FUNC( UI_BROWSENEW )
 {
    HBForm * pForm = GetForm(1); HBControl * p = [[HBControl alloc] init];
    p->FControlType = CT_BROWSE;
+   strcpy( p->FClassName, "TBrowse" );
    if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
    if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);  if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
    if( pForm ) [pForm addChild:p]; RetCtrl( p );
@@ -2728,6 +2767,105 @@ HB_FUNC( UI_BROWSEADDCOL )
    [bd->tableView addTableColumn:col];
 
    hb_retni( idx );
+}
+
+/* UI_BrowseColCount( hBrowse ) --> nCols */
+HB_FUNC( UI_BROWSECOLCOUNT )
+{
+   HBControl * p = GetCtrl(1);
+   BrowseData * bd = p ? FindBrowse(p) : NULL;
+   hb_retni( bd ? bd->nColCount : 0 );
+}
+
+/* UI_BrowseGetColProps( hBrowse, nCol ) --> { {cName,xVal,cCat,cType}, ... }
+ * Returns properties for a single column (0-based index) */
+HB_FUNC( UI_BROWSEGETCOLPROPS )
+{
+   HBControl * p = GetCtrl(1);
+   BrowseData * bd = p ? FindBrowse(p) : NULL;
+   int col = hb_parni(2);  /* 0-based */
+   if( !bd || col < 0 || col >= bd->nColCount ) { hb_reta(0); return; }
+
+   BrowseCol * c = &bd->cols[col];
+   PHB_ITEM pArray = hb_itemArrayNew(0), pRow;
+
+   #define ADDCP_S(n,v,cat) pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,n); \
+      hb_arraySetC(pRow,2,v); hb_arraySetC(pRow,3,cat); hb_arraySetC(pRow,4,"S"); \
+      hb_arrayAdd(pArray,pRow); hb_itemRelease(pRow);
+   #define ADDCP_N(n,v,cat) pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,n); \
+      hb_arraySetNI(pRow,2,v); hb_arraySetC(pRow,3,cat); hb_arraySetC(pRow,4,"N"); \
+      hb_arrayAdd(pArray,pRow); hb_itemRelease(pRow);
+   #define ADDCP_D(n,v,opts,cat) { char _db[256]; snprintf(_db,sizeof(_db),"%d|%s",v,opts); \
+      pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,n); hb_arraySetC(pRow,2,_db); \
+      hb_arraySetC(pRow,3,cat); hb_arraySetC(pRow,4,"D"); \
+      hb_arrayAdd(pArray,pRow); hb_itemRelease(pRow); }
+
+   /* First row: class name (convention for inspector title) */
+   { char colLabel[128]; snprintf(colLabel, sizeof(colLabel), "TBrwColumn");
+     pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,"cClassName"); hb_arraySetC(pRow,2,colLabel);
+     hb_arraySetC(pRow,3,""); hb_arraySetC(pRow,4,"S");
+     hb_arrayAdd(pArray,pRow); hb_itemRelease(pRow); }
+
+   ADDCP_S("cTitle", c->szTitle, "Data");
+   ADDCP_N("nWidth", c->nWidth, "Position");
+   ADDCP_D("nAlign", c->nAlign, "Left|Center|Right", "Position");
+   ADDCP_S("cFieldName", c->szFieldName, "Data");
+   ADDCP_S("cFooterText", c->szFooterText, "Appearance");
+
+   #undef ADDCP_S
+   #undef ADDCP_N
+   #undef ADDCP_D
+
+   hb_itemReturnRelease(pArray);
+}
+
+/* UI_BrowseSetColProp( hBrowse, nCol, cPropName, xValue ) */
+HB_FUNC( UI_BROWSESETCOLPROP )
+{
+   HBControl * p = GetCtrl(1);
+   BrowseData * bd = p ? FindBrowse(p) : NULL;
+   int col = hb_parni(2);  /* 0-based */
+   const char * szProp = hb_parc(3);
+   if( !bd || col < 0 || col >= bd->nColCount || !szProp ) return;
+
+   BrowseCol * c = &bd->cols[col];
+
+   if( strcasecmp(szProp,"cTitle")==0 && HB_ISCHAR(4) ) {
+      strncpy( c->szTitle, hb_parc(4), 63 ); c->szTitle[63] = 0;
+      /* Update NSTableColumn header */
+      NSArray * cols = [bd->tableView tableColumns];
+      if( col < (int)[cols count] )
+         [[[cols objectAtIndex:col] headerCell] setStringValue:
+            [NSString stringWithUTF8String:c->szTitle]];
+      [bd->tableView.headerView setNeedsDisplay:YES];
+      [bd->tableView.headerView setNeedsLayout:YES];
+      [bd->tableView reloadData];
+      /* Sync FHeaders pipe-string */
+      char buf[512]; buf[0] = 0; int pos = 0;
+      for( int i = 0; i < bd->nColCount && pos < 510; i++ ) {
+         if( i > 0 ) buf[pos++] = '|';
+         int sl = (int)strlen(bd->cols[i].szTitle);
+         if( pos+sl >= 510 ) sl = 510 - pos;
+         memcpy(buf+pos, bd->cols[i].szTitle, sl); pos += sl;
+      }
+      buf[pos] = 0;
+      strncpy( p->FHeaders, buf, sizeof(p->FHeaders)-1 );
+   }
+   else if( strcasecmp(szProp,"nWidth")==0 && HB_ISNUM(4) ) {
+      c->nWidth = hb_parni(4);
+      NSArray * cols = [bd->tableView tableColumns];
+      if( col < (int)[cols count] )
+         [[cols objectAtIndex:col] setWidth:c->nWidth];
+   }
+   else if( strcasecmp(szProp,"nAlign")==0 ) {
+      if( HB_ISNUM(4) ) c->nAlign = hb_parni(4);
+   }
+   else if( strcasecmp(szProp,"cFieldName")==0 && HB_ISCHAR(4) ) {
+      strncpy( c->szFieldName, hb_parc(4), 63 ); c->szFieldName[63] = 0;
+   }
+   else if( strcasecmp(szProp,"cFooterText")==0 && HB_ISCHAR(4) ) {
+      strncpy( c->szFooterText, hb_parc(4), 63 ); c->szFooterText[63] = 0;
+   }
 }
 
 /* UI_BrowseSetCell( hBrowse, nRow, nCol, cText ) */
@@ -2841,6 +2979,49 @@ HB_FUNC( UI_DROPNONVISUAL )
    strncpy( ctrl->FName, cName, sizeof(ctrl->FName) - 1 );
    strncpy( ctrl->FText, cName, sizeof(ctrl->FText) - 1 );
 
+   /* Set FClassName based on component type */
+   {
+      static struct { int type; const char * cls; } s_typeMap[] = {
+         { CT_TIMER, "TTimer" }, { CT_PAINTBOX, "TPaintBox" },
+         { CT_OPENDIALOG, "TOpenDialog" }, { CT_SAVEDIALOG, "TSaveDialog" },
+         { CT_FONTDIALOG, "TFontDialog" }, { CT_COLORDIALOG, "TColorDialog" },
+         { CT_FINDDIALOG, "TFindDialog" }, { CT_REPLACEDIALOG, "TReplaceDialog" },
+         { CT_OPENAI, "TOpenAI" }, { CT_GEMINI, "TGemini" },
+         { CT_CLAUDE, "TClaude" }, { CT_DEEPSEEK, "TDeepSeek" },
+         { CT_GROK, "TGrok" }, { CT_OLLAMA, "TOllama" },
+         { CT_TRANSFORMER, "TTransformer" },
+         { CT_DBFTABLE, "TDbfTable" }, { CT_MYSQL, "TMySQL" },
+         { CT_MARIADB, "TMariaDB" }, { CT_POSTGRESQL, "TPostgreSQL" },
+         { CT_SQLITE, "TSQLite" }, { CT_FIREBIRD, "TFirebird" },
+         { CT_SQLSERVER, "TSQLServer" }, { CT_ORACLE, "TOracle" },
+         { CT_MONGODB, "TMongoDB" },
+         { CT_WEBVIEW, "TWebView" }, { CT_WEBSERVER, "TWebServer" },
+         { CT_WEBSOCKET, "TWebSocket" }, { CT_HTTPCLIENT, "THttpClient" },
+         { CT_FTPCLIENT, "TFtpClient" }, { CT_SMTPCLIENT, "TSmtpClient" },
+         { CT_TCPSERVER, "TTcpServer" }, { CT_TCPCLIENT, "TTcpClient" },
+         { CT_UDPSOCKET, "TUdpSocket" },
+         { CT_THREAD, "TThread" }, { CT_MUTEX, "TMutex" },
+         { CT_SEMAPHORE, "TSemaphore" }, { CT_THREADPOOL, "TThreadPool" },
+         { CT_PRINTER, "TPrinter" }, { CT_REPORT, "TReport" },
+         { CT_COMPARRAY, "TCompArray" },
+         { CT_BROWSE, "TBrowse" }, { CT_DBGRID, "TDbGrid" },
+         { CT_DBNAVIGATOR, "TDbNavigator" },
+         { 0, NULL }
+      };
+      BOOL found = NO;
+      for( int i = 0; s_typeMap[i].cls; i++ )
+      {
+         if( s_typeMap[i].type == nType )
+         {
+            strncpy( ctrl->FClassName, s_typeMap[i].cls, sizeof(ctrl->FClassName) - 1 );
+            found = YES;
+            break;
+         }
+      }
+      if( !found )
+         snprintf( ctrl->FClassName, sizeof(ctrl->FClassName), "TComponent%d", nType );
+   }
+
    [form addChild:ctrl];
 
    /* Create the visual representation (bitmap icon or text fallback) */
@@ -2917,6 +3098,83 @@ HB_FUNC( UI_SETPROP )
       strncpy( p->FName, hb_parc(3), sizeof(p->FName)-1 );
    else if( strcasecmp(szProp,"cFileName")==0 && HB_ISCHAR(3) )
       strncpy( p->FFileName, hb_parc(3), sizeof(p->FFileName)-1 );
+   else if( strcasecmp(szProp,"cRDD")==0 ) {
+      if( HB_ISCHAR(3) )
+         strncpy( p->FRdd, hb_parc(3), sizeof(p->FRdd)-1 );
+      else if( HB_ISNUM(3) ) {
+         static const char * rddNames[] = { "DBFCDX", "DBFNTX", "DBFFPT" };
+         int idx = hb_parni(3);
+         if( idx >= 0 && idx < 3 ) strcpy( p->FRdd, rddNames[idx] );
+      }
+   }
+   else if( strcasecmp(szProp,"aHeaders")==0 || strcasecmp(szProp,"aColumns")==0 )
+   {
+      /* Accept string or array */
+      if( HB_ISCHAR(3) )
+         strncpy( p->FHeaders, hb_parc(3), sizeof(p->FHeaders)-1 );
+      else if( HB_ISARRAY(3) )
+      {
+         /* Convert array { "A", "B", "C" } to "|"-separated string */
+         PHB_ITEM pArr = hb_param(3, HB_IT_ARRAY);
+         int n = (int) hb_arrayLen( pArr );
+         p->FHeaders[0] = 0;
+         int pos = 0;
+         for( int i = 1; i <= n && pos < (int)sizeof(p->FHeaders) - 2; i++ )
+         {
+            const char * s = hb_arrayGetCPtr( pArr, i );
+            int slen = (int)strlen( s );
+            if( i > 1 && pos < (int)sizeof(p->FHeaders) - 1 ) p->FHeaders[pos++] = '|';
+            if( pos + slen >= (int)sizeof(p->FHeaders) - 1 ) slen = (int)sizeof(p->FHeaders) - 1 - pos;
+            memcpy( p->FHeaders + pos, s, (size_t)slen );
+            pos += slen;
+         }
+         p->FHeaders[pos] = 0;
+      }
+
+      /* For Browse controls, create/update NSTableView columns immediately */
+      if( p->FControlType == CT_BROWSE )
+      {
+         BrowseData * bd = FindBrowse( p );
+         if( bd && bd->tableView )
+         {
+            /* Remove all existing columns */
+            while( [[bd->tableView tableColumns] count] > 0 )
+               [bd->tableView removeTableColumn:[[bd->tableView tableColumns] lastObject]];
+            bd->nColCount = 0;
+
+            /* Parse "|"-separated titles and create columns */
+            const char * src = p->FHeaders;
+            while( src && *src )
+            {
+               const char * sep = strchr( src, '|' );
+               int len = sep ? (int)(sep - src) : (int)strlen(src);
+               if( len > 0 && bd->nColCount < MAX_BROWSE_COLS )
+               {
+                  int idx = bd->nColCount++;
+                  memset( bd->cols[idx].szTitle, 0, 64 );
+                  if( len > 63 ) len = 63;
+                  memcpy( bd->cols[idx].szTitle, src, (size_t)len );
+                  bd->cols[idx].nWidth = 100;
+                  bd->cols[idx].nAlign = 0;
+                  bd->cols[idx].szFieldName[0] = 0;
+
+                  NSString * ident = [NSString stringWithFormat:@"%d", idx];
+                  NSTableColumn * col = [[NSTableColumn alloc] initWithIdentifier:ident];
+                  [col setWidth:100];
+                  [[col headerCell] setStringValue:
+                     [[NSString alloc] initWithBytes:src length:len encoding:NSUTF8StringEncoding]];
+                  [bd->tableView addTableColumn:col];
+               }
+               src = sep ? sep + 1 : NULL;
+            }
+            [bd->tableView reloadData];
+         }
+      }
+   }
+   else if( strcasecmp(szProp,"aData")==0 && HB_ISCHAR(3) )
+      strncpy( p->FData, hb_parc(3), sizeof(p->FData)-1 );
+   else if( strcasecmp(szProp,"cDataSource")==0 && HB_ISCHAR(3) )
+      strncpy( p->FDataSource, hb_parc(3), sizeof(p->FDataSource)-1 );
    else if( strcasecmp(szProp,"lActive")==0 )
       p->FActive = hb_parl(3);
    else if( strcasecmp(szProp,"lSizable")==0 && p->FControlType == CT_FORM )
@@ -3035,6 +3293,10 @@ HB_FUNC( UI_GETPROP )
    else if( strcasecmp(szProp,"cName")==0 )      hb_retc( p->FName );
    else if( strcasecmp(szProp,"cClassName")==0 ) hb_retc( p->FClassName );
    else if( strcasecmp(szProp,"cFileName")==0 )  hb_retc( p->FFileName );
+   else if( strcasecmp(szProp,"cRDD")==0 )      hb_retc( p->FRdd );
+   else if( strcasecmp(szProp,"aHeaders")==0 || strcasecmp(szProp,"aColumns")==0 )  hb_retc( p->FHeaders );
+   else if( strcasecmp(szProp,"aData")==0 )     hb_retc( p->FData );
+   else if( strcasecmp(szProp,"cDataSource")==0 ) hb_retc( p->FDataSource );
    else if( strcasecmp(szProp,"lActive")==0 )   hb_retl( p->FActive );
    else if( strcasecmp(szProp,"lSizable")==0 && p->FControlType==CT_FORM )
       hb_retl( ((HBForm *)p)->FSizable );
@@ -3178,6 +3440,9 @@ HB_FUNC( UI_GETALLPROPS )
    /* Path/file: shows "..." button that opens a file picker */
    #define ADD_P(n,v,c) pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,n); hb_arraySetC(pRow,2,v); \
       hb_arraySetC(pRow,3,c); hb_arraySetC(pRow,4,"P"); hb_arrayAdd(pArray,pRow); hb_itemRelease(pRow);
+   /* Array: value stored as "|"-separated string, edited via multi-line dialog */
+   #define ADD_A(n,v,c) pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,n); hb_arraySetC(pRow,2,v); \
+      hb_arraySetC(pRow,3,c); hb_arraySetC(pRow,4,"A"); hb_arrayAdd(pArray,pRow); hb_itemRelease(pRow);
    /* Dropdown: value stored as "index|opt0|opt1|opt2|..." */
    #define ADD_D(n,v,opts,c) { char _db[512]; snprintf(_db,sizeof(_db),"%d|%s",v,opts); \
       pRow=hb_itemArrayNew(4); hb_arraySetC(pRow,1,n); hb_arraySetC(pRow,2,_db); \
@@ -3232,9 +3497,20 @@ HB_FUNC( UI_GETALLPROPS )
       case CT_COMBOBOX:
          ADD_N("nItemIndex",((HBComboBox*)p)->FItemIndex,"Data");
          ADD_N("nItemCount",((HBComboBox*)p)->FItemCount,"Data"); break;
-      case CT_DBFTABLE:
+      case CT_DBFTABLE: {
+         int rddIdx = 0;
+         if( strcasecmp(p->FRdd,"DBFNTX") == 0 ) rddIdx = 1;
+         else if( strcasecmp(p->FRdd,"DBFFPT") == 0 ) rddIdx = 2;
          ADD_P("cFileName",p->FFileName,"Data");
+         ADD_D("cRDD",rddIdx,"DBFCDX|DBFNTX|DBFFPT","Data");
          ADD_L("lActive",p->FActive,"Data"); break;
+      }
+      case CT_COMPARRAY:
+         ADD_A("aHeaders",p->FHeaders,"Data");
+         ADD_A("aData",p->FData,"Data"); break;
+      case CT_BROWSE:
+         ADD_A("aColumns",p->FHeaders,"Data");
+         ADD_S("cDataSource",p->FDataSource,"Data"); break;
    }
    hb_itemReturnRelease(pArray);
 }

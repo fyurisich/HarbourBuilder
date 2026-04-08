@@ -36,6 +36,7 @@ typedef struct {
    NSFont *     font;
    NSFont *     boldFont;
    HB_PTRUINT   hCtrl;       /* currently inspected control handle */
+   int          nBrowseCol;  /* >=0 when inspecting a browse column, -1 otherwise */
    HB_PTRUINT   hFormCtrl;   /* form handle for combo enumeration */
    IROW         rows[MAX_ROWS];
    int          nRows;
@@ -237,6 +238,17 @@ static HBFontPickerTarget * s_fontTarget = nil;
          return [NSString stringWithFormat:@"%d", idx];
       }
 
+      /* Array: show element count */
+      if( d->rows[nReal].cType == 'A' )
+      {
+         const char * raw = d->rows[nReal].szValue;
+         if( !raw || !raw[0] ) return @"(0 items)";
+         int count = 1;
+         for( const char * p = raw; *p; p++ )
+            if( *p == '|' ) count++;
+         return [NSString stringWithFormat:@"(%d items)", count];
+      }
+
       return [NSString stringWithUTF8String:d->rows[nReal].szValue];
    }
 }
@@ -291,26 +303,52 @@ static HBFontPickerTarget * s_fontTarget = nil;
 
    strncpy( d->rows[nReal].szValue, szVal, sizeof(d->rows[0].szValue) - 1 );
 
-   /* Apply value via UI_SetProp */
-   PHB_DYNS pDyn = hb_dynsymFindName( "UI_SETPROP" );
-   if( pDyn )
+   if( d->nBrowseCol >= 0 )
    {
-      hb_vmPushDynSym( pDyn ); hb_vmPushNil();
-      hb_vmPushNumInt( d->hCtrl );
-      hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
+      /* Apply value via UI_BrowseSetColProp for column properties */
+      PHB_DYNS pDyn = hb_dynsymFindName( "UI_BROWSESETCOLPROP" );
+      if( pDyn )
+      {
+         hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+         hb_vmPushNumInt( d->hCtrl );
+         hb_vmPushInteger( d->nBrowseCol );
+         hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
 
-      if( d->rows[nReal].cType == 'S' || d->rows[nReal].cType == 'F' )
-         hb_vmPushString( szVal, strlen(szVal) );
-      else if( d->rows[nReal].cType == 'N' )
-         hb_vmPushInteger( atoi(szVal) );
-      else if( d->rows[nReal].cType == 'L' )
-         hb_vmPushLogical( strcasecmp(szVal,".T.")==0 );
-      else if( d->rows[nReal].cType == 'C' )
-         hb_vmPushNumInt( (HB_MAXINT) strtoul(szVal, NULL, 10) );
-      else
-         hb_vmPushNil();
+         if( d->rows[nReal].cType == 'S' || d->rows[nReal].cType == 'F' )
+            hb_vmPushString( szVal, strlen(szVal) );
+         else if( d->rows[nReal].cType == 'N' )
+            hb_vmPushInteger( atoi(szVal) );
+         else if( d->rows[nReal].cType == 'D' )
+            hb_vmPushInteger( atoi(szVal) );
+         else
+            hb_vmPushNil();
 
-      hb_vmDo( 3 );
+         hb_vmDo( 4 );
+      }
+   }
+   else
+   {
+      /* Apply value via UI_SetProp */
+      PHB_DYNS pDyn = hb_dynsymFindName( "UI_SETPROP" );
+      if( pDyn )
+      {
+         hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+         hb_vmPushNumInt( d->hCtrl );
+         hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
+
+         if( d->rows[nReal].cType == 'S' || d->rows[nReal].cType == 'F' )
+            hb_vmPushString( szVal, strlen(szVal) );
+         else if( d->rows[nReal].cType == 'N' )
+            hb_vmPushInteger( atoi(szVal) );
+         else if( d->rows[nReal].cType == 'L' )
+            hb_vmPushLogical( strcasecmp(szVal,".T.")==0 );
+         else if( d->rows[nReal].cType == 'C' )
+            hb_vmPushNumInt( (HB_MAXINT) strtoul(szVal, NULL, 10) );
+         else
+            hb_vmPushNil();
+
+         hb_vmDo( 3 );
+      }
    }
 
    /* Fire two-way sync callback */
@@ -359,6 +397,12 @@ static HBFontPickerTarget * s_fontTarget = nil;
    if( d->rows[nReal].cType == 'P' && [[col identifier] isEqualToString:@"value"] )
    {
       [self openFilePickerForRow:nReal];
+      return NO;
+   }
+   /* For array properties, open array editor */
+   if( d->rows[nReal].cType == 'A' && [[col identifier] isEqualToString:@"value"] )
+   {
+      [self openArrayEditorForRow:nReal];
       return NO;
    }
    return YES;
@@ -480,6 +524,116 @@ static HBFontPickerTarget * s_fontTarget = nil;
    }];
 }
 
+- (void)openArrayEditorForRow:(int)nReal
+{
+   /* Convert "|"-separated value to newline-separated text */
+   NSString * curVal = [NSString stringWithUTF8String:d->rows[nReal].szValue];
+   NSString * text = [curVal stringByReplacingOccurrencesOfString:@"|" withString:@"\n"];
+
+   /* Create modal dialog with NSTextView */
+   NSWindow * sheet = [[NSWindow alloc]
+      initWithContentRect:NSMakeRect(0, 0, 350, 300)
+      styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
+      backing:NSBackingStoreBuffered defer:NO];
+   [sheet setTitle:[NSString stringWithFormat:@"Edit %s (one item per line)",
+      d->rows[nReal].szName]];
+
+   NSScrollView * scrollView = [[NSScrollView alloc]
+      initWithFrame:NSMakeRect(10, 50, 330, 240)];
+   [scrollView setHasVerticalScroller:YES];
+   [scrollView setBorderType:NSBezelBorder];
+
+   NSTextView * textView = [[NSTextView alloc]
+      initWithFrame:NSMakeRect(0, 0, 310, 220)];
+   [textView setMinSize:NSMakeSize(310, 220)];
+   [textView setMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
+   [textView setVerticallyResizable:YES];
+   [[textView textContainer] setWidthTracksTextView:YES];
+   [textView setFont:[NSFont monospacedSystemFontOfSize:12 weight:NSFontWeightRegular]];
+   [textView setString:text];
+   [textView setEditable:YES];
+
+   /* Dark appearance */
+   [textView setBackgroundColor:[NSColor colorWithCalibratedWhite:0.15 alpha:1.0]];
+   [textView setTextColor:[NSColor colorWithCalibratedWhite:0.9 alpha:1.0]];
+   [textView setInsertionPointColor:[NSColor whiteColor]];
+
+   [scrollView setDocumentView:textView];
+   [[sheet contentView] addSubview:scrollView];
+
+   /* OK button */
+   NSButton * okBtn = [[NSButton alloc]
+      initWithFrame:NSMakeRect(260, 10, 80, 30)];
+   [okBtn setTitle:@"OK"];
+   [okBtn setBezelStyle:NSBezelStyleRounded];
+   [okBtn setKeyEquivalent:@"\r"];
+   [okBtn setTarget:NSApp];
+   [okBtn setAction:@selector(stopModal)];
+   [okBtn setTag:1];
+   [[sheet contentView] addSubview:okBtn];
+
+   /* Cancel button */
+   NSButton * cancelBtn = [[NSButton alloc]
+      initWithFrame:NSMakeRect(170, 10, 80, 30)];
+   [cancelBtn setTitle:@"Cancel"];
+   [cancelBtn setBezelStyle:NSBezelStyleRounded];
+   [cancelBtn setKeyEquivalent:@"\033"];
+   [cancelBtn setTarget:NSApp];
+   [cancelBtn setAction:@selector(abortModal)];
+   [cancelBtn setTag:0];
+   [[sheet contentView] addSubview:cancelBtn];
+
+   [sheet center];
+   [sheet makeKeyAndOrderFront:nil];
+   NSModalResponse response = [NSApp runModalForWindow:sheet];
+
+   if( response == NSModalResponseAbort )
+   {
+      [sheet orderOut:nil];
+      return;
+   }
+   NSString * newText = [[textView string] stringByTrimmingCharactersInSet:
+      [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+
+   /* Convert newlines back to "|" separator */
+   NSArray * lines = [newText componentsSeparatedByCharactersInSet:
+      [NSCharacterSet newlineCharacterSet]];
+   NSMutableArray * nonEmpty = [NSMutableArray array];
+   for( NSString * line in lines )
+   {
+      NSString * trimmed = [line stringByTrimmingCharactersInSet:
+         [NSCharacterSet whitespaceCharacterSet]];
+      if( [trimmed length] > 0 )
+         [nonEmpty addObject:trimmed];
+   }
+   NSString * result = [nonEmpty componentsJoinedByString:@"|"];
+   const char * szResult = [result UTF8String];
+
+   strncpy( d->rows[nReal].szValue, szResult, sizeof(d->rows[nReal].szValue) - 1 );
+   d->rows[nReal].szValue[sizeof(d->rows[nReal].szValue) - 1] = '\0';
+
+   /* Push to control */
+   if( d->hCtrl )
+   {
+      hb_vmPushDynSym( hb_dynsymFind( "UI_SETPROP" ) );
+      hb_vmPushNil();
+      hb_vmPushNumInt( (HB_MAXINT) d->hCtrl );
+      hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
+      hb_vmPushString( szResult, strlen(szResult) );
+      hb_vmDo( 3 );
+   }
+
+   [d->tableView reloadData];
+   if( d->pOnPropChanged )
+   {
+      hb_vmPushEvalSym();
+      hb_vmPush( d->pOnPropChanged );
+      hb_vmSend( 0 );
+   }
+
+   [sheet orderOut:nil];
+}
+
 - (void)logicalMenuDummy:(id)sender { /* no-op, enables menu items */ }
 
 - (void)openLogicalDropdownForRow:(int)nReal inTableView:(NSTableView *)tv atRow:(NSInteger)row
@@ -536,6 +690,9 @@ static HBFontPickerTarget * s_fontTarget = nil;
    }
 }
 
+static int s_dropdownChoice = -1;
+- (void)dropdownMenuSelected:(id)sender { s_dropdownChoice = (int)[sender tag]; }
+
 - (void)openDropdownForRow:(int)nReal inTableView:(NSTableView *)tv atRow:(NSInteger)row
 {
    const char * raw = d->rows[nReal].szValue;
@@ -550,7 +707,8 @@ static HBFontPickerTarget * s_fontTarget = nil;
       const char * end = strchr( p, '|' );
       int len = end ? (int)(end - p) : (int)strlen(p);
       NSString * title = [[NSString alloc] initWithBytes:p length:len encoding:NSUTF8StringEncoding];
-      NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:title action:nil keyEquivalent:@""];
+      NSMenuItem * item = [[NSMenuItem alloc] initWithTitle:title action:@selector(dropdownMenuSelected:) keyEquivalent:@""];
+      [item setTarget:self];
       [item setTag:idx];
       if( idx == curIdx ) [item setState:NSControlStateValueOn];
       [menu addItem:item];
@@ -562,40 +720,44 @@ static HBFontPickerTarget * s_fontTarget = nil;
    NSRect cellRect = [tv frameOfCellAtColumn:1 row:row];
    NSPoint pt = NSMakePoint( cellRect.origin.x, cellRect.origin.y );
 
-   /* Use popUpMenuPositioningItem to show dropdown at cell */
-   BOOL selected = [menu popUpMenuPositioningItem:[menu itemAtIndex:curIdx]
+   s_dropdownChoice = -1;
+   [menu popUpMenuPositioningItem:[menu itemAtIndex:curIdx]
       atLocation:pt inView:tv];
 
-   if( selected )
+   if( s_dropdownChoice >= 0 && s_dropdownChoice != curIdx )
    {
-      /* Find which item was selected */
-      for( int i = 0; i < (int)[[menu itemArray] count]; i++ )
-      {
-         NSMenuItem * mi = [[menu itemArray] objectAtIndex:i];
-         if( [mi isHighlighted] || [mi state] == NSControlStateValueOn )
-         {
-            /* Rebuild value string with new index */
-            const char * opts = strchr( raw, '|' );
-            char newVal[512];
-            snprintf( newVal, sizeof(newVal), "%d%s", i, opts ? opts : "" );
-            strncpy( d->rows[nReal].szValue, newVal, sizeof(d->rows[0].szValue) - 1 );
+      int i = s_dropdownChoice;
+      /* Rebuild value string with new index */
+      const char * opts = strchr( raw, '|' );
+      char newVal[512];
+      snprintf( newVal, sizeof(newVal), "%d%s", i, opts ? opts : "" );
+      strncpy( d->rows[nReal].szValue, newVal, sizeof(d->rows[0].szValue) - 1 );
 
-            /* Apply via UI_SetProp */
-            PHB_DYNS pDyn = hb_dynsymFindName( "UI_SETPROP" );
-            if( pDyn ) {
-               hb_vmPushDynSym( pDyn ); hb_vmPushNil();
-               hb_vmPushNumInt( d->hCtrl );
-               hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
-               hb_vmPushInteger( i );
-               hb_vmDo( 3 );
-            }
-            if( d->pOnPropChanged && HB_IS_BLOCK( d->pOnPropChanged ) ) {
-               hb_vmPushEvalSym(); hb_vmPush( d->pOnPropChanged ); hb_vmSend( 0 );
-            }
-            [tv reloadData];
-            break;
+      /* Apply via UI_BrowseSetColProp or UI_SetProp */
+      if( d->nBrowseCol >= 0 ) {
+         PHB_DYNS pDyn = hb_dynsymFindName( "UI_BROWSESETCOLPROP" );
+         if( pDyn ) {
+            hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+            hb_vmPushNumInt( d->hCtrl );
+            hb_vmPushInteger( d->nBrowseCol );
+            hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
+            hb_vmPushInteger( i );
+            hb_vmDo( 4 );
+         }
+      } else {
+         PHB_DYNS pDyn = hb_dynsymFindName( "UI_SETPROP" );
+         if( pDyn ) {
+            hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+            hb_vmPushNumInt( d->hCtrl );
+            hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
+            hb_vmPushInteger( i );
+            hb_vmDo( 3 );
          }
       }
+      if( d->pOnPropChanged && HB_IS_BLOCK( d->pOnPropChanged ) ) {
+         hb_vmPushEvalSym(); hb_vmPush( d->pOnPropChanged ); hb_vmSend( 0 );
+      }
+      [tv reloadData];
    }
 }
 
@@ -645,7 +807,7 @@ static HBFontPickerTarget * s_fontTarget = nil;
       /* Show "..." button for color and font properties, hide for others */
       if( [[col identifier] isEqualToString:@"button"] )
       {
-         if( d->rows[nReal].cType == 'C' || d->rows[nReal].cType == 'F' || d->rows[nReal].cType == 'P' )
+         if( d->rows[nReal].cType == 'C' || d->rows[nReal].cType == 'F' || d->rows[nReal].cType == 'P' || d->rows[nReal].cType == 'A' )
          {
             [cell setTitle:@"..."];
             [cell setTransparent:NO];
@@ -724,7 +886,12 @@ static HBFontPickerTarget * s_fontTarget = nil;
             [self openFontPickerForRow:nReal];
          else if( d->rows[nReal].cType == 'P' )
             [self openFilePickerForRow:nReal];
+         else if( d->rows[nReal].cType == 'A' )
+            [self openArrayEditorForRow:nReal];
       }
+      /* Click on value column for dropdown properties */
+      if( [[clickedCol identifier] isEqualToString:@"value"] && d->rows[nReal].cType == 'D' )
+         [self openDropdownForRow:nReal inTableView:d->tableView atRow:row];
    }
 }
 
@@ -894,6 +1061,34 @@ static HBFontPickerTarget * s_fontTarget = nil;
 
 @implementation HBInspectorTableView
 
+- (void)keyDown:(NSEvent *)event
+{
+   HBInspectorDelegate * del = (HBInspectorDelegate *)[self delegate];
+   unsigned short keyCode = [event keyCode];
+   /* Arrow Up = 126, Arrow Down = 125 */
+   if( del && del->d && (keyCode == 125 || keyCode == 126) )
+   {
+      INSDATA * dd = del->d;
+      NSInteger cur = [self selectedRow];
+      NSInteger nRows = dd->nVisible;
+      int dir = (keyCode == 125) ? 1 : -1;
+      NSInteger next = cur + dir;
+
+      /* Skip category rows */
+      while( next >= 0 && next < nRows && dd->rows[dd->map[next]].bIsCat )
+         next += dir;
+
+      if( next >= 0 && next < nRows )
+      {
+         NSIndexSet * idx = [NSIndexSet indexSetWithIndex:next];
+         [self selectRowIndexes:idx byExtendingSelection:NO];
+         [self scrollRowToVisible:next];
+      }
+      return;
+   }
+   [super keyDown:event];
+}
+
 - (NSMenu *)menuForEvent:(NSEvent *)event
 {
    /* Only show context menu on Events tab */
@@ -1049,6 +1244,10 @@ static void InsBuildRows( INSDATA * d, PHB_ITEM pArray )
             strncpy( d->rows[d->nRows].szValue, hb_arrayGetCPtr(pRow,2), 255 );
          else if( d->rows[d->nRows].cType == 'P' )
             strncpy( d->rows[d->nRows].szValue, hb_arrayGetCPtr(pRow,2), 255 );
+         else if( d->rows[d->nRows].cType == 'A' )
+            strncpy( d->rows[d->nRows].szValue, hb_arrayGetCPtr(pRow,2), 255 );
+         else
+            d->rows[d->nRows].szValue[0] = 0;
 
          d->nRows++;
       }
@@ -1409,9 +1608,24 @@ static void InsRefreshTab( INSDATA * d )
  * ====================================================================== */
 
 static HB_PTRUINT s_insData = 0;
+static PHB_ITEM s_comboMap = NULL;
 
 HB_FUNC( _INSGETDATA ) { hb_retnint( s_insData ); }
 HB_FUNC( _INSSETDATA ) { s_insData = (HB_PTRUINT) hb_parnint(1); }
+
+/* _InsSetComboMap( aMap ) / _InsGetComboMap() --> aMap
+ * Stores the combo index -> { nType, hCtrl, nColIdx } mapping array */
+HB_FUNC( _INSSETCOMBOMAP )
+{
+   PHB_ITEM pArr = hb_param(1, HB_IT_ARRAY);
+   if( s_comboMap ) { hb_itemRelease( s_comboMap ); s_comboMap = NULL; }
+   if( pArr ) s_comboMap = hb_itemNew( pArr );
+}
+HB_FUNC( _INSGETCOMBOMAP )
+{
+   if( s_comboMap ) hb_itemReturn( s_comboMap );
+   else hb_reta(0);
+}
 
 /* ======================================================================
  * INS_Create() --> hInsData
@@ -1420,6 +1634,7 @@ HB_FUNC( _INSSETDATA ) { s_insData = (HB_PTRUINT) hb_parnint(1); }
 HB_FUNC( INS_CREATE )
 {
    INSDATA * d = (INSDATA *) calloc( 1, sizeof(INSDATA) );
+   d->nBrowseCol = -1;
 
    d->font = [NSFont systemFontOfSize:12];
    d->boldFont = [NSFont boldSystemFontOfSize:12];
@@ -1550,6 +1765,7 @@ HB_FUNC( INS_REFRESHWITHDATA )
    if( !d ) return;
 
    d->hCtrl = (HB_PTRUINT) hb_parnint(2);
+   d->nBrowseCol = -1;  /* reset; INS_SetBrowseCol overrides after this call */
 
    if( d->hCtrl == 0 || !pArray || hb_arrayLen(pArray) == 0 )
    {
@@ -1578,6 +1794,13 @@ HB_FUNC( INS_REFRESHWITHDATA )
    }
 
    [d->tableView reloadData];
+}
+
+/* INS_SetBrowseCol( hInsData, nCol ) - set column index for property editing (-1 = not a column) */
+HB_FUNC( INS_SETBROWSECOL )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   if( d ) d->nBrowseCol = hb_parni(2);
 }
 
 /* ======================================================================

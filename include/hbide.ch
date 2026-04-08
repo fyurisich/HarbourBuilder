@@ -121,6 +121,7 @@
 #define CT_DBCOMBOBOX       84
 #define CT_DBCHECKBOX       85
 #define CT_DBIMAGE          86
+#define CT_BRWCOLUMN        87
 // Non-visual: Business
 #define CT_PREPROCESSOR     90
 #define CT_SCRIPTENGINE     91
