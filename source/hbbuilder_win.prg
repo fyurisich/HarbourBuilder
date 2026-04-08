@@ -2029,8 +2029,8 @@ static function TBRun()
       MemoWrit( cBuildDir + "\" + aForms[i][1] + ".prg", aForms[i][3] )
       cLog += "    " + aForms[i][1] + ".prg" + Chr(10)
    next
-   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\harbour\classes.prg" "' + cBuildDir + '\" >nul 2>&1' )
-   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\harbour\hbbuilder.ch" "' + cBuildDir + '\" >nul 2>&1' )
+   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\source\core\classes.prg" "' + cBuildDir + '\" >nul 2>&1' )
+   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\include\hbbuilder.ch" "' + cBuildDir + '\" >nul 2>&1' )
 
    // Step 2: Assemble main.prg
    W32_ProgressStep( "Assembling main.prg..." )
@@ -2098,7 +2098,7 @@ static function TBRun()
          cRspContent += '/I"' + cUcrtInc + '"' + Chr(10)
          cRspContent += '/I"' + cUmInc + '"' + Chr(10)
          cRspContent += '/I"' + cSharedInc + '"' + Chr(10)
-         cRspContent += '/I"' + cProjDir + '\cpp\include"' + Chr(10)
+         cRspContent += '/I"' + cProjDir + '\include"' + Chr(10)
 
          cRsp := cBuildDir + "\cl_main.rsp"
          MemoWrit( cRsp, cRspContent + '"' + cBuildDir + '\main.c"' + Chr(10) + '/Fo"' + cBuildDir + '\main.obj"' )
@@ -2117,7 +2117,7 @@ static function TBRun()
       else
          cCmd := cCC + ' -c -O2 -tW -I' + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
-                 " -I" + cProjDir + "\cpp\include" + ;
+                 " -I" + cProjDir + "\include" + ;
                  " " + cBuildDir + "\main.c" + ;
                  " -o" + cBuildDir + "\main.obj"
          cOutput := W32_ShellExec( cCmd )
@@ -2127,7 +2127,7 @@ static function TBRun()
          endif
          cCmd := cCC + ' -c -O2 -tW -I' + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
-                 " -I" + cProjDir + "\cpp\include" + ;
+                 " -I" + cProjDir + "\include" + ;
                  " " + cBuildDir + "\classes.c" + ;
                  " -o" + cBuildDir + "\classes.obj"
          W32_ShellExec( cCmd )
@@ -2147,21 +2147,21 @@ static function TBRun()
                  '/I"' + cUcrtInc + '"' + Chr(10) + ;
                  '/I"' + cUmInc + '"' + Chr(10) + ;
                  '/I"' + cSharedInc + '"' + Chr(10) + ;
-                 '/I"' + cProjDir + '\cpp\include"' + Chr(10)
+                 '/I"' + cProjDir + '\include"' + Chr(10)
       else
          cCppBase := " -c -O2 -tW -w- -I" + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
-                 " -I" + cProjDir + "\cpp\include "
+                 " -I" + cProjDir + "\include "
       endif
       for k := 1 to Len( aCppFiles )
          if cCompiler == "msvc"
             cRsp := cBuildDir + "\cl_" + aCppFiles[k] + ".rsp"
-            MemoWrit( cRsp, cCppBase + '"' + cProjDir + "\cpp\src\" + aCppFiles[k] + '.cpp"' + Chr(10) + ;
+            MemoWrit( cRsp, cCppBase + '"' + cProjDir + "\source\cpp\" + aCppFiles[k] + '.cpp"' + Chr(10) + ;
                      '/Fo"' + cBuildDir + "\" + aCppFiles[k] + '.obj"' )
             cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
          else
             cCmd := cCC + cCppBase + ;
-                    cProjDir + "\cpp\src\" + aCppFiles[k] + ".cpp" + ;
+                    cProjDir + "\source\cpp\" + aCppFiles[k] + ".cpp" + ;
                     " -o" + cBuildDir + "\" + aCppFiles[k] + ".obj"
          endif
          cOutput := W32_ShellExec( cCmd )
@@ -2465,9 +2465,9 @@ static function TBDebugRun()
       MemoWrit( cBuildDir + "\" + aForms[i][1] + ".prg", ;
          CodeEditorGetTabText( hCodeEditor, i + 1 ) )
    next
-   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\harbour\classes.prg" "' + cBuildDir + '\" >nul 2>&1' )
-   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\harbour\hbbuilder.ch" "' + cBuildDir + '\" >nul 2>&1' )
-   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\harbour\dbgclient.prg" "' + cBuildDir + '\" >nul 2>&1' )
+   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\source\core\classes.prg" "' + cBuildDir + '\" >nul 2>&1' )
+   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\include\hbbuilder.ch" "' + cBuildDir + '\" >nul 2>&1' )
+   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\source\debugger\dbgclient.prg" "' + cBuildDir + '\" >nul 2>&1' )
 
    // Step 2: Assemble debug_main.prg (tracking line offsets for each section)
    cLog += "[2] Assembling debug_main.prg..." + Chr(10)
@@ -2546,14 +2546,14 @@ static function TBDebugRun()
          cRspContent += '/I"' + cUcrtInc + '"' + Chr(10)
          cRspContent += '/I"' + cUmInc + '"' + Chr(10)
          cRspContent += '/I"' + cSharedInc + '"' + Chr(10)
-         cRspContent += '/I"' + cProjDir + '\cpp\include"' + Chr(10)
+         cRspContent += '/I"' + cProjDir + '\include"' + Chr(10)
          cRsp := cBuildDir + "\cl_dbg.rsp"
          MemoWrit( cRsp, cRspContent + '"' + cBuildDir + '\debug_main.c"' + Chr(10) + '/Fo"' + cBuildDir + '\debug_main.obj"' )
          cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
       else
          cCmd := cCC + ' -c -O0 -tW -w- -I' + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
-                 " -I" + cProjDir + "\cpp\include" + ;
+                 " -I" + cProjDir + "\include" + ;
                  " " + cBuildDir + "\debug_main.c" + ;
                  " -o" + cBuildDir + "\debug_main.obj"
       endif
@@ -2571,12 +2571,12 @@ static function TBDebugRun()
       cLog += "[5] Compiling dbghook.c..." + Chr(10)
       if cCompiler == "msvc"
          cRsp := cBuildDir + "\cl_hook.rsp"
-         MemoWrit( cRsp, cRspContent + '"' + cProjDir + '\harbour\dbghook.c"' + Chr(10) + '/Fo"' + cBuildDir + '\dbghook.obj"' )
+         MemoWrit( cRsp, cRspContent + '"' + cProjDir + '\source\debugger\dbghook.c"' + Chr(10) + '/Fo"' + cBuildDir + '\dbghook.obj"' )
          cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
       else
          cCmd := cCC + ' -c -O2 -tW -w- -I' + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
-                 " " + cProjDir + "\harbour\dbghook.c" + ;
+                 " " + cProjDir + "\source\debugger\dbghook.c" + ;
                  " -o" + cBuildDir + "\dbghook.obj"
       endif
       cOutput := W32_ShellExec( cCmd )
@@ -2599,21 +2599,21 @@ static function TBDebugRun()
                  '/I"' + cUcrtInc + '"' + Chr(10) + ;
                  '/I"' + cUmInc + '"' + Chr(10) + ;
                  '/I"' + cSharedInc + '"' + Chr(10) + ;
-                 '/I"' + cProjDir + '\cpp\include"' + Chr(10)
+                 '/I"' + cProjDir + '\include"' + Chr(10)
       else
          cCppBase := " -c -O2 -tW -w- -I" + cHbInc + ;
                  " -I" + cCDir + "\include" + ;
-                 " -I" + cProjDir + "\cpp\include "
+                 " -I" + cProjDir + "\include "
       endif
       for k := 1 to Len( aCppFiles )
          if cCompiler == "msvc"
             cRsp := cBuildDir + "\cl_" + aCppFiles[k] + ".rsp"
-            MemoWrit( cRsp, cCppBase + '"' + cProjDir + "\cpp\src\" + aCppFiles[k] + '.cpp"' + Chr(10) + ;
+            MemoWrit( cRsp, cCppBase + '"' + cProjDir + "\source\cpp\" + aCppFiles[k] + '.cpp"' + Chr(10) + ;
                      '/Fo"' + cBuildDir + "\" + aCppFiles[k] + '.obj"' )
             cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
          else
             cCmd := cCC + cCppBase + ;
-                    cProjDir + "\cpp\src\" + aCppFiles[k] + ".cpp" + ;
+                    cProjDir + "\source\cpp\" + aCppFiles[k] + ".cpp" + ;
                     " -o" + cBuildDir + "\" + aCppFiles[k] + ".obj"
          endif
          cOutput := W32_ShellExec( cCmd )
@@ -3614,8 +3614,8 @@ function _InsGetEditorCode()
 return ""
 
 // Framework
-#include "../harbour/classes.prg"
-#include "../harbour/inspector.prg"
+#include "core/classes.prg"
+#include "inspector/inspector_win.prg"
 
 #pragma BEGINDUMP
 #include <hbapi.h>

@@ -1,6 +1,33 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-08 (Session 23: Windows — Source folder restructuring)
+
+  BUILD SCRIPT (build_win.bat):
+  - SRCDIR changed from samples/ to source/
+  - CPPDIR changed from cpp/ to source/cpp/
+  - Added INCDIR pointing to include/ for C++ headers
+  - Updated all three compiler paths (BCC, MSVC, MinGW)
+
+  HBBUILDER_WIN.PRG:
+  - Updated #include paths: harbour/classes.prg → core/classes.prg,
+    harbour/inspector.prg → inspector/inspector_win.prg
+  - Updated runtime copy paths for user project builds:
+    harbour/classes.prg → source/core/classes.prg
+    harbour/hbbuilder.ch → include/hbbuilder.ch
+    harbour/dbgclient.prg → source/debugger/dbgclient.prg
+    harbour/dbghook.c → source/debugger/dbghook.c
+  - Updated C++ compile paths: cpp/include → include,
+    cpp/src/ → source/cpp/
+
+  FILE REORGANIZATION:
+  - cpp/include/hbide.h → include/hbide.h
+  - cpp/src/*.cpp → source/cpp/
+  - core/*.prg → source/core/
+  - source/common/classes.prg → source/core/classes.prg
+  - source/inspector/inspector.prg → source/inspector/inspector_win.prg
+  - Removed obsolete: screenshots, todo.md, test binaries
+
 2026-04-08 (Session 22: Linux — Source folder restructuring)
 
   SOURCE RESTRUCTURING (LINUX):

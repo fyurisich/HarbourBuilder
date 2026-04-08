@@ -7,8 +7,9 @@ setlocal enabledelayedexpansion
 
 set HBDIR=C:\harbour
 set HBINC=%HBDIR%\include
-set SRCDIR=%~dp0samples
-set CPPDIR=%~dp0cpp
+set SRCDIR=%~dp0source
+set CPPDIR=%~dp0source\cpp
+set INCDIR=%~dp0include
 set OUTDIR=%~dp0bin
 
 if not exist "%OUTDIR%" mkdir "%OUTDIR%"
@@ -138,12 +139,12 @@ cd /d "%SRCDIR%"
 if errorlevel 1 (echo HARBOUR FAILED & pause & exit /b 1)
 
 echo === Step 2: Compile C sources ===
-"%CCBIN%\bcc32.exe" -c -O2 -tW -w- -I%HBINC% -I%CPPDIR%\include hbbuilder_win.c
+"%CCBIN%\bcc32.exe" -c -O2 -tW -w- -I%HBINC% -I%INCDIR% hbbuilder_win.c
 if not exist hbbuilder_win.obj (echo BCC32 FAILED on hbbuilder_win.c & pause & exit /b 1)
 
 for %%f in (tform hbbridge tcontrol tcontrols) do (
-   if exist "%CPPDIR%\src\%%f.cpp" (
-      "%CCBIN%\bcc32.exe" -c -O2 -tW -w- -I%HBINC% -I%CPPDIR%\include "%CPPDIR%\src\%%f.cpp"
+   if exist "%CPPDIR%\%%f.cpp" (
+      "%CCBIN%\bcc32.exe" -c -O2 -tW -w- -I%HBINC% -I%INCDIR% "%CPPDIR%\%%f.cpp"
       if not exist %%f.obj (echo BCC32 FAILED on %%f.cpp & pause & exit /b 1)
    )
 )
@@ -183,14 +184,14 @@ cd /d "%SRCDIR%"
 if errorlevel 1 (echo HARBOUR FAILED & pause & exit /b 1)
 
 echo === Step 2: Compile C sources ===
-set CL_BASE=/c /O2 /W0 /EHsc /I"%HBINC%" /I"%MSVC_INC%" /I"%UCRT_INC%" /I"%UM_INC%" /I"%SHARED_INC%" /I"%CPPDIR%\include"
+set CL_BASE=/c /O2 /W0 /EHsc /I"%HBINC%" /I"%MSVC_INC%" /I"%UCRT_INC%" /I"%UM_INC%" /I"%SHARED_INC%" /I"%INCDIR%"
 
 "%MSVC_BIN%\cl.exe" %CL_BASE% hbbuilder_win.c /Fohbbuilder_win.obj
 if not exist hbbuilder_win.obj (echo CL FAILED on hbbuilder_win.c & pause & exit /b 1)
 
 for %%f in (tform hbbridge tcontrol tcontrols) do (
-   if exist "%CPPDIR%\src\%%f.cpp" (
-      "%MSVC_BIN%\cl.exe" %CL_BASE% "%CPPDIR%\src\%%f.cpp" /Fo%%f.obj
+   if exist "%CPPDIR%\%%f.cpp" (
+      "%MSVC_BIN%\cl.exe" %CL_BASE% "%CPPDIR%\%%f.cpp" /Fo%%f.obj
       if not exist %%f.obj (echo CL FAILED on %%f.cpp & pause & exit /b 1)
    )
 )
@@ -214,12 +215,12 @@ cd /d "%SRCDIR%"
 if errorlevel 1 (echo HARBOUR FAILED & pause & exit /b 1)
 
 echo === Step 2: Compile C sources ===
-"%GCCBIN%\gcc.exe" -c -O2 -I"%HBINC%" -I"%CPPDIR%\include" hbbuilder_win.c -o hbbuilder_win.o
+"%GCCBIN%\gcc.exe" -c -O2 -I"%HBINC%" -I"%INCDIR%" hbbuilder_win.c -o hbbuilder_win.o
 if not exist hbbuilder_win.o (echo GCC FAILED on hbbuilder_win.c & pause & exit /b 1)
 
 for %%f in (tform hbbridge tcontrol tcontrols) do (
-   if exist "%CPPDIR%\src\%%f.cpp" (
-      "%GCCBIN%\g++.exe" -c -O2 -I"%HBINC%" -I"%CPPDIR%\include" "%CPPDIR%\src\%%f.cpp" -o %%f.o
+   if exist "%CPPDIR%\%%f.cpp" (
+      "%GCCBIN%\g++.exe" -c -O2 -I"%HBINC%" -I"%INCDIR%" "%CPPDIR%\%%f.cpp" -o %%f.o
       if not exist %%f.o (echo G++ FAILED on %%f.cpp & pause & exit /b 1)
    )
 )
