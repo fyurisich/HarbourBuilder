@@ -55,6 +55,15 @@ HarbourBuilder - Cross-platform visual IDE for Harbour
   - MsgYesNoCancel before New Application / Open Project
   - Offers Save / Don't Save / Cancel
 
+  CONTROL COLOR (nClrPane):
+  - Code gen: emit ::oCtrl:nClrPane := value for non-default background colors
+  - TControl: ACCESS/ASSIGN nClrPane added (maps to UI_SetProp("nClrPane"))
+  - TBrowse: LVM_SETBKCOLOR + LVM_SETTEXTBKCOLOR on nClrPane change (live)
+  - TBrowse::CreateHandle applies FClrPane if already set
+  - RestoreFormFromCode: second pass parses ::oName:nClrPane/Color := value
+  - Strip Chr(13) from parsed lines to fix CRLF comparison issues
+  - Skip commented lines (//) in second pass to prevent crashes
+
   EVENT HANDLERS:
   - InspectorRefresh resolves handler names from editor code
 
