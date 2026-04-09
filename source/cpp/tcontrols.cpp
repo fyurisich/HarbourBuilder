@@ -1177,6 +1177,13 @@ void TBrowse::CreateHandle( HWND hParent )
       LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_DOUBLEBUFFER |
       LVS_EX_HEADERDRAGDROP );
 
+   /* Apply background color if set */
+   if( FClrPane != CLR_INVALID )
+   {
+      SendMessage( FHandle, LVM_SETBKCOLOR, 0, (LPARAM) FClrPane );
+      SendMessage( FHandle, LVM_SETTEXTBKCOLOR, 0, (LPARAM) FClrPane );
+   }
+
    /* Add columns */
    for( i = 0; i < FColCount; i++ )
    {

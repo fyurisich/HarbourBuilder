@@ -1571,7 +1571,7 @@ static function RestoreFormFromCode( hForm, cCode )
 
    for i := 1 to Len( aLines )
       cLine := aLines[i]
-      cTrim := AllTrim( cLine )
+      cTrim := StrTran( AllTrim( cLine ), Chr(13), "" )
 
       // Parse form properties: ::Title, ::Width, ::Height, ::Left, ::Top, ::Color
       if '::Title' $ cTrim .and. ':=' $ cTrim
@@ -1736,7 +1736,7 @@ static function RestoreFormFromCode( hForm, cCode )
 
    // Second pass: apply property assignments like ::oCtrlName:nClrPane := value
    for i := 1 to Len( aLines )
-      cTrim := AllTrim( aLines[i] )
+      cTrim := StrTran( AllTrim( aLines[i] ), Chr(13), "" )
       if Left( cTrim, 3 ) == "::o" .and. ":=" $ cTrim
          nPos := At( ":", SubStr( cTrim, 4 ) )
          if nPos > 0
