@@ -820,6 +820,52 @@ HB_FUNC( UI_SETPROP )
         }
       }
    }
+   else if( lstrcmpi( szProp, "aColumns" ) == 0 && p->FControlType == CT_BROWSE && HB_ISCHAR(3) )
+   {
+      /* Parse "|"-separated column titles and rebuild columns */
+      TBrowse * br = (TBrowse *) p;
+      const char * val = hb_parc(3);
+      int ci = 0;
+      br->FColCount = 0;
+      if( val[0] )
+      {
+         while( *val && ci < MAX_BROWSE_COLS )
+         {
+            char title[64] = {0};
+            int ti = 0;
+            const char * sep = strchr( val, '|' );
+            int len = sep ? (int)(sep - val) : (int)strlen( val );
+            if( len > 63 ) len = 63;
+            memcpy( title, val, (size_t)len );
+            title[len] = 0;
+            /* Trim spaces */
+            while( len > 0 && title[len-1] == ' ' ) title[--len] = 0;
+            ti = 0; while( title[ti] == ' ' ) ti++;
+            br->AddColumn( title + ti, "", 100, 0 );
+            val = sep ? sep + 1 : val + strlen(val);
+            ci++;
+         }
+      }
+      /* Recreate ListView columns if handle exists */
+      if( br->FHandle )
+      {
+         /* Remove existing columns */
+         while( SendMessageA( br->FHandle, LVM_DELETECOLUMN, 0, 0 ) ) {}
+         /* Re-add columns */
+         for( ci = 0; ci < br->FColCount; ci++ )
+         {
+            LVCOLUMNA lvc = {0};
+            lvc.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_FMT;
+            lvc.pszText = br->FCols[ci].szTitle;
+            lvc.cx = br->FCols[ci].nWidth;
+            lvc.fmt = LVCFMT_LEFT;
+            SendMessageA( br->FHandle, LVM_INSERTCOLUMNA, ci, (LPARAM)&lvc );
+         }
+         InvalidateRect( br->FHandle, NULL, TRUE );
+      }
+   }
+   else if( lstrcmpi( szProp, "cDataSource" ) == 0 && p->FControlType == CT_BROWSE && HB_ISCHAR(3) )
+      lstrcpynA( ((TBrowse*)p)->FDataSourceName, hb_parc(3), 64 );
 }
 
 /* UI_GetProp( hCtrl, cProp ) --> xValue */
@@ -903,6 +949,19 @@ HB_FUNC( UI_GETPROP )
       } else hb_retni( 12 ); }
    else if( lstrcmpi( szProp, "nItemIndex" ) == 0 && p->FControlType == CT_COMBOBOX )
       hb_retni( ((TComboBox*)p)->FItemIndex );
+   else if( lstrcmpi( szProp, "aColumns" ) == 0 && p->FControlType == CT_BROWSE )
+   {
+      TBrowse * br = (TBrowse *) p;
+      char szCols[1024] = "";
+      int ci;
+      for( ci = 0; ci < br->FColCount; ci++ ) {
+         if( ci > 0 ) lstrcatA( szCols, "|" );
+         lstrcatA( szCols, br->FCols[ci].szTitle );
+      }
+      hb_retc( szCols );
+   }
+   else if( lstrcmpi( szProp, "cDataSource" ) == 0 && p->FControlType == CT_BROWSE )
+      hb_retc( ((TBrowse*)p)->FDataSourceName );
    else if( lstrcmpi( szProp, "nClrPane" ) == 0 )
       hb_retnint( (HB_MAXINT) p->FClrPane );
    else if( lstrcmpi( szProp, "oFont" ) == 0 )
@@ -1520,6 +1579,27 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_PROP_N( "nItemIndex", ((TComboBox*)p)->FItemIndex, "Data" );
          ADD_PROP_N( "nItemCount", ((TComboBox*)p)->FItemCount, "Data" );
          break;
+      case CT_BROWSE:
+      {
+         TBrowse * br = (TBrowse *) p;
+         /* Build aColumns as "|"-separated string from column titles */
+         char szCols[1024] = "";
+         int ci;
+         for( ci = 0; ci < br->FColCount; ci++ ) {
+            if( ci > 0 ) lstrcatA( szCols, "|" );
+            lstrcatA( szCols, br->FCols[ci].szTitle );
+         }
+         pRow = hb_itemArrayNew(4);
+         hb_arraySetC( pRow, 1, "aColumns" );
+         hb_arraySetC( pRow, 2, szCols );
+         hb_arraySetC( pRow, 3, "Data" );
+         hb_arraySetC( pRow, 4, "A" );
+         hb_arrayAdd( pArray, pRow );
+         hb_itemRelease( pRow );
+
+         ADD_PROP_S( "cDataSource", br->FDataSourceName, "Data" );
+         break;
+      }
    }
 
    hb_itemReturnRelease( pArray );

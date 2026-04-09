@@ -837,6 +837,7 @@ public:
    PHB_ITEM     FOnKeyDown;
    PHB_ITEM     FOnColumnResize;
    PHB_ITEM     FDataSource;    /* block that returns data for virtual mode */
+   char         FDataSourceName[64]; /* name of data component for code gen */
 
    TBrowse();
    virtual ~TBrowse();

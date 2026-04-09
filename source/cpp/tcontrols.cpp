@@ -1072,6 +1072,7 @@ TBrowse::TBrowse()
    FOnKeyDown = NULL;
    FOnColumnResize = NULL;
    FDataSource = NULL;
+   FDataSourceName[0] = 0;
    memset( FCols, 0, sizeof(FCols) );
 }
 
