@@ -4,8 +4,10 @@
 #include "hbclass.ch"
 #include "hbide.ch"
 
+#ifdef __PLATFORM__WINDOWS
 EXTERNAL UI_STORECLRPANE
 EXTERNAL UI_HASHANDLE
+#endif
 
 //----------------------------------------------------------------------------//
 // TControl - Base class
@@ -823,7 +825,9 @@ static function AppShowError( oError )
    // MAC_RuntimeErrorDialog returns 0 on Windows (stub), use Win32 fallback
    nChoice := MAC_RuntimeErrorDialog( "Runtime Error", cMsg, aOptions )
    if nChoice == 0
+#ifdef __PLATFORM__WINDOWS
       W32_ErrorDialog( cMsg )
+#endif
       nChoice := 1  // Quit
    endif
 

@@ -1,6 +1,23 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-09 (Cross-platform fix: classes.prg linker errors on macOS/Linux)
+
+  BUILD FIX (macOS/Linux):
+  - classes.prg had unconditional EXTERNAL UI_STORECLRPANE / UI_HASHANDLE
+    declarations and a W32_ErrorDialog() call, all Windows-only symbols
+    implemented in source/cpp/hbbridge.cpp. Because hbbuilder_macos.prg
+    and hbbuilder_linux.prg both #include "classes.prg", the linker on
+    macOS (and Linux) failed with undefined symbols:
+       _HB_FUN_UI_HASHANDLE
+       _HB_FUN_UI_STORECLRPANE
+       _HB_FUN_W32_ERRORDIALOG
+  - Wrapped both EXTERNAL declarations and the W32_ErrorDialog fallback
+    call in #ifdef __PLATFORM__WINDOWS / #endif so they are only compiled
+    into the Windows build
+  - Reported by Marek Olszewski on macOS arm64 after pulling Session 33
+    Windows fixes
+
 2026-04-09 (Session 33: Windows — macOS parity: autocomplete, inspector, code gen)
 
   CROSS-FILE AUTOCOMPLETE:

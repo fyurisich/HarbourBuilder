@@ -4,6 +4,11 @@
 #include "hbclass.ch"
 #include "hbide.ch"
 
+#ifdef __PLATFORM__WINDOWS
+EXTERNAL UI_STORECLRPANE
+EXTERNAL UI_HASHANDLE
+#endif
+
 //----------------------------------------------------------------------------//
 // TControl - Base class
 //----------------------------------------------------------------------------//
@@ -34,6 +39,12 @@ CLASS TControl
    ASSIGN OnClick( b )  INLINE UI_OnEvent( ::hCpp, "OnClick", b )
    ASSIGN OnChange( b ) INLINE UI_OnEvent( ::hCpp, "OnChange", b )
    ASSIGN OnClose( b )  INLINE UI_OnEvent( ::hCpp, "OnClose", b )
+
+   // Color / nClrPane (available on all controls, not just forms)
+   ACCESS Color            INLINE UI_GetProp( ::hCpp, "nClrPane" )
+   ASSIGN Color( n )       INLINE UI_SetProp( ::hCpp, "nClrPane", n )
+   ACCESS nClrPane         INLINE UI_GetProp( ::hCpp, "nClrPane" )
+   ASSIGN nClrPane( n )    INLINE UI_SetProp( ::hCpp, "nClrPane", n )
 
 ENDCLASS
 
@@ -101,10 +112,6 @@ CLASS TForm INHERIT TControl
    ACCESS DoubleBuffered       INLINE UI_GetProp( ::hCpp, "lDoubleBuffered" )
    ASSIGN DoubleBuffered( l )  INLINE UI_SetProp( ::hCpp, "lDoubleBuffered", l )
 
-   // Color (alias for nClrPane - C++Builder uses Color)
-   ACCESS Color            INLINE UI_GetProp( ::hCpp, "nClrPane" )
-   ASSIGN Color( n )       INLINE UI_SetProp( ::hCpp, "nClrPane", n )
-
    // Transparency
    ACCESS AlphaBlend          INLINE UI_GetProp( ::hCpp, "lAlphaBlend" )
    ASSIGN AlphaBlend( l )     INLINE UI_SetProp( ::hCpp, "lAlphaBlend", l )
@@ -165,6 +172,7 @@ return Self
 
 METHOD Activate() CLASS TForm
 
+   // Apply pending colors before showing (HWNDs created by FormRun)
    UI_FormRun( ::hCpp )
 
 return Self
@@ -417,6 +425,7 @@ CLASS TBrowse INHERIT TControl
    METHOD New( oParent, nLeft, nTop, nWidth, nHeight )
    METHOD SetArray( aData, aHeaders )
    METHOD SetupColumns( cColumnsDef )
+   METHOD SetColSizes( aSizes )
    METHOD AddColumn( cTitle, nWidth, nAlign )
    METHOD Refresh()
    METHOD LoadFromDataSource( oForm )
@@ -504,6 +513,18 @@ METHOD SetupColumns( aColumnsDef ) CLASS TBrowse
    elseif ValType( aColumnsDef ) == "C" .and. ! Empty( aColumnsDef )
       for i := 1 to Len( hb_ATokens( aColumnsDef, "|" ) )
          ::AddColumn( hb_ATokens( aColumnsDef, "|" )[i] )
+      next
+   endif
+
+return Self
+
+METHOD SetColSizes( aSizes ) CLASS TBrowse
+
+   local i
+
+   if aSizes != nil .and. ValType( aSizes ) == "A"
+      for i := 1 to Min( Len( aSizes ), UI_BrowseColCount( ::hCpp ) )
+         UI_BrowseSetColProp( ::hCpp, i - 1, "nWidth", aSizes[i] )
       next
    endif
 
@@ -800,9 +821,15 @@ static function AppShowError( oError )
       AAdd( aOptions, "Default" )
    endif
 
-   // Show error dialog with Copy + action buttons
-   // Returns: 1=Quit, 2=Retry(if present), 3=Default(if present)
+   // Show error dialog - use platform-appropriate dialog
+   // MAC_RuntimeErrorDialog returns 0 on Windows (stub), use Win32 fallback
    nChoice := MAC_RuntimeErrorDialog( "Runtime Error", cMsg, aOptions )
+   if nChoice == 0
+#ifdef __PLATFORM__WINDOWS
+      W32_ErrorDialog( cMsg )
+#endif
+      nChoice := 1  // Quit
+   endif
 
    if nChoice > 1 .and. nChoice <= Len( aOptions )
       if aOptions[ nChoice ] == "Retry"
