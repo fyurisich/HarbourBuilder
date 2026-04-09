@@ -1,6 +1,14 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-09 (Session 33: Windows — Fix build_win.bat include path)
+
+  BUILD FIX:
+  - Added -I%INCDIR% to Harbour compile step in all three compiler sections
+    (BCC, MSVC, MinGW) — was missing the project include/ path so hbide.ch
+    (included by hbbuilder.ch) could not be found
+  - Rebuilt hbbuilder_win.exe with BCC
+
 2026-04-08 (Session 32: macOS — Browse column inspector, arrow key navigation)
 
   INSPECTOR — BROWSE COLUMNS:

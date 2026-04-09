@@ -135,7 +135,7 @@ set PSDKLIB=%COMPILER_DIR%\lib\psdk
 
 echo === Step 1: Compile Harbour PRG ===
 cd /d "%SRCDIR%"
-"%HBBIN%\harbour.exe" hbbuilder_win.prg -n -w -es2 -q -I%HBINC%
+"%HBBIN%\harbour.exe" hbbuilder_win.prg -n -w -es2 -q -I%HBINC% -I%INCDIR%
 if errorlevel 1 (echo HARBOUR FAILED & pause & exit /b 1)
 
 echo === Step 2: Compile C sources ===
@@ -180,7 +180,7 @@ set UM_LIB=%WINKITDIR%\Lib\%WINKITVER%\um\x86
 
 echo === Step 1: Compile Harbour PRG ===
 cd /d "%SRCDIR%"
-"%HBBIN%\harbour.exe" hbbuilder_win.prg -n -w -es2 -q -I%HBINC%
+"%HBBIN%\harbour.exe" hbbuilder_win.prg -n -w -es2 -q -I%HBINC% -I%INCDIR%
 if errorlevel 1 (echo HARBOUR FAILED & pause & exit /b 1)
 
 echo === Step 2: Compile C sources ===
@@ -211,7 +211,7 @@ set GCCBIN=%COMPILER_DIR%\bin
 
 echo === Step 1: Compile Harbour PRG ===
 cd /d "%SRCDIR%"
-"%HBBIN%\harbour.exe" hbbuilder_win.prg -n -w -es2 -q -I%HBINC%
+"%HBBIN%\harbour.exe" hbbuilder_win.prg -n -w -es2 -q -I%HBINC% -I%INCDIR%
 if errorlevel 1 (echo HARBOUR FAILED & pause & exit /b 1)
 
 echo === Step 2: Compile C sources ===
