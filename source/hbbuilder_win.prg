@@ -680,7 +680,7 @@ static function RegenerateFormCode( cName, hForm )
    local cClass := "T" + cName  // TForm1, TForm2...
    local i, nCount, hCtrl, cCtrlName, cCtrlClass, nType
    local nW, nH, nFL, nFT, cTitle, nClr
-   local nL, nT, nCW, nCH, cText
+   local nL, nT, nCW, nCH, cText, nCtrlClr
    local cDatas := "", cCreate := "", cEvents := ""
    local cExistingCode, aEvents, j, cEvName, cEvSuffix, cHandlerName
    local cVal, aHdrs, kk, nColCount, aColProps, nColW
@@ -857,6 +857,12 @@ static function RegenerateFormCode( cName, hForm )
                      LTrim(Str(nCW)) + ',' + LTrim(Str(nCH)) + e
                endif
          endcase
+
+         // Color for any control (CLR_INVALID = 4294967295 = default/inherit)
+         nCtrlClr := UI_GetProp( hCtrl, "nClrPane" )
+         if nCtrlClr != 4294967295 .and. nCtrlClr != 0
+            cCreate += '   ::o' + cCtrlName + ':Color := ' + LTrim( Str( nCtrlClr ) ) + e
+         endif
 
          // Scan for event handlers matching this control
          aEvents := { "OnClick", "OnChange", "OnDblClick", "OnCreate", ;
@@ -1555,7 +1561,7 @@ static function RestoreFormFromCode( hForm, cCode )
 
    local aLines, cLine, cTrim, i, nType, kk
    local nT, nL, nW, nH, cText, cName, hCtrl, cVal
-   local nPos, nPos2, cTitle
+   local nPos, nPos2, cTitle, nCh, cProp
 
    if Empty( cCode ) .or. hForm == 0
       return nil
@@ -1725,6 +1731,43 @@ static function RestoreFormFromCode( hForm, cCode )
       // Set the control name
       if hCtrl != 0
          UI_SetProp( hCtrl, "cName", cName )
+      endif
+   next
+
+   // Second pass: apply property assignments like ::oCtrlName:nClrPane := value
+   for i := 1 to Len( aLines )
+      cTrim := AllTrim( aLines[i] )
+      if Left( cTrim, 3 ) == "::o" .and. ":=" $ cTrim
+         nPos := At( ":", SubStr( cTrim, 4 ) )
+         if nPos > 0
+            cName := SubStr( cTrim, 4, nPos - 1 )
+            cText := SubStr( cTrim, 4 + nPos )
+            nPos2 := At( ":=", cText )
+            if nPos2 > 0
+               cProp := AllTrim( Left( cText, nPos2 - 1 ) )
+               cText := AllTrim( SubStr( cText, nPos2 + 2 ) )
+
+               hCtrl := 0
+               nCh := UI_GetChildCount( hForm )
+               for kk := 1 to nCh
+                  if AllTrim( UI_GetProp( UI_GetChild( hForm, kk ), "cName" ) ) == cName
+                     hCtrl := UI_GetChild( hForm, kk )
+                     exit
+                  endif
+               next
+
+               if hCtrl != 0 .and. ! Empty( cProp )
+                  if cProp == "nClrPane" .or. cProp == "Color"
+                     UI_SetProp( hCtrl, "nClrPane", Val( cText ) )
+                  elseif cProp == "cDataSource"
+                     if Left( cText, 1 ) == '"'
+                        cText := SubStr( cText, 2, Len( cText ) - 2 )
+                     endif
+                     UI_SetProp( hCtrl, "cDataSource", cText )
+                  endif
+               endif
+            endif
+         endif
       endif
    next
 
