@@ -5866,7 +5866,7 @@ typedef struct {
 static ClassMembers s_classMembers[] = {
    { "TForm",
      "Activate() AlphaBlend AlphaBlendValue AppBar AutoScroll BorderIcons "
-     "BorderStyle BorderWidth ClientHeight ClientWidth Close() Color Cursor "
+     "BorderStyle BorderWidth ClientHeight ClientWidth Close() Color CreateForm() Cursor "
      "Destroy() DoubleBuffered FontName FontSize FormStyle Height Hint "
      "KeyPreview Left ModalResult Name OnActivate OnChange OnClick OnClose "
      "OnCloseQuery OnCreate OnDblClick OnDeactivate OnDestroy OnHide "
