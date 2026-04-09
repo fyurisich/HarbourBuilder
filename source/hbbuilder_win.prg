@@ -1538,7 +1538,7 @@ return nil
 static function RestoreFormFromCode( hForm, cCode )
 
    local aLines, cLine, cTrim, i, nType
-   local nT, nL, nW, nH, cText, cName, hCtrl
+   local nT, nL, nW, nH, cText, cName, hCtrl, cVal
    local nPos, nPos2, cTitle
 
    if Empty( cCode ) .or. hForm == 0
@@ -1668,6 +1668,27 @@ static function RestoreFormFromCode( hForm, cCode )
             hCtrl := UI_RadioButtonNew( hForm, cText, nL, nT, nW, nH )
          case " MEMO " $ Upper( cTrim )
             hCtrl := UI_MemoNew( hForm, "", nL, nT, nW, nH )
+         case " BROWSE " $ Upper( cTrim )
+            hCtrl := UI_BrowseNew( hForm, nL, nT, nW, nH )
+            // Extract HEADERS "col1", "col2", "col3"
+            nPos := At( "HEADERS ", Upper( cTrim ) )
+            if nPos > 0
+               cText := SubStr( cTrim, nPos + 8 )
+               cVal := ""
+               do while ! Empty( cText )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  cText := SubStr( cText, nPos2 + 1 )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  if ! Empty( cVal ); cVal += "|"; endif
+                  cVal += Left( cText, nPos2 - 1 )
+                  cText := SubStr( cText, nPos2 + 1 )
+               enddo
+               if hCtrl != 0 .and. ! Empty( cVal )
+                  UI_SetProp( hCtrl, "aColumns", cVal )
+               endif
+            endif
       endcase
 
       // Set the control name
