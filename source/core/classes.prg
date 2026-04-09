@@ -417,6 +417,7 @@ CLASS TBrowse INHERIT TControl
    METHOD New( oParent, nLeft, nTop, nWidth, nHeight )
    METHOD SetArray( aData, aHeaders )
    METHOD SetupColumns( cColumnsDef )
+   METHOD SetColSizes( aSizes )
    METHOD AddColumn( cTitle, nWidth, nAlign )
    METHOD Refresh()
    METHOD LoadFromDataSource( oForm )
@@ -504,6 +505,18 @@ METHOD SetupColumns( aColumnsDef ) CLASS TBrowse
    elseif ValType( aColumnsDef ) == "C" .and. ! Empty( aColumnsDef )
       for i := 1 to Len( hb_ATokens( aColumnsDef, "|" ) )
          ::AddColumn( hb_ATokens( aColumnsDef, "|" )[i] )
+      next
+   endif
+
+return Self
+
+METHOD SetColSizes( aSizes ) CLASS TBrowse
+
+   local i
+
+   if aSizes != nil .and. ValType( aSizes ) == "A"
+      for i := 1 to Min( Len( aSizes ), UI_BrowseColCount( ::hCpp ) )
+         UI_BrowseSetColProp( ::hCpp, i - 1, "nWidth", aSizes[i] )
       next
    endif
 

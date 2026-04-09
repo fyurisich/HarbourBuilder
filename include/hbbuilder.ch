@@ -119,9 +119,11 @@
       [ OF <oParent> ] ;
       [ SIZE <nWidth>, <nHeight> ] ;
       [ HEADERS <hdrs,...> ] ;
+      [ COLSIZES <sizes,...> ] ;
    => ;
       <oCtrl> := TBrowse():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight> ) ;
-      [; <oCtrl>:SetupColumns( \{ <hdrs> \} ) ]
+      [; <oCtrl>:SetupColumns( \{ <hdrs> \} ) ] ;
+      [; <oCtrl>:SetColSizes( \{ <sizes> \} ) ]
 
 // CheckBox
 #xcommand @ <nTop>, <nLeft> CHECKBOX <oCtrl> ;
