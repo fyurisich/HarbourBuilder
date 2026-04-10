@@ -1087,6 +1087,11 @@ static function RestoreFormFromCode( hForm, cCode )
             nPos := At( "HEADERS ", Upper( cTrim ) )
             if nPos > 0
                cText := SubStr( cTrim, nPos + 8 )
+               // Limit to text before COLSIZES/FOOTERS so we don't consume footer strings
+               nPos2 := At( "COLSIZES ", Upper( cText ) )
+               if nPos2 > 0; cText := Left( cText, nPos2 - 1 ); endif
+               nPos2 := At( "FOOTERS ", Upper( cText ) )
+               if nPos2 > 0; cText := Left( cText, nPos2 - 1 ); endif
                // Parse comma-separated quoted strings into "|"-separated
                cVal := ""
                do while ! Empty( cText )

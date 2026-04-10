@@ -1218,7 +1218,7 @@ static function RestoreFormFromCode( hForm, cCode )
 
    local aLines, cLine, cTrim, i, nType
    local nT, nL, nW, nH, cText, cName, hCtrl
-   local nPos, nPos2, cTitle, cVal, kk
+   local nPos, nPos2, cTitle, cVal, kk, nCount
 
    if Empty( cCode ) .or. hForm == 0
       return nil
@@ -1354,6 +1354,11 @@ static function RestoreFormFromCode( hForm, cCode )
             nPos := At( "HEADERS ", Upper( cTrim ) )
             if nPos > 0
                cText := SubStr( cTrim, nPos + 8 )
+               // Limit to text before COLSIZES/FOOTERS so we don't consume footer strings
+               nPos2 := At( "COLSIZES ", Upper( cText ) )
+               if nPos2 > 0; cText := Left( cText, nPos2 - 1 ); endif
+               nPos2 := At( "FOOTERS ", Upper( cText ) )
+               if nPos2 > 0; cText := Left( cText, nPos2 - 1 ); endif
                cVal := ""
                do while ! Empty( cText )
                   nPos2 := At( '"', cText )

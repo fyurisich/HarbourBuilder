@@ -426,6 +426,7 @@ CLASS TBrowse INHERIT TControl
    METHOD SetArray( aData, aHeaders )
    METHOD SetupColumns( cColumnsDef )
    METHOD SetColSizes( aSizes )
+   METHOD SetFooters( aFooters )
    METHOD AddColumn( cTitle, nWidth, nAlign )
    METHOD Refresh()
    METHOD LoadFromDataSource( oForm )
@@ -525,6 +526,18 @@ METHOD SetColSizes( aSizes ) CLASS TBrowse
    if aSizes != nil .and. ValType( aSizes ) == "A"
       for i := 1 to Min( Len( aSizes ), UI_BrowseColCount( ::hCpp ) )
          UI_BrowseSetColProp( ::hCpp, i - 1, "nWidth", aSizes[i] )
+      next
+   endif
+
+return Self
+
+METHOD SetFooters( aFooters ) CLASS TBrowse
+
+   local i
+
+   if aFooters != nil .and. ValType( aFooters ) == "A"
+      for i := 1 to Min( Len( aFooters ), UI_BrowseColCount( ::hCpp ) )
+         UI_BrowseSetColProp( ::hCpp, i - 1, "cFooterText", aFooters[i] )
       next
    endif
 
