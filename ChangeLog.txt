@@ -1,6 +1,20 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-10 (macOS: TBrowse deferred view creation for runtime)
+
+  TBROWSE RUNTIME (macOS):
+  - UI_BrowseAddCol: when NSTableView not yet created (runtime flow),
+    stores headers in FHeaders and widths in FColWidths[] for deferred
+    creation at createViewInParent: time
+  - UI_BrowseSetColProp: stores nWidth in FColWidths[] when view not
+    yet created, preventing silent data loss
+  - createViewInParent CT_BROWSE: reads FColWidths[] for per-column
+    widths instead of hardcoded 100
+  - Fixes: browse headers not appearing when running user projects
+    (TBrowse():New → SetupColumns → UI_BrowseAddCol ran before form
+    show, so FindBrowse returned NULL and columns were lost)
+
 2026-04-10 (macOS: TBrowse nClrPane fix, build error handling)
 
   TBROWSE nClrPane (macOS):

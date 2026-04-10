@@ -296,6 +296,7 @@ void EnsureNSApp( void )
    char FFileName[512];       /* Design-time file path (e.g. DBF file for TDBFTable) */
    char FRdd[16];             /* RDD driver: DBFCDX, DBFNTX, DBFFPT */
    char FHeaders[512];        /* Column headers: "Name|Age|City" */
+   int  FColWidths[MAX_BROWSE_COLS]; /* Deferred column widths */
    char FData[4096];          /* Row data: "John|45|NYC;Mary|32|LA" */
    char FDataSource[64];      /* Name of data component (e.g. "CompArray1") */
    BOOL FActive;              /* Design-time Active flag (auto-open on form load) */
@@ -777,13 +778,14 @@ void EnsureNSApp( void )
                   memset( bd->cols[idx].szTitle, 0, 64 );
                   if( len > 63 ) len = 63;
                   memcpy( bd->cols[idx].szTitle, src, (size_t)len );
-                  bd->cols[idx].nWidth = 100;
+                  int colW = FColWidths[idx] > 0 ? FColWidths[idx] : 100;
+                  bd->cols[idx].nWidth = colW;
                   bd->cols[idx].nAlign = 0;
                   bd->cols[idx].szFieldName[0] = 0;
 
                   NSString * ident = [NSString stringWithFormat:@"%d", idx];
                   NSTableColumn * col = [[NSTableColumn alloc] initWithIdentifier:ident];
-                  [col setWidth:100];
+                  [col setWidth:colW];
                   [[col headerCell] setStringValue:
                      [[NSString alloc] initWithBytes:src length:len encoding:NSUTF8StringEncoding]];
                   [tv addTableColumn:col];
@@ -2761,10 +2763,35 @@ HB_FUNC( UI_BROWSEADDCOL )
 {
    HBControl * p = GetCtrl(1);
    BrowseData * bd = p ? FindBrowse(p) : NULL;
-   if( !bd || bd->nColCount >= MAX_BROWSE_COLS ) { hb_retni(-1); return; }
+   const char * title = hb_parc(2) ? hb_parc(2) : "";
+
+   /* If view not yet created, store in FHeaders for deferred creation */
+   if( !bd ) {
+      if( !p ) { hb_retni(-1); return; }
+      /* Count existing deferred columns */
+      int nDef = 0;
+      if( p->FHeaders[0] ) {
+         nDef = 1;
+         for( const char * s = p->FHeaders; *s; s++ )
+            if( *s == '|' ) nDef++;
+      }
+      if( nDef >= MAX_BROWSE_COLS ) { hb_retni(-1); return; }
+      int pos = (int)strlen(p->FHeaders);
+      if( pos > 0 && pos < (int)sizeof(p->FHeaders) - 1 )
+         p->FHeaders[pos++] = '|';
+      int slen = (int)strlen(title);
+      if( pos + slen >= (int)sizeof(p->FHeaders) - 1 )
+         slen = (int)sizeof(p->FHeaders) - 1 - pos;
+      memcpy( p->FHeaders + pos, title, (size_t)slen );
+      p->FHeaders[pos + slen] = 0;
+      p->FColWidths[nDef] = HB_ISNUM(4) ? hb_parni(4) : 100;
+      hb_retni( nDef );
+      return;
+   }
+   if( bd->nColCount >= MAX_BROWSE_COLS ) { hb_retni(-1); return; }
 
    int idx = bd->nColCount++;
-   strncpy( bd->cols[idx].szTitle, hb_parc(2) ? hb_parc(2) : "", 63 );
+   strncpy( bd->cols[idx].szTitle, title, 63 );
    strncpy( bd->cols[idx].szFieldName, HB_ISCHAR(3) ? hb_parc(3) : "", 63 );
    bd->cols[idx].nWidth = HB_ISNUM(4) ? hb_parni(4) : 100;
    bd->cols[idx].nAlign = HB_ISNUM(5) ? hb_parni(5) : 0;
@@ -2836,7 +2863,15 @@ HB_FUNC( UI_BROWSESETCOLPROP )
    BrowseData * bd = p ? FindBrowse(p) : NULL;
    int col = hb_parni(2);  /* 0-based */
    const char * szProp = hb_parc(3);
-   if( !bd || col < 0 || col >= bd->nColCount || !szProp ) return;
+   if( !szProp ) return;
+
+   /* If view not yet created, store width in deferred array */
+   if( !bd ) {
+      if( p && col >= 0 && col < MAX_BROWSE_COLS && strcasecmp(szProp,"nWidth")==0 && HB_ISNUM(4) )
+         p->FColWidths[col] = hb_parni(4);
+      return;
+   }
+   if( col < 0 || col >= bd->nColCount ) return;
 
    BrowseCol * c = &bd->cols[col];
 
