@@ -1,6 +1,59 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-11 (Linux: TTimer, autocomplete, build warnings, design-time fixes)
+
+  TTIMER RUNTIME (Linux/GTK3):
+  - New HBTimer struct with FInterval, FTimerID (guint), FOnTimer fields
+  - UI_TimerNew: creates HBTimer via calloc(sizeof(HBTimer)), FEnabled=1,
+    FInterval=1000, adds to form children
+  - on_timer_tick: g_timeout_add callback fires HBControl_FireEvent
+  - HBTimer_Start/Stop: manage g_timeout_add/g_source_remove lifecycle
+  - HBControl_SetEvent "OnTimer": stores block, auto-starts timer
+  - UI_SetProp "lEnabled": starts/stops timer; "nInterval": restarts
+  - UI_GetProp/UI_GetAllProps/UI_GetAllEvents: nInterval + OnTimer support
+  - HBForm_CreateControlOfType: sizeof(HBTimer) in allocation switch
+  - Design-time: FInterval defaults to 1000 for palette-dropped timers
+  - Copy/paste: sizeof(HBTimer) in paste allocation
+
+  TTIMER DESIGN-TIME (Linux):
+  - UI_DropNonVisual: implemented (was stub returning 0); creates control
+    via HBForm_CreateControlOfType with auto-positioned icon and name
+  - HBForm_CreateAllChildren: replaced reduced switch with full
+    HBControl_CreateWidget call; skips non-visual in runtime mode
+  - Sample project: updated samples/projects/timer/Form1.prg with
+    DATA, COMPONENT, and event wiring
+
+  BUILD WARNINGS FIX (Linux):
+  - SCNotification struct: fixed 64-bit layout (void*/uintptr_t/ptrdiff_t
+    instead of int/unsigned int) — fixes SCN_CHARADDED, folding, margins
+  - HB_DEPRECATED macro clash: #undef between GTK and Harbour includes
+    in gtk3_core.c and gtk3_inspector.c
+  - GTK_IsDark: forward declaration before first use
+  - gtk_message_dialog_set_image: replaced with gtk_container_add
+  - gtk_dialog_new_with_buttons sentinel: replaced with gtk_dialog_new
+  - snprintf truncation: increased szFont/sf buffers (128→256),
+    libPath buffers (1024→2048)
+
+  CODE EDITOR AUTOCOMPLETE:
+  - Class member dropdown on ':' keystroke (SCN_CHARADDED handler)
+  - CE_ResolveVarClass: 4-strategy variable class resolution
+    (DATA comment, assignment pattern, :: prefix, naming convention)
+  - CE_FindClassMembers: combines standard class DB + user DATA/METHOD
+  - CE_FindCurrentClass, CE_CollectUserData, CE_FindClassInText,
+    CE_CollectUserDataFromText: editor and cross-tab class scanning
+  - s_classMembers[]: 24 classes (TForm..TDBFTable) with properties/methods
+
+  IDE FIXES (Linux):
+  - Component drop: fixed inspector combo selection order to match Windows
+    (InspectorPopulateCombo → INS_ComboSelect → InspectorRefresh)
+  - Component drop: gtk_widget_grab_focus on overlay after creation
+  - UI_SetProp "cText" for forms: moved CT_FORM check before FWidget
+    check (forms use FWindow, not FWidget — title was never updated)
+  - TBRun: RewireAllFormEvents() before build ensures new event handlers
+    (e.g. Timer1Timer) get wired into CreateForm() without needing
+    designer re-sync
+
 2026-04-10 (Windows: TTimer runtime + IDE design-time fixes)
 
   TTIMER IDE DESIGN-TIME:

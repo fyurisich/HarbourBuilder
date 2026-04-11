@@ -6,6 +6,10 @@
  */
 
 #include <gtk/gtk.h>
+
+/* Avoid HB_DEPRECATED macro clash between harfbuzz and Harbour */
+#undef HB_DEPRECATED
+
 #include <hbapi.h>
 #include <hbapiitm.h>
 #include <hbapicls.h>
@@ -165,6 +169,8 @@ static int         s_progressCancelled = 0;
  * Forward declarations
  * ====================================================================== */
 
+int GTK_IsDark(void);
+
 typedef struct _HBControl  HBControl;
 typedef struct _HBForm     HBForm;
 typedef struct _HBButton   HBButton;
@@ -301,6 +307,13 @@ typedef struct {
    int  FBevelStyle;   /* 0=raised, 1=lowered */
    int  FBevelShape;   /* 0=box, 1=frame, 2=topLine, 3=bottomLine */
 } HBBevel;
+
+typedef struct {
+   HBControl base;
+   int      FInterval;   /* Timer interval in ms (default 1000) */
+   guint    FTimerID;    /* g_timeout_add() source ID, 0 = stopped */
+   PHB_ITEM FOnTimer;    /* OnTimer event block */
+} HBTimer;
 
 typedef struct {
    HBControl base;
@@ -451,6 +464,33 @@ static void HBControl_SetText( HBControl * p, const char * text )
    p->FText[sizeof(p->FText) - 1] = 0;
 }
 
+static void HBControl_FireEvent( HBControl * p, PHB_ITEM block );
+
+/* Timer helpers — defined here so HBControl_SetEvent can use them */
+static gboolean on_timer_tick( gpointer data )
+{
+   HBTimer * t = (HBTimer *) data;
+   if( t->FOnTimer && t->base.FEnabled )
+      HBControl_FireEvent( &t->base, t->FOnTimer );
+   return t->base.FEnabled ? G_SOURCE_CONTINUE : G_SOURCE_REMOVE;
+}
+
+static void HBTimer_Start( HBTimer * t )
+{
+   if( t->FTimerID ) g_source_remove( t->FTimerID );
+   t->FTimerID = 0;
+   if( t->base.FEnabled && t->FInterval > 0 && t->FOnTimer )
+   {
+      EnsureGTK();
+      t->FTimerID = g_timeout_add( (guint)t->FInterval, on_timer_tick, t );
+   }
+}
+
+static void HBTimer_Stop( HBTimer * t )
+{
+   if( t->FTimerID ) { g_source_remove( t->FTimerID ); t->FTimerID = 0; }
+}
+
 static void HBControl_SetEvent( HBControl * p, const char * event, PHB_ITEM block )
 {
    PHB_ITEM * ppTarget = NULL;
@@ -478,6 +518,17 @@ static void HBControl_SetEvent( HBControl * p, const char * event, PHB_ITEM bloc
       else if( strcasecmp( event, "OnMouseMove" ) == 0 )  ppTarget = &f->FOnMouseMove;
       else if( strcasecmp( event, "OnDblClick" ) == 0 )   ppTarget = &f->FOnDblClick;
       else if( strcasecmp( event, "OnMouseWheel" ) == 0 ) ppTarget = &f->FOnMouseWheel;
+   }
+   /* Timer-specific event */
+   else if( p->FControlType == CT_TIMER && strcasecmp( event, "OnTimer" ) == 0 )
+   {
+      HBTimer * t = (HBTimer *)p;
+      if( t->FOnTimer ) hb_itemRelease( t->FOnTimer );
+      t->FOnTimer = hb_itemNew( block );
+      /* Auto-start timer when OnTimer is assigned */
+      if( t->base.FEnabled && t->FInterval > 0 )
+         HBTimer_Start( t );
+      return;
    }
    if( ppTarget )
    {
@@ -1689,6 +1740,7 @@ static HBControl * HBForm_CreateControlOfType( HBForm * form, int ctrlType,
                   case CT_IMAGE:    sz = sizeof(HBImage); break;
                   case CT_SHAPE:    sz = sizeof(HBShape); break;
                   case CT_BEVEL:    sz = sizeof(HBBevel); break;
+                  case CT_TIMER:    sz = sizeof(HBTimer); break;
                   /* CT_SPEEDBTN uses base HBControl */
                }
                HBControl * p = (HBControl*)calloc(1, sz);
@@ -1710,6 +1762,9 @@ static HBControl * HBForm_CreateControlOfType( HBForm * form, int ctrlType,
    {
       KeepAlive( newCtrl );
       strcpy( newCtrl->FFontDesc, form->FFormFontDesc );
+      /* Timer: default interval = 1000 ms */
+      if( newCtrl->FControlType == CT_TIMER )
+         ((HBTimer *)newCtrl)->FInterval = 1000;
       HBControl_AddChild( &form->base, newCtrl );
 
       /* Create GTK widget and add to the form's GtkFixed */
@@ -1773,6 +1828,10 @@ static gboolean on_overlay_button_release( GtkWidget * widget, GdkEventButton * 
             hb_itemDo( form->FOnComponentDrop, 6, args[0], args[1], args[2], args[3], args[4], args[5] );
             for( int a = 0; a < 6; a++ ) hb_itemRelease( args[a] );
          }
+
+         /* Keep focus on overlay so keyboard shortcuts (arrows, Delete) work */
+         if( form->FOverlay )
+            gtk_widget_grab_focus( form->FOverlay );
       }
 
       gtk_widget_queue_draw( form->FOverlay );
@@ -1972,17 +2031,10 @@ static void HBForm_CreateAllChildren( HBForm * form )
    {
       HBControl * child = form->base.FChildren[i];
       if( child->FControlType == CT_GROUPBOX ) continue;
+      /* Non-visual components: icon only in design mode, skip in runtime */
+      if( IsNonVisualControl( child->FControlType ) && !form->FDesignMode ) continue;
       strcpy( child->FFontDesc, form->FFormFontDesc );
-      switch( child->FControlType )
-      {
-         case CT_LABEL:    HBLabel_CreateWidget( (HBLabel *)child, form->FFixed ); break;
-         case CT_EDIT:     HBEdit_CreateWidget( (HBEdit *)child, form->FFixed ); break;
-         case CT_BUTTON:   HBButton_CreateWidget( (HBButton *)child, form->FFixed ); break;
-         case CT_CHECKBOX: HBCheckBox_CreateWidget( (HBCheckBox *)child, form->FFixed ); break;
-         case CT_COMBOBOX: HBComboBox_CreateWidget( (HBComboBox *)child, form->FFixed ); break;
-         case CT_BROWSE:   HBBrowse_CreateWidget( child, form->FFixed ); break;
-         case CT_DBGRID:   HBBrowse_CreateWidget( child, form->FFixed ); break;
-      }
+      HBControl_CreateWidget( child, form->FFixed, form->FFormFontDesc );
    }
 }
 
@@ -2415,10 +2467,36 @@ HB_FUNC( UI_FORMRESULT )    { HBForm * p = GetForm(1); hb_retni( p ? p->FModalRe
 
 /* --- Control creation --- */
 
-/* UI_DropNonVisual - stub (TODO: implement non-visual component icons) */
+/* UI_DropNonVisual( hForm, nType, cName ) --> hCtrl
+ * Create a non-visual component in design mode (used when loading a project) */
 HB_FUNC( UI_DROPNONVISUAL )
 {
-   hb_retnint( 0 );
+   HBForm * form = GetForm(1);
+   int nType = hb_parni(2);
+   const char * cName = HB_ISCHAR(3) ? hb_parc(3) : "";
+   if( !form || nType <= 0 ) { hb_retnint(0); return; }
+
+   /* Find a free position at the bottom of the form for the non-visual icon */
+   int nL = 8, nT = form->base.FHeight - 40;
+   int i;
+   for( i = 0; i < form->base.FChildCount; i++ )
+   {
+      HBControl * c = form->base.FChildren[i];
+      if( IsNonVisualControl( c->FControlType ) )
+      {
+         if( c->FLeft >= nL && c->FLeft < nL + 32 &&
+             c->FTop >= nT && c->FTop < nT + 32 )
+         {
+            nL += 36;
+            if( nL + 28 > form->base.FWidth ) { nL = 8; nT -= 36; }
+         }
+      }
+   }
+
+   HBControl * newCtrl = HBForm_CreateControlOfType( form, nType, nL, nT, 28, 28 );
+   if( newCtrl && cName[0] )
+      strncpy( newCtrl->FName, cName, sizeof(newCtrl->FName) - 1 );
+   hb_retnint( newCtrl ? (HB_PTRUINT) newCtrl : 0 );
 }
 
 HB_FUNC( UI_LABELNEW )
@@ -2901,7 +2979,13 @@ HB_FUNC( UI_SETPROP )
    if( strcasecmp( szProp, "cText" ) == 0 && HB_ISCHAR(3) )
    {
       HBControl_SetText( p, hb_parc(3) );
-      if( p->FWidget )
+      if( p->FControlType == CT_FORM )
+      {
+         HBForm * pF = (HBForm *)p;
+         if( pF->FWindow )
+            gtk_window_set_title( GTK_WINDOW(pF->FWindow), p->FText );
+      }
+      else if( p->FWidget )
       {
          if( GTK_IS_LABEL(p->FWidget) )
             gtk_label_set_text( GTK_LABEL(p->FWidget), p->FText );
@@ -2911,12 +2995,6 @@ HB_FUNC( UI_SETPROP )
             gtk_button_set_label( GTK_BUTTON(p->FWidget), p->FText );
          else if( GTK_IS_FRAME(p->FWidget) )
             gtk_frame_set_label( GTK_FRAME(p->FWidget), p->FText );
-         else if( p->FControlType == CT_FORM )
-         {
-            HBForm * pF = (HBForm *)p;
-            if( pF->FWindow )
-               gtk_window_set_title( GTK_WINDOW(pF->FWindow), p->FText );
-         }
       }
    }
    else if( strcasecmp(szProp,"nLeft")==0 ) {
@@ -2951,7 +3029,16 @@ HB_FUNC( UI_SETPROP )
    }
    else if( strcasecmp(szProp,"lEnabled")==0 ) {
       p->FEnabled = hb_parl(3);
-      if( p->FWidget ) gtk_widget_set_sensitive( p->FWidget, p->FEnabled );
+      if( p->FControlType == CT_TIMER ) {
+         HBTimer * t = (HBTimer *)p;
+         if( p->FEnabled ) HBTimer_Start( t ); else HBTimer_Stop( t );
+      }
+      else if( p->FWidget ) gtk_widget_set_sensitive( p->FWidget, p->FEnabled );
+   }
+   else if( strcasecmp(szProp,"nInterval")==0 && p->FControlType == CT_TIMER ) {
+      HBTimer * t = (HBTimer *)p;
+      t->FInterval = hb_parni(3);
+      if( t->base.FEnabled && t->FOnTimer ) HBTimer_Start( t );
    }
    else if( strcasecmp(szProp,"lDefault")==0 && p->FControlType == CT_BUTTON )
       ((HBButton *)p)->FDefault = hb_parl(3);
@@ -3211,6 +3298,26 @@ HB_FUNC( UI_LISTBOXNEW )
    RetCtrl( p );
 }
 
+/* UI_TimerNew( hForm, nInterval ) --> hCtrl - create runtime timer (non-visual) */
+HB_FUNC( UI_TIMERNEW )
+{
+   HBForm * pForm = GetForm(1);
+   int nInterval = HB_ISNUM(2) ? hb_parni(2) : 1000;
+   HBTimer * p = (HBTimer *) calloc( 1, sizeof(HBTimer) );
+   HBControl_Init( &p->base );
+   strcpy( p->base.FClassName, "TTimer" );
+   strcpy( p->base.FName, "Timer" );
+   p->base.FControlType = CT_TIMER;
+   p->base.FWidth = 0; p->base.FHeight = 0;
+   p->base.FEnabled = 1;
+   p->FInterval = nInterval;
+   p->FOnTimer = NULL;
+   p->FTimerID = 0;
+
+   if( pForm ) HBControl_AddChild( &pForm->base, &p->base );
+   RetCtrl( &p->base );
+}
+
 /* macOS-only stubs (called from classes.prg error handler) */
 HB_FUNC( MAC_RUNTIMEERRORDIALOG ) { hb_retni(0); }
 HB_FUNC( MAC_APPTERMINATE ) { }
@@ -3276,6 +3383,8 @@ HB_FUNC( UI_GETPROP )
       if( f->FWindow ) { int w, h; gtk_window_get_size(GTK_WINDOW(f->FWindow),&w,&h); hb_retni(h); }
       else hb_retni( f->base.FHeight );
    }
+   else if( strcasecmp(szProp,"nInterval")==0 && p->FControlType==CT_TIMER )
+      hb_retni( ((HBTimer *)p)->FInterval );
    else if( strcasecmp(szProp,"nItemIndex")==0 && p->FControlType==CT_COMBOBOX )
       hb_retni( ((HBComboBox *)p)->FItemIndex );
    else if( strcasecmp(szProp,"cDataSource")==0 && p->FControlType==CT_BROWSE )
@@ -3295,7 +3404,7 @@ HB_FUNC( UI_GETPROP )
    else if( strcasecmp(szProp,"oFont")==0 )
    {
       /* Convert Pango format "Sans 12" to "Sans,12" */
-      char szFont[128];
+      char szFont[256];
       const char * desc = p->FFontDesc;
       /* Find last space (before size) */
       const char * lastSpace = strrchr( desc, ' ' );
@@ -3435,7 +3544,7 @@ HB_FUNC( UI_GETALLPROPS )
 
    /* Font property - convert Pango to "FontName,Size" format */
    {
-      char sf[128];
+      char sf[256];
       const char * lastSpace = strrchr( p->FFontDesc, ' ' );
       if( lastSpace )
          snprintf( sf, sizeof(sf), "%.*s,%s", (int)(lastSpace - p->FFontDesc), p->FFontDesc, lastSpace + 1 );
@@ -3550,6 +3659,9 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_S("cDataSource",br->FDataSourceName,"Data");
          break;
       }
+      case CT_TIMER:
+         ADD_N("nInterval",((HBTimer*)p)->FInterval,"Behavior");
+         break;
    }
    hb_itemReturnRelease( pArray );
 
@@ -3908,7 +4020,10 @@ static void on_palette_btn_clicked( GtkButton * button, gpointer data )
          }
 
          if( targetForm->FOverlay )
+         {
             gtk_widget_queue_draw( targetForm->FOverlay );
+            gtk_widget_grab_focus( targetForm->FOverlay );
+         }
       }
       else
       {
@@ -4330,7 +4445,7 @@ static int InitScintilla( void )
    }
 
    {
-      char libPath[1024];
+      char libPath[2048];
       snprintf( libPath, sizeof(libPath), "%s/../resources/libscintilla.so", szPath );
       s_hScintilla = dlopen( libPath, RTLD_LAZY );
       if( fLog ) fprintf( fLog, "dlopen Scintilla '%s' => %p\n", libPath, s_hScintilla );
@@ -4338,7 +4453,7 @@ static int InitScintilla( void )
 
    if( !s_hScintilla ) {
       /* Try resources/ in project root */
-      char libPath[1024];
+      char libPath[2048];
       snprintf( libPath, sizeof(libPath), "%s/resources/libscintilla.so", szPath );
       s_hScintilla = dlopen( libPath, RTLD_LAZY );
       if( fLog ) fprintf( fLog, "dlopen Scintilla '%s' => %p\n", libPath, s_hScintilla );
@@ -4369,7 +4484,7 @@ static int InitScintilla( void )
 
    /* Load Lexilla */
    {
-      char libPath[1024];
+      char libPath[2048];
       snprintf( libPath, sizeof(libPath), "%s/../resources/liblexilla.so", szPath );
       s_hLexilla = dlopen( libPath, RTLD_LAZY );
       if( fLog ) fprintf( fLog, "dlopen Lexilla '%s' => %p\n", libPath, s_hLexilla );
@@ -4726,6 +4841,86 @@ static void CE_ShowAutoComplete( GtkWidget * sci )
    }
 }
 
+/* ======================================================================
+ * Class member autocomplete — triggered when ':' is typed
+ * ====================================================================== */
+
+#define SCI_AUTOCSETORDER 2235
+
+typedef struct {
+   const char * className;
+   const char * members;
+} ClassMembers;
+
+static ClassMembers s_classMembers[] = {
+   { "TForm",
+     "Activate() AlphaBlend AlphaBlendValue AppBar AutoScroll BorderIcons "
+     "BorderStyle BorderWidth ClientHeight ClientWidth Close() Color CreateForm() Cursor "
+     "Destroy() DoubleBuffered FontName FontSize FormStyle Height Hint "
+     "KeyPreview Left ModalResult Name OnActivate OnChange OnClick OnClose "
+     "OnCloseQuery OnCreate OnDblClick OnDeactivate OnDestroy OnHide "
+     "OnKeyDown OnKeyPress OnKeyUp OnMouseDown OnMouseMove OnMouseUp "
+     "OnMouseWheel OnPaint OnResize OnShow Position Show() ShowHint "
+     "ShowModal() Sizable Text Title ToolWindow Top Width WindowState" },
+   { "TLabel",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TEdit",
+     "Height Left Name OnChange OnClick OnClose Text Top Value Width" },
+   { "TMemo",
+     "Height Left Name OnChange OnClick OnClose Text Top Value Width" },
+   { "TButton",
+     "Cancel Default Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TCheckBox",
+     "Checked Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TRadioButton",
+     "Checked Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TComboBox",
+     "AddItem() Height Left Name OnChange OnClick OnClose Text Top Value Width" },
+   { "TListBox",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TGroupBox",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TToolBar",
+     "AddButton() AddSeparator() Height Left Name Text Top Width" },
+   { "TTimer",
+     "Enabled Height Interval Left Name OnTimer Text Top Width" },
+   { "TApplication",
+     "CreateForm() Run() Title" },
+   { "TPanel",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TProgressBar",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TTabControl",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TTreeView",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TListView",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TImage",
+     "Height Left Name OnChange OnClick OnClose Text Top Width" },
+   { "TDatabase",
+     "Close() Exec() Field() FieldCount() FieldName() FreeResult() Goto() Host Name "
+     "Open() Password Port Query() RecCount() RecNo() Server Skip() Table User" },
+   { "TSQLite",
+     "Close() Exec() Field() FieldCount() FieldName() FreeResult() Goto() Host Name "
+     "Open() Password Port Query() RecCount() RecNo() Server Skip() Table User" },
+   { "TReport",
+     "Preview() Print()" },
+   { "TWebServer",
+     "Get() Post() Run()" },
+   { "THttpClient",
+     "Get() Post()" },
+   { "TThread",
+     "Join() Start()" },
+   { "TDBFTable",
+     "Append() Bof() cAlias cDatabase cFileName cIndexFile cRDD Close() "
+     "CreateIndex() Delete() Deleted() Eof() FieldCount() FieldGet() "
+     "FieldName() FieldPut() Found() GoBottom() GoTo() GoTop() "
+     "lConnected lExclusive lReadOnly nArea Open() Recall() "
+     "RecCount() RecNo() Seek() Skip() Structure() Tables()" },
+   { NULL, NULL }
+};
+
 typedef struct {
    GtkWidget *    window;
    GtkWidget *    sciWidget;   /* Scintilla GTK widget */
@@ -4749,6 +4944,430 @@ typedef struct {
    /* Status bar */
    GtkWidget *    statusBar;
 } CODEEDITOR;
+
+/* Find current CLASS name by scanning backwards from line */
+static const char * CE_FindCurrentClass( GtkWidget * sci, int fromLine )
+{
+   static char s_curClass[64];
+   int l;
+   for( l = fromLine; l >= 0; l-- )
+   {
+      char buf[512];
+      int len = (int) SciMsg( sci, SCI_LINELENGTH, l, 0 );
+      const char * cp;
+      int ci;
+      if( len <= 0 || len >= (int)sizeof(buf) ) continue;
+      SciMsg( sci, SCI_GETLINE, l, (intptr_t)buf );
+      buf[len] = 0;
+      cp = buf;
+      while( *cp == ' ' || *cp == '\t' ) cp++;
+      if( strncasecmp( cp, "CLASS ", 6 ) == 0 ) {
+         cp += 6;
+         while( *cp == ' ' ) cp++;
+         ci = 0;
+         while( ci < 63 && (isalnum((unsigned char)cp[ci]) || cp[ci] == '_') )
+            { s_curClass[ci] = cp[ci]; ci++; }
+         s_curClass[ci] = 0;
+         if( ci > 0 ) return s_curClass;
+         break;
+      }
+   }
+   return NULL;
+}
+
+/* Collect DATA/METHOD from current editor CLASS block */
+static int CE_CollectUserData( GtkWidget * sci, int classLine, char * buf, int bufSize )
+{
+   int pos = 0, l;
+   int totalLines = (int) SciMsg( sci, SCI_GETLINECOUNT, 0, 0 );
+   for( l = classLine + 1; l < totalLines; l++ )
+   {
+      char line[512];
+      int len = (int) SciMsg( sci, SCI_LINELENGTH, l, 0 );
+      const char * p;
+      int isData, isMethod;
+      char name[64];
+      int ni;
+      if( len <= 0 || len >= (int)sizeof(line) ) continue;
+      SciMsg( sci, SCI_GETLINE, l, (intptr_t)line );
+      line[len] = 0;
+      p = line;
+      while( *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n' ) p++;
+      if( *p == 0 ) continue;
+      if( strncasecmp( p, "ENDCLASS", 8 ) == 0 ) break;
+      isData = ( strncasecmp( p, "DATA ", 5 ) == 0 );
+      isMethod = ( strncasecmp( p, "METHOD ", 7 ) == 0 ) ||
+                 ( strncasecmp( p, "ACCESS ", 7 ) == 0 );
+      if( !isData && !isMethod ) continue;
+      if( isData ) p += 5; else p += 7;
+      while( *p == ' ' ) p++;
+      ni = 0;
+      while( ni < 63 && (isalnum((unsigned char)p[ni]) || p[ni] == '_') )
+         { name[ni] = p[ni]; ni++; }
+      name[ni] = 0;
+      if( ni == 0 ) continue;
+      if( isMethod && ni < 61 ) { name[ni++] = '('; name[ni++] = ')'; name[ni] = 0; }
+      if( pos > 0 && pos < bufSize - 1 ) buf[pos++] = ' ';
+      if( ni > bufSize - pos - 1 ) break;
+      memcpy( buf + pos, name, (size_t)ni );
+      pos += ni;
+   }
+   buf[pos] = 0;
+   return pos;
+}
+
+/* Search plain text for CLASS declaration matching cls */
+static const char * CE_FindClassInText( const char * text, const char * cls, char * parentCls )
+{
+   const char * cur = text;
+   parentCls[0] = 0;
+   while( *cur )
+   {
+      const char * lineStart = cur;
+      const char * lineEnd = cur;
+      int lineLen;
+      while( *lineEnd && *lineEnd != '\n' ) lineEnd++;
+      lineLen = (int)(lineEnd - cur);
+      if( lineLen > 0 && lineLen < 510 )
+      {
+         char line[512];
+         const char * p;
+         char foundCls[64];
+         int fi;
+         memcpy( line, cur, (size_t)lineLen );
+         line[lineLen] = 0;
+         p = line;
+         while( *p == ' ' || *p == '\t' ) p++;
+         if( strncasecmp( p, "CLASS ", 6 ) == 0 )
+         {
+            p += 6;
+            while( *p == ' ' ) p++;
+            fi = 0;
+            while( fi < 63 && (isalnum((unsigned char)p[fi]) || p[fi] == '_') )
+               { foundCls[fi] = p[fi]; fi++; }
+            foundCls[fi] = 0;
+            if( strcasecmp( foundCls, cls ) == 0 )
+            {
+               p += fi;
+               while( *p == ' ' ) p++;
+               if( strncasecmp( p, "INHERIT ", 8 ) == 0 ) p += 8;
+               else if( strncasecmp( p, "FROM ", 5 ) == 0 ) p += 5;
+               else p = NULL;
+               if( p ) {
+                  int pi = 0;
+                  while( *p == ' ' ) p++;
+                  while( pi < 63 && (isalnum((unsigned char)p[pi]) || p[pi] == '_') )
+                     { parentCls[pi] = p[pi]; pi++; }
+                  parentCls[pi] = 0;
+               }
+               return lineStart;
+            }
+         }
+      }
+      cur = lineEnd;
+      if( *cur == '\n' ) cur++;
+   }
+   return NULL;
+}
+
+/* Collect DATA/METHOD from plain text starting after CLASS line */
+static int CE_CollectUserDataFromText( const char * text, const char * classLineStart,
+                                        char * buf, int bufSize )
+{
+   int pos = 0;
+   const char * cur = classLineStart;
+   while( *cur && *cur != '\n' ) cur++;
+   if( *cur == '\n' ) cur++;
+   while( *cur )
+   {
+      const char * lineEnd = cur;
+      int lineLen;
+      while( *lineEnd && *lineEnd != '\n' ) lineEnd++;
+      lineLen = (int)(lineEnd - cur);
+      if( lineLen > 0 && lineLen < 510 )
+      {
+         char line[512];
+         const char * p;
+         int isData, isMethod;
+         memcpy( line, cur, (size_t)lineLen );
+         line[lineLen] = 0;
+         p = line;
+         while( *p == ' ' || *p == '\t' || *p == '\r' ) p++;
+         if( *p != 0 )
+         {
+            if( strncasecmp( p, "ENDCLASS", 8 ) == 0 ) break;
+            isData = ( strncasecmp( p, "DATA ", 5 ) == 0 );
+            isMethod = ( strncasecmp( p, "METHOD ", 7 ) == 0 ) ||
+                       ( strncasecmp( p, "ACCESS ", 7 ) == 0 );
+            if( isData || isMethod )
+            {
+               char name[64];
+               int ni = 0;
+               if( isData ) p += 5; else p += 7;
+               while( *p == ' ' ) p++;
+               while( ni < 63 && (isalnum((unsigned char)p[ni]) || p[ni] == '_') )
+                  { name[ni] = p[ni]; ni++; }
+               name[ni] = 0;
+               if( isMethod && ni < 61 ) { name[ni++] = '('; name[ni++] = ')'; name[ni] = 0; }
+               if( ni > 0 ) {
+                  if( pos > 0 && pos < bufSize - 1 ) buf[pos++] = ' ';
+                  if( ni > bufSize - pos - 1 ) break;
+                  memcpy( buf + pos, name, (size_t)ni );
+                  pos += ni;
+               }
+            }
+         }
+      }
+      cur = lineEnd;
+      if( *cur == '\n' ) cur++;
+   }
+   buf[pos] = 0;
+   return pos;
+}
+
+/* Find class members combining standard + user-defined */
+static const char * CE_FindClassMembers( CODEEDITOR * ed, const char * cls )
+{
+   static char s_combined[4096];
+   const char * stdMembers = NULL;
+   char userMembers[2048] = "";
+   int classLine = -1, i, t;
+
+   for( i = 0; s_classMembers[i].className; i++ )
+      if( strcasecmp( cls, s_classMembers[i].className ) == 0 )
+         { stdMembers = s_classMembers[i].members; break; }
+
+   if( !ed || !ed->sciWidget ) goto cm_combine;
+
+   /* Search current editor for CLASS definition */
+   {
+      int totalLines = (int) SciMsg( ed->sciWidget, SCI_GETLINECOUNT, 0, 0 );
+      for( i = 0; i < totalLines; i++ )
+      {
+         char buf[512];
+         int len = (int) SciMsg( ed->sciWidget, SCI_LINELENGTH, i, 0 );
+         const char * cp;
+         char foundCls[64];
+         int fi;
+         if( len <= 0 || len >= (int)sizeof(buf) ) continue;
+         SciMsg( ed->sciWidget, SCI_GETLINE, i, (intptr_t)buf );
+         buf[len] = 0;
+         cp = buf;
+         while( *cp == ' ' || *cp == '\t' ) cp++;
+         if( strncasecmp( cp, "CLASS ", 6 ) != 0 ) continue;
+         cp += 6;
+         while( *cp == ' ' ) cp++;
+         fi = 0;
+         while( fi < 63 && (isalnum((unsigned char)cp[fi]) || cp[fi] == '_') )
+            { foundCls[fi] = cp[fi]; fi++; }
+         foundCls[fi] = 0;
+         if( strcasecmp( foundCls, cls ) == 0 )
+         {
+            classLine = i;
+            cp += fi;
+            while( *cp == ' ' ) cp++;
+            if( strncasecmp( cp, "INHERIT ", 8 ) == 0 ) cp += 8;
+            else if( strncasecmp( cp, "FROM ", 5 ) == 0 ) cp += 5;
+            else cp = NULL;
+            if( cp && !stdMembers ) {
+               char parent[64];
+               int pi = 0;
+               while( *cp == ' ' ) cp++;
+               while( pi < 63 && (isalnum((unsigned char)cp[pi]) || cp[pi] == '_') )
+                  { parent[pi] = cp[pi]; pi++; }
+               parent[pi] = 0;
+               for( i = 0; s_classMembers[i].className; i++ )
+                  if( strcasecmp( parent, s_classMembers[i].className ) == 0 )
+                     { stdMembers = s_classMembers[i].members; break; }
+            }
+            break;
+         }
+      }
+      if( classLine >= 0 )
+         CE_CollectUserData( ed->sciWidget, classLine, userMembers, sizeof(userMembers) );
+   }
+
+   /* If not found, search other tabs */
+   if( classLine < 0 )
+   {
+      for( t = 0; t < ed->nTabs; t++ )
+      {
+         char parentCls[64];
+         const char * classPos;
+         if( t == ed->nActiveTab || !ed->tabTexts[t] || !ed->tabTexts[t][0] ) continue;
+         classPos = CE_FindClassInText( ed->tabTexts[t], cls, parentCls );
+         if( classPos ) {
+            CE_CollectUserDataFromText( ed->tabTexts[t], classPos, userMembers, sizeof(userMembers) );
+            if( parentCls[0] && !stdMembers ) {
+               for( i = 0; s_classMembers[i].className; i++ )
+                  if( strcasecmp( parentCls, s_classMembers[i].className ) == 0 )
+                     { stdMembers = s_classMembers[i].members; break; }
+            }
+            break;
+         }
+      }
+   }
+
+cm_combine:
+   if( stdMembers && userMembers[0] ) {
+      snprintf( s_combined, sizeof(s_combined), "%s %s", stdMembers, userMembers );
+      return s_combined;
+   }
+   if( stdMembers ) return stdMembers;
+   if( userMembers[0] ) { strncpy( s_combined, userMembers, sizeof(s_combined)-1 ); return s_combined; }
+   return NULL;
+}
+
+/* Resolve variable class from context (4 strategies) */
+static const char * CE_ResolveVarClass( CODEEDITOR * ed, int colonPos )
+{
+   static char s_resolved[64];
+   int line, lineStart, lineLen;
+   char lineBuf[512];
+   int end, nameEnd, nameStart, varLen;
+   char varName[128];
+   int hasDblColon;
+   int totalLines, l, i;
+
+   static struct { const char * prefix; const char * cls; } s_nameMap[] = {
+      { "Form", "TForm" }, { "Button", "TButton" }, { "Edit", "TEdit" },
+      { "Label", "TLabel" }, { "Memo", "TMemo" }, { "CheckBox", "TCheckBox" },
+      { "RadioButton", "TRadioButton" }, { "ComboBox", "TComboBox" },
+      { "ListBox", "TListBox" }, { "GroupBox", "TGroupBox" }, { "Panel", "TPanel" },
+      { "Timer", "TTimer" }, { "ToolBar", "TToolBar" }, { "ProgressBar", "TProgressBar" },
+      { "TabControl", "TTabControl" }, { "TreeView", "TTreeView" },
+      { "ListView", "TListView" }, { "Image", "TImage" }, { "Database", "TDatabase" },
+      { "DBFTable", "TDBFTable" }, { "SQLite", "TSQLite" }, { "Report", "TReport" },
+      { "WebServer", "TWebServer" }, { "HttpClient", "THttpClient" },
+      { "Thread", "TThread" }, { "App", "TApplication" }, { NULL, NULL }
+   };
+
+   if( !ed || !ed->sciWidget ) return NULL;
+
+   line = (int) SciMsg( ed->sciWidget, SCI_LINEFROMPOSITION, colonPos, 0 );
+   lineStart = (int) SciMsg( ed->sciWidget, SCI_POSITIONFROMLINE, line, 0 );
+   lineLen = colonPos - lineStart;
+   if( lineLen <= 0 || lineLen > 500 ) return NULL;
+
+   /* Get text before colon char by char */
+   {
+      int ci;
+      for( ci = 0; ci < lineLen && ci < 511; ci++ )
+         lineBuf[ci] = (char) SciMsg( ed->sciWidget, SCI_GETCHARAT, lineStart + ci, 0 );
+      lineBuf[ci] = 0;
+   }
+
+   end = lineLen - 1;
+   while( end >= 0 && lineBuf[end] == ':' ) end--;
+   nameEnd = end;
+   while( end >= 0 && (isalnum((unsigned char)lineBuf[end]) || lineBuf[end] == '_') ) end--;
+   nameStart = end + 1;
+   if( nameStart > nameEnd ) return NULL;
+
+   varLen = nameEnd - nameStart + 1;
+   if( varLen <= 0 || varLen >= (int)sizeof(varName) ) return NULL;
+   memcpy( varName, &lineBuf[nameStart], (size_t)varLen );
+   varName[varLen] = 0;
+
+   hasDblColon = ( nameStart >= 2 && lineBuf[nameStart-1] == ':' && lineBuf[nameStart-2] == ':' );
+
+   /* "Self:" */
+   if( strcasecmp( varName, "Self" ) == 0 )
+      return CE_FindCurrentClass( ed->sciWidget, line );
+
+   /* Strategy 1: DATA comment — "DATA oName // TClassName" */
+   totalLines = (int) SciMsg( ed->sciWidget, SCI_GETLINECOUNT, 0, 0 );
+   for( l = 0; l < totalLines; l++ )
+   {
+      char buf[512];
+      int len = (int) SciMsg( ed->sciWidget, SCI_LINELENGTH, l, 0 );
+      const char * dp, * cmt;
+      if( len <= 0 || len >= (int)sizeof(buf) ) continue;
+      SciMsg( ed->sciWidget, SCI_GETLINE, l, (intptr_t)buf );
+      buf[len] = 0;
+      dp = buf;
+      while( *dp == ' ' || *dp == '\t' ) dp++;
+      if( strncasecmp( dp, "DATA ", 5 ) != 0 ) continue;
+      dp += 5;
+      while( *dp == ' ' ) dp++;
+      if( strncasecmp( dp, varName, (size_t)varLen ) != 0 ) continue;
+      dp += varLen;
+      if( isalnum((unsigned char)*dp) || *dp == '_' ) continue;
+      cmt = strstr( dp, "//" );
+      if( !cmt ) continue;
+      cmt += 2;
+      while( *cmt == ' ' ) cmt++;
+      if( isalpha((unsigned char)*cmt) ) {
+         int ri = 0;
+         while( ri < 62 && (isalnum((unsigned char)cmt[ri]) || cmt[ri] == '_') )
+            ri++;
+         if( cmt[0] == 'T' && ri > 1 && isupper((unsigned char)cmt[1]) ) {
+            memcpy( s_resolved, cmt, (size_t)ri );
+            s_resolved[ri] = 0;
+         } else {
+            s_resolved[0] = 'T';
+            memcpy( s_resolved + 1, cmt, (size_t)ri );
+            s_resolved[ri + 1] = 0;
+         }
+         return s_resolved;
+      }
+   }
+
+   /* Strategy 2: assignment pattern — "varName := TClassName():New" */
+   for( l = 0; l < totalLines; l++ )
+   {
+      char buf[512];
+      int len = (int) SciMsg( ed->sciWidget, SCI_LINELENGTH, l, 0 );
+      const char * vp;
+      if( len <= 0 || len >= (int)sizeof(buf) ) continue;
+      SciMsg( ed->sciWidget, SCI_GETLINE, l, (intptr_t)buf );
+      buf[len] = 0;
+      vp = strstr( buf, varName );
+      if( !vp ) continue;
+      vp += varLen;
+      while( *vp == ' ' ) vp++;
+      if( *vp != ':' || vp[1] != '=' ) continue;
+      vp += 2;
+      while( *vp == ' ' ) vp++;
+      if( *vp == 'T' && isalpha((unsigned char)vp[1]) ) {
+         int ci = 0, slen;
+         while( ci < 63 && (isalnum((unsigned char)vp[ci]) || vp[ci] == '_') )
+            { s_resolved[ci] = vp[ci]; ci++; }
+         s_resolved[ci] = 0;
+         slen = (int)strlen( s_resolved );
+         if( slen > 2 && s_resolved[slen-1] == ')' && s_resolved[slen-2] == '(' )
+            s_resolved[slen-2] = 0;
+         return s_resolved;
+      }
+   }
+
+   /* Strategy 3: :: prefix → current class */
+   if( hasDblColon )
+      return CE_FindCurrentClass( ed->sciWidget, line );
+
+   /* Strategy 4: naming convention — oForm→TForm, oButton→TButton */
+   {
+      const char * base = varName;
+      if( (base[0] == 'o' || base[0] == 'O') && isupper((unsigned char)base[1]) )
+         base++;
+      for( i = 0; s_nameMap[i].prefix; i++ ) {
+         int plen = (int)strlen( s_nameMap[i].prefix );
+         if( strncasecmp( base, s_nameMap[i].prefix, (size_t)plen ) == 0 ) {
+            char next = base[plen];
+            if( next == 0 || isdigit((unsigned char)next) || isupper((unsigned char)next) || next == '_' ) {
+               strncpy( s_resolved, s_nameMap[i].cls, 63 );
+               return s_resolved;
+            }
+         }
+      }
+   }
+
+   return NULL;
+}
+
+/* ======================================================================
+ * Code Editor - implementation
+ * ====================================================================== */
 
 /* Save current Scintilla text to the active tab's buffer */
 static void SaveCurrentTabText( CODEEDITOR * ed )
@@ -4998,14 +5617,25 @@ static void CE_ShowFindBar( CODEEDITOR * ed, int bShow, int bReplace )
 static void on_sci_notify( GtkWidget * sci, gint id, gpointer scnPtr, gpointer data )
 {
    CODEEDITOR * ed = (CODEEDITOR *)data;
-   /* SCNotification is passed as a struct pointer.
-      We cast to access the notification code and fields. */
+   /* SCNotification layout must match Scintilla's real struct (64-bit safe) */
    struct SCNotification {
-      unsigned int hwndFrom; unsigned int idFrom; unsigned int code;
-      int position; int ch; int modifiers; int modificationType;
-      const char * text; int length; int linesAdded;
-      int message; uintptr_t wParam; intptr_t lParam;
-      int line; int foldLevelNow; int foldLevelPrev; int margin;
+      void * hwndFrom;              /* Sci_NotifyHeader */
+      uintptr_t idFrom;
+      unsigned int code;
+      ptrdiff_t position;           /* Sci_Position */
+      int ch;
+      int modifiers;
+      int modificationType;
+      const char * text;
+      ptrdiff_t length;             /* Sci_Position */
+      ptrdiff_t linesAdded;         /* Sci_Position */
+      int message;
+      uintptr_t wParam;
+      intptr_t lParam;
+      ptrdiff_t line;               /* Sci_Position */
+      int foldLevelNow;
+      int foldLevelPrev;
+      int margin;
    } * scn = (struct SCNotification *) scnPtr;
 
    if( !ed || !scn ) return;
@@ -5024,6 +5654,23 @@ static void on_sci_notify( GtkWidget * sci, gint id, gpointer scnPtr, gpointer d
             SciMsg( sci, SCI_SETLINEINDENTATION, curLine, indent );
             int pos = (int) SciMsg( sci, SCI_GETLINEINDENTPOSITION, curLine, 0 );
             SciMsg( sci, SCI_GOTOPOS, pos, 0 );
+         }
+      }
+      /* ':' typed — show class member dropdown */
+      else if( scn->ch == ':' )
+      {
+         int pos = (int) SciMsg( sci, SCI_GETCURRENTPOS, 0, 0 );
+         const char * cls = CE_ResolveVarClass( ed, pos - 1 );
+         if( cls )
+         {
+            const char * members = CE_FindClassMembers( ed, cls );
+            if( members )
+            {
+               SciMsg( sci, SCI_AUTOCSETIGNORECASE, 1, 0 );
+               SciMsg( sci, SCI_AUTOCSETSEPARATOR, ' ', 0 );
+               SciMsg( sci, SCI_AUTOCSETORDER, 1, 0 );
+               SciMsg( sci, SCI_AUTOCSHOW, 0, (intptr_t) members );
+            }
          }
       }
    }
@@ -5927,6 +6574,9 @@ HB_FUNC( UI_GETALLEVENTS )
          ADD_E("OnClick",    p->FOnClick != NULL,  "Action");
          ADD_E("OnMouseDown",0,                    "Mouse");
          break;
+      case CT_TIMER:
+         ADD_E("OnTimer",    ((HBTimer*)p)->FOnTimer != NULL, "Action");
+         break;
       default:
          ADD_E("OnClick",    p->FOnClick != NULL,  "Action");
          ADD_E("OnChange",   p->FOnChange != NULL, "Action");
@@ -6435,7 +7085,9 @@ HB_FUNC( GTK_ABOUTDIALOG )
       if( logo )
       {
          GtkWidget * img = gtk_image_new_from_pixbuf( logo );
-         gtk_message_dialog_set_image( GTK_MESSAGE_DIALOG(dialog), img );
+         GtkWidget * content = gtk_dialog_get_content_area( GTK_DIALOG(dialog) );
+         gtk_container_add( GTK_CONTAINER(content), img );
+         gtk_box_reorder_child( GTK_BOX(content), img, 0 );
          gtk_widget_show( img );
          g_object_unref( logo );
       }
@@ -9549,6 +10201,7 @@ HB_FUNC( UI_FORMPASTECONTROLS )
       else if( t == CT_CHECKBOX ) sz = sizeof(HBCheckBox);
       else if( t == CT_COMBOBOX ) sz = sizeof(HBComboBox);
       else if( t == CT_GROUPBOX ) sz = sizeof(HBGroupBox);
+      else if( t == CT_TIMER )    sz = sizeof(HBTimer);
 
       c = (HBControl *) calloc( 1, sz );
       if( !c ) continue;
@@ -9949,9 +10602,10 @@ HB_FUNC( GTK_RUNTIMEERRORDIALOG )
 
    EnsureGTK();
 
-   GtkWidget * dialog = gtk_dialog_new_with_buttons( cTitle, NULL,
-      GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-      NULL );
+   GtkWidget * dialog = gtk_dialog_new( );
+   gtk_window_set_title( GTK_WINDOW(dialog), cTitle );
+   gtk_window_set_modal( GTK_WINDOW(dialog), TRUE );
+   gtk_window_set_destroy_with_parent( GTK_WINDOW(dialog), TRUE );
    gtk_window_set_default_size( GTK_WINDOW(dialog), 620, 400 );
    gtk_window_set_position( GTK_WINDOW(dialog), GTK_WIN_POS_CENTER );
 

@@ -7,6 +7,10 @@
  */
 
 #include <gtk/gtk.h>
+
+/* Avoid HB_DEPRECATED macro clash between harfbuzz and Harbour */
+#undef HB_DEPRECATED
+
 #include <hbapi.h>
 #include <hbapiitm.h>
 #include <hbvm.h>

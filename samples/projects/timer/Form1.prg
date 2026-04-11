@@ -16,8 +16,8 @@ ENDCLASS
 METHOD CreateForm() CLASS TForm1
 
    ::Title  := "Form1"
-   ::Left   := 100
-   ::Top    := 100
+   ::Left   := 516
+   ::Top    := 284
    ::Width  := 400
    ::Height := 300
 
@@ -35,3 +35,4 @@ static function Timer1Timer( oForm )
    oForm:Title := Time()
 
 return nil
+

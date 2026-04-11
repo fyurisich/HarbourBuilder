@@ -1001,8 +1001,11 @@ static function OnComponentDrop( hForm, nType, nL, nT, nW, nH )
    endif
 
    SyncDesignerToCode()
-   InspectorRefresh( hCtrl )
+
+   // Refresh inspector and select the new component
    InspectorPopulateCombo( hForm )
+   INS_ComboSelect( _InsGetData(), nCount )  // select last item (new component)
+   InspectorRefresh( hCtrl )
 
 return nil
 
@@ -1066,6 +1069,112 @@ static function SyncDesignerToCode()
 
    aForms[ nActiveForm ][ 3 ] := cNewCode
    CodeEditorSetTabText( hCodeEditor, nActiveForm + 1, cNewCode )
+
+return nil
+
+// Re-wire event handlers in all form code before building.
+// Scans for handler functions (e.g. Timer1Timer, Button1Click) and ensures
+// the corresponding event assignment exists in CreateForm().
+// Works purely on code text — does NOT need the visual designer.
+static function RewireAllFormEvents()
+
+   local i, cCode, cCreateEnd, nPos, nPos2, nRetPos
+   local cBefore, cAfter, cEvents, e := Chr(13) + Chr(10)
+   local cSep := "//" + Replicate( "-", 68 )
+   local aEvents := { "OnClick", "OnChange", "OnDblClick", "OnCreate", ;
+                       "OnClose", "OnResize", "OnKeyDown", "OnKeyUp", ;
+                       "OnMouseDown", "OnMouseUp", "OnEnter", "OnExit", ;
+                       "OnTimer" }
+   local j, cEvName, cEvSuffix, cHandlerName
+   local aComps, nC, cLine, cCtrlName
+
+   for i := 1 to Len( aForms )
+      cCode := aForms[i][3]
+      if Empty( cCode ); loop; endif
+
+      // Find "return nil" that ends CreateForm()
+      nPos := At( "METHOD CreateForm()", cCode )
+      if nPos == 0; loop; endif
+      nRetPos := At( "return nil", SubStr( cCode, nPos ) )
+      if nRetPos == 0; loop; endif
+      nRetPos := nPos + nRetPos - 1  // absolute position of "return nil"
+
+      // Collect component names from COMPONENT and @ lines
+      aComps := {}
+      nC := 1
+      do while nC < nRetPos
+         nPos2 := At( "::o", SubStr( cCode, nC, nRetPos - nC ) )
+         if nPos2 == 0; exit; endif
+         nPos2 := nC + nPos2 - 1 + 3  // skip "::o"
+         cCtrlName := ""
+         do while nPos2 <= Len( cCode ) .and. ( IsAlpha( SubStr( cCode, nPos2, 1 ) ) .or. ;
+               IsDigit( SubStr( cCode, nPos2, 1 ) ) .or. SubStr( cCode, nPos2, 1 ) == "_" )
+            cCtrlName += SubStr( cCode, nPos2, 1 )
+            nPos2++
+         enddo
+         if ! Empty( cCtrlName ) .and. AScan( aComps, cCtrlName ) == 0
+            AAdd( aComps, cCtrlName )
+         endif
+         nC := nPos2
+      enddo
+
+      // Remove existing "// Event wiring" block (between last COMPONENT/control and return nil)
+      nPos2 := At( "   // Event wiring", cCode )
+      if nPos2 > 0 .and. nPos2 < nRetPos
+         cBefore := Left( cCode, nPos2 - 1 )
+         cAfter  := SubStr( cCode, nRetPos )
+         // Trim trailing blank lines from cBefore
+         do while Right( cBefore, 2 ) == e
+            cBefore := Left( cBefore, Len( cBefore ) - 2 )
+         enddo
+         cCode := cBefore + e + e + cAfter
+         // Recalculate nRetPos
+         nRetPos := At( "return nil", cCode )
+         if nRetPos == 0; loop; endif
+      endif
+
+      // Build new event wiring block by scanning for handler functions
+      cEvents := ""
+      for nC := 1 to Len( aComps )
+         cCtrlName := aComps[nC]
+         for j := 1 to Len( aEvents )
+            cEvName := aEvents[j]
+            cEvSuffix := SubStr( cEvName, 3 )
+            cHandlerName := cCtrlName + cEvSuffix
+            if cHandlerName $ cCode
+               cEvents += "   ::o" + cCtrlName + ":" + cEvName + ;
+                  " := { || " + cHandlerName + "( Self ) }" + e
+            endif
+         next
+      next
+
+      // Also scan form-level events
+      for j := 1 to Len( aEvents )
+         cEvName := aEvents[j]
+         cEvSuffix := SubStr( cEvName, 3 )
+         cHandlerName := aForms[i][1] + cEvSuffix
+         if ( "function " + cHandlerName ) $ cCode
+            // Check it's not already wired
+            if ! ( "::" + cEvName + " :=" ) $ Left( cCode, nRetPos )
+               cEvents += "   ::" + cEvName + ;
+                  " := { || " + cHandlerName + "( Self ) }" + e
+            endif
+         endif
+      next
+
+      // Inject event wiring block before "return nil"
+      if ! Empty( cEvents )
+         cBefore := Left( cCode, nRetPos - 1 )
+         cAfter  := SubStr( cCode, nRetPos )
+         // Trim trailing blank lines
+         do while Right( cBefore, 2 ) == e
+            cBefore := Left( cBefore, Len( cBefore ) - 2 )
+         enddo
+         cCode := cBefore + e + e + "   // Event wiring" + e + cEvents + e + cAfter
+      endif
+
+      aForms[i][3] := cCode
+   next
 
 return nil
 
@@ -1673,6 +1782,9 @@ static function TBRun()
 
    SaveActiveFormCode()
 
+   // Re-sync all forms so new event handlers get wired into CreateForm()
+   RewireAllFormEvents()
+
    cBuildDir := "/tmp/hbbuilder_build"
 
    // Quick check: if nothing changed since last successful build, just run
@@ -1737,6 +1849,7 @@ static function TBRun()
       cAllPrg += MemoRead( cBuildDir + "/" + aForms[i][1] + ".prg" ) + Chr(10)
    next
    MemoWrit( cBuildDir + "/main.prg", cAllPrg )
+   MemoWrit( "/tmp/hbbuilder_debug_main.prg", cAllPrg )
 
    // Step 3: Compile Harbour code
    if ! lError
