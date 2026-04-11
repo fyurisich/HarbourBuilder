@@ -31,6 +31,7 @@ static aForms        // Array of form entries
 static nActiveForm   // Index of active form (1-based)
 static oTB2          // Debug toolbar (for highlighting Debug button)
 static aDbgOffsets   // line offset tracking for debug_main.prg sections
+static lSyncingFromCode := .f.  // Guard: prevents re-entrant loop when syncing code→form
 
 function Main()
 
@@ -277,6 +278,7 @@ function Main()
    CodeEditorSelectTab( hCodeEditor, 2 )
 
    CodeEditorOnTabChange( hCodeEditor, { |hEd, nTab| OnEditorTabChange( hEd, nTab ) } )
+   CodeEditorOnTextChange( hCodeEditor, { |hEd, nTab| OnEditorTextChange( hEd, nTab ) } )
 
    // === Window 2: Object Inspector ===
    InspectorOpen()
@@ -1037,6 +1039,11 @@ static function SyncDesignerToCode()
 
    if nActiveForm < 1 .or. nActiveForm > Len( aForms ); return nil; endif
 
+   // If already syncing from code→form, don't sync back form→code
+   if lSyncingFromCode; return nil; endif
+
+   lSyncingFromCode := .t.
+
    // Get existing code to preserve METHOD implementations
    cOldCode := CodeEditorGetTabText( hCodeEditor, nActiveForm + 1 )
 
@@ -1075,6 +1082,8 @@ static function SyncDesignerToCode()
 
    aForms[ nActiveForm ][ 3 ] := cNewCode
    CodeEditorSetTabText( hCodeEditor, nActiveForm + 1, cNewCode )
+
+   lSyncingFromCode := .f.
 
 return nil
 
@@ -1194,6 +1203,57 @@ static function OnEditorTabChange( hEd, nTab )
          SwitchToForm( nFormIdx )
       endif
    endif
+
+return nil
+
+// Live sync: code editor → form designer + inspector (debounced, 500ms)
+static function OnEditorTextChange( hEd, nTab )
+
+   local nFormIdx, cCode, hForm
+
+   HB_SYMBOL_UNUSED( hEd )
+
+   // Avoid re-entrant loop (SyncDesignerToCode updates editor text)
+   if lSyncingFromCode
+      return nil
+   endif
+
+   // Only sync form tabs (tab 1 = project, tab 2+ = forms)
+   if nTab <= 1
+      return nil
+   endif
+
+   nFormIdx := nTab - 1
+   if nFormIdx < 1 .or. nFormIdx > Len( aForms )
+      return nil
+   endif
+
+   // Read current editor content for this tab
+   cCode := CodeEditorGetTabText( hCodeEditor, nTab )
+   if Empty( cCode )
+      return nil
+   endif
+
+   hForm := aForms[ nFormIdx ][ 2 ]:hCpp
+   if hForm == 0
+      return nil
+   endif
+
+   lSyncingFromCode := .t.
+
+   // Remove existing child controls before re-parsing
+   UI_FormClearChildren( hForm )
+
+   // Re-parse code and rebuild form controls
+   RestoreFormFromCode( hForm, cCode )
+
+   // Update stored code
+   aForms[ nFormIdx ][ 3 ] := cCode
+
+   // Refresh inspector with updated properties
+   InspectorRefresh( hForm )
+
+   lSyncingFromCode := .f.
 
 return nil
 

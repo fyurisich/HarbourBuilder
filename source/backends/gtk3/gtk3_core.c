@@ -4308,6 +4308,7 @@ HB_FUNC( GTK_GETWINDOWBOTTOM )
 #define SCI_MARKERADD          2043
 #define SCI_MARKERDELETE       2044
 #define SCI_MARKERDELETEALL    2046
+#define SCI_GETFIRSTVISIBLELINE 2152
 #define SCI_SETFIRSTVISIBLELINE 2613
 #define SC_MARK_BACKGROUND     22
 #define SCI_SETAUTOMATICFOLD   2663
@@ -4943,6 +4944,10 @@ typedef struct {
    int            bReplaceVisible;
    /* Status bar */
    GtkWidget *    statusBar;
+   /* Text-change callback (debounced) */
+   PHB_ITEM       pOnTextChange;
+   guint          debounceTimer;  /* g_timeout source id, 0 = none */
+   int            bSettingText;   /* guard: programmatic text set in progress */
 } CODEEDITOR;
 
 /* Find current CLASS name by scanning backwards from line */
@@ -5613,6 +5618,63 @@ static void CE_ShowFindBar( CODEEDITOR * ed, int bShow, int bReplace )
    }
 }
 
+/* Idle callback to restore cursor after all pending GTK events are processed */
+typedef struct {
+   CODEEDITOR * ed;
+   int          savedPos;
+   int          savedFirst;
+} CURSORRESTORE;
+
+static gboolean on_restore_cursor( gpointer data )
+{
+   CURSORRESTORE * cr = (CURSORRESTORE *) data;
+   CODEEDITOR * ed = cr->ed;
+
+   if( ed && ed->sciWidget )
+   {
+      int newLen = (int) SciMsg( ed->sciWidget, SCI_GETLENGTH, 0, 0 );
+      int pos = cr->savedPos;
+      if( pos > newLen ) pos = newLen;
+      SciMsg( ed->sciWidget, SCI_GOTOPOS, pos, 0 );
+      SciMsg( ed->sciWidget, SCI_SETFIRSTVISIBLELINE, cr->savedFirst, 0 );
+      gtk_widget_grab_focus( ed->sciWidget );
+   }
+   g_free( cr );
+   return G_SOURCE_REMOVE;
+}
+
+/* Debounced text-change callback (fires 500ms after last edit) */
+static gboolean on_debounce_fire( gpointer data )
+{
+   CODEEDITOR * ed = (CODEEDITOR *) data;
+   ed->debounceTimer = 0;   /* one-shot: source removed automatically */
+
+   if( ed->pOnTextChange && HB_IS_BLOCK( ed->pOnTextChange ) )
+   {
+      /* Save cursor position and first visible line */
+      int savedPos   = (int) SciMsg( ed->sciWidget, SCI_GETCURRENTPOS, 0, 0 );
+      int savedFirst = (int) SciMsg( ed->sciWidget, SCI_GETFIRSTVISIBLELINE, 0, 0 );
+
+      ed->bSettingText = 1;   /* guard: suppress nested SCN_MODIFIED callbacks */
+
+      hb_vmPushEvalSym();
+      hb_vmPush( ed->pOnTextChange );
+      hb_vmPushNumInt( (HB_PTRUINT) ed );
+      hb_vmPushInteger( ed->nActiveTab + 1 );   /* 1-based tab index */
+      hb_vmSend( 2 );
+
+      ed->bSettingText = 0;
+
+      /* Schedule cursor restore AFTER all pending GTK events are processed */
+      CURSORRESTORE * cr = g_new( CURSORRESTORE, 1 );
+      cr->ed         = ed;
+      cr->savedPos   = savedPos;
+      cr->savedFirst = savedFirst;
+      g_idle_add( on_restore_cursor, cr );
+   }
+   return G_SOURCE_REMOVE;
+}
+
 /* Scintilla notification handler via GtkWidget "sci-notify" signal */
 static void on_sci_notify( GtkWidget * sci, gint id, gpointer scnPtr, gpointer data )
 {
@@ -5680,12 +5742,21 @@ static void on_sci_notify( GtkWidget * sci, gint id, gpointer scnPtr, gpointer d
    }
 
    if( scn->code == SCN_MODIFIED ) {
-      if( scn->linesAdded != 0 && (scn->modificationType & (0x01|0x02)) ) {
-         static int s_inFoldUpdate = 0;
-         if( !s_inFoldUpdate ) {
-            s_inFoldUpdate = 1;
-            UpdateHarbourFolding( sci );
-            s_inFoldUpdate = 0;
+      if( scn->modificationType & (0x01|0x02) ) {  /* SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT */
+         if( scn->linesAdded != 0 ) {
+            static int s_inFoldUpdate = 0;
+            if( !s_inFoldUpdate ) {
+               s_inFoldUpdate = 1;
+               UpdateHarbourFolding( sci );
+               s_inFoldUpdate = 0;
+            }
+         }
+         /* Schedule debounced text-change callback (500ms) */
+         if( ed->pOnTextChange && !ed->bSettingText )
+         {
+            if( ed->debounceTimer )
+               g_source_remove( ed->debounceTimer );
+            ed->debounceTimer = g_timeout_add( 500, on_debounce_fire, ed );
          }
       }
       UpdateStatusBar( ed );
@@ -6630,9 +6701,11 @@ HB_FUNC( CODEEDITORSETTABTEXT )
    /* If this is the active tab, update Scintilla */
    if( nTab == ed->nActiveTab && ed->sciWidget )
    {
+      ed->bSettingText = 1;
       SciMsg( ed->sciWidget, SCI_SETTEXT, 0, (intptr_t) ed->tabTexts[nTab] );
       SciMsg( ed->sciWidget, SCI_EMPTYUNDOBUFFER, 0, 0 );
       UpdateHarbourFolding( ed->sciWidget );
+      ed->bSettingText = 0;
    }
 }
 
@@ -6751,6 +6824,19 @@ HB_FUNC( CODEEDITORONTABCHANGE )
    if( ed ) {
       if( ed->pOnTabChange ) hb_itemRelease( ed->pOnTabChange );
       ed->pOnTabChange = pBlock ? hb_itemNew( pBlock ) : NULL;
+   }
+}
+
+/* CodeEditorOnTextChange( hEditor, bBlock )
+ * Register a debounced callback fired 500ms after the user stops typing.
+ * Block receives ( hEditor, nTab ) where nTab is 1-based. */
+HB_FUNC( CODEEDITORONTEXTCHANGE )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   PHB_ITEM pBlock = hb_param(2, HB_IT_BLOCK);
+   if( ed ) {
+      if( ed->pOnTextChange ) hb_itemRelease( ed->pOnTextChange );
+      ed->pOnTextChange = pBlock ? hb_itemNew( pBlock ) : NULL;
    }
 }
 

@@ -1,6 +1,25 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-12 (Linux: Live sync code editor → form designer + inspector)
+
+  LIVE CODE-TO-DESIGNER SYNC (Linux/GTK3):
+  - Debounced text-change callback in Scintilla editor (500ms after last
+    keystroke) — new pOnTextChange, debounceTimer (guint), bSettingText
+    fields in CODEEDITOR struct
+  - on_debounce_fire: GLib g_timeout_add callback fires Harbour block
+    with (hEditor, nTab) after 500ms of inactivity
+  - bSettingText guard in CodeEditorSetTabText prevents callback when IDE
+    updates text programmatically (avoids infinite loops)
+  - New HB_FUNC(CODEEDITORONTEXTCHANGE) to register callback from Harbour
+  - OnEditorTextChange: clears form children, re-parses code via
+    RestoreFormFromCode, refreshes inspector — only for form tabs
+  - lSyncingFromCode static guard prevents SyncDesignerToCode from
+    regenerating code while syncing from editor (bidirectional protection)
+  - Cursor preservation: on_restore_cursor via g_idle_add restores cursor
+    position and scroll after all pending GTK events are processed
+  - SCI_GETFIRSTVISIBLELINE (2152) define added for scroll save/restore
+
 2026-04-11 (macOS: Live sync code editor → form designer + inspector)
 
   LIVE CODE-TO-DESIGNER SYNC (macOS):
