@@ -1,6 +1,75 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-12 (Windows: standard dialog components + autocomplete + palette fixes)
+
+  FEATURES
+  - Standard dialog components usable from user projects: TOpenDialog,
+    TSaveDialog, TFontDialog, TColorDialog, TFindDialog, TReplaceDialog
+    added to source/core/classes.prg. Each exposes DATAs (cFileName,
+    cFilter, cInitialDir, cTitle, cDefaultExt, nOptions / cFontName,
+    nSize, nColor, nStyle / nColor / cFindText, cReplaceText, bOnFind,
+    bOnReplace) and an Execute() method.
+  - HB_CreateComponent() in classes.prg maps CT_OPENDIALOG..CT_REPLACEDIALOG
+    to their classes so `COMPONENT ::oOpenDialog1 TYPE CT_OPENDIALOG`
+    produces a live object at runtime.
+  - resources/stddlgs.c: Win32 backends (W32_ExecOpenDialog /
+    W32_ExecSaveDialog / W32_ExecFontDialog / W32_ExecColorDialog)
+    using GetOpenFileNameA / GetSaveFileNameA / ChooseFontA /
+    ChooseColorA with a Delphi-style "A (*.a)|*.a|B|*.b" filter parser
+    that produces the double-NUL format Win32 expects.
+  - Project build flow copies resources/stddlgs.c into the build dir,
+    compiles it for MSVC/MinGW/BCC, and links stddlgs.obj/.o alongside
+    main + classes. TFindDialog/TReplaceDialog:Execute() currently
+    invoke their on* callbacks (no modeless UI yet).
+  - samples/projects/opendialog added — minimal project showing
+    `if ::oOpenDialog1:Execute(); MsgInfo( ::oOpenDialog1:cFileName )`.
+
+  FIXES
+  - Code-editor autocomplete (SCN_CHARADDED, ':'):
+    * SCI_AUTOCSETORDER was dispatched as message 2235 instead of 2660,
+      leaving Scintilla in SC_ORDER_PRESORTED and running a binary
+      search on an unsorted list — entries like user DATAs appended to
+      the end of the list silently disappeared from the dropdown. Fixed
+      to 2660 so SC_ORDER_PERFORMSORT actually takes effect.
+    * CE_CollectUserData / CE_FindClassMembers / CE_ResolveVarClass
+      used hardcoded Scintilla message IDs 2009/2094/2095 that map to
+      SCI_GETLENGTH/SCI_GETCOLUMN/SCI_SETHSCROLLBAR, not the line
+      helpers intended. Replaced with the SCI_GETLINECOUNT (2154) /
+      SCI_LINELENGTH (2350) / SCI_GETLINE (2153) constants already
+      declared in the file — the class-member scan now actually reads
+      lines, so `oForm:` dropdown finally picks up user DATAs.
+    * CE_FindClassMembers: when cls resolves to "TForm", substitute
+      the user's subclass (any `CLASS X FROM TForm` found in any tab)
+      so its DATAs are collected via CE_CollectUserData. Without this
+      Strategy 2 (`oForm := TForm():New()`) preempted the naming-
+      convention lookup and only standard TForm members showed.
+    * WM_TIMER debounced text-change callback (500ms) closed the active
+      autocomplete popup on its way to re-parsing the form. It now
+      checks SCI_AUTOCACTIVE and reschedules itself (300ms) instead of
+      running while the dropdown is visible.
+  - Standard dialog class members added to s_classMembers so
+    `oForm:oOpenDialog1:` shows cFileName/cFilter/Execute()/... in the
+    dropdown (previously "(null)" → no popup).
+  - RegenerateFormCode: skip emitting :oFont and :nClrPane for
+    IsNonVisual(nType) controls. Non-visual components (TOpenDialog
+    etc.) have no oFont DATA, so the generated code was crashing with
+    "No exported variable OFONT" the moment a form with an OpenDialog
+    was run.
+  - resources/palette.bmp: first-tab cells 3..8 were misaligned vs.
+    source PNGs (TMemo showed a checkbox, TRadioButton showed a panel,
+    TComboBox showed a radio button, TGroupBox showed a memo). Cells
+    regenerated from resources/lazarus_icons/*.png so each palette
+    slot displays its component's icon.
+
+  BUILD
+  - build_win.bat: false-positive BUILD SUCCESS when bcc32 silently
+    failed — the "if not exist %.obj" guard was satisfied by the
+    previous build's stale .obj, so the link step used outdated code
+    and reported success. Root-cause noted; users should delete
+    source/hbbuilder_win.obj before building when edits don't seem to
+    take effect.
+
 2026-04-12 (Windows: font size round-trip, label auto-fit, project load fixes)
 
   FIXES

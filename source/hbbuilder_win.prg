@@ -865,16 +865,19 @@ static function RegenerateFormCode( cName, hForm )
                endif
          endcase
 
-         // nClrPane for any control (CLR_INVALID = -1 on 32-bit or 4294967295 on 64-bit)
-         nCtrlClr := UI_GetProp( hCtrl, "nClrPane" )
-         if nCtrlClr != -1 .and. nCtrlClr != 4294967295 .and. nCtrlClr > 0
-            cCreate += '   ::o' + cCtrlName + ':nClrPane := ' + LTrim( Str( nCtrlClr ) ) + e
-         endif
+         // Non-visual components don't support visual DATAs like nClrPane or oFont
+         if ! IsNonVisual( nType )
+            // nClrPane for any control (CLR_INVALID = -1 on 32-bit or 4294967295 on 64-bit)
+            nCtrlClr := UI_GetProp( hCtrl, "nClrPane" )
+            if nCtrlClr != -1 .and. nCtrlClr != 4294967295 .and. nCtrlClr > 0
+               cCreate += '   ::o' + cCtrlName + ':nClrPane := ' + LTrim( Str( nCtrlClr ) ) + e
+            endif
 
-         // Emit oFont if non-default
-         cVal := UI_GetProp( hCtrl, "oFont" )
-         if ! Empty( cVal ) .and. cVal != "System,12" .and. cVal != "Segoe UI,9"
-            cCreate += '   ::o' + cCtrlName + ':oFont := "' + cVal + '"' + e
+            // Emit oFont if non-default
+            cVal := UI_GetProp( hCtrl, "oFont" )
+            if ! Empty( cVal ) .and. cVal != "System,12" .and. cVal != "Segoe UI,9"
+               cCreate += '   ::o' + cCtrlName + ':oFont := "' + cVal + '"' + e
+            endif
          endif
 
          // Scan for event handlers matching this control
@@ -2323,6 +2326,7 @@ static function TBRun()
    W32_ShellExec( 'cmd /c copy "' + cProjDir + '\source\core\classes.prg" "' + cBuildDir + '\" >nul 2>&1' )
    W32_ShellExec( 'cmd /c copy "' + cProjDir + '\include\hbbuilder.ch" "' + cBuildDir + '\" >nul 2>&1' )
    W32_ShellExec( 'cmd /c copy "' + cProjDir + '\include\hbide.ch" "' + cBuildDir + '\" >nul 2>&1' )
+   W32_ShellExec( 'cmd /c copy "' + cProjDir + '\resources\stddlgs.c" "' + cBuildDir + '\" >nul 2>&1' )
 
    // Step 2: Assemble main.prg
    W32_ProgressStep( "Assembling main.prg..." )
@@ -2429,6 +2433,12 @@ static function TBRun()
             cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
             W32_ShellExec( cCmd )
          endif
+         if ! lError .and. File( cBuildDir + "\stddlgs.c" )
+            cRsp := cBuildDir + "\cl_stddlgs.rsp"
+            MemoWrit( cRsp, cRspContent + '"' + cBuildDir + '\stddlgs.c"' + Chr(10) + '/Fo"' + cBuildDir + '\stddlgs.obj"' )
+            cCmd := 'cmd /S /c ""' + cCC + '" @"' + cRsp + '" 2>&1"'
+            W32_ShellExec( cCmd )
+         endif
       elseif cCompiler == "mingw"
          cCmd := cCC + ' -c -O2 -I' + cHbInc + ;
                  " -I" + cProjDir + "\include" + ;
@@ -2444,6 +2454,13 @@ static function TBRun()
                     " -I" + cProjDir + "\include" + ;
                     " " + cBuildDir + "\classes.c" + ;
                     " -o " + cBuildDir + "\classes.o"
+            W32_ShellExec( cCmd )
+         endif
+         if ! lError .and. File( cBuildDir + "\stddlgs.c" )
+            cCmd := cCC + ' -c -O2 -I' + cHbInc + ;
+                    " -I" + cProjDir + "\include" + ;
+                    " " + cBuildDir + "\stddlgs.c" + ;
+                    " -o " + cBuildDir + "\stddlgs.o"
             W32_ShellExec( cCmd )
          endif
       else
@@ -2463,6 +2480,14 @@ static function TBRun()
                  " " + cBuildDir + "\classes.c" + ;
                  " -o" + cBuildDir + "\classes.obj"
          W32_ShellExec( cCmd )
+         if File( cBuildDir + "\stddlgs.c" )
+            cCmd := cCC + ' -c -O2 -tW -I' + cHbInc + ;
+                    " -I" + cCDir + "\include" + ;
+                    " -I" + cProjDir + "\include" + ;
+                    " " + cBuildDir + "\stddlgs.c" + ;
+                    " -o" + cBuildDir + "\stddlgs.obj"
+            W32_ShellExec( cCmd )
+         endif
       endif
       if ! lError; cLog += "    OK" + Chr(10); endif
    endif
@@ -2524,6 +2549,9 @@ static function TBRun()
                   cBuildDir + "\tform.o " + ;
                   cBuildDir + "\tcontrols.o " + ;
                   cBuildDir + "\hbbridge.o"
+         if File( cBuildDir + "\stddlgs.o" )
+            cObjs += " " + cBuildDir + "\stddlgs.o"
+         endif
       else
          cObjs := cBuildDir + "\main.obj " + ;
                   cBuildDir + "\classes.obj " + ;
@@ -2531,6 +2559,9 @@ static function TBRun()
                   cBuildDir + "\tform.obj " + ;
                   cBuildDir + "\tcontrols.obj " + ;
                   cBuildDir + "\hbbridge.obj"
+         if File( cBuildDir + "\stddlgs.obj" )
+            cObjs += " " + cBuildDir + "\stddlgs.obj"
+         endif
       endif
       if cCompiler == "msvc"
          // Write link response file (avoids cmd line length/quoting issues)
@@ -4532,6 +4563,166 @@ HB_FUNC( W32_SAVEFILEDIALOG )
       hb_retc( "" );
 }
 
+/* ======================================================================
+ * Runtime dialog components — TOpenDialog / TSaveDialog / TFontDialog /
+ * TColorDialog (Execute() backends). Accept user-supplied filter strings
+ * with '|' separators (Delphi/Lazarus style), converted to the double-NUL
+ * format Win32 expects.
+ * ====================================================================== */
+
+/* Convert "Text Files (*.txt)|*.txt|All Files|*.*" -> double-NUL string */
+static void DlgBuildFilter( const char * src, char * dst, int dstSize )
+{
+   int di = 0;
+   if( !src || !src[0] ) {
+      /* Default: All Files */
+      lstrcpynA( dst, "All Files (*.*)", dstSize - 2 );
+      di = (int) strlen( dst ) + 1;
+      lstrcpynA( dst + di, "*.*", dstSize - di - 2 );
+      di += (int) strlen( dst + di ) + 1;
+      dst[di] = 0;
+      return;
+   }
+   while( *src && di < dstSize - 2 ) {
+      if( *src == '|' ) { dst[di++] = 0; src++; }
+      else dst[di++] = *src++;
+   }
+   dst[di++] = 0;
+   dst[di]   = 0;
+}
+
+/* W32_ExecOpenDialog( cTitle, cFilter, cInitialDir, cDefaultExt, nOptions )
+ *   --> cFileName (empty if cancelled) */
+HB_FUNC( W32_EXECOPENDIALOG )
+{
+   OPENFILENAMEA ofn;
+   char szFile[MAX_PATH] = "";
+   char szFilter[1024];
+   const char * cInit = hb_parc(3);
+   const char * cExt  = hb_parc(4);
+
+   DlgBuildFilter( hb_parc(2), szFilter, sizeof(szFilter) );
+
+   memset( &ofn, 0, sizeof(ofn) );
+   ofn.lStructSize     = sizeof(ofn);
+   ofn.hwndOwner       = GetActiveWindow();
+   ofn.lpstrFilter     = szFilter;
+   ofn.lpstrFile       = szFile;
+   ofn.nMaxFile        = MAX_PATH;
+   ofn.lpstrTitle      = hb_parclen(1) ? hb_parc(1) : NULL;
+   ofn.lpstrInitialDir = ( cInit && cInit[0] ) ? cInit : NULL;
+   ofn.lpstrDefExt     = ( cExt && cExt[0] ) ? cExt : NULL;
+   ofn.Flags           = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;
+
+   if( GetOpenFileNameA( &ofn ) )
+      hb_retc( szFile );
+   else
+      hb_retc( "" );
+}
+
+/* W32_ExecSaveDialog( cTitle, cFilter, cInitialDir, cDefaultExt, cFileName, nOptions )
+ *   --> cFileName (empty if cancelled) */
+HB_FUNC( W32_EXECSAVEDIALOG )
+{
+   OPENFILENAMEA ofn;
+   char szFile[MAX_PATH] = "";
+   char szFilter[1024];
+   const char * cInit = hb_parc(3);
+   const char * cExt  = hb_parc(4);
+   const char * cName = hb_parc(5);
+
+   DlgBuildFilter( hb_parc(2), szFilter, sizeof(szFilter) );
+
+   if( cName && cName[0] )
+      lstrcpynA( szFile, cName, MAX_PATH );
+
+   memset( &ofn, 0, sizeof(ofn) );
+   ofn.lStructSize     = sizeof(ofn);
+   ofn.hwndOwner       = GetActiveWindow();
+   ofn.lpstrFilter     = szFilter;
+   ofn.lpstrFile       = szFile;
+   ofn.nMaxFile        = MAX_PATH;
+   ofn.lpstrTitle      = hb_parclen(1) ? hb_parc(1) : NULL;
+   ofn.lpstrInitialDir = ( cInit && cInit[0] ) ? cInit : NULL;
+   ofn.lpstrDefExt     = ( cExt && cExt[0] ) ? cExt : NULL;
+   ofn.Flags           = OFN_OVERWRITEPROMPT | OFN_HIDEREADONLY;
+
+   if( GetSaveFileNameA( &ofn ) )
+      hb_retc( szFile );
+   else
+      hb_retc( "" );
+}
+
+/* W32_ExecFontDialog( cFontName, nSize, nColor, nStyle )
+ *   --> { cFontName, nSize, nColor, nStyle } or NIL */
+HB_FUNC( W32_EXECFONTDIALOG )
+{
+   CHOOSEFONTA cf;
+   LOGFONTA lf;
+   const char * cName = hb_parc(1);
+   int nSize  = hb_parni(2);
+   int nColor = hb_parni(3);
+   int nStyle = hb_parni(4);
+   HDC hdc;
+
+   memset( &lf, 0, sizeof(lf) );
+   if( cName && cName[0] ) lstrcpynA( lf.lfFaceName, cName, LF_FACESIZE );
+   else lstrcpyA( lf.lfFaceName, "Segoe UI" );
+   hdc = GetDC( NULL );
+   lf.lfHeight    = -MulDiv( nSize > 0 ? nSize : 10, GetDeviceCaps( hdc, LOGPIXELSY ), 72 );
+   ReleaseDC( NULL, hdc );
+   lf.lfWeight    = ( nStyle & 1 ) ? FW_BOLD : FW_NORMAL;
+   lf.lfItalic    = ( nStyle & 2 ) ? 1 : 0;
+   lf.lfUnderline = ( nStyle & 4 ) ? 1 : 0;
+   lf.lfCharSet   = DEFAULT_CHARSET;
+
+   memset( &cf, 0, sizeof(cf) );
+   cf.lStructSize = sizeof(cf);
+   cf.hwndOwner   = GetActiveWindow();
+   cf.lpLogFont   = &lf;
+   cf.rgbColors   = nColor;
+   cf.Flags       = CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT | CF_EFFECTS;
+
+   if( ChooseFontA( &cf ) )
+   {
+      PHB_ITEM aRet;
+      int outStyle = 0;
+      int pts;
+      hdc = GetDC( NULL );
+      pts = MulDiv( -lf.lfHeight, 72, GetDeviceCaps( hdc, LOGPIXELSY ) );
+      ReleaseDC( NULL, hdc );
+      if( lf.lfWeight >= FW_BOLD ) outStyle |= 1;
+      if( lf.lfItalic )             outStyle |= 2;
+      if( lf.lfUnderline )          outStyle |= 4;
+      aRet = hb_itemArrayNew( 4 );
+      hb_arraySetC ( aRet, 1, lf.lfFaceName );
+      hb_arraySetNI( aRet, 2, pts );
+      hb_arraySetNI( aRet, 3, (int) cf.rgbColors );
+      hb_arraySetNI( aRet, 4, outStyle );
+      hb_itemReturnRelease( aRet );
+   }
+   else
+      hb_ret();  /* NIL */
+}
+
+/* W32_ExecColorDialog( nInitialColor ) --> nColor or -1 */
+HB_FUNC( W32_EXECCOLORDIALOG )
+{
+   CHOOSECOLORA cc;
+   static COLORREF custColors[16] = {0};
+   memset( &cc, 0, sizeof(cc) );
+   cc.lStructSize  = sizeof(cc);
+   cc.hwndOwner    = GetActiveWindow();
+   cc.rgbResult    = (COLORREF) hb_parni(1);
+   cc.lpCustColors = custColors;
+   cc.Flags        = CC_RGBINIT | CC_FULLOPEN;
+
+   if( ChooseColorA( &cc ) )
+      hb_retni( (int) cc.rgbResult );
+   else
+      hb_retni( -1 );
+}
+
 /* W32_SelectFromList( cTitle, aItems ) --> nSelection (1-based) or 0 */
 /* Forms selection dialog - result stored here by WndProc */
 static int s_formsSel = 0;
@@ -6198,6 +6389,20 @@ static ClassMembers s_classMembers[] = {
      "Get() Post()" },
    { "TThread",
      "Join() Start()" },
+   { "TOpenDialog",
+     "cFileName cFilter cInitialDir cTitle DefaultExt Execute() Files FilterIndex "
+     "Height Left Name OnClose Options Top Width" },
+   { "TSaveDialog",
+     "cFileName cFilter cInitialDir cTitle DefaultExt Execute() FilterIndex "
+     "Height Left Name OnClose Options Top Width" },
+   { "TFontDialog",
+     "cFontName Color Execute() Height Left Name OnClose Size Style Top Width" },
+   { "TColorDialog",
+     "Color Execute() Height Left Name OnClose Top Width" },
+   { "TFindDialog",
+     "Execute() FindText Height Left Name OnClose OnFind Options Top Width" },
+   { "TReplaceDialog",
+     "Execute() FindText Height Left Name OnClose OnFind OnReplace Options ReplaceText Top Width" },
    { "TDBFTable",
      "Append() Bof() cAlias cDatabase cFileName cIndexFile cRDD Close() "
      "CreateIndex() Delete() Deleted() Eof() FieldCount() FieldGet() "
@@ -6211,17 +6416,17 @@ static ClassMembers s_classMembers[] = {
 static int CE_CollectUserData( HWND hSci, int classLine, char * buf, int bufSize )
 {
    int pos = 0, l;
-   int totalLines = (int) SciMsg( hSci, 2009, 0, 0 );
+   int totalLines = (int) SciMsg( hSci, SCI_GETLINECOUNT,0, 0 );
    for( l = classLine + 1; l < totalLines; l++ )
    {
       char line[512];
-      int len = (int) SciMsg( hSci, 2094, l, 0 );
+      int len = (int) SciMsg( hSci, SCI_LINELENGTH,l, 0 );
       const char * p;
       int isData, isMethod;
       char name[64];
       int ni;
       if( len <= 0 || len >= (int)sizeof(line) ) continue;
-      SciMsg( hSci, 2095, l, (LPARAM)line );
+      SciMsg( hSci, SCI_GETLINE,l, (LPARAM)line );
       line[len] = 0;
       p = line;
       while( *p == ' ' || *p == '\t' || *p == '\r' || *p == '\n' ) p++;
@@ -6365,11 +6570,11 @@ static const char * CE_FindCurrentClass( HWND hSci, int fromLine )
    for( l = fromLine; l >= 0; l-- )
    {
       char buf[512];
-      int len = (int) SciMsg( hSci, 2094, l, 0 );
+      int len = (int) SciMsg( hSci, SCI_LINELENGTH,l, 0 );
       const char * cp;
       int ci;
       if( len <= 0 || len >= (int)sizeof(buf) ) continue;
-      SciMsg( hSci, 2095, l, (LPARAM)buf );
+      SciMsg( hSci, SCI_GETLINE,l, (LPARAM)buf );
       buf[len] = 0;
       cp = buf;
       while( *cp == ' ' || *cp == '\t' ) cp++;
@@ -6401,18 +6606,88 @@ static const char * CE_FindClassMembers( CODEEDITOR * ed, const char * cls )
 
    if( !ed || !ed->hEdit ) goto cm_combine;
 
+   /* If cls is TForm (or similar base), substitute the user's subclass
+    * found in any editor tab so its DATAs show in the dropdown. */
+   if( _stricmp( cls, "TForm" ) == 0 ) {
+      int tl = (int) SciMsg( ed->hEdit, SCI_GETLINECOUNT, 0, 0 );
+      int kk, found = 0;
+      char userCls[64] = "";
+      for( kk = 0; kk < tl && !found; kk++ ) {
+         char lb[512];
+         int ll = (int) SciMsg( ed->hEdit, SCI_LINELENGTH, kk, 0 );
+         const char * lp; char fc[64]; int fi;
+         if( ll <= 0 || ll >= (int)sizeof(lb) ) continue;
+         SciMsg( ed->hEdit, SCI_GETLINE, kk, (LPARAM)lb );
+         lb[ll] = 0;
+         lp = lb;
+         while( *lp == ' ' || *lp == '\t' ) lp++;
+         if( _strnicmp( lp, "CLASS ", 6 ) != 0 ) continue;
+         lp += 6; while( *lp == ' ' ) lp++;
+         fi = 0;
+         while( fi < 63 && (isalnum((unsigned char)lp[fi]) || lp[fi] == '_') )
+            { fc[fi] = lp[fi]; fi++; }
+         fc[fi] = 0; lp += fi;
+         while( *lp == ' ' ) lp++;
+         if( _strnicmp( lp, "FROM ", 5 ) == 0 ) lp += 5;
+         else if( _strnicmp( lp, "INHERIT ", 8 ) == 0 ) lp += 8;
+         else continue;
+         while( *lp == ' ' ) lp++;
+         if( _strnicmp( lp, "TForm", 5 ) == 0 &&
+             (lp[5] == 0 || lp[5] == ' ' || lp[5] == '\r' || lp[5] == '\n') ) {
+            lstrcpynA( userCls, fc, 63 );
+            found = 1;
+         }
+      }
+      if( !found ) {
+         for( t = 0; t < ed->nTabs && !found; t++ ) {
+            if( t == ed->nActiveTab || !ed->aTexts[t] || !ed->aTexts[t][0] ) continue;
+            /* Scan text line by line for CLASS X FROM TForm */
+            { const char * cur = ed->aTexts[t];
+              while( *cur && !found ) {
+                 const char * le = cur;
+                 const char * lp; char fc[64]; int fi;
+                 while( *le && *le != '\n' ) le++;
+                 lp = cur;
+                 while( lp < le && (*lp == ' ' || *lp == '\t') ) lp++;
+                 if( (le - lp) >= 6 && _strnicmp( lp, "CLASS ", 6 ) == 0 ) {
+                    lp += 6; while( lp < le && *lp == ' ' ) lp++;
+                    fi = 0;
+                    while( fi < 63 && lp < le &&
+                           (isalnum((unsigned char)*lp) || *lp == '_') )
+                       { fc[fi++] = *lp++; }
+                    fc[fi] = 0;
+                    while( lp < le && *lp == ' ' ) lp++;
+                    if( (le - lp) >= 5 && _strnicmp( lp, "FROM ", 5 ) == 0 ) lp += 5;
+                    else if( (le - lp) >= 8 && _strnicmp( lp, "INHERIT ", 8 ) == 0 ) lp += 8;
+                    else { cur = (*le == '\n') ? le + 1 : le; continue; }
+                    while( lp < le && *lp == ' ' ) lp++;
+                    if( (le - lp) >= 5 && _strnicmp( lp, "TForm", 5 ) == 0 &&
+                        (lp + 5 == le || lp[5] == ' ' || lp[5] == '\r') ) {
+                       lstrcpynA( userCls, fc, 63 );
+                       found = 1;
+                       break;
+                    }
+                 }
+                 cur = (*le == '\n') ? le + 1 : le;
+              }
+            }
+         }
+      }
+      if( found ) cls = userCls;
+   }
+
    /* Search current editor for CLASS definition */
    {
-      int totalLines = (int) SciMsg( ed->hEdit, 2009, 0, 0 );
+      int totalLines = (int) SciMsg( ed->hEdit, SCI_GETLINECOUNT, 0, 0 );
       for( i = 0; i < totalLines; i++ )
       {
          char buf[512];
-         int len = (int) SciMsg( ed->hEdit, 2094, i, 0 );
+         int len = (int) SciMsg( ed->hEdit, SCI_LINELENGTH, i, 0 );
          const char * cp;
          char foundCls[64];
          int fi;
          if( len <= 0 || len >= (int)sizeof(buf) ) continue;
-         SciMsg( ed->hEdit, 2095, i, (LPARAM)buf );
+         SciMsg( ed->hEdit, SCI_GETLINE, i, (LPARAM)buf );
          buf[len] = 0;
          cp = buf;
          while( *cp == ' ' || *cp == '\t' ) cp++;
@@ -6538,14 +6813,14 @@ static const char * CE_ResolveVarClass( CODEEDITOR * ed, int colonPos )
       return CE_FindCurrentClass( ed->hEdit, line );
 
    /* Strategy 1: DATA comment — "DATA oName // TClassName" */
-   totalLines = (int) SciMsg( ed->hEdit, 2009, 0, 0 );
+   totalLines = (int) SciMsg( ed->hEdit, SCI_GETLINECOUNT, 0, 0 );
    for( l = 0; l < totalLines; l++ )
    {
       char buf[512];
-      int len = (int) SciMsg( ed->hEdit, 2094, l, 0 );
+      int len = (int) SciMsg( ed->hEdit, SCI_LINELENGTH, l, 0 );
       const char * dp, * cmt;
       if( len <= 0 || len >= (int)sizeof(buf) ) continue;
-      SciMsg( ed->hEdit, 2095, l, (LPARAM)buf );
+      SciMsg( ed->hEdit, SCI_GETLINE, l, (LPARAM)buf );
       buf[len] = 0;
       dp = buf;
       while( *dp == ' ' || *dp == '\t' ) dp++;
@@ -6577,10 +6852,10 @@ static const char * CE_ResolveVarClass( CODEEDITOR * ed, int colonPos )
    for( l = 0; l < totalLines; l++ )
    {
       char buf[512];
-      int len = (int) SciMsg( ed->hEdit, 2094, l, 0 );
+      int len = (int) SciMsg( ed->hEdit, SCI_LINELENGTH, l, 0 );
       const char * vp;
       if( len <= 0 || len >= (int)sizeof(buf) ) continue;
-      SciMsg( ed->hEdit, 2095, l, (LPARAM)buf );
+      SciMsg( ed->hEdit, SCI_GETLINE, l, (LPARAM)buf );
       buf[len] = 0;
       vp = strstr( buf, varName );
       if( !vp ) continue;
@@ -6615,6 +6890,42 @@ static const char * CE_ResolveVarClass( CODEEDITOR * ed, int colonPos )
          if( _strnicmp( base, s_nameMap[i].prefix, (size_t)plen ) == 0 ) {
             char next = base[plen];
             if( next == 0 || isdigit((unsigned char)next) || isupper((unsigned char)next) || next == '_' ) {
+               /* Special-case oForm: prefer the user form class (e.g. Form1)
+                * so DATAs declared in that CLASS appear in the dropdown. */
+               if( _stricmp( s_nameMap[i].cls, "TForm" ) == 0 ) {
+                  /* Scan active tab lines */
+                  int tl = (int) SciMsg( ed->hEdit, SCI_GETLINECOUNT, 0, 0 );
+                  int k;
+                  for( k = 0; k < tl; k++ ) {
+                     char lb[512];
+                     int ll = (int) SciMsg( ed->hEdit, SCI_LINELENGTH, k, 0 );
+                     const char * lp;
+                     char fc[64]; int fi;
+                     if( ll <= 0 || ll >= (int)sizeof(lb) ) continue;
+                     SciMsg( ed->hEdit, SCI_GETLINE, k, (LPARAM)lb );
+                     lb[ll] = 0;
+                     lp = lb;
+                     while( *lp == ' ' || *lp == '\t' ) lp++;
+                     if( _strnicmp( lp, "CLASS ", 6 ) != 0 ) continue;
+                     lp += 6;
+                     while( *lp == ' ' ) lp++;
+                     fi = 0;
+                     while( fi < 63 && (isalnum((unsigned char)lp[fi]) || lp[fi] == '_') )
+                        { fc[fi] = lp[fi]; fi++; }
+                     fc[fi] = 0;
+                     lp += fi;
+                     while( *lp == ' ' ) lp++;
+                     if( _strnicmp( lp, "FROM ", 5 ) == 0 ) lp += 5;
+                     else if( _strnicmp( lp, "INHERIT ", 8 ) == 0 ) lp += 8;
+                     else continue;
+                     while( *lp == ' ' ) lp++;
+                     if( _strnicmp( lp, "TForm", 5 ) == 0 &&
+                         (lp[5] == 0 || lp[5] == ' ' || lp[5] == '\r' || lp[5] == '\n') ) {
+                        lstrcpynA( s_resolved, fc, 63 );
+                        return s_resolved;
+                     }
+                  }
+               }
                lstrcpynA( s_resolved, s_nameMap[i].cls, 63 );
                return s_resolved;
             }
@@ -7024,7 +7335,7 @@ static LRESULT CALLBACK CodeEdWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARA
                      {
                         SciMsg( ed->hEdit, SCI_AUTOCSETIGNORECASE, 1, 0 );
                         SciMsg( ed->hEdit, SCI_AUTOCSETSEPARATOR, ' ', 0 );
-                        SciMsg( ed->hEdit, 2235, 1, 0 );  /* SCI_AUTOCSETORDER = SC_ORDER_PERFORMSORT */
+                        SciMsg( ed->hEdit, 2660, 1, 0 );  /* SCI_AUTOCSETORDER = SC_ORDER_PERFORMSORT */
                         SciMsg( ed->hEdit, SCI_AUTOCSHOW, 0, (LPARAM) members );
                      }
                   }
@@ -7074,6 +7385,14 @@ static LRESULT CALLBACK CodeEdWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARA
       case WM_TIMER:
          if( ed && wParam == 7701 )
          {
+            /* If autocomplete dropdown is active, defer the sync so typing ':'
+             * or selecting a member doesn't close the popup. */
+            if( ed->hEdit && SciMsg( ed->hEdit, 2102, 0, 0 ) )  /* SCI_AUTOCACTIVE */
+            {
+               ed->debounceTimer = SetTimer( hWnd, 7701, 300, NULL );
+               return 0;
+            }
+
             KillTimer( hWnd, 7701 );
             ed->debounceTimer = 0;
 
