@@ -379,10 +379,10 @@ static void InsFontPick( INSDATA * d, int nLVRow )
    if( nLVRow < 0 || nLVRow >= d->nVisible ) return;
    nReal = d->map[nLVRow];
 
-   /* Parse current "FontName,Size[,RRGGBB]" */
+   /* Parse current "FontName,Size[,RRGGBB]" (Size = point size) */
    lstrcpynA( face, d->rows[nReal].szValue, LF_FACESIZE );
    comma = strchr( face, ',' );
-   sz = 18;
+   sz = 12;
    cf.rgbColors = GetSysColor( COLOR_WINDOWTEXT );
    if( comma ) {
       *comma = 0;
@@ -395,17 +395,24 @@ static void InsFontPick( INSDATA * d, int nLVRow )
       }
    }
    lstrcpynA( lf.lfFaceName, face, LF_FACESIZE );
-   lf.lfHeight = -sz;
+   /* Convert point size -> logical pixel height for the LOGFONT the dialog expects */
+   { HDC hTmpDC = GetDC( NULL );
+     lf.lfHeight = -MulDiv( sz, GetDeviceCaps( hTmpDC, LOGPIXELSY ), 72 );
+     ReleaseDC( NULL, hTmpDC );
+   }
    lf.lfCharSet = DEFAULT_CHARSET;
 
    cf.lStructSize = sizeof(cf);
    cf.hwndOwner = d->hWnd;
    cf.lpLogFont = &lf;
+   cf.iPointSize = sz * 10;
    cf.Flags = CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT | CF_EFFECTS;
 
    if( ChooseFontA( &cf ) )
    {
-      int pt = lf.lfHeight < 0 ? -lf.lfHeight : lf.lfHeight;
+      /* cf.iPointSize is point size * 10 — this is what we must store */
+      int pt = cf.iPointSize / 10;
+      if( pt <= 0 ) pt = 12;
       sprintf( szVal, "%s,%d,%02X%02X%02X", lf.lfFaceName, pt,
          GetRValue(cf.rgbColors), GetGValue(cf.rgbColors), GetBValue(cf.rgbColors) );
       lstrcpynA( d->rows[nReal].szValue, szVal, sizeof(d->rows[0].szValue) );
