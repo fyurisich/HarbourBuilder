@@ -1587,6 +1587,9 @@ static function OnEditorTextChange( hEd, nTab )
    // Re-parse code and rebuild form controls
    RestoreFormFromCode( hForm, cCode )
 
+   // Rebuild NSViews for the repopulated children (macOS: UI_*New only adds data)
+   UI_FormRebuildChildren( hForm )
+
    // Update stored code
    aForms[ nFormIdx ][ 3 ] := cCode
 
@@ -1989,11 +1992,8 @@ static function TBOpen()
       CodeEditorAddTab( hCodeEditor, cFormName + ".prg" )
       CodeEditorSetTabText( hCodeEditor, Len(aForms) + 1, cFormCode )
 
-      // Wire up
-      UI_OnSelChange( oDesignForm:hCpp, ;
-         { |hCtrl| OnDesignSelChange( hCtrl ) } )
-      UI_FormOnComponentDrop( oDesignForm:hCpp, ;
-         { |hForm, nType, nL, nT, nW, nH| OnComponentDrop( hForm, nType, nL, nT, nW, nH ) } )
+      // Wire up (includes OnResize for two-way sync on move/resize)
+      WireDesignForm()
    next
 
    // Load modules (after [modules] marker)

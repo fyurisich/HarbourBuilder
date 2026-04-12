@@ -1,6 +1,30 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-12 (macOS: designer two-way sync on project load, live Edit text)
+
+  FIXES
+  - Form designer: opening an existing project no longer made controls
+    disappear after a brief flash. RestoreFormFromCode only repopulated
+    FChildren via UI_*New() which on macOS only call addChild (no NSView
+    creation). Added UI_FormRebuildChildren in cocoa_core.m, invoked from
+    SyncDesignerFromCode, to recreate NSViews after re-parse.
+  - Form background colour disappeared on re-parse because
+    UI_FormClearChildren was removing the HBDotGridView (which renders
+    nClrPane in design mode). It now preserves the dot grid alongside
+    the overlay view.
+  - Re-entry path in createWindowWithRunLoop (cocoa_core.m) now re-adds
+    dot grid and overlay in design mode after wiping subviews, so a
+    second Show/Activate keeps the designer chrome.
+  - Moving/resizing the designer window didn't update code or inspector
+    for forms loaded from a project file — the project-load loop wired
+    OnSelChange and OnComponentDrop but skipped OnResize. It now calls
+    WireDesignForm() so the two-way sync works consistently.
+  - TEdit/TMemo :Text returned the cached FText buffer instead of the
+    live value typed by the user. UI_GetProp("cText") now reads
+    stringValue from NSTextField (or string from NSTextView) for
+    CT_EDIT and CT_MEMO before returning, matching Win32 semantics.
+
 2026-04-12 (macOS: standard dialog components, autocomplete popup, palette icons)
 
   FEATURES

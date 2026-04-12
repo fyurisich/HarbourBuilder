@@ -2116,7 +2116,22 @@ static HBPaletteTarget * s_palTarget = nil;
          Re-create children to pick up toolbar/palette added after Show. */
       for( NSView * sv in [[FContentView subviews] copy] )
          [sv removeFromSuperview];
+      FOverlayView = nil;
+      if( FDesignMode ) {
+         HBDotGridView * grid = [[HBDotGridView alloc] initWithFrame:[FContentView bounds]];
+         if( FBgColor ) grid->bgColor = FBgColor;
+         [grid setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+         [FContentView addSubview:grid];
+      }
       [self createAllChildren];
+      if( FDesignMode ) {
+         HBOverlayView * ov = [[HBOverlayView alloc] initWithFrame:[FContentView bounds]];
+         ov->form = self;
+         [ov setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
+         [FContentView addSubview:ov];
+         FOverlayView = ov;
+         [FWindow makeFirstResponder:ov];
+      }
       [FWindow makeKeyAndOrderFront:nil];
       [NSApp activateIgnoringOtherApps:YES];
       FRunning = YES;
@@ -3487,7 +3502,29 @@ HB_FUNC( UI_GETPROP )
    const char * szProp = hb_parc(2);
    if( !p || !szProp ) { hb_ret(); return; }
 
-   if( strcasecmp(szProp,"cText")==0 )          hb_retc( p->FText );
+   if( strcasecmp(szProp,"cText")==0 ) {
+      /* For editable controls, return live value from the NSView */
+      if( p->FView ) {
+         NSString * s = nil;
+         if( p->FControlType == CT_EDIT && [p->FView isKindOfClass:[NSTextField class]] )
+            s = [(NSTextField *)p->FView stringValue];
+         else if( p->FControlType == CT_MEMO ) {
+            NSView * v = p->FView;
+            if( [v isKindOfClass:[NSScrollView class]] ) {
+               NSTextView * tv = (NSTextView *)[(NSScrollView *)v documentView];
+               if( tv ) s = [tv string];
+            } else if( [v isKindOfClass:[NSTextView class]] ) {
+               s = [(NSTextView *)v string];
+            }
+         }
+         if( s ) {
+            const char * c = [s UTF8String];
+            strncpy( p->FText, c ? c : "", sizeof(p->FText) - 1 );
+            p->FText[sizeof(p->FText) - 1] = 0;
+         }
+      }
+      hb_retc( p->FText );
+   }
    else if( strcasecmp(szProp,"nLeft")==0 )      hb_retni( p->FLeft );
    else if( strcasecmp(szProp,"nTop")==0 )       hb_retni( p->FTop );
    else if( strcasecmp(szProp,"nWidth")==0 )     hb_retni( p->FWidth );
@@ -4761,6 +4798,38 @@ HB_FUNC( MAC_SELECTFROMLIST )
       hb_retni( 0 );
 }
 
+/* UI_FormRebuildChildren( hForm ) - recreate NSViews for children added after Show.
+   Used by the IDE after RestoreFormFromCode repopulates FChildren but the
+   UI_*New() helpers only call addChild (no view creation). */
+HB_FUNC( UI_FORMREBUILDCHILDREN )
+{
+   HBForm * pForm = GetForm(1);
+   if( !pForm || !pForm->FContentView ) return;
+
+   /* Remove existing control views (keep dot grid + overlay) */
+   for( NSView * sv in [[pForm->FContentView subviews] copy] )
+   {
+      if( [sv isKindOfClass:[HBDotGridView class]] ) continue;
+      if( pForm->FOverlayView && sv == (NSView *)pForm->FOverlayView ) continue;
+      [sv removeFromSuperview];
+   }
+
+   /* Drop FView refs so createViewInParent rebuilds them */
+   for( int i = 0; i < pForm->FChildCount; i++ )
+      if( pForm->FChildren[i] )
+         pForm->FChildren[i]->FView = nil;
+
+   [pForm createAllChildren];
+
+   /* Keep overlay on top */
+   if( pForm->FOverlayView ) {
+      [(NSView *)pForm->FOverlayView removeFromSuperview];
+      [pForm->FContentView addSubview:(NSView *)pForm->FOverlayView];
+      [(NSView *)pForm->FOverlayView setNeedsDisplay:YES];
+   }
+   [pForm->FContentView setNeedsDisplay:YES];
+}
+
 /* UI_FormClearChildren( hForm ) - remove all child controls from form */
 HB_FUNC( UI_FORMCLEARCHILDREN )
 {
@@ -4772,8 +4841,9 @@ HB_FUNC( UI_FORMCLEARCHILDREN )
    {
       for( NSView * sv in [[pForm->FContentView subviews] copy] )
       {
-         /* Keep overlay view for design mode */
+         /* Keep overlay view and dot grid for design mode */
          if( pForm->FOverlayView && sv == (NSView *)pForm->FOverlayView ) continue;
+         if( [sv isKindOfClass:[HBDotGridView class]] ) continue;
          [sv removeFromSuperview];
       }
    }
