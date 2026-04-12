@@ -1,6 +1,19 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-12 (macOS: runtime form position matches design, test sample)
+
+  FIXES
+  - Runtime form window appeared ~30px above its design-time position on
+    macOS. POS_DESIGNED placement used FHeight (content-only height) when
+    flipping Y for setFrameOrigin, which expects the full frame height
+    (incl. title bar). Now reads the window's actual frame height. Same
+    fix applied to UI_FormSetPos.
+
+  SAMPLES
+  - Added samples/projects/test (Project1.hbp/prg + Form1.prg), a small
+    macOS sample with a label, edit and button wired to hb_memowrit.
+
 2026-04-12 (macOS: designer two-way sync on project load, live Edit text)
 
   FIXES

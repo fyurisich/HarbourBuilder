@@ -2251,10 +2251,15 @@ static HBPaletteTarget * s_palTarget = nil;
          case POS_DESIGNED:
          case POS_DEFAULT:
          default: {
+            /* FTop is the distance from the top of the screen to the top
+               of the window frame (title bar), FHeight is the content
+               height. setFrameOrigin uses the full frame (incl. title bar)
+               so we must use the frame's height, not FHeight. */
             NSRect screenFrame = [[NSScreen mainScreen] frame];
+            NSRect fr = [FWindow frame];
             NSPoint origin;
             origin.x = FLeft;
-            origin.y = screenFrame.size.height - FTop - FHeight;
+            origin.y = screenFrame.size.height - FTop - fr.size.height;
             [FWindow setFrameOrigin:origin];
             break;
          }
@@ -4475,11 +4480,13 @@ HB_FUNC( UI_FORMSETPOS )
       p->FCenter = NO;
       p->FPosition = POS_DESIGNED;
       if( p->FWindow ) {
-         /* macOS uses bottom-left origin, flip Y */
+         /* macOS uses bottom-left origin, flip Y. Use full frame height
+            (incl. title bar) — FHeight is content-only. */
          NSRect screenFrame = [[NSScreen mainScreen] frame];
+         NSRect fr = [p->FWindow frame];
          NSPoint origin;
          origin.x = p->FLeft;
-         origin.y = screenFrame.size.height - p->FTop - p->FHeight;
+         origin.y = screenFrame.size.height - p->FTop - fr.size.height;
          [p->FWindow setFrameOrigin:origin];
       }
    }
