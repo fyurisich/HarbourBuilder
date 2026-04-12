@@ -517,10 +517,17 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
          int i;
          for( i = 0; i < FChildCount; i++ )
          {
-            if( FChildren[i]->FHandle == hChild && FChildren[i]->FClrPane != CLR_INVALID )
+            if( FChildren[i]->FHandle == hChild )
             {
-               SetBkColor( (HDC) wParam, FChildren[i]->FClrPane );
-               return (LRESULT) FChildren[i]->FBkBrush;
+               if( FChildren[i]->FClrText != CLR_INVALID )
+                  SetTextColor( (HDC) wParam, FChildren[i]->FClrText );
+               if( FChildren[i]->FClrPane != CLR_INVALID )
+               {
+                  SetBkColor( (HDC) wParam, FChildren[i]->FClrPane );
+                  return (LRESULT) FChildren[i]->FBkBrush;
+               }
+               SetBkMode( (HDC) wParam, TRANSPARENT );
+               return (LRESULT) FBkBrush;
             }
          }
          SetBkMode( (HDC) wParam, TRANSPARENT );

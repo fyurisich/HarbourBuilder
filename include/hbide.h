@@ -228,6 +228,7 @@ public:
    BYTE         FControlType;
    HFONT        FFont;
    COLORREF     FClrPane;
+   COLORREF     FClrText;     /* CLR_INVALID = inherit */
    int          FInterval;     /* Timer interval (ms), default 1000 */
    HBRUSH       FBkBrush;
 

@@ -848,10 +848,17 @@ HB_FUNC( UI_SETPROP )
          }
       }
    }
+   else if( lstrcmpi( szProp, "nClrText" ) == 0 )
+   {
+      p->FClrText = (COLORREF) hb_parnint(3);
+      if( p->FHandle )
+         InvalidateRect( p->FHandle, NULL, TRUE );
+   }
    else if( lstrcmpi( szProp, "oFont" ) == 0 && HB_ISCHAR(3) )
    {
       char szFace[LF_FACESIZE] = {0};
       int nSize = 12, i;
+      COLORREF clrText = CLR_INVALID;
       const char * val = hb_parc(3);
       const char * comma = strchr( val, ',' );
       if( comma ) {
@@ -859,9 +866,18 @@ HB_FUNC( UI_SETPROP )
          if( len >= LF_FACESIZE ) len = LF_FACESIZE - 1;
          memcpy( szFace, val, len ); szFace[len] = 0;
          nSize = atoi( comma + 1 );
+         /* Optional third field: color as hex RRGGBB */
+         { const char * comma2 = strchr( comma + 1, ',' );
+           if( comma2 ) {
+              unsigned int r=0,g=0,b=0;
+              if( sscanf( comma2 + 1, "%02X%02X%02X", &r, &g, &b ) == 3 )
+                 clrText = RGB( r, g, b );
+           }
+         }
       } else
          lstrcpynA( szFace, val, LF_FACESIZE );
       if( nSize <= 0 ) nSize = 12;
+      if( clrText != CLR_INVALID ) p->FClrText = clrText;
 
       { LOGFONTA lf = {0};
         HFONT hNew;
@@ -1048,12 +1064,20 @@ HB_FUNC( UI_GETPROP )
       hb_retc( ((TBrowse*)p)->FDataSourceName );
    else if( lstrcmpi( szProp, "nClrPane" ) == 0 )
       hb_retnint( (HB_MAXINT) p->FClrPane );
+   else if( lstrcmpi( szProp, "nClrText" ) == 0 )
+      hb_retnint( (HB_MAXINT) p->FClrText );
    else if( lstrcmpi( szProp, "oFont" ) == 0 )
    {
       char szFont[128] = "Segoe UI,12";
       LOGFONTA lf = {0};
-      if( p->FFont && GetObjectA( p->FFont, sizeof(lf), &lf ) )
-         sprintf( szFont, "%s,%d", lf.lfFaceName, lf.lfHeight < 0 ? -lf.lfHeight : lf.lfHeight );
+      if( p->FFont && GetObjectA( p->FFont, sizeof(lf), &lf ) ) {
+         int sz = lf.lfHeight < 0 ? -lf.lfHeight : lf.lfHeight;
+         if( p->FClrText != CLR_INVALID )
+            sprintf( szFont, "%s,%d,%02X%02X%02X", lf.lfFaceName, sz,
+               GetRValue(p->FClrText), GetGValue(p->FClrText), GetBValue(p->FClrText) );
+         else
+            sprintf( szFont, "%s,%d", lf.lfFaceName, sz );
+      }
       hb_retc( szFont );
    }
    else

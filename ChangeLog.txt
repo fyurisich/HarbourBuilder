@@ -1,6 +1,22 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-12 (Windows: Font dialog picks text color)
+
+  Windows ChooseFont dialog now opens with CF_EFFECTS so the user can
+  pick a text color in the same dialog (matching macOS, whose font
+  panel embeds a color picker). oFont property now carries an optional
+  third field "FaceName,Size,RRGGBB":
+  - InsFontPick parses current value (face, size, optional hex color),
+    seeds cf.rgbColors, and writes back a three-field string; it also
+    pushes nClrText via UI_SetProp for immediate live feedback
+  - hbbridge.cpp UI_SetProp("oFont") parses the optional color and
+    stores it in FClrText; new "nClrText" property for direct access
+  - TControl gains a COLORREF FClrText (CLR_INVALID = inherit)
+  - TForm WM_CTLCOLORSTATIC/BTN/EDIT/LISTBOX applies SetTextColor when
+    FClrText is set, independent of FClrPane
+  - UI_GetProp("oFont") emits the third field only when FClrText is set
+
 2026-04-12 (Windows: TLabel font preserved at runtime)
 
   FIX: Labels assigned an oFont in the designer now render with that

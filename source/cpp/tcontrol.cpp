@@ -56,6 +56,7 @@ TControl::TControl()
    FControlType = 0;
    FFont = NULL;
    FClrPane = CLR_INVALID;  /* no color = inherit from parent */
+   FClrText = CLR_INVALID;  /* no text color = system default */
    FInterval = 1000;
    FBkBrush = NULL;
    FCtrlParent = NULL;

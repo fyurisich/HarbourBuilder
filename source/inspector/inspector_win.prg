@@ -371,28 +371,59 @@ static void InsFontPick( INSDATA * d, int nLVRow )
    LOGFONTA lf = {0};
    int nReal;
    char szVal[256];
+   char face[LF_FACESIZE];
    char * comma;
+   char * comma2;
+   int sz;
 
    if( nLVRow < 0 || nLVRow >= d->nVisible ) return;
    nReal = d->map[nLVRow];
 
-   /* Parse current "FontName,Size" */
-   lstrcpynA( lf.lfFaceName, d->rows[nReal].szValue, LF_FACESIZE );
-   comma = strchr( lf.lfFaceName, ',' );
-   if( comma ) { *comma = 0; lf.lfHeight = -atoi( comma + 1 ); }
-   else        lf.lfHeight = -18;
+   /* Parse current "FontName,Size[,RRGGBB]" */
+   lstrcpynA( face, d->rows[nReal].szValue, LF_FACESIZE );
+   comma = strchr( face, ',' );
+   sz = 18;
+   cf.rgbColors = GetSysColor( COLOR_WINDOWTEXT );
+   if( comma ) {
+      *comma = 0;
+      sz = atoi( comma + 1 );
+      comma2 = strchr( comma + 1, ',' );
+      if( comma2 ) {
+         unsigned int r=0,g=0,b=0;
+         if( sscanf( comma2 + 1, "%02X%02X%02X", &r, &g, &b ) == 3 )
+            cf.rgbColors = RGB( r, g, b );
+      }
+   }
+   lstrcpynA( lf.lfFaceName, face, LF_FACESIZE );
+   lf.lfHeight = -sz;
    lf.lfCharSet = DEFAULT_CHARSET;
 
    cf.lStructSize = sizeof(cf);
    cf.hwndOwner = d->hWnd;
    cf.lpLogFont = &lf;
-   cf.Flags = CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT;
+   cf.Flags = CF_SCREENFONTS | CF_INITTOLOGFONTSTRUCT | CF_EFFECTS;
 
    if( ChooseFontA( &cf ) )
    {
-      sprintf( szVal, "%s,%d", lf.lfFaceName, lf.lfHeight < 0 ? -lf.lfHeight : lf.lfHeight );
+      int pt = lf.lfHeight < 0 ? -lf.lfHeight : lf.lfHeight;
+      sprintf( szVal, "%s,%d,%02X%02X%02X", lf.lfFaceName, pt,
+         GetRValue(cf.rgbColors), GetGValue(cf.rgbColors), GetBValue(cf.rgbColors) );
       lstrcpynA( d->rows[nReal].szValue, szVal, sizeof(d->rows[0].szValue) );
       InsApplyValue( d, nReal, szVal );
+
+      /* Also push nClrText so WM_CTLCOLORSTATIC sees it immediately */
+      if( d->hCtrl )
+      {
+         PHB_DYNS pDyn = hb_dynsymFindName( "UI_SETPROP" );
+         if( pDyn )
+         {
+            hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+            hb_vmPushNumInt( (HB_MAXINT) d->hCtrl );
+            hb_vmPushString( "nClrText", 8 );
+            hb_vmPushNumInt( (HB_MAXINT) cf.rgbColors );
+            hb_vmDo( 3 );
+         }
+      }
       InsRebuild( d );
    }
 }
