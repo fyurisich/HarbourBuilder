@@ -1,6 +1,27 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-12 (Windows: Live sync code editor → form designer + inspector)
+
+  LIVE CODE-TO-DESIGNER SYNC (Windows):
+  - Debounced text-change callback in Scintilla editor (500ms after last
+    keystroke) — new pOnTextChange, debounceTimer (UINT_PTR), bSettingText
+    fields in CODEEDITOR struct
+  - WM_TIMER handler (id 7701) in CodeEdWndProc fires the Harbour block
+    with (hEditor, nTab) after 500ms of inactivity via SetTimer/KillTimer
+  - bSettingText guard in CodeEditorSetTabText and SwitchTab prevents the
+    callback from firing when the IDE updates text programmatically
+  - New HB_FUNC(CODEEDITORONTEXTCHANGE) to register callback from Harbour
+  - OnEditorTextChange: clears form children, re-parses code via
+    RestoreFormFromCode, refreshes inspector — only for form tabs
+  - lSyncingFromCode static guard prevents SyncDesignerToCode from
+    regenerating code while syncing from editor (bidirectional protection)
+  - Cursor/scroll preservation: saves SCI_GETCURRENTPOS and
+    SCI_GETFIRSTVISIBLELINE before callback, restores them after, clamps
+    cursor to new document length
+  - SCI_GETFIRSTVISIBLELINE (2152) and SCI_SETFIRSTVISIBLELINE (2613)
+    defines added
+
 2026-04-12 (Linux: Live sync code editor → form designer + inspector)
 
   LIVE CODE-TO-DESIGNER SYNC (Linux/GTK3):

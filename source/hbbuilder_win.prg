@@ -27,6 +27,7 @@ static nScreenW      // Screen width
 static nScreenH      // Screen height
 static cCurrentFile  // Current file path (empty = untitled)
 static lSwitching := .f.  // Guard against re-entrant SwitchToForm
+static lSyncingFromCode := .f.  // Guard: true while syncing code editor -> form
 
 // Project form list (C++Builder: each form = a unit)
 // Each entry: { cName, oForm, cCode, nFormX, nFormY }
@@ -352,6 +353,7 @@ function Main()
 
    // Tab change callback
    CodeEditorOnTabChange( hCodeEditor, { |hEd, nTab| OnEditorTabChange( hEd, nTab ) } )
+   CodeEditorOnTextChange( hCodeEditor, { |hEd, nTab| OnEditorTextChange( hEd, nTab ) } )
 
    // === Window 2: Object Inspector (left column, below bar) ===
    InspectorOpen()
@@ -1325,6 +1327,11 @@ static function SyncDesignerToCode()
       return nil
    endif
 
+   // Don't regenerate code while syncing from code editor
+   if lSyncingFromCode
+      return nil
+   endif
+
    // Get existing code to preserve METHOD implementations
    cOldCode := CodeEditorGetTabText( hCodeEditor, nActiveForm + 1 )
 
@@ -1364,6 +1371,56 @@ static function SyncDesignerToCode()
    // Update stored code and editor tab
    aForms[ nActiveForm ][ 3 ] := cNewCode
    CodeEditorSetTabText( hCodeEditor, nActiveForm + 1, cNewCode )
+
+return nil
+
+// Live sync: code editor -> form designer + inspector (debounced 500ms)
+static function OnEditorTextChange( hEd, nTab )
+
+   local nFormIdx, cCode, hForm
+
+   HB_SYMBOL_UNUSED( hEd )
+
+   // Avoid re-entrant loop (SyncDesignerToCode updates editor text)
+   if lSyncingFromCode
+      return nil
+   endif
+
+   // Only sync form tabs (tab 1 = project, tab 2+ = forms)
+   if nTab <= 1
+      return nil
+   endif
+
+   nFormIdx := nTab - 1
+   if nFormIdx < 1 .or. nFormIdx > Len( aForms )
+      return nil
+   endif
+
+   cCode := CodeEditorGetTabText( hCodeEditor, nTab )
+   if Empty( cCode )
+      return nil
+   endif
+
+   hForm := aForms[ nFormIdx ][ 2 ]:hCpp
+   if hForm == 0
+      return nil
+   endif
+
+   lSyncingFromCode := .t.
+
+   // Remove existing child controls before re-parsing
+   UI_FormClearChildren( hForm )
+
+   // Re-parse code and rebuild form controls
+   RestoreFormFromCode( hForm, cCode )
+
+   // Update stored code
+   aForms[ nFormIdx ][ 3 ] := cCode
+
+   // Refresh inspector with updated properties
+   InspectorRefresh( hForm )
+
+   lSyncingFromCode := .f.
 
 return nil
 
@@ -5576,6 +5633,8 @@ HB_FUNC( W32_ABOUTDIALOG )
 
 /* Misc */
 #define SCI_SETTABWIDTH        2036
+#define SCI_GETFIRSTVISIBLELINE 2152
+#define SCI_SETFIRSTVISIBLELINE 2613
 #define SCI_SETINDENTATIONGUIDES 2132
 #define SC_IV_LOOKBOTH           3
 #define SCI_SETVIEWEOL         2356
@@ -5639,6 +5698,10 @@ typedef struct {
    char * aTexts[MAX_TABS];
    /* Harbour callback for tab change */
    PHB_ITEM pOnTabChange;
+   /* Debounced text-change callback */
+   PHB_ITEM pOnTextChange;
+   UINT_PTR debounceTimer;    /* SetTimer id, 0 = none */
+   int bSettingText;          /* guard: programmatic text set in progress */
    /* Find bar */
    HWND hFindBar;     /* Find bar panel */
    HWND hFindEdit;    /* Search text input */
@@ -6026,6 +6089,7 @@ static void SwitchTab( CODEEDITOR * ed, int nNewTab )
 
    /* Load new tab text */
    ed->nActiveTab = nNewTab;
+   ed->bSettingText = 1;
    SciMsg( ed->hEdit, SCI_SETTEXT, 0,
       (LPARAM)( ed->aTexts[nNewTab] ? ed->aTexts[nNewTab] : "" ) );
 
@@ -6034,6 +6098,7 @@ static void SwitchTab( CODEEDITOR * ed, int nNewTab )
 
    /* Update Harbour folding for the new tab */
    UpdateHarbourFolding( ed->hEdit );
+   ed->bSettingText = 0;
 
    /* Update tab selection */
    SendMessage( ed->hTab, TCM_SETCURSEL, nNewTab, 0 );
@@ -6968,13 +7033,22 @@ static LRESULT CALLBACK CodeEdWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARA
 
             /* Update Harbour folding when text is inserted/deleted (not fold changes) */
             if( scn->code == SCN_MODIFIED ) {
-               /* Only update folding on actual text insert (0x01) or delete (0x02) with line changes */
-               if( scn->linesAdded != 0 && (scn->modificationType & (0x01|0x02)) ) {
-                  static int s_inFoldUpdate = 0;
-                  if( !s_inFoldUpdate ) {
-                     s_inFoldUpdate = 1;
-                     UpdateHarbourFolding( ed->hEdit );
-                     s_inFoldUpdate = 0;
+               if( scn->modificationType & (0x01|0x02) ) {  /* SC_MOD_INSERTTEXT | SC_MOD_DELETETEXT */
+                  /* Only update folding on actual text insert/delete with line changes */
+                  if( scn->linesAdded != 0 ) {
+                     static int s_inFoldUpdate = 0;
+                     if( !s_inFoldUpdate ) {
+                        s_inFoldUpdate = 1;
+                        UpdateHarbourFolding( ed->hEdit );
+                        s_inFoldUpdate = 0;
+                     }
+                  }
+                  /* Schedule debounced text-change callback (500ms) */
+                  if( ed->pOnTextChange && !ed->bSettingText && ed->hWnd )
+                  {
+                     if( ed->debounceTimer )
+                        KillTimer( ed->hWnd, ed->debounceTimer );
+                     ed->debounceTimer = SetTimer( ed->hWnd, 7701, 500, NULL );
                   }
                }
                UpdateStatusBar( ed );
@@ -6989,6 +7063,40 @@ static LRESULT CALLBACK CodeEdWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARA
             if( id == 901 ) CE_FindNext(ed, TRUE);
             if( id == 902 ) CE_FindNext(ed, FALSE);
             if( id == 903 ) CE_ShowFindBar(ed, FALSE, FALSE);
+         }
+         break;
+
+      case WM_TIMER:
+         if( ed && wParam == 7701 )
+         {
+            KillTimer( hWnd, 7701 );
+            ed->debounceTimer = 0;
+
+            if( ed->pOnTextChange && HB_IS_BLOCK( ed->pOnTextChange ) && ed->hEdit )
+            {
+               int savedPos   = (int) SciMsg( ed->hEdit, SCI_GETCURRENTPOS, 0, 0 );
+               int savedFirst = (int) SciMsg( ed->hEdit, SCI_GETFIRSTVISIBLELINE, 0, 0 );
+               int newLen;
+               PHB_ITEM pEd, pTab;
+
+               ed->bSettingText = 1;
+
+               pEd  = hb_itemPutNInt( NULL, (HB_PTRUINT) ed );
+               pTab = hb_itemPutNI( NULL, ed->nActiveTab + 1 );
+               hb_evalBlock( ed->pOnTextChange, pEd, pTab, NULL );
+               hb_itemRelease( pEd );
+               hb_itemRelease( pTab );
+
+               ed->bSettingText = 0;
+
+               /* Restore cursor and scroll position */
+               newLen = (int) SciMsg( ed->hEdit, SCI_GETLENGTH, 0, 0 );
+               if( savedPos > newLen ) savedPos = newLen;
+               SciMsg( ed->hEdit, SCI_GOTOPOS, savedPos, 0 );
+               SciMsg( ed->hEdit, SCI_SETFIRSTVISIBLELINE, savedFirst, 0 );
+               SetFocus( ed->hEdit );
+            }
+            return 0;
          }
          break;
 
@@ -7256,10 +7364,12 @@ HB_FUNC( CODEEDITORSETTABTEXT )
 
       if( bChanged )
       {
+         ed->bSettingText = 1;
          SciMsg( ed->hEdit, SCI_SETTEXT, 0, (LPARAM) ed->aTexts[nTab] );
          SciMsg( ed->hEdit, SCI_EMPTYUNDOBUFFER, 0, 0 );
          /* Scintilla handles syntax highlighting automatically via lexer */
          UpdateHarbourFolding( ed->hEdit );
+         ed->bSettingText = 0;
       }
    }
 }
@@ -7369,6 +7479,22 @@ HB_FUNC( CODEEDITORONTABCHANGE )
    ed->pOnTabChange = pBlock ? hb_itemNew( pBlock ) : NULL;
 }
 
+/* CodeEditorOnTextChange( hEditor, bBlock )
+ * Register a debounced callback fired 500ms after the user stops typing.
+ * Block receives ( hEditor, nTab ) where nTab is 1-based. */
+HB_FUNC( CODEEDITORONTEXTCHANGE )
+{
+   CODEEDITOR * ed = (CODEEDITOR *) (HB_PTRUINT) hb_parnint(1);
+   PHB_ITEM pBlock = hb_param( 2, HB_IT_BLOCK );
+
+   if( !ed ) return;
+
+   if( ed->pOnTextChange )
+      hb_itemRelease( ed->pOnTextChange );
+
+   ed->pOnTextChange = pBlock ? hb_itemNew( pBlock ) : NULL;
+}
+
 /* CodeEditorBringToFront( hEditor ) */
 HB_FUNC( CODEEDITORBRINGTOFRONT )
 {
@@ -7458,6 +7584,8 @@ HB_FUNC( CODEEDITORDESTROY )
    if( ed )
    {
       if( ed->pOnTabChange ) hb_itemRelease( ed->pOnTabChange );
+      if( ed->pOnTextChange ) hb_itemRelease( ed->pOnTextChange );
+      if( ed->debounceTimer && ed->hWnd ) KillTimer( ed->hWnd, ed->debounceTimer );
       for( i = 0; i < ed->nTabs; i++ )
          if( ed->aTexts[i] ) free( ed->aTexts[i] );
       if( ed->hWnd ) DestroyWindow( ed->hWnd );
