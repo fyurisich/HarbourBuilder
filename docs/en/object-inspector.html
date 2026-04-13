@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Object Inspector - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html" class="active">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">IDE Features</a> <span>/</span> Object Inspector
+</div>
+
+<h1>Object Inspector</h1>
+<p>The Object Inspector is a properties and events editor similar to Delphi and C++Builder.
+It allows you to visually configure control properties and assign event handlers without writing code manually.</p>
+
+<h2>Overview</h2>
+
+<p>The Object Inspector has two main tabs:</p>
+<ul>
+  <li><strong>Properties</strong> — Edit control properties in a categorized grid</li>
+  <li><strong>Events</strong> — Assign event handlers to control events</li>
+</ul>
+
+<p>At the top, a <strong>Control Selector</strong> ComboBox lets you switch between all controls on the current form.</p>
+
+<div class="info-box tip">
+  <strong>Quick Access</strong>
+  <p>Select any control in the Form Designer to see its properties in the Object Inspector.
+  Changes you make are instantly reflected in the designer and code.</p>
+</div>
+
+<h2>Properties Tab</h2>
+
+<h3>Categorized Grid</h3>
+<p>Properties are organized into categories for easier navigation:</p>
+
+<table>
+  <tr><th>Category</th><th>Properties</th></tr>
+  <tr><td><strong>Appearance</strong></td><td>cPrompt, cValue, nWidth, nHeight, nClrPane, nClrText, oFont, cPicture</td></tr>
+  <tr><td><strong>Position</strong></td><td>nLeft, nTop, nWidth, nHeight</td></tr>
+  <tr><td><strong>Behavior</strong></td><td>lVisible, lEnabled, lTabStop, lReadOnly</td></tr>
+  <tr><td><strong>Data</strong></td><td>cDataSource, cDataField, nDataType</td></tr>
+  <tr><td><strong>Font</strong></td><td>cFontName, nFontSize, lFontBold, lFontItalic</td></tr>
+</table>
+
+<h3>Property Editors</h3>
+<p>Different property types use different editors:</p>
+
+<table>
+  <tr><th>Property Type</th><th>Editor</th><th>Example</th></tr>
+  <tr><td>String</td><td>Text input</td><td>Control name, caption text</td></tr>
+  <tr><td>Number</td><td>Numeric input</td><td>Position, size values</td></tr>
+  <tr><td>Logical</td><td>Dropdown (.T./.F.)</td><td>Visible, Enabled</td></tr>
+  <tr><td>Color</td><td>Color picker</td><td>Background, text color</td></tr>
+  <tr><td>Font</td><td>Font picker</td><td>Font name, size, style</td></tr>
+  <tr><td>Enum</td><td>Dropdown list</td><td>BorderStyle, Position, WindowState</td></tr>
+</table>
+
+<h3>Dropdown Editors for Enumerations</h3>
+<p>Properties with predefined values show dropdown lists:</p>
+
+<table>
+  <tr><th>Property</th><th>Values</th></tr>
+  <tr><td><code>nBorderStyle</code></td><td>0=bsSizeable, 1=bsSingle, 2=bsNone, 3=bsToolWindow</td></tr>
+  <tr><td><code>nPosition</code></td><td>0=poDesigned, 1=poCenter, 2=poCenterScreen</td></tr>
+  <tr><td><code>nWindowState</code></td><td>0=wsNormal, 1=wsMinimized, 2=wsMaximized</td></tr>
+  <tr><td><code>nFormStyle</code></td><td>0=fsNormal, 1=fsStayOnTop</td></tr>
+  <tr><td><code>nCursor</code></td><td>0=crDefault, 1=crArrow, 2=crIBeam, 3=crHand, etc.</td></tr>
+</table>
+
+<h2>Events Tab</h2>
+
+<p>The Events tab shows all available events for the selected control type. The event list is dynamic
+and retrieved via <code>UI_GETALLEVENTS</code> from the backend.</p>
+
+<h3>Assigning Event Handlers</h3>
+
+<ol>
+  <li><strong>Double-click</strong> an event to auto-generate a handler</li>
+  <li><strong>Type</strong> directly in the event field to assign a code block</li>
+  <li><strong>Select</strong> from existing methods via dropdown</li>
+</ol>
+
+<pre><span class="comment">// Double-clicking OnClick generates:</span>
+oBtn:<span class="fn">OnClick</span> := { || <span class="fn">Button1Click</span>() }
+
+<span class="kw">METHOD</span> <span class="fn">Button1Click</span>() <span class="kw">CLASS</span> TForm1
+   <span class="fn">MsgInfo</span>( <span class="st">"Button clicked!"</span> )
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Common Events</h3>
+
+<table>
+  <tr><th>Event</th><th>Fires When</th><th>Available For</th></tr>
+  <tr><td><code>OnClick</code></td><td>User clicks the control</td><td>Button, CheckBox, RadioButton, ListBox, etc.</td></tr>
+  <tr><td><code>OnChange</code></td><td>Control value changes</td><td>Edit, Memo, ComboBox, CheckBox, etc.</td></tr>
+  <tr><td><code>OnInit</code></td><td>Control is created and initialized</td><td>All controls</td></tr>
+  <tr><td><code>OnClose</code></td><td>Form is about to close</td><td>Form only</td></tr>
+  <tr><td><code>OnTimer</code></td><td>Timer interval elapsed</td><td>Timer only</td></tr>
+  <tr><td><code>OnKeyDown</code></td><td>Key is pressed down</td><td>All input controls</td></tr>
+  <tr><td><code>OnKeyUp</code></td><td>Key is released</td><td>All input controls</td></tr>
+  <tr><td><code>OnKeyPress</code></td><td>Character key pressed</td><td>All input controls</td></tr>
+  <tr><td><code>OnMouseDown</code></td><td>Mouse button pressed</td><td>All controls</td></tr>
+  <tr><td><code>OnMouseUp</code></td><td>Mouse button released</td><td>All controls</td></tr>
+  <tr><td><code>OnMouseMove</code></td><td>Mouse moves over control</td><td>All controls</td></tr>
+  <tr><td><code>OnMouseWheel</code></td><td>Mouse wheel scrolled</td><td>All controls</td></tr>
+  <tr><td><code>OnDblClick</code></td><td>User double-clicks</td><td>All controls</td></tr>
+  <tr><td><code>OnCreate</code></td><td>Form is being created</td><td>Form only</td></tr>
+  <tr><td><code>OnDestroy</code></td><td>Form is being destroyed</td><td>Form only</td></tr>
+  <tr><td><code>OnShow</code></td><td>Form is shown</td><td>Form only</td></tr>
+  <tr><td><code>OnHide</code></td><td>Form is hidden</td><td>Form only</td></tr>
+  <tr><td><code>OnActivate</code></td><td>Form receives focus</td><td>Form only</td></tr>
+  <tr><td><code>OnResize</code></td><td>Form is resized</td><td>Form only</td></tr>
+  <tr><td><code>OnPaint</code></td><td>Form needs repainting</td><td>Form only</td></tr>
+</table>
+
+<h2>Property Types (C++ Backend)</h2>
+
+<p>In the C++ backend, properties are defined with types:</p>
+
+<table>
+  <tr><th>Constant</th><th>Value</th><th>Usage</th></tr>
+  <tr><td><code>PT_STRING</code></td><td>1</td><td>Text properties (name, caption, value)</td></tr>
+  <tr><td><code>PT_NUMBER</code></td><td>2</td><td>Numeric properties (position, size, intervals)</td></tr>
+  <tr><td><code>PT_LOGICAL</code></td><td>3</td><td>Boolean properties (visible, enabled, checked)</td></tr>
+  <tr><td><code>PT_COLOR</code></td><td>4</td><td>Color properties (background, text color)</td></tr>
+  <tr><td><code>PT_FONT</code></td><td>5</td><td>Font properties (name, size, style)</td></tr>
+</table>
+
+<h2>Code Examples</h2>
+
+<h3>Setting Properties via Object Inspector</h3>
+<p>When you edit properties in the inspector, the generated code looks like:</p>
+
+<pre><span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
+   ::<span class="prop">cTitle</span>     := <span class="st">"My Application"</span>
+   ::<span class="prop">nLeft</span>      := <span class="nb">100</span>
+   ::<span class="prop">nTop</span>       := <span class="nb">170</span>
+   ::<span class="prop">nWidth</span>     := <span class="nb">640</span>
+   ::<span class="prop">nHeight</span>    := <span class="nb">480</span>
+   ::<span class="prop">nPosition</span>  := <span class="nb">2</span>  <span class="comment">// poCenterScreen</span>
+   ::<span class="prop">nWindowState</span> := <span class="nb">0</span>  <span class="comment">// wsNormal</span>
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Event Assignment in Code</h3>
+<pre><span class="comment">// Inline code block</span>
+oBtn:<span class="fn">OnClick</span> := { || <span class="fn">MsgInfo</span>( <span class="st">"Hello!"</span> ) }
+
+<span class="comment">// Call to method</span>
+oBtn:<span class="fn">OnClick</span> := { || ::<span class="fn">HandleButtonClick</span>() }
+
+<span class="kw">METHOD</span> <span class="fn">HandleButtonClick</span>() <span class="kw">CLASS</span> TForm1
+   <span class="fn">MsgInfo</span>( <span class="st">"Button was clicked"</span> )
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Tips for Using Object Inspector</h2>
+
+<ol>
+  <li><strong>Use categories</strong> — Expand categories to find properties quickly</li>
+  <li><strong>Double-click events</strong> — Auto-generates handler methods in your class</li>
+  <li><strong>Use dropdowns for enums</strong> — Ensures valid values (BorderStyle, Position, etc.)</li>
+  <li><strong>Color picker</strong> — Click color properties to open the color selector</li>
+  <li><strong>Control selector</strong> — Use the ComboBox at top to switch between controls</li>
+  <li><strong>Real-time updates</strong> — Changes reflect instantly in designer and code</li>
+  <li><strong>Reset to default</strong> — Right-click a property to reset to default value</li>
+</ol>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

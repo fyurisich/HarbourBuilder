@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Integrated Debugger - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html" class="active">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">IDE Features</a> <span>/</span> Integrated Debugger
+</div>
+
+<h1>Integrated Debugger</h1>
+<p>HarbourBuilder includes a fully integrated debugger that runs <strong>in-process</strong> via the
+<code>.hrb</code> bytecode format. No external debugger process, no inter-process communication
+overhead &mdash; the debugger is part of the Harbour VM itself, providing a seamless debugging
+experience with full control over execution.</p>
+
+<div class="info-box tip">
+  <strong>In-Process Debugging</strong>
+  <p>Unlike traditional debuggers that attach to a running process, HarbourBuilder's debugger
+  operates within the same Harbour VM. This means zero latency for variable inspection, instant
+  breakpoint hits, and accurate call stack information at all times.</p>
+</div>
+
+<h2>Architecture</h2>
+
+<div class="mermaid">
+graph TB
+    A["Source Code (.prg)"] --> B["Harbour Compiler\nharbour -gh -b"]
+    B --> C[".hrb Bytecode\n(debug symbols)"]
+    C --> D["Harbour VM\nwith hb_dbg_* API"]
+    D --> E["Debug Hook\nhb_dbg_SetEntry"]
+    E --> F["IDE Debugger UI"]
+    F --> G["Watch Panel"]
+    F --> H["Locals Panel"]
+    F --> I["Call Stack Panel"]
+    F --> J["Breakpoints Panel"]
+    F --> K["Output Panel"]
+    style A fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style B fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style D fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style F fill:#f0883e,stroke:#db6d28,color:#0d1117
+</div>
+
+<h2>Compilation for Debugging</h2>
+
+<p>To generate debuggable bytecode, compile with these flags:</p>
+
+<table>
+  <tr><th>Flag</th><th>Purpose</th></tr>
+  <tr><td><code>-gh</code></td><td>Generate debug symbols (line numbers, variable names, scope info)</td></tr>
+  <tr><td><code>-b</code></td><td>Output .hrb bytecode file instead of C source</td></tr>
+</table>
+
+<pre>harbour myapp.prg -gh -b</pre>
+
+<p>The <code>.hrb</code> file contains all the information the debugger needs to map bytecode
+instructions back to source code lines, display variable names, and reconstruct the call stack.</p>
+
+<h2>The Debug Hook: hb_dbg_SetEntry</h2>
+
+<p>At the core of Harbour's debugging support is the <code>hb_dbg_SetEntry()</code> hook function.
+This callback is invoked by the Harbour VM on every bytecode instruction when debug mode is active,
+allowing the IDE to:</p>
+
+<ul>
+  <li>Track the current source line being executed</li>
+  <li>Inspect and modify local and static variables</li>
+  <li>Evaluate expressions in the current scope</li>
+  <li>Implement step-over, step-into, and step-out operations</li>
+  <li>Check for breakpoint hits</li>
+</ul>
+
+<div class="info-box info">
+  <strong>How the Hook Works</strong>
+  <p>When Harbour executes a .hrb file compiled with <code>-gh</code>, each instruction triggers
+  a call to <code>hb_dbg_SetEntry</code>. The IDE registers its own callback via
+  <code>hb_dbg_SetEntry()</code>, receiving the current file, line number, function name,
+  and variable context on every step.</p>
+</div>
+
+<h2>Debug Toolbar</h2>
+
+<p>The debug toolbar provides five essential execution controls:</p>
+
+<table>
+  <tr><th>Icon</th><th>Shortcut</th><th>Action</th><th>Description</th></tr>
+  <tr><td>&#9654;</td><td><strong>F5</strong></td><td><strong>Run / Continue</strong></td><td>Start execution or continue from a breakpoint</td></tr>
+  <tr><td>&#9208;</td><td><strong>F6</strong></td><td><strong>Pause</strong></td><td>Pause execution at the current line</td></tr>
+  <tr><td>&#8595;</td><td><strong>F7</strong></td><td><strong>Step Into</strong></td><td>Execute the current line; if it calls a function, enter it</td></tr>
+  <tr><td>&#8594;</td><td><strong>F8</strong></td><td><strong>Step Over</strong></td><td>Execute the current line; skip over function calls</td></tr>
+  <tr><td>&#9632;</td><td><strong>Shift+F5</strong></td><td><strong>Stop</strong></td><td>Terminate the debug session</td></tr>
+</table>
+
+<h2>Dockable Debug Panels</h2>
+
+<p>The debugger provides five dockable tabs that can be arranged to suit your workflow:</p>
+
+<table>
+  <tr><th>Tab</th><th>Description</th></tr>
+  <tr><td><strong>Watch</strong></td><td>Add expressions to monitor their values in real-time. Supports Harbour expressions like <code>oForm:cTitle</code>, <code>aArray[1]</code>, and function calls.</td></tr>
+  <tr><td><strong>Locals</strong></td><td>Shows all local variables in the current function scope, including their types and current values. Auto-expands arrays and objects.</td></tr>
+  <tr><td><strong>Call Stack</strong></td><td>Displays the full call stack with file names, line numbers, and function names. Click any frame to navigate to that source location.</td></tr>
+  <tr><td><strong>Breakpoints</strong></td><td>List of all breakpoints with file, line, condition, and hit count. Enable/disable or delete individual breakpoints.</td></tr>
+  <tr><td><strong>Output</strong></td><td>Console output from the debugged application, including <code>? </code> and <code>?? </code> output, <code>MsgInfo()</code> logs, and debug trace messages.</td></tr>
+</table>
+
+<h2>Setting Breakpoints</h2>
+
+<p>Click in the gutter next to any line number to toggle a breakpoint. Breakpoints are indicated
+by a red dot:</p>
+
+<ul>
+  <li><strong>Standard breakpoint</strong> &mdash; pauses execution when the line is reached.</li>
+  <li><strong>Conditional breakpoint</strong> &mdash; right-click a breakpoint to set a Harbour expression; execution pauses only when the expression evaluates to <code>.T.</code></li>
+  <li><strong>Hit count breakpoint</strong> &mdash; pause only after the breakpoint has been hit N times.</li>
+</ul>
+
+<h2>Debug Session Workflow</h2>
+
+<ol>
+  <li><strong>Compile with debug flags</strong> &mdash; Press <strong>F9</strong> to build; the IDE automatically adds <code>-gh -b</code> when debugging.</li>
+  <li><strong>Set breakpoints</strong> &mdash; Click in the gutter on lines you want to pause at.</li>
+  <li><strong>Start debugging</strong> &mdash; Press <strong>F5</strong> or click the Run button.</li>
+  <li><strong>Inspect variables</strong> &mdash; Use the Watch and Locals tabs to examine state.</li>
+  <li><strong>Step through code</strong> &mdash; Use F7 (Step Into) or F8 (Step Over) to advance.</li>
+  <li><strong>Navigate the call stack</strong> &mdash; Click frames in the Call Stack panel to see context.</li>
+  <li><strong>Stop</strong> &mdash; Press <strong>Shift+F5</strong> to end the session.</li>
+</ol>
+
+<div class="info-box tip">
+  <strong>Quick Tip</strong>
+  <p>You can hover over any variable in the source editor while paused to see its current value
+  in a tooltip. This works for local variables, object properties, and array elements.</p>
+</div>
+
+<h2>Unit Test Coverage</h2>
+
+<p>The debugger subsystem is covered by <strong>16 unit tests</strong> that verify:</p>
+
+<table>
+  <tr><th>#</th><th>Test</th><th>Verifies</th></tr>
+  <tr><td>1</td><td>Breakpoint set and hit</td><td>Execution pauses at the correct line</td></tr>
+  <tr><td>2</td><td>Step Into function call</td><td>Debugger enters the called function</td></tr>
+  <tr><td>3</td><td>Step Over function call</td><td>Debugger skips over the function body</td></tr>
+  <tr><td>4</td><td>Step Out of function</td><td>Debugger returns to the caller</td></tr>
+  <tr><td>5</td><td>Local variable inspection</td><td>Locals panel shows correct names and values</td></tr>
+  <tr><td>6</td><td>Static variable inspection</td><td>Static variables are visible and correct</td></tr>
+  <tr><td>7</td><td>Watch expression evaluation</td><td>Expressions are evaluated accurately</td></tr>
+  <tr><td>8</td><td>Call stack accuracy</td><td>Stack frames match actual call chain</td></tr>
+  <tr><td>9</td><td>Conditional breakpoint (true)</td><td>Pauses when condition is met</td></tr>
+  <tr><td>10</td><td>Conditional breakpoint (false)</td><td>Does not pause when condition fails</td></tr>
+  <tr><td>11</td><td>Hit count breakpoint</td><td>Pauses only after N hits</td></tr>
+  <tr><td>12</td><td>Breakpoint enable/disable</td><td>Toggling works correctly</td></tr>
+  <tr><td>13</td><td>Multiple breakpoints</td><td>All breakpoints are respected</td></tr>
+  <tr><td>14</td><td>Array element inspection</td><td>Array elements display correctly</td></tr>
+  <tr><td>15</td><td>Object property inspection</td><td>Object properties are navigable</td></tr>
+  <tr><td>16</td><td>Debug session cleanup</td><td>Resources are freed on stop</td></tr>
+</table>
+
+<h2>Debugger Shortcuts Summary</h2>
+
+<table>
+  <tr><th>Shortcut</th><th>Action</th></tr>
+  <tr><td><strong>F5</strong></td><td>Run / Continue</td></tr>
+  <tr><td><strong>F6</strong></td><td>Pause</td></tr>
+  <tr><td><strong>F7</strong></td><td>Step Into</td></tr>
+  <tr><td><strong>F8</strong></td><td>Step Over</td></tr>
+  <tr><td><strong>Shift+F5</strong></td><td>Stop debugging</td></tr>
+  <tr><td><strong>F9</strong></td><td>Toggle breakpoint on current line</td></tr>
+  <tr><td><strong>Ctrl+Shift+F9</strong></td><td>Clear all breakpoints</td></tr>
+</table>
+
+<div class="info-box info">
+  <strong>Next Steps</strong>
+  <p>After debugging, use <a href="build-run.html">Build &amp; Run</a> to compile a release build
+  without debug symbols for distribution. Release builds are smaller and faster since they omit
+  the <code>-gh -b</code> flags.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

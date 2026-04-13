@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Installation - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html" class="active">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Getting Started</a> <span>/</span> Installation
+</div>
+
+<h1>Installation Guide</h1>
+<p>HarbourBuilder runs on Windows, macOS, and Linux. This guide covers installation for all platforms.</p>
+
+<div class="info-box tip">
+  <strong>Quick Start</strong>
+  <p>Already have Harbour installed? Just clone the repository and run the build script for your platform.
+  HarbourBuilder will handle the rest.</p>
+</div>
+
+<h2>System Requirements</h2>
+
+<table>
+  <tr><th>Platform</th><th>Minimum</th><th>Recommended</th><th>Compiler</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>Windows 10, 2 GB RAM</td><td>Windows 11, 4 GB RAM</td><td>MSVC 2022 or BCC 7.7</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>macOS 12+, 2 GB RAM</td><td>macOS 14+, 4 GB RAM</td><td>Xcode CLT (Clang)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GTK3, 2 GB RAM</td><td>GTK3, 4 GB RAM</td><td>GCC 11+</td></tr>
+</table>
+
+<h2>Windows Installation</h2>
+
+<h3>Prerequisites</h3>
+<ol>
+  <li><strong>Harbour 3.2+</strong> — Download from <a href="https://harbour.github.io/">harbour.github.io</a> or use pre-built binaries</li>
+  <li><strong>C Compiler</strong> — Choose one:
+    <ul>
+      <li><strong>MSVC</strong> (recommended): Visual Studio 2022 Community (free) or Build Tools</li>
+      <li><strong>BCC</strong>: Embarcadero Borland C++ Compiler 7.7 (free)</li>
+    </ul>
+  </li>
+</ol>
+
+<h3>Step-by-Step</h3>
+<ol>
+  <li><strong>Clone the repository:</strong>
+    <pre>git clone https://github.com/yourusername/HarbourBuilder.git
+cd HarbourBuilder</pre>
+  </li>
+  <li><strong>Set Harbour path</strong> (if not already in PATH):
+    <pre>set HBDIR=C:\harbour</pre>
+  </li>
+  <li><strong>Run the build script:</strong>
+    <pre>build_win.bat</pre>
+    This compiles Harbour (if needed), Scintilla, and the IDE.
+  </li>
+  <li><strong>Run the IDE:</strong>
+    <pre>bin\hbbuilder_win.exe</pre>
+  </li>
+</ol>
+
+<div class="info-box info">
+  <strong>Compiler Detection</strong>
+  <p>HarbourBuilder auto-detects MSVC installations (2019, 2022, Community, BuildTools).
+  Use <strong>Tools &gt; Select Compiler</strong> to choose between detected compilers.</p>
+</div>
+
+<h2>macOS Installation</h2>
+
+<h3>Prerequisites</h3>
+<ol>
+  <li><strong>Xcode Command Line Tools:</strong>
+    <pre>xcode-select --install</pre>
+    This is the <strong>only</strong> prerequisite. Harbour and Scintilla are downloaded and built automatically.
+  </li>
+</ol>
+
+<h3>Step-by-Step</h3>
+<ol>
+  <li><strong>Navigate to samples:</strong>
+    <pre>cd HarbourBuilder/samples</pre>
+  </li>
+  <li><strong>Run the build script:</strong>
+    <pre>./build_mac.sh</pre>
+    On first run, this script will:
+    <ul>
+      <li>Clone and compile <a href="https://github.com/harbour/core">Harbour</a> to <code>~/harbour</code> (if not found)</li>
+      <li>Build Scintilla 5.5.3 + Lexilla static libraries from source</li>
+      <li>Compile the HarbourBuilder IDE</li>
+    </ul>
+  </li>
+  <li><strong>Copy to bin/ and run:</strong>
+    <pre>cp HbBuilder ../bin/
+../bin/HbBuilder</pre>
+  </li>
+</ol>
+
+<div class="info-box tip">
+  <strong>Custom Harbour Installation</strong>
+  <p>To use a custom Harbour installation: <code>HBDIR=/path/to/harbour ./build_mac.sh</code></p>
+</div>
+
+<div class="info-box info">
+  <strong>Apple Silicon (M1/M2/M3/M4)</strong>
+  <p>The current build produces x86_64 binaries which run via Rosetta 2 on ARM Macs.
+  For native ARM builds, recompile Harbour for <code>darwin/clang/arm64</code> and update <code>HBDIR</code> in <code>build_mac.sh</code>.</p>
+</div>
+
+<h2>Linux Installation</h2>
+
+<h3>Prerequisites</h3>
+<ol>
+  <li><strong>Harbour 3.2+</strong> — Install from package manager or build from source</li>
+  <li><strong>GTK3 development libraries:</strong>
+    <pre>sudo apt install libgtk-3-dev</pre>
+  </li>
+  <li><strong>GCC compiler:</strong>
+    <pre>sudo apt install gcc g++</pre>
+  </li>
+  <li><strong>Scintilla</strong> — Built automatically by the build script</li>
+</ol>
+
+<h3>Step-by-Step (Ubuntu/Debian)</h3>
+<ol>
+  <li><strong>Install dependencies:</strong>
+    <pre>sudo apt update
+sudo apt install libgtk-3-dev gcc g++ harbour</pre>
+  </li>
+  <li><strong>Navigate to samples:</strong>
+    <pre>cd HarbourBuilder/samples</pre>
+  </li>
+  <li><strong>Run the build script:</strong>
+    <pre>./build_linux.sh</pre>
+  </li>
+  <li><strong>Run the IDE:</strong>
+    <pre>../bin/hbbuilder_linux</pre>
+  </li>
+</ol>
+
+<h2>Scintilla Setup</h2>
+
+<p>Scintilla is the code editing component used by HarbourBuilder. Setup varies by platform:</p>
+
+<table>
+  <tr><th>Platform</th><th>Method</th><th>Files</th></tr>
+  <tr><td>Windows</td><td>Dynamic libraries</td><td><code>Scintilla.dll</code>, <code>Lexilla.dll</code> in <code>bin/</code></td></tr>
+  <tr><td>macOS</td><td>Static libraries</td><td><code>libscintilla.a</code>, <code>liblexilla.a</code> (compiled from source)</td></tr>
+  <tr><td>Linux</td><td>Shared libraries</td><td><code>libscintilla.so</code>, <code>liblexilla.so</code></td></tr>
+</table>
+
+<p>The build scripts handle Scintilla automatically — you don't need to build it manually unless you want a custom version.</p>
+
+<h2>Verifying Your Installation</h2>
+
+<p>After installation, verify everything works:</p>
+
+<ol>
+  <li><strong>Launch the IDE:</strong> Should open without errors</li>
+  <li><strong>Create a new project:</strong> File &gt; New Project</li>
+  <li><strong>Press F9:</strong> Should compile and run a simple form</li>
+  <li><strong>Test the designer:</strong> Drag a button from the palette onto the form</li>
+  <li><strong>Test the editor:</strong> Open the code tab, verify syntax highlighting works</li>
+</ol>
+
+<div class="info-box tip">
+  <strong>Sample Projects</strong>
+  <p>Check out the <code>samples/projects/</code> directory for working examples including database, AI, and transformer demos.</p>
+</div>
+
+<h2>Troubleshooting</h2>
+
+<table>
+  <tr><th>Issue</th><th>Cause</th><th>Solution</th></tr>
+  <tr><td>"harbour: command not found"</td><td>Harbour not in PATH</td><td>Set HBDIR environment variable or add Harbour to PATH</td></tr>
+  <tr><td>"gtk/gtk.h: No such file"</td><td>GTK3 dev headers missing</td><td>Install libgtk-3-dev (Linux) or Xcode CLT (macOS)</td></tr>
+  <tr><td>"Scintilla not found"</td><td>Scintilla libraries not built</td><td>Run the platform build script (build_win.bat, build_mac.sh, build_linux.sh)</td></tr>
+  <tr><td>Build fails on Windows</td><td>Compiler not detected</td><td>Run build_win.bat or use Tools &gt; Select Compiler</td></tr>
+  <tr><td>IDE won't start on macOS</td><td>Gatekeeper blocking</td><td>Right-click &gt; Open, or remove quarantine: <code>xattr -d com.apple.quarantine HbBuilder</code></td></tr>
+  <tr><td>Dark mode not working</td><td>OS theme not set</td><td>Ensure your OS is in dark mode; HarbourBuilder follows system theme</td></tr>
+</table>
+
+<h2>Next Steps</h2>
+
+<p>Once installed, continue with:</p>
+<ul>
+  <li><a href="quickstart.html">Quick Start Guide</a> — Create your first application</li>
+  <li><a href="architecture.html">Architecture Overview</a> — Understand how HarbourBuilder works</li>
+  <li><a href="tutorial-hello.html">Hello World Tutorial</a> — Step-by-step beginner's guide</li>
+</ul>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Linux Platform Guide - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html" class="active">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Platforms</a> <span>/</span> Linux
+</div>
+
+<h1><span class="badge linux">Linux</span> Platform Guide</h1>
+<p>The Linux backend uses GTK3 (C) for all native widgets, with Cairo for custom drawing. It is
+written in pure C and compiled with GCC, providing a native Linux experience that integrates
+with GNOME, XFCE, KDE, and other GTK-compatible desktop environments.</p>
+
+<div class="info-box info">
+  <strong>Backend Statistics</strong>
+  <table>
+    <tr><th>Language</th><th>C</th></tr>
+    <tr><th>Lines of code</th><th>~7,300</th></tr>
+    <tr><th>HB_FUNC functions</th><th>~132</th></tr>
+    <tr><th>Native API</th><th>GTK3 (GtkWidget, GtkFixed)</th></tr>
+    <tr><th>Drawing</th><th>Cairo / Pango</th></tr>
+    <tr><th>Scintilla</th><th>5.6.1 (shared library)</td></tr>
+    <tr><th>Supported Distros</th><th>Ubuntu, Debian, Fedora, openSUSE, Arch, etc.</th></tr>
+  </table>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Architecture Overview</h2>
+
+<div class="mermaid">
+graph TB
+    A["Harbour .prg"] --> B["hbbuilder.ch<br/>#xcommand preprocessor"]
+    B --> C["TForm, TControl<br/>Harbour OOP classes"]
+    C --> D["HB_FUNC Bridge<br/>~132 functions"]
+    D --> E["GTK3 Backend<br/>C / GtkWidget"]
+    E --> F["GTK Widgets<br/>GtkButton, GtkEntry, etc."]
+    E --> G["Cairo / Pango<br/>Custom drawing"]
+    E --> H["Scintilla 5.6.1<br/>Shared lib"]
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style E fill:#e95420,stroke:#c34113,color:#fff
+    style F fill:#e95420,stroke:#c34113,color:#fff
+    style G fill:#e95420,stroke:#c34113,color:#fff
+    style H fill:#555,stroke:#333,color:#fff
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Native Window Creation</h2>
+<p>Every HarbourBuilder form is a <code>GtkWindow</code> with a <code>GtkFixed</code> container for
+absolute-positioned child controls. The backend creates GTK widgets and stores their pointers
+in a handle table:</p>
+
+<pre><span class="cm">// gtk3_backend.c - Creating a form window</span>
+HB_FUNC( UI_FORMNEW )
+{
+   const char * cTitle = hb_parc( 1 );
+   gint nWidth  = hb_parni( 2 );
+   gint nHeight = hb_parni( 3 );
+
+   GtkWidget * window = <span class="fn">gtk_window_new</span>( GTK_WINDOW_TOPLEVEL );
+   <span class="fn">gtk_window_set_title</span>( GTK_WINDOW( window ), cTitle );
+   <span class="fn">gtk_window_set_default_size</span>( GTK_WINDOW( window ), nWidth, nHeight );
+   <span class="fn">gtk_window_set_position</span>( GTK_WINDOW( window ), GTK_WIN_POS_NONE );
+
+   <span class="cm">// Use GtkFixed for absolute positioning of child controls</span>
+   GtkWidget * fixed = <span class="fn">gtk_fixed_new</span>();
+   <span class="fn">gtk_container_add</span>( GTK_CONTAINER( window ), fixed );
+
+   <span class="cm">// Store handle in Harbour-side object table</span>
+   hb_retnint( (gintptr) window );
+}</pre>
+
+<p>Controls map to GTK3 widgets:</p>
+
+<table>
+  <tr><th>HarbourBuilder Control</th><th>GTK3 Widget</th></tr>
+  <tr><td>Button</td><td><code>gtk_button_new_with_label()</code></td></tr>
+  <tr><td>Label</td><td><code>gtk_label_new()</code></td></tr>
+  <tr><td>Edit</td><td><code>gtk_entry_new()</code></td></tr>
+  <tr><td>Memo</td><td><code>gtk_text_view_new()</code> (in GtkScrolledWindow)</td></tr>
+  <tr><td>CheckBox</td><td><code>gtk_check_button_new_with_label()</code></td></tr>
+  <tr><td>Radio</td><td><code>gtk_radio_button_new_with_label()</code></td></tr>
+  <tr><td>ComboBox</td><td><code>gtk_combo_box_text_new()</code></td></tr>
+  <tr><td>ListBox</td><td><code>gtk_list_box_new()</code> (in GtkScrolledWindow)</td></tr>
+  <tr><td>GroupBox</td><td><code>gtk_frame_new()</code></td></tr>
+  <tr><td>ProgressBar</td><td><code>gtk_progress_bar_new()</code></td></tr>
+  <tr><td>Slider/TrackBar</td><td><code>gtk_scale_new_with_range()</code></td></tr>
+  <tr><td>Image</td><td><code>gtk_image_new_from_file()</code></td></tr>
+  <tr><td>TabControl</td><td><code>gtk_notebook_new()</code></td></tr>
+  <tr><td>TreeView</td><td><code>gtk_tree_view_new()</code> (in GtkScrolledWindow)</td></tr>
+  <tr><td>Timer</td><td><code>g_timeout_add()</code></td></tr>
+  <tr><td>StatusBar</td><td><code>gtk_statusbar_new()</code></td></tr>
+  <tr><td>ToolBar</td><td><code>gtk_toolbar_new()</code></td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Event Handling (g_signal)</h2>
+<p>The GTK3 backend uses GObject's signal system (<code>g_signal_connect()</code>) to connect
+native widget events to Harbour event handlers:</p>
+
+<pre><span class="cm">// gtk3_backend.c - Signal-based event binding</span>
+HB_FUNC( UI_ONEVENT )
+{
+   gint nHandle = hb_parnint( 1 );
+   gint nEventId = hb_parnint( 2 );
+   PHB_ITEM pBlock = hb_param( 3, HB_IT_BLOCK );
+
+   GtkWidget * widget = GTK_WIDGET( <span class="fn">GetHandlePtr</span>( nHandle ) );
+
+   <span class="cm">// Store the Harbour code block</span>
+   <span class="fn">StoreEventBlock</span>( nHandle, nEventId, pBlock );
+
+   <span class="cm">// Connect the GTK signal to our dispatch function</span>
+   <span class="kw">switch</span>( nEventId )
+   {
+      <span class="kw">case</span> EVENT_CLICK:
+         <span class="fn">g_signal_connect</span>( widget, <span class="st">"clicked"</span>,
+                           G_CALLBACK( <span class="fn">on_clicked_signal</span> ),
+                           GINT_TO_POINTER( nHandle ) );
+         <span class="kw">break</span>;
+
+      <span class="kw">case</span> EVENT_CHANGE:
+         <span class="fn">g_signal_connect</span>( widget, <span class="st">"changed"</span>,
+                           G_CALLBACK( <span class="fn">on_changed_signal</span> ),
+                           GINT_TO_POINTER( nHandle ) );
+         <span class="kw">break</span>;
+
+      <span class="kw">case</span> EVENT_KEYDOWN:
+         <span class="fn">g_signal_connect</span>( widget, <span class="st">"key-press-event"</span>,
+                           G_CALLBACK( <span class="fn">on_key_signal</span> ),
+                           GINT_TO_POINTER( nHandle ) );
+         <span class="kw">break</span>;
+
+      <span class="kw">case</span> EVENT_MOUSEDOWN:
+         <span class="fn">g_signal_connect</span>( widget, <span class="st">"button-press-event"</span>,
+                           G_CALLBACK( <span class="fn">on_mouse_signal</span> ),
+                           GINT_TO_POINTER( nHandle ) );
+         <span class="kw">break</span>;
+
+      <span class="cm">// ... additional signal connections</span>
+   }
+}
+
+<span class="cm">// Signal callback dispatches to Harbour</span>
+<span class="kw">static void</span> <span class="fn">on_clicked_signal</span>( GtkWidget * widget, gpointer user_data )
+{
+   gint nHandle = GPOINTER_TO_INT( user_data );
+   <span class="fn">FireEvent</span>( nHandle, EVENT_CLICK );
+}</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Dark Mode</h2>
+<p>GTK3 dark mode is controlled via GTK settings:</p>
+
+<ul>
+  <li><strong><code>gtk-application-prefer-dark-theme</code></strong> &mdash; The backend sets this GTK property
+  to <code>TRUE</code> when the system is in dark mode. GTK3 themes (like Adwaita-dark) respond by
+  providing dark color schemes for all widgets.</li>
+  <li><strong>GTK settings daemon</strong> &mdash; On desktop environments that support it (GNOME, XFCE),
+  GTK3 reads the system theme preference from the settings daemon automatically.</li>
+  <li><strong>Manual override</strong> &mdash; Users can force dark mode by setting the environment variable:
+  <pre>export GTK_THEME=Adwaita:dark</pre>
+  </li>
+  <li><strong>CSS styling</strong> &mdash; For fine-grained control, the backend can load a GTK CSS stylesheet
+  that overrides widget colors for the dark theme.</li>
+</ul>
+
+<pre><span class="cm">// gtk3_backend.c - Dark theme setup</span>
+<span class="kw">void</span> <span class="fn">SetupDarkTheme</span>( <span class="kw">void</span> )
+{
+   GtkSettings * settings = <span class="fn">gtk_settings_get_default</span>();
+
+   <span class="cm">// Check system theme preference</span>
+   gboolean prefer_dark = <span class="fn">IsSystemDarkMode</span>();
+
+   <span class="fn">g_object_set</span>( settings,
+                 <span class="st">"gtk-application-prefer-dark-theme"</span>,
+                 prefer_dark,
+                 <span class="kw">NULL</span> );
+}</pre>
+
+<div class="info-box tip">
+  <strong>System theme detection</strong>
+  <p>On GNOME, the system theme is read from <code>org.gnome.desktop.interface gtk-theme</code> via
+  <code>gsettings</code>. The backend checks this at startup and sets
+  <code>gtk-application-prefer-dark-theme</code> accordingly. On other desktop environments, the
+  GTK settings daemon provides the same information through the standard GTK settings API.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Scintilla Integration</h2>
+<p>On Linux, Scintilla 5.6.1 is built as a shared library:</p>
+
+<table>
+  <tr><th>File</th><th>Type</th><th>Purpose</th></tr>
+  <tr><td><code>libscintilla.so</code></td><td>Shared library</td><td>Scintilla core editing component</td></tr>
+  <tr><td><code>liblexilla.so</code></td><td>Shared library</td><td>Lexer library</td></tr>
+</table>
+
+<p>Scintilla is loaded with <code>dlopen()</code> and <code>dlsym()</code> at runtime. The GTK
+Scintilla widget (<code>ScintillaObject</code>) is embedded in the code editor tab:</p>
+
+<pre><span class="cm">// Loading Scintilla on Linux</span>
+<span class="kw">void</span> * hSci = <span class="fn">dlopen</span>( <span class="st">"libscintilla.so"</span>, RTLD_LAZY );
+<span class="kw">if</span>( !hSci ) {
+   <span class="fn">fprintf</span>( stderr, <span class="st">"Failed to load Scintilla: %s\n"</span>, <span class="fn">dlerror</span>() );
+   <span class="kw">return</span>;
+}
+
+<span class="cm">// Creating the Scintilla GTK widget</span>
+ScintillaObject * sci = <span class="fn">scintilla_new</span>();
+<span class="fn">gtk_container_add</span>( GTK_CONTAINER( editor_scrolled ), GTK_WIDGET( sci ) );
+<span class="fn">scintilla_send_message</span>( sci, SCI_SETLEXER, SCLEX_CPP, <span class="nb">0</span> );</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Build Process</h2>
+
+<h3>Prerequisites</h3>
+<ol>
+  <li><strong>GCC compiler:</strong>
+    <pre>sudo apt install gcc g++</pre>
+  </li>
+  <li><strong>GTK3 development libraries:</strong>
+    <pre>sudo apt install libgtk-3-dev</pre>
+  </li>
+  <li><strong>Harbour 3.2+</strong> &mdash; Install from your distro's package manager or build from source:
+    <pre>sudo apt install harbour</pre>
+    Or clone from <a href="https://github.com/harbour/core">github.com/harbour/core</a>.
+  </li>
+</ol>
+
+<h3>Build Script (<code>build_linux.sh</code>)</h3>
+<p>The script performs these steps:</p>
+
+<ol>
+  <li><strong>Check prerequisites</strong> &mdash; Verifies that GCC and GTK3 headers are available.</li>
+  <li><strong>Build Scintilla</strong> &mdash; Compiles Scintilla and Lexilla shared libraries from source.</li>
+  <li><strong>Compile Harbour source</strong> &mdash; Runs the Harbour compiler on the IDE source files.</li>
+  <li><strong>Compile the backend</strong> &mdash; Compiles <code>gtk3_backend.c</code> with GCC.</li>
+  <li><strong>Link</strong> &mdash; Links everything together with GTK3, Cairo, Pango, and the Harbour runtime.</li>
+</ol>
+
+<pre><span class="cm"># build_linux.sh - Typical build session on Ubuntu/Debian</span>
+<span class="cm"># Install dependencies</span>
+<span class="kw">sudo</span> apt update
+<span class="kw">sudo</span> apt install libgtk-3-dev gcc g++ harbour
+
+<span class="cm"># Build</span>
+<span class="kw">cd</span> HarbourBuilder/samples
+<span class="kw">./build_linux.sh</span>
+
+<span class="cm"># Run</span>
+../bin/hbbuilder_linux</pre>
+
+<div class="info-box info">
+  <strong>Distro packages</strong>
+  <p>On Fedora: <code>sudo dnf install gtk3-devel gcc harbour</code><br>
+  On Arch: <code>sudo pacman -S gtk3 harbour harbour-contrib</code><br>
+  On openSUSE: <code>sudo zypper install gtk3-devel harbour</code></p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Compilation Details</h2>
+
+<pre><span class="cm"># Manual compilation (what build_linux.sh does internally)</span>
+<span class="cm"># 1. Compile Harbour source to C</span>
+harbour hbbuilder.prg -n -q -gc1
+
+<span class="cm"># 2. Compile C backend</span>
+gcc -O2 -c gtk3_backend.c \
+    $(pkg-config --cflags gtk+-3.0) \
+    -I$HBDIR/include \
+    -I./include
+
+<span class="cm"># 3. Compile Harbour-generated C code</span>
+gcc -O2 -c hbbuilder.c \
+    -I$HBDIR/include
+
+<span class="cm"># 4. Link</span>
+gcc -o hbbuilder_linux hbbuilder.o gtk3_backend.o \
+    $(pkg-config --libs gtk+-3.0) \
+    -lcairo -lpango-1.0 \
+    -lscintilla -llexilla \
+    -L$HBDIR/lib -lharbour \
+    -ldl -lm</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Platform-Specific Features</h2>
+
+<table>
+  <tr><th>Feature</th><th>Linux Implementation</th></tr>
+  <tr><td>File dialogs</td><td><code>gtk_file_chooser_dialog_new()</code> with GtkFileChooserNative</td></tr>
+  <tr><td>Font dialog</td><td><code>GtkFontChooserDialog</code></td></tr>
+  <tr><td>Color dialog</td><td><code>GtkColorChooserDialog</code></td></tr>
+  <tr><td>Message dialogs</td><td><code>GtkMessageDialog</code></td></tr>
+  <tr><td>Clipboard</td><td><code>gtk_clipboard_get()</code> / <code>gtk_clipboard_set_text()</code></td></tr>
+  <tr><td>Drag and drop</td><td>GTK drag-and-drop API (<code>gtk_drag_dest_set()</code>)</td></tr>
+  <tr><td>System tray</td><td>GtkStatusIcon / AppIndicator (depending on DE)</td></tr>
+  <tr><td>Dark mode</td><td><code>gtk-application-prefer-dark-theme</code> GTK setting</td></tr>
+  <tr><td>Desktop integration</td><td>.desktop file, MIME types, icon themes</td></tr>
+  <tr><td>Printing</td><td><code>GtkPrintOperation</code></td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Known Limitations</h2>
+
+<ul>
+  <li><strong>Desktop environment variance</strong> &mdash; GTK3 widgets look different on GNOME, XFCE, KDE, etc. The backend targets the default Adwaita theme. Other themes may produce slightly different appearances.</li>
+  <li><strong>GtkFixed layout</strong> &mdash> The backend uses <code>GtkFixed</code> for absolute positioning (matching the Windows/macOS model). This means controls do not automatically resize or reflow when the window size changes. Use the <code>OnResize</code> event for dynamic layout.</li>
+  <li><strong>Scintilla shared library</strong> &mdash> The <code>libscintilla.so</code> must be in the library search path (<code>LD_LIBRARY_PATH</code> or <code>/usr/local/lib</code>). Run <code>sudo ldconfig</code> after installing.</li>
+  <li><strong>Wayland</strong> &mdash> GTK3 supports Wayland, but some features (system tray, global menus) may not work under pure Wayland sessions. X11 is fully supported.</li>
+</ul>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Dependencies</h2>
+<table>
+  <tr><th>Package/Library</th><th>Purpose</th></tr>
+  <tr><td><code>libgtk-3-dev</code></td><td>GTK3 headers and libraries (widgets, windows, events)</td></tr>
+  <tr><td><code>libcairo2-dev</code></td><td>Cairo 2D graphics library (custom drawing)</td></tr>
+  <tr><td><code>libpango1.0-dev</code></td><td>Pango text layout and rendering</td></tr>
+  <tr><td><code>libglib2.0-dev</code></td><td>GLib utility functions (timers, signals, memory)</td></tr>
+  <tr><td><code>libgdk-pixbuf2.0-dev</code></td><td>Image loading and manipulation</td></tr>
+  <tr><td><code>libscintilla.so</code></td><td>Code editing component (shared library)</td></tr>
+  <tr><td><code>liblexilla.so</code></td><td>Lexer component (shared library)</td></tr>
+  <tr><td><code>libharbour</code></td><td>Harbour runtime</td></tr>
+  <tr><td><code>-ldl</code></td><td>Dynamic loading (dlopen/dlsym for Scintilla)</td></tr>
+  <tr><td><code>-lm</code></td><td>Math library</td></tr>
+</table>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

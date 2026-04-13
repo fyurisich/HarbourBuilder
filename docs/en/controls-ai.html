@@ -39,7 +39,7 @@
     <a href="controls-datacontrols.html">Data Controls (8)</a>
     <a href="controls-internet.html">Internet (9)</a>
     <a href="controls-threading.html">Threading (8)</a>
-    <a href="controls-ai.html" class="active">AI (7)</a>
+    <a href="controls-ai.html" class="active">AI (9)</a>
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
 </div>
@@ -60,6 +60,21 @@ Drop AI components on your form, set an API key, and interact with the world's m
   <p>The TOllama component connects to a local Ollama instance — no API key needed, fully private,
   works offline. Perfect for development and enterprise environments.</p>
 </div>
+
+<h2>AI Components Overview</h2>
+
+<table>
+  <tr><th>Component</th><th>CT ID</th><th>Provider</th><th>Type</th></tr>
+  <tr><td><code>TOpenAI</code></td><td>46</td><td>OpenAI</td><td>Cloud API</td></tr>
+  <tr><td><code>TGemini</code></td><td>47</td><td>Google</td><td>Cloud API</td></tr>
+  <tr><td><code>TClaude</code></td><td>48</td><td>Anthropic</td><td>Cloud API</td></tr>
+  <tr><td><code>TDeepSeek</code></td><td>49</td><td>DeepSeek</td><td>Cloud API</td></tr>
+  <tr><td><code>TGrok</code></td><td>50</td><td>xAI</td><td>Cloud API</td></tr>
+  <tr><td><code>TOllama</code></td><td>51</td><td>Ollama</td><td>Local Server</td></tr>
+  <tr><td><code>TTransformer</code></td><td>52</td><td>Local</td><td>On-Device Model</td></tr>
+  <tr><td><code>TWhisper</code></td><td>110</td><td>OpenAI/Local</td><td>Speech-to-Text</td></tr>
+  <tr><td><code>TEmbeddings</code></td><td>111</td><td>Various</td><td>Vector Embeddings</td></tr>
+</table>
 
 <h2>Common Properties (all AI controls)</h2>
 <table>
@@ -169,6 +184,77 @@ graph LR
   attention visualizer, text generator, training from scratch, tokenizer explorer,
   sentiment analyzer, translator, and a full "Attention Is All You Need" walkthrough.</p>
 </div>
+
+<h2 id="whisper">TWhisper <span class="badge new">CT = 110</span></h2>
+<p>Speech-to-text transcription using OpenAI's Whisper model or local Whisper implementations.
+Convert audio files and real-time microphone input to text.</p>
+
+<table>
+  <tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>cAudioFile</code></td><td>String</td><td>""</td><td>Path to audio file for transcription</td></tr>
+  <tr><td><code>cLanguage</code></td><td>String</td><td>"en"</td><td>Language code (e.g., "en", "es", "fr")</td></tr>
+  <tr><td><code>cModel</code></td><td>String</td><td>"whisper-1"</td><td>Model size (tiny, base, small, medium, large)</td></tr>
+  <tr><td><code>lTranslate</code></td><td>Logical</td><td>.F.</td><td>Translate to English</td></tr>
+  <tr><td><code>nTask</code></td><td>Numeric</td><td>0</td><td>0=transcribe, 1=translate</td></tr>
+</table>
+
+<table>
+  <tr><th>Event</th><th>Description</th></tr>
+  <tr><td><code>OnTranscription</code></td><td>Full transcription received</td></tr>
+  <tr><td><code>OnSegment</code></td><td>Each transcript segment (with timestamps)</td></tr>
+  <tr><td><code>OnError</code></td><td>Transcription error occurred</td></tr>
+</table>
+
+<pre>oWhisper := TWhisper():New()
+oWhisper:cAudioFile := <span class="st">"recording.wav"</span>
+oWhisper:cLanguage := <span class="st">"en"</span>
+oWhisper:OnTranscription := { |cText| oMemo:Text := cText }
+oWhisper:Transcribe()</pre>
+
+<h2 id="embeddings">TEmbeddings <span class="badge new">CT = 111</span></h2>
+<p>Generate vector embeddings for text similarity search, semantic search, clustering, and retrieval.
+Supports multiple providers including OpenAI, Ollama, and local models.</p>
+
+<table>
+  <tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr>
+  <tr><td><code>cModel</code></td><td>String</td><td>"text-embedding-ada-002"</td><td>Embedding model name</td></tr>
+  <tr><td><code>nDimensions</code></td><td>Numeric</td><td>1536</td><td>Vector dimension count</td></tr>
+  <tr><td><code>cMetric</code></td><td>String</td><td>"cosine"</td><td>Similarity metric (cosine, euclidean, dotproduct)</td></tr>
+  <tr><td><code>aVectors</code></td><td>Array</td><td>{}</td><td>Cached embedding vectors</td></tr>
+</table>
+
+<table>
+  <tr><th>Method</th><th>Parameters</th><th>Description</th></tr>
+  <tr><td><code>:Embed( cText )</code></td><td>String</td><td>Generate embedding for text, returns array</td></tr>
+  <tr><td><code>:Similarity( aVec1, aVec2 )</code></td><td>Arrays</td><td>Calculate similarity between vectors</td></tr>
+  <tr><td><code>:Index( cText, cId )</code></td><td>Strings</td><td>Add text to vector index with ID</td></tr>
+  <tr><td><code>:Search( cQuery, nTop )</code></td><td>String, Number</td><td>Search indexed vectors, return top N</td></tr>
+</table>
+
+<table>
+  <tr><th>Event</th><th>Description</th></tr>
+  <tr><td><code>OnEmbed</code></td><td>Embedding generated (with vector array)</td></tr>
+  <tr><td><code>OnSearch</code></td><td>Search results received (with similarities)</td></tr>
+  <tr><td><code>OnError</code></td><td>Embedding error occurred</td></tr>
+</table>
+
+<pre>oEmb := TEmbeddings():New()
+oEmb:cModel := <span class="st">"text-embedding-ada-002"</span>
+
+<span class="comment">// Index some documents</span>
+oEmb:<span class="fn">Index</span>( <span class="st">"HarbourBuilder is a visual IDE"</span>, <span class="st">"doc1"</span> )
+oEmb:<span class="fn">Index</span>( <span class="st">"xBase language for database apps"</span>, <span class="st">"doc2"</span> )
+
+<span class="comment">// Search</span>
+oEmb:OnSearch := { |aResults| <span class="fn">ShowResults</span>( aResults ) }
+oEmb:<span class="fn">Search</span>( <span class="st">"visual development environment"</span>, <span class="nb">5</span> )</pre>
+
+<div class="info-box info">
+  <strong>Semantic Search Use Case</strong>
+  <p>Use TEmbeddings to build a semantic search engine: index your documents,
+  then search by meaning rather than keywords. Perfect for knowledge bases and FAQs.</p>
+</div>
+
 
 </div>
 

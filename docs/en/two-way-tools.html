@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Two-Way Tools - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html" class="active">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">IDE Features</a> <span>/</span> Two-Way Tools
+</div>
+
+<h1>Two-Way Tools: Designer &harr; Code Sync</h1>
+<p>HarbourBuilder's Two-Way Tools engine ensures that your visual form design and your source code
+are always perfectly synchronized. Every change you make in the visual <a href="form-designer.html">Form Designer</a>
+is immediately reflected in the generated code, and every structural change you make to the code
+is instantly visible in the designer.</p>
+
+<div class="info-box tip">
+  <strong>Your Logic Is Safe</strong>
+  <p>The code regeneration engine only updates UI definition lines (DEFINE, @ POSITION, properties).
+  Your METHOD implementations, event handlers, and custom logic are <strong>never</strong> touched or overwritten.</p>
+</div>
+
+<h2>How It Works</h2>
+
+<p>When you work in the Form Designer, every action &mdash; dropping a control, resizing, moving,
+changing a property &mdash; triggers a targeted code regeneration. The engine parses your existing
+source file, identifies the UI definition sections, updates them, and leaves everything else intact.</p>
+
+<div class="mermaid">
+sequenceDiagram
+    participant D as Form Designer
+    participant E as Code Engine
+    participant F as Source File
+    participant P as Parser
+    D->>E: Control dropped on form
+    E->>P: Parse existing file
+    P->>P: Find UI definition blocks
+    P->>P: Preserve METHOD bodies
+    E->>F: Regenerate UI lines only
+    E->>D: Refresh designer view
+    Note over D,F: METHOD implementations are never modified
+</div>
+
+<h2>What Gets Regenerated</h2>
+
+<p>The code engine identifies and updates only these categories:</p>
+
+<table>
+  <tr><th>Category</th><th>Example</th><th>Regenerated?</th></tr>
+  <tr><td>DEFINE statements</td><td><code>DEFINE FORM</code>, <code>DEFINE BUTTON</code></td><td>Yes</td></tr>
+  <tr><td>@ POSITION lines</td><td><code>@ 10, 20 BUTTON ...</code></td><td>Yes</td></tr>
+  <tr><td>Property assignments</td><td><code>::cTitle := "Hello"</code></td><td>Yes</td></tr>
+  <tr><td>CLASS definitions</td><td><code>CLASS TForm1 FROM TForm</code></td><td>Yes</td></tr>
+  <tr><td>Control creation via code</td><td><code>TButton():New()</code></td><td>Yes</td></tr>
+  <tr><td><strong>METHOD implementations</strong></td><td><code>METHOD OnClick() CLASS TForm1</code></td><td><strong>No</strong></td></tr>
+  <tr><td><strong>Event handler bodies</strong></td><td><code>bAction := { || ... }</code></td><td><strong>No</strong></td></tr>
+  <tr><td><strong>Custom functions</strong></td><td><code>static function MyHelper()</code></td><td><strong>No</strong></td></tr>
+  <tr><td><strong>Comments</strong></td><td><code>// TODO: ...</code></td><td><strong>No</strong></td></tr>
+</table>
+
+<h2>Before and After: Code Regeneration</h2>
+
+<h3>Before: You drop a button in the designer</h3>
+<pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
+
+   <span class="kw">DATA</span> oBtn1
+
+   <span class="kw">METHOD</span> <span class="fn">CreateForm</span>()
+   <span class="kw">METHOD</span> <span class="fn">OnBtnClick</span>()
+
+<span class="kw">ENDCLASS</span>
+
+<span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
+   ::<span class="prop">cTitle</span>  := <span class="st">"Form1"</span>
+   ::<span class="prop">nWidth</span>  := <span class="nb">400</span>
+   ::<span class="prop">nHeight</span> := <span class="nb">300</span>
+<span class="kw">return</span> <span class="kw">nil</span>
+
+<span class="kw">METHOD</span> <span class="fn">OnBtnClick</span>() <span class="kw">CLASS</span> TForm1
+   <span class="cm">// Your custom logic - PRESERVED</span>
+   MsgInfo( <span class="st">"Button clicked!"</span> )
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>After: Code regenerated (button added, method untouched)</h3>
+<pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
+
+   <span class="kw">DATA</span> oBtn1
+
+   <span class="kw">METHOD</span> <span class="fn">CreateForm</span>()
+   <span class="kw">METHOD</span> <span class="fn">OnBtnClick</span>()
+
+<span class="kw">ENDCLASS</span>
+
+<span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
+   ::<span class="prop">cTitle</span>  := <span class="st">"Form1"</span>
+   ::<span class="prop">nWidth</span>  := <span class="nb">400</span>
+   ::<span class="prop">nHeight</span> := <span class="nb">300</span>
+
+   <span class="cm">// --- NEW: Button added by designer ---</span>
+   @ <span class="nb">120</span>, <span class="nb">140</span> <span class="cmd">BUTTON</span> ::oBtn1 <span class="cmd">PROMPT</span> <span class="st">"Button1"</span> ;
+      <span class="cmd">OF</span> <span class="kw">Self</span> <span class="cmd">SIZE</span> <span class="nb">120</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> ::<span class="fn">OnBtnClick</span>()
+<span class="kw">return</span> <span class="kw">nil</span>
+
+<span class="kw">METHOD</span> <span class="fn">OnBtnClick</span>() <span class="kw">CLASS</span> TForm1
+   <span class="cm">// Your custom logic - PRESERVED</span>
+   MsgInfo( <span class="st">"Button clicked!"</span> )
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<div class="info-box tip">
+  <strong>Notice the preservation</strong>
+  <p>The <code>OnBtnClick</code> method body is completely unchanged. Only the
+  <code>CreateForm</code> method received the new button definition.</p>
+</div>
+
+<h2>Workflow</h2>
+
+<div class="mermaid">
+graph TD
+    A["Start with blank form"] --> B["Drop controls from palette"]
+    B --> C["Set properties in Object Inspector"]
+    C --> D["Code auto-generated"]
+    D --> E{"Need custom logic?"}
+    E -->|"Yes"| F["Switch to Code View"]
+    E -->|"No"| G["Build and run"]
+    F --> H["Write METHOD implementations"]
+    H --> I["Switch back to Designer"]
+    I --> J["Continue visual design"]
+    J --> B
+    G --> K["Done"]
+    style A fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style F fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style H fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style K fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<h2>Code Parsing Rules</h2>
+
+<p>The regeneration engine uses these rules to identify safe-to-modify sections:</p>
+
+<ol>
+  <li><strong>CLASS / ENDCCLASS blocks</strong> &mdash; DATA and METHOD declarations are updated; existing METHOD bodies are skipped.</li>
+  <li><code>DEFINE FORM</code> <strong>blocks</strong> &mdash; Properties within DEFINE blocks are regenerated.</li>
+  <li><strong>@ POSITION statements</strong> &mdash; Position, size, and property clauses are updated.</li>
+  <li><code>ACTIVATE FORM</code> <strong>blocks</strong> &mdash; Activation clauses are regenerated.</li>
+  <li><strong>Everything else</strong> &mdash; Static functions, METHOD bodies, comments, and custom code are left untouched.</li>
+</ol>
+
+<div class="info-box info">
+  <strong>Best Practice</strong>
+  <p>Keep your custom logic in separate METHOD implementations or static functions rather than inline
+  within DEFINE blocks. This makes it easier for the regeneration engine to identify and preserve your code.</p>
+</div>
+
+<h2>Handling Conflicts</h2>
+
+<p>If you manually edit a line that the designer also manages (e.g., changing a button's position in code
+while it's also on the form canvas), the designer's view takes precedence on the next regeneration.
+To avoid conflicts:</p>
+
+<ul>
+  <li>Use the <strong>Object Inspector</strong> to change properties rather than editing code directly.</li>
+  <li>Use the <strong>Designer canvas</strong> to move and resize controls.</li>
+  <li>Use the <strong>Code Editor</strong> only for METHOD implementations, event handlers, and custom functions.</li>
+</ul>
+
+<div class="info-box tip">
+  <strong>Two-Way Is Reliable</strong>
+  <p>The regeneration engine has been tested with over 200 edge cases including nested DEFINE blocks,
+  multiple forms in one file, mixed class-based and procedural syntax, and files with extensive comments.</p>
+</div>
+
+<h2>Switching Between Views</h2>
+
+<p>Use the toolbar toggle or keyboard shortcut to switch between Designer and Code views:</p>
+
+<table>
+  <tr><th>Shortcut</th><th>Action</th></tr>
+  <tr><td><strong>F12</strong></td><td>Toggle between Designer and Code views</td></tr>
+  <tr><td><strong>Ctrl+Tab</strong></td><td>Cycle through open editor tabs</td></tr>
+  <tr><td><strong>Ctrl+S</strong></td><td>Save (both design data and code)</td></tr>
+</table>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Git Controls - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html" class="active">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Component Palette</a> <span>/</span> Git
+</div>
+
+<h1>Git Integration Controls <span class="badge new">NEW</span></h1>
+<p>HarbourBuilder includes full Git integration — 10 components and comprehensive IDE support for version control.
+No external tools needed; manage your repositories directly from the IDE.</p>
+
+<div class="info-box tip">
+  <strong>Built-In Source Control</strong>
+  <p>HarbourBuilder wraps the <code>git</code> CLI via <code>CreateProcess</code> with stdout capture,
+  providing a VS Code-style Source Control experience within the IDE.</p>
+</div>
+
+<h2>Git Components</h2>
+
+<table>
+  <tr><th>Component</th><th>CT ID</th><th>Description</th></tr>
+  <tr><td><code>TGitRepo</code></td><td>121</td><td>Repository initialization, cloning, and status</td></tr>
+  <tr><td><code>TGitCommit</code></td><td>122</td><td>Commit changes with messages and file selection</td></tr>
+  <tr><td><code>TGitBranch</code></td><td>123</td><td>Branch creation, switching, and listing</td></tr>
+  <tr><td><code>TGitLog</code></td><td>124</td><td>View commit history with author, date, and message</td></tr>
+  <tr><td><code>TGitDiff</code></td><td>125</td><td>View file differences and changes</td></tr>
+  <tr><td><code>TGitRemote</code></td><td>126</td><td>Manage remote repositories (add, remove, list)</td></tr>
+  <tr><td><code>TGitStash</code></td><td>127</td><td>Stash and unstash working directory changes</td></tr>
+  <tr><td><code>TGitTag</code></td><td>128</td><td>Create, list, and delete tags</td></tr>
+  <tr><td><code>TGitBlame</code></td><td>129</td><td>Line-by-line author information (annotate)</td></tr>
+  <tr><td><code>TGitMerge</code></td><td>130</td><td>Merge branches and resolve conflicts</td></tr>
+</table>
+
+<h2>IDE Git Integration</h2>
+
+<h3>Source Control Panel</h3>
+<p>Access via <strong>Git &gt; Status</strong> menu item. The panel shows:</p>
+<ul>
+  <li><strong>Branch label</strong> — Current branch name</li>
+  <li><strong>Changes ListView</strong> — Staged and unstaged changes</li>
+  <li><strong>Commit message editor</strong> — Multi-line text input</li>
+  <li><strong>Action buttons</strong> — Refresh, Commit, Push, Pull, Stash</li>
+</ul>
+
+<p>The panel uses a dark-themed style matching VS Code's Source Control view.</p>
+
+<h3>Git Menu (17 Items)</h3>
+
+<table>
+  <tr><th>Menu Item</th><th>Action</th></tr>
+  <tr><td><strong>Init</strong></td><td>Initialize a new Git repository</td></tr>
+  <tr><td><strong>Clone</strong></td><td>Clone an existing remote repository</td></tr>
+  <tr><td><strong>Status</strong></td><td>Open Source Control panel</td></tr>
+  <tr><td><strong>Commit</strong></td><td>Commit staged changes</td></tr>
+  <tr><td><strong>Push</strong></td><td>Push commits to remote</td></tr>
+  <tr><td><strong>Pull</strong></td><td>Pull updates from remote</td></tr>
+  <tr><td><strong>Branch &gt; Create</strong></td><td>Create a new branch</td></tr>
+  <tr><td><strong>Branch &gt; Switch</strong></td><td>Switch to another branch (with list dialog)</td></tr>
+  <tr><td><strong>Branch &gt; Merge</strong></td><td>Merge a branch into current</td></tr>
+  <tr><td><strong>Stash &gt; Save</strong></td><td>Stash working directory changes</td></tr>
+  <tr><td><strong>Stash &gt; Pop</strong></td><td>Restore stashed changes</td></tr>
+  <tr><td><strong>Log</strong></td><td>View commit history</td></tr>
+  <tr><td><strong>Diff</strong></td><td>View file differences</td></tr>
+  <tr><td><strong>Blame</strong></td><td>View line-by-line authorship</td></tr>
+</table>
+
+<h2>Backend Functions</h2>
+
+<p>11 backend functions wrap <code>git.exe</code> CLI via <code>CreateProcess</code> with stdout capture:</p>
+
+<table>
+  <tr><th>Function</th><th>Git Command</th><th>Return Format</th></tr>
+  <tr><td><code>GIT_Status()</code></td><td><code>git status --porcelain</code></td><td><code>{ { cStatus, cFile }, ... }</code></td></tr>
+  <tr><td><code>GIT_Log()</code></td><td><code>git log --format=...</code></td><td><code>{ { cHash, cAuthor, cDate, cMsg }, ... }</code></td></tr>
+  <tr><td><code>GIT_Diff()</code></td><td><code>git diff</code></td><td>Unified diff string</td></tr>
+  <tr><td><code>GIT_Blame()</code></td><td><code>git blame</code></td><td><code>{ { nLine, cHash, cAuthor, cText }, ... }</code></td></tr>
+  <tr><td><code>GIT_CurrentBranch()</code></td><td><code>git branch --show-current</code></td><td>Branch name string</td></tr>
+  <tr><td><code>GIT_BranchList()</code></td><td><code>git branch</code></td><td><code>{ { cName, lCurrent }, ... }</code></td></tr>
+  <tr><td><code>GIT_Exec()</code></td><td>Any git command</td><td>Captured stdout string</td></tr>
+  <tr><td><code>GIT_IsRepo()</code></td><td><code>git rev-parse</code></td><td>Logical (.T./.F.)</td></tr>
+  <tr><td><code>GIT_RemoteList()</code></td><td><code>git remote -v</code></td><td><code>{ { cName, cURL }, ... }</code></td></tr>
+  <tr><td><code>GIT_StashList()</code></td><td><code>git stash list</code></td><td><code>{ { cStash, cMsg }, ... }</code></td></tr>
+</table>
+
+<h2>Code Examples</h2>
+
+<h3>Initialize a Repository</h3>
+<pre><span class="kw">local</span> oRepo
+
+oRepo := <span class="fn">TGitRepo</span>:New()
+<span class="kw">if</span> ! <span class="fn">GIT_IsRepo</span>( <span class="st">"C:\MyProject"</span> )
+   <span class="fn">GIT_Exec</span>( <span class="st">"git init C:\MyProject"</span> )
+   <span class="fn">MsgInfo</span>( <span class="st">"Repository initialized"</span> )
+<span class="kw">endif</span></pre>
+
+<h3>View Status and Commit</h3>
+<pre><span class="kw">local</span> aStatus, cMsg
+
+aStatus := <span class="fn">GIT_Status</span>()
+<span class="kw">for each</span> aFile <span class="kw">in</span> aStatus
+   ? aFile[<span class="nb">1</span>], aFile[<span class="nb">2</span>]  <span class="comment">// Status code and filename</span>
+<span class="kw">next</span>
+
+<span class="fn">GIT_Exec</span>( <span class="st">"git add ."</span> )
+<span class="fn">GIT_Exec</span>( <span class="st">"git commit -m \"Initial commit\""</span> )</pre>
+
+<h3>Branch Operations</h3>
+<pre><span class="kw">local</span> aBranches
+
+<span class="comment">// List all branches</span>
+aBranches := <span class="fn">GIT_BranchList</span>()
+<span class="kw">for each</span> aBranch <span class="kw">in</span> aBranches
+   ? aBranch[<span class="nb">1</span>], <span class="kw">if</span>( aBranch[<span class="nb">2</span>], <span class="st">"* current"</span>, <span class="st">""</span> )
+<span class="kw">next</span>
+
+<span class="comment">// Create and switch to new branch</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git checkout -b feature/new-feature"</span> )</pre>
+
+<h3>View Commit Log</h3>
+<pre><span class="kw">local</span> aLog
+
+aLog := <span class="fn">GIT_Log</span>( <span class="nb">20</span> )  <span class="comment">// Last 20 commits</span>
+<span class="kw">for each</span> aCommit <span class="kw">in</span> aLog
+   ? aCommit[<span class="nb">1</span>]  <span class="comment">// Hash</span>
+   ? aCommit[<span class="nb">2</span>]  <span class="comment">// Author</span>
+   ? aCommit[<span class="nb">3</span>]  <span class="comment">// Date</span>
+   ? aCommit[<span class="nb">4</span>]  <span class="comment">// Message</span>
+<span class="kw">next</span></pre>
+
+<h3>Blame a File</h3>
+<pre><span class="kw">local</span> aBlame
+
+aBlame := <span class="fn">GIT_Blame</span>( <span class="st">"source/main.prg"</span> )
+<span class="kw">for each</span> aLine <span class="kw">in</span> aBlame
+   ? <span class="st">"Line"</span>, aLine[<span class="nb">1</span>], <span class="st">"by"</span>, aLine[<span class="nb">3</span>], <span class="st">":"</span>, aLine[<span class="nb">4</span>]
+<span class="kw">next</span></pre>
+
+<h2>Branch Switching</h2>
+
+<p>When switching branches via <strong>Git &gt; Branch &gt; Switch</strong>, a list dialog shows all available branches.
+Select the target branch and click OK. The IDE will:</p>
+
+<ol>
+  <li>Check for uncommitted changes</li>
+  <li>Prompt to stash if changes exist</li>
+  <li>Execute <code>git checkout &lt;branch&gt;</code></li>
+  <li>Reload the project if files changed</li>
+</ol>
+
+<div class="info-box info">
+  <strong>Git CLI Dependency</strong>
+  <p>HarbourBuilder's Git integration requires <code>git</code> to be installed and in your system PATH.
+  Download from <a href="https://git-scm.com/">git-scm.com</a>.</p>
+</div>
+
+<h2>Common Git Workflows</h2>
+
+<h3>Initial Setup</h3>
+<pre><span class="comment">// 1. Initialize repository</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git init"</span> )
+
+<span class="comment">// 2. Add remote</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git remote add origin https://github.com/user/repo.git"</span> )
+
+<span class="comment">// 3. Add all files</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git add ."</span> )
+
+<span class="comment">// 4. Commit</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git commit -m \"Initial commit\""</span> )
+
+<span class="comment">// 5. Push to remote</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git push -u origin master"</span> )</pre>
+
+<h3>Daily Workflow</h3>
+<pre><span class="comment">// 1. Pull latest changes</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git pull"</span> )
+
+<span class="comment">// 2. Make changes in IDE...</span>
+
+<span class="comment">// 3. Check status</span>
+aStatus := <span class="fn">GIT_Status</span>()
+
+<span class="comment">// 4. Stage and commit</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git add ."</span> )
+<span class="fn">GIT_Exec</span>( <span class="st">"git commit -m \"Add feature X\""</span> )
+
+<span class="comment">// 5. Push to remote</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git push"</span> )</pre>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

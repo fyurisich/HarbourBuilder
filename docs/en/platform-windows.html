@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Windows Platform Guide - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html" class="active">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Platforms</a> <span>/</span> Windows
+</div>
+
+<h1><span class="badge win">Windows</span> Platform Guide</h1>
+<p>The Windows backend uses the native Win32 API and GDI/GDI+ for all drawing. It is written in C++
+and compiled with MSVC or BCC. This is the most mature and feature-complete backend in HarbourBuilder.</p>
+
+<div class="info-box info">
+  <strong>Backend Statistics</strong>
+  <table>
+    <tr><th>Language</th><th>C++</th></tr>
+    <tr><th>Lines of code</th><th>~7,100</th></tr>
+    <tr><th>HB_FUNC functions</th><th>~135</th></tr>
+    <tr><th>Native API</th><th>Win32 API (CreateWindowEx, GDI)</th></tr>
+    <tr><th>Scintilla</th><th>5.6.1 (dynamic DLL)</th></tr>
+    <tr><th>Supported OS</th><th>Windows 10, Windows 11</th></tr>
+  </table>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Architecture Overview</h2>
+
+<div class="mermaid">
+graph TB
+    A["Harbour .prg"] --> B["hbbuilder.ch<br/>#xcommand preprocessor"]
+    B --> C["TForm, TControl<br/>Harbour OOP classes"]
+    C --> D["HB_FUNC Bridge<br/>~135 functions"]
+    D --> E["Win32 Backend<br/>C++ / CreateWindowEx"]
+    E --> F["GDI / GDI+<br/>Drawing"]
+    E --> G["Scintilla 5.6.1<br/>DLL (code editor)"]
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style E fill:#0078d4,stroke:#005a9e,color:#fff
+    style F fill:#0078d4,stroke:#005a9e,color:#fff
+    style G fill:#555,stroke:#333,color:#fff
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Native Window Creation</h2>
+<p>Every HarbourBuilder window and control is a native Win32 window created via <code>CreateWindowEx()</code>.
+The backend registers custom window classes at startup:</p>
+
+<pre><span class="cm">// win32_backend.cpp - Window class registration</span>
+<span class="kw">void</span> <span class="fn">RegisterClasses</span>( HINSTANCE hInstance )
+{
+   WNDCLASSEX wc = { <span class="kw">sizeof</span>( WNDCLASSEX ) };
+   wc.hInstance     = hInstance;
+   wc.lpfnWndProc   = <span class="fn">WndProc</span>;
+   wc.hCursor       = <span class="fn">LoadCursor</span>( <span class="kw">NULL</span>, IDC_ARROW );
+   wc.hbrBackground = (<span class="kw">HBRUSH</span>)( COLOR_WINDOW + <span class="nb">1</span> );
+
+   wc.lpszClassName = <span class="st">"HBBUILDER_FORM"</span>;
+   <span class="fn">RegisterClassEx</span>( &amp;wc );
+
+   wc.lpszClassName = <span class="st">"HBBUILDER_BUTTON"</span>;
+   <span class="fn">RegisterClassEx</span>( &amp;wc );
+
+   <span class="cm">// ... additional classes for EDIT, STATIC, etc.</span>
+}</pre>
+
+<p>Controls are standard Win32 common controls: <code>BUTTON</code>, <code>EDIT</code>, <code>STATIC</code>,
+<code>COMBOBOX</code>, <code>LISTBOX</code>, <code>msctls_progress32</code>, <code>msctls_trackbar32</code>,
+<code>SysTreeView32</code>, <code>SysListView32</code>, and <code>RichEdit</code>.</p>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Event Handling (WndProc)</h2>
+<p>The Windows backend uses a central <code>WndProc</code> (window procedure) that receives all messages
+from the OS. It dispatches them to Harbour event handlers:</p>
+
+<pre><span class="cm">// win32_backend.cpp - Message dispatch</span>
+<span class="kw">LRESULT</span> <span class="kw">CALLBACK</span> <span class="fn">WndProc</span>( HWND hWnd, <span class="kw">UINT</span> msg, <span class="kw">WPARAM</span> wParam, <span class="kw">LPARAM</span> lParam )
+{
+   <span class="kw">switch</span>( msg )
+   {
+      <span class="kw">case</span> WM_COMMAND:
+         <span class="fn">FireEvent</span>( hWnd, EVENT_CLICK, CT_BUTTON );
+         <span class="kw">break</span>;
+
+      <span class="kw">case</span> WM_LBUTTONDOWN:
+         <span class="fn">FireEvent</span>( hWnd, EVENT_MOUSEDOWN, (<span class="kw">int</span>) LOWORD( lParam ), (<span class="kw">int</span>) HIWORD( lParam ) );
+         <span class="kw">break</span>;
+
+      <span class="kw">case</span> WM_KEYDOWN:
+         <span class="fn">FireEvent</span>( hWnd, EVENT_KEYDOWN, (<span class="kw">int</span>) wParam );
+         <span class="kw">break</span>;
+
+      <span class="kw">case</span> WM_PAINT:
+         <span class="fn">FireEvent</span>( hWnd, EVENT_PAINT );
+         <span class="kw">break</span>;
+
+      <span class="kw">case</span> WM_CLOSE:
+         <span class="kw">if</span>( !<span class="fn">FireCloseQuery</span>( hWnd ) )
+            <span class="kw">return</span> <span class="nb">0</span>;  <span class="cm">// Cancel close</span>
+         <span class="kw">break</span>;
+
+      <span class="cm">// ... additional message handling</span>
+   }
+   <span class="kw">return</span> <span class="fn">DefWindowProc</span>( hWnd, msg, wParam, lParam );
+}</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Dark Mode Support</h2>
+<p>HarbourBuilder on Windows follows the system theme. Dark mode is implemented using:</p>
+
+<ul>
+  <li><strong><code>DwmSetWindowAttribute()</code></strong> &mdash; Enables dark title bars on Windows 10/11 by setting
+  <code>DWMWA_USE_IMMERSIVE_DARK_MODE</code>.</li>
+  <li><strong>Dark window class styles</strong> &mdash; When the system is in dark mode, the backend registers
+  window classes with dark background brushes.</li>
+  <li><strong>GDI dark colors</strong> &mdash; Control colors use dark palette values (near-black backgrounds,
+  light text).</li>
+  <li><strong>Scintilla dark theme</strong> &mdash; The code editor uses a dark lexer style matching the IDE theme.</li>
+</ul>
+
+<pre><span class="cm">// win32_backend.cpp - Dark title bar</span>
+<span class="kw">void</span> <span class="fn">EnableDarkTitleBar</span>( HWND hWnd )
+{
+   BOOL dark = <span class="kw">TRUE</span>;
+   <span class="fn">DwmSetWindowAttribute</span>(
+      hWnd,
+      DWMWA_USE_IMMERSIVE_DARK_MODE,
+      &amp;dark,
+      <span class="kw">sizeof</span>( dark )
+   );
+}</pre>
+
+<div class="info-box tip">
+  <strong>System theme detection</strong>
+  <p>HarbourBuilder reads the Windows theme setting from the registry
+  (<code>HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize\AppsUseLightTheme</code>)
+  at startup and configures all controls accordingly.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Scintilla Integration</h2>
+<p>The Windows backend uses Scintilla 5.6.1 as a dynamic library:</p>
+
+<table>
+  <tr><th>File</th><th>Location</th><th>Purpose</th></tr>
+  <tr><td><code>Scintilla.dll</code></td><td><code>bin/</code></td><td>Core Scintilla editing component</td></tr>
+  <tr><td><code>Lexilla.dll</code></td><td><code>bin/</code></td><td>Lexer library (syntax highlighting)</td></tr>
+</table>
+
+<p>Scintilla is loaded at runtime via <code>LoadLibrary()</code> and <code>GetProcAddress()</code>. The
+backend creates a Scintilla window as a child of the code editor tab and communicates with it
+via <code>SendMessage()</code>.</p>
+
+<pre><span class="cm">// Loading Scintilla at runtime</span>
+HMODULE hSci = <span class="fn">LoadLibrary</span>( <span class="st">"Scintilla.dll"</span> );
+SCI_CREATE fnCreate = (SCI_CREATE) <span class="fn">GetProcAddress</span>( hSci, <span class="st">"Scintilla_DirectFunction"</span> );
+
+<span class="cm">// Creating the editor window</span>
+HWND hEditor = <span class="fn">CreateWindowEx</span>(
+   <span class="nb">0</span>, <span class="st">"Scintilla"</span>, <span class="st">""</span>,
+   WS_CHILD | WS_VISIBLE | WS_VSCROLL | WS_HSCROLL | ES_MULTILINE,
+   <span class="nb">0</span>, <span class="nb">0</span>, <span class="nb">800</span>, <span class="nb">600</span>,
+   hParent, <span class="kw">NULL</span>, hInstance, <span class="kw">NULL</span>
+);</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Compiler Options</h2>
+
+<h3>Supported Compilers</h3>
+<table>
+  <tr><th>Compiler</th><th>Version</th><th>Notes</th></tr>
+  <tr><td>MSVC 2022</td><td>19.3x</td><td>Recommended. Full C++17 support, best optimization.</td></tr>
+  <tr><td>MSVC 2019</td><td>19.2x</td><td>Fully supported. Available via Visual Studio 2019 or Build Tools.</td></tr>
+  <tr><td>MSVC Community</td><td>Latest</td><td>Free edition, identical compiler to Pro/Enterprise.</td></tr>
+  <tr><td>MSVC BuildTools</td><td>Latest</td><td>Command-line only. Good for CI/CD pipelines.</td></tr>
+  <tr><td>BCC</td><td>7.7</td><td>Embarcadero Borland C++ Compiler. Alternative to MSVC.</td></tr>
+</table>
+
+<h3>Build Script</h3>
+<p>The <code>build_win.bat</code> script handles the entire build process:</p>
+
+<ol>
+  <li><strong>Compiler detection</strong> &mdash; Scans for MSVC installations (2019, 2022, Community, BuildTools) and BCC.</li>
+  <li><strong>Environment setup</strong> &mdash; Calls <code>vcvarsall.bat</code> to set up the compiler environment.</li>
+  <li><strong>Harbour compilation</strong> &mdash; Builds Harbour from source if not already present.</li>
+  <li><strong>Scintilla build</strong> &mdash; Compiles Scintilla and Lexilla DLLs.</li>
+  <li><strong>IDE compilation</strong> &mdash; Compiles the HarbourBuilder IDE source.</li>
+  <li><strong>Linking</strong> &mdash; Links against <code>user32.lib</code>, <code>gdi32.lib</code>, <code>comctl32.lib</code>, <code>dwmapi.lib</code>, and the Harbour runtime.</li>
+</ol>
+
+<pre><span class="cm">:: build_win.bat - Build process</span>
+<span class="kw">set</span> HBDIR=C:\harbour
+<span class="kw">call</span> <span class="st">"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"</span> x64
+
+harbour hbbuilder.prg /n /q /gc1
+cl /O2 /c hbbuilder.c win32_backend.cpp <span class="st">/I%HBDIR%\include</span> <span class="st">/I.\include</span>
+link hbbuilder.obj win32_backend.obj <span class="st">/SUBSYSTEM:WINDOWS</span> ^
+     user32.lib gdi32.lib comctl32.lib dwmapi.lib ^
+     %HBDIR%\lib\win\msvc64\harbour.lib</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Platform-Specific Features</h2>
+
+<table>
+  <tr><th>Feature</th><th>Windows Implementation</th></tr>
+  <tr><td>Rich Edit control</td><td><code>RichEdit20W</code> / <code>RichEdit50W</code> (msftedit.dll)</td></tr>
+  <tr><td>Common dialogs</td><td><code>GetOpenFileName()</code>, <code>GetSaveFileName()</code>, <code>ChooseFont()</code>, <code>ChooseColor()</code></td></tr>
+  <tr><td>System tray</td><td><code>Shell_NotifyIcon()</code> with <code>NOTIFYICONDATA</code></td></tr>
+  <tr><td>Registry access</td><td><code>RegOpenKeyEx()</code>, <code>RegQueryValueEx()</code></td></tr>
+  <tr><td>File associations</td><td>Registry-based under <code>HKEY_CLASSES_ROOT</code></td></tr>
+  <tr><td>Drag and drop</td><td><code>DragAcceptFiles()</code> / <code>WM_DROPFILES</code></td></tr>
+  <tr><td>Clipboard</td><td><code>OpenClipboard()</code>, <code>SetClipboardData()</code></td></tr>
+  <tr><td>Printing</td><td>Win32 Print API (<code>PrintDlg()</code>, <code>StartDoc()</code>)</td></tr>
+  <tr><td>Dark title bars</td><td><code>DwmSetWindowAttribute()</code> with <code>DWMWA_USE_IMMERSIVE_DARK_MODE</code></td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Known Limitations</h2>
+
+<ul>
+  <li><strong>Manifest requirement</strong> &mdash; Windows applications need an embedded manifest for visual styles (ComCtl32 v6) and DPI awareness. HarbourBuilder includes this in the build.</li>
+  <li><strong>DPI scaling</strong> &mdash; The backend is DPI-aware but control positioning uses pixel coordinates. High-DPI displays may require manual size adjustments.</li>
+  <li><strong>RichEdit version</strong> &mdash; The RichEdit control depends on <code>msftedit.dll</code> which may not be available on very old Windows versions (pre-Windows 8).</li>
+  <li><strong>Windows XP/Vista/7/8</strong> &mdash; Not officially supported. The backend targets Windows 10+ APIs. Some features (dark title bars via DWM) require Windows 10 build 18985+.</li>
+</ul>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Dependencies</h2>
+<table>
+  <tr><th>Library</th><th>Purpose</th></tr>
+  <tr><td><code>user32.lib</code></td><td>Window management, messages, controls</td></tr>
+  <tr><td><code>gdi32.lib</code></td><td>Drawing, fonts, bitmaps</td></tr>
+  <tr><td><code>comctl32.lib</code></td><td>Common controls (TreeView, ListView, ProgressBar, etc.)</td></tr>
+  <tr><td><code>comdlg32.lib</code></td><td>Common dialogs (Open, Save, Font, Color)</td></tr>
+  <tr><td><code>dwmapi.lib</code></td><td>Desktop Window Manager (dark title bars)</td></tr>
+  <tr><td><code>gdiplus.lib</code></td><td>GDI+ for advanced graphics</td></tr>
+  <tr><td><code>ole32.lib</code></td><td>COM initialization, clipboard</td></tr>
+  <tr><td><code>shell32.lib</code></td><td>Shell functions, drag-and-drop</td></tr>
+</table>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

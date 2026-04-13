@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Methods Reference A-Z - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html" class="active">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Reference</a> <span>/</span> Methods A-Z
+</div>
+
+<h1>Methods Reference A-Z</h1>
+<p>This page documents the most commonly used methods across HarbourBuilder controls. Methods are
+functions called on control objects to perform actions, query state, or trigger behavior. They
+complement property assignments and event handlers in the HarbourBuilder programming model.</p>
+
+<div class="info-box info">
+  <strong>Methods vs. Properties</strong>
+  <p>Use <strong>properties</strong> to read or set a control's state (e.g., <code>oBtn:nWidth := 200</code>).
+  Use <strong>methods</strong> to trigger actions (e.g., <code>oBtn:Show()</code>) or to query computed values
+  that are not stored as simple properties. In HarbourBuilder's OOP layer, methods are invoked
+  with the <code>:method()</code> syntax on any object reference.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Construction and Destruction</h2>
+
+<table>
+  <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
+  <tr>
+    <td><code>New()</code></td>
+    <td><code>oParent</code></td>
+    <td>Control object</td>
+    <td>Creates a new control instance within the specified parent. This is the constructor method used by the xBase preprocessor to expand <code>DEFINE</code> and <code>@</code> commands. Usually called implicitly by the code generator.</td>
+    <td>All controls</td>
+  </tr>
+  <tr>
+    <td><code>Create()</code></td>
+    <td>none</td>
+    <td>Self (the control)</td>
+    <td>Realizes the control on the native platform by calling the backend API (CreateWindowEx, NSView alloc, gtk_widget_new). Called automatically during form activation.</td>
+    <td>All visual controls</td>
+  </tr>
+  <tr>
+    <td><code>Release()</code></td>
+    <td>none</td>
+    <td>nil</td>
+    <td>Destroys the control and frees its native resources. On the backend, this calls DestroyWindow, release, or gtk_widget_destroy. After Release(), the object reference becomes invalid.</td>
+    <td>All controls</td>
+  </tr>
+  <tr>
+    <td><code>Close()</code></td>
+    <td>none</td>
+    <td>nil</td>
+    <td>Closes the form. Triggers OnCloseQuery (which can cancel the close), then OnClose, then onDestroy. For non-form controls, this method is not available.</td>
+    <td>Form</td>
+  </tr>
+</table>
+
+<h3>Construction Examples</h3>
+
+<pre><span class="cm">--- New() and Create() are usually called by the preprocessor ---</span>
+<span class="cm">--- This is what the code generator produces from DEFINE FORM: ---</span>
+
+oForm := TForm():<span class="fn">New</span>( <span class="kw">nil</span> )
+oForm:<span class="nb">cTitle</span>   := <span class="st">"My Window"</span>
+oForm:<span class="nb">nWidth</span>   := <span class="nb">640</span>
+oForm:<span class="nb">nHeight</span>  := <span class="nb">480</span>
+oForm:<span class="fn">Create</span>()
+
+<span class="cm">--- Creating a button programmatically ---</span>
+oBtn := TButton():<span class="fn">New</span>( oForm )
+oBtn:<span class="nb">cCaption</span>  := <span class="st">"Click Me"</span>
+oBtn:<span class="nb">nLeft</span>     := <span class="nb">50</span>
+oBtn:<span class="nb">nTop</span>      := <span class="nb">30</span>
+oBtn:<span class="nb">nWidth</span>    := <span class="nb">120</span>
+oBtn:<span class="nb">nHeight</span>   := <span class="nb">32</span>
+oBtn:<span class="fn">Create</span>()
+
+<span class="cm">--- Destroying a control ---</span>
+oOldBtn:<span class="fn">Release</span>()   <span class="cm">/// removes and frees the native widget</span></pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Visibility and Focus</h2>
+
+<table>
+  <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
+  <tr>
+    <td><code>Show()</code></td>
+    <td>none</td>
+    <td>nil</td>
+    <td>Makes the control visible. For forms, this also activates the form and shows it on screen. Triggers the OnShow event. For child controls, makes them visible within their parent.</td>
+    <td>All visual controls</td>
+  </tr>
+  <tr>
+    <td><code>Hide()</code></td>
+    <td>none</td>
+    <td>nil</td>
+    <td>Hides the control without destroying it. The control still exists and can be shown again. Triggers the OnHide event on forms.</td>
+    <td>All visual controls</td>
+  </tr>
+  <tr>
+    <td><code>SetFocus()</code></td>
+    <td>none</td>
+    <td>nil</td>
+    <td>Gives input focus to the control. The control must be visible, enabled, and have lTabStop set to .T. Triggers the OnEnter event. For forms, brings the form to the foreground.</td>
+    <td>All focusable controls</td>
+  </tr>
+</table>
+
+<h3>Visibility and Focus Examples</h3>
+
+<pre><span class="cm">--- Show/hide a panel based on a checkbox ---</span>
+oCheck:<span class="fn">OnClick</span> := { || ;
+   <span class="kw">if</span> oCheck:<span class="nb">lCheck</span>
+      oPanel:<span class="fn">Show</span>()
+   <span class="kw">else</span>
+      oPanel:<span class="fn">Hide</span>()
+   <span class="kw">endif</span> ;
+}
+
+<span class="cm">--- Set focus to the first field when the form opens ---</span>
+oForm:<span class="fn">OnInit</span> := { || ;
+   oNameEdit:<span class="fn">SetFocus</span>() ;
+}
+
+<span class="cm">--- Show a modal dialog and return ---</span>
+oDialog:<span class="fn">Show</span>()
+oDialog:<span class="fn">SetFocus</span>()   <span class="cm">/// ensure focus is on the dialog</span></pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Value Methods</h2>
+
+<table>
+  <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
+  <tr>
+    <td><code>GetValue()</code></td>
+    <td>none</td>
+    <td>Current value</td>
+    <td>Returns the current value of the control. For Edit/Memo, returns the text string. For CheckBox, returns .T./.F. For ListBox/ComboBox, returns the selected item. For TrackBar/UpDown, returns the numeric position.</td>
+    <td>Edit, Memo, MaskEdit, CheckBox, Radio, ListBox, ComboBox, TrackBar, UpDown, LabeledEdit</td>
+  </tr>
+  <tr>
+    <td><code>SetValue( xValue )</code></td>
+    <td><code>xValue</code> (any)</td>
+    <td>nil</td>
+    <td>Sets the control's value. For Edit/Memo, sets the text. For CheckBox, sets the check state. For ListBox/ComboBox, selects the matching item. Triggers the OnChange event.</td>
+    <td>Edit, Memo, MaskEdit, CheckBox, Radio, ListBox, ComboBox, TrackBar, UpDown, LabeledEdit</td>
+  </tr>
+  <tr>
+    <td><code>SetText( cText )</code></td>
+    <td><code>cText</code> (string)</td>
+    <td>nil</td>
+    <td>Sets the displayed text of the control. Equivalent to SetValue() for text controls, but also works for Label, StaticText, Button caption, etc. Does not trigger OnChange.</td>
+    <td>Label, StaticText, Button, Edit, Memo, LabeledEdit, StatusBar, GroupBox</td>
+  </tr>
+  <tr>
+    <td><code>GetText()</code></td>
+    <td>none</td>
+    <td>String</td>
+    <td>Returns the displayed text. For Edit/Memo, this is the text content. For Label/StaticText, the caption. For Button, the prompt.</td>
+    <td>Label, StaticText, Button, Edit, Memo, LabeledEdit</td>
+  </tr>
+</table>
+
+<h3>Value Method Examples</h3>
+
+<pre><span class="cm">--- Read and write values ---</span>
+oBtn:<span class="fn">OnClick</span> := { || ;
+   <span class="kw">local</span> cName := oNameEdit:<span class="fn">GetValue</span>()   <span class="cm">/// read the edit box</span>
+   <span class="fn">MsgInfo</span>( <span class="st">"Hello, "</span> + cName + <span class="st">"!"</span> ), ;
+   oNameEdit:<span class="fn">SetValue</span>( <span class="st">""</span> )              <span class="cm">/// clear it</span>
+}
+
+<span class="cm">--- GetText vs. GetValue ---</span>
+<span class="cm">/// GetValue() returns the underlying value (may be typed)</span>
+<span class="cm">/// GetText() always returns a string</span>
+
+oCheck:<span class="fn">OnClick</span> := { || ;
+   <span class="kw">local</span> lChecked := oCheck:<span class="fn">GetValue</span>()  <span class="cm">/// returns .T. or .F.</span>
+   oStatusLabel:<span class="fn">SetText</span>( ;
+      <span class="kw">if</span>( lChecked, <span class="st">"Checked"</span>, <span class="st">"Unchecked"</span> ) ;
+   ) ;
+}
+
+<span class="cm">--- Set text on multiple controls ---</span>
+oTitleLabel:<span class="fn">SetText</span>( <span class="st">"Welcome to the Application"</span> )
+oStatus:<span class="fn">SetText</span>( <span class="st">"Ready"</span> )</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Position and Size Methods</h2>
+
+<table>
+  <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
+  <tr>
+    <td><code>SetBounds( nLeft, nTop, nWidth, nHeight )</code></td>
+    <td>Four numbers</td>
+    <td>nil</td>
+    <td>Sets the position and size of the control in a single call. More efficient than setting each property separately because it triggers only one native resize/redraw.</td>
+    <td>All visual controls</td>
+  </tr>
+  <tr>
+    <td><code>SetPosition( nLeft, nTop )</code></td>
+    <td>Two numbers</td>
+    <td>nil</td>
+    <td>Sets only the position (left, top) without changing size. Alias: <code>MoveTo()</code>.</td>
+    <td>All visual controls</td>
+  </tr>
+  <tr>
+    <td><code>SetSize( nWidth, nHeight )</code></td>
+    <td>Two numbers</td>
+    <td>nil</td>
+    <td>Sets only the size (width, height) without changing position.</td>
+    <td>All visual controls</td>
+  </tr>
+  <tr>
+    <td><code>GetSize()</code></td>
+    <td>none</td>
+    <td>Array <code>{ nWidth, nHeight }</code></td>
+    <td>Returns the current width and height as a two-element array.</td>
+    <td>All visual controls</td>
+  </tr>
+  <tr>
+    <td><code>GetPosition()</code></td>
+    <td>none</td>
+    <td>Array <code>{ nLeft, nTop }</code></td>
+    <td>Returns the current left and top as a two-element array.</td>
+    <td>All visual controls</td>
+  </tr>
+</table>
+
+<h3>Position and Size Examples</h3>
+
+<pre><span class="cm">--- SetBounds: position and size in one call ---</span>
+oBtn:<span class="fn">SetBounds</span>( <span class="nb">50</span>, <span class="nb">30</span>, <span class="nb">120</span>, <span class="nb">32</span> )
+
+<span class="cm">--- Resize a grid to fill the form ---</span>
+oForm:<span class="fn">OnResize</span> := { | nW, nH | ;
+   oGrid:<span class="fn">SetBounds</span>( <span class="nb">10</span>, <span class="nb">10</span>, nW - <span class="nb">20</span>, nH - <span class="nb">60</span> ) ;
+}
+
+<span class="cm">--- Get current size ---</span>
+aSize := oForm:<span class="fn">GetSize</span>()
+<span class="fn">MsgInfo</span>( <span class="st">"Width: "</span> + <span class="fn">LTrim</span>( <span class="fn">Str</span>( aSize[ <span class="nb">1</span> ] ) ) + ;
+         <span class="st">", Height: "</span> + <span class="fn">LTrim</span>( <span class="fn">Str</span>( aSize[ <span class="nb">2</span> ] ) ) )</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Font Methods</h2>
+
+<table>
+  <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
+  <tr>
+    <td><code>SetFont( cName, nSize, [lBold], [lItalic], [lUnderline] )</code></td>
+    <td>Font name, size, optional style flags</td>
+    <td>nil</td>
+    <td>Sets the font for the control in a single call. Style parameters are optional and default to .F. This is a convenience method that sets cFontName, nFontSize, lFontBold, etc. all at once.</td>
+    <td>All controls with text</td>
+  </tr>
+  <tr>
+    <td><code>GetFont()</code></td>
+    <td>none</td>
+    <td>Font object (or array)</td>
+    <td>Returns the current font descriptor. The return type depends on the backend but typically contains font name, size, and style information.</td>
+    <td>All controls with text</td>
+  </tr>
+</table>
+
+<h3>Font Method Examples</h3>
+
+<pre><span class="cm">--- SetFont: set the complete font in one call ---</span>
+oTitleLabel:<span class="fn">SetFont</span>( <span class="st">"Segoe UI"</span>, <span class="nb">14</span>, <span class="nb">.T.</span> )     <span class="cm">/// bold</span>
+oEdit:<span class="fn">SetFont</span>( <span class="st">"Consolas"</span>, <span class="nb">11</span>, <span class="nb">.F.</span>, <span class="nb">.T.</span> )      <span class="cm">/// italic</span>
+oBtn:<span class="fn">SetFont</span>( <span class="st">"Arial"</span>, <span class="nb">12</span>, <span class="nb">.T.</span>, <span class="nb">.F.</span>, <span class="nb">.T.</span> )     <span class="cm">/// bold + underline</span>
+
+<span class="cm">--- Get current font ---</span>
+oFont := oLabel:<span class="fn">GetFont</span>()
+<span class="fn">MsgInfo</span>( <span class="st">"Font: "</span> + oFont:<span class="nb">cName</span> + <span class="st">" Size: "</span> + <span class="fn">LTrim</span>( <span class="fn">Str</span>( oFont:<span class="nb">nSize</span> ) ) )</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Display and Refresh Methods</h2>
+
+<table>
+  <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
+  <tr>
+    <td><code>Refresh()</code></td>
+    <td>none</td>
+    <td>nil</td>
+    <td>Forces an immediate redraw of the control. This invalidates the control's display area and triggers the OnPaint event. Use when you have changed properties that affect appearance and need an immediate visual update.</td>
+    <td>All visual controls</td>
+  </tr>
+  <tr>
+    <td><code>Update()</code></td>
+    <td>none</td>
+    <td>nil</td>
+    <td>Processes any pending paint messages immediately. Unlike Refresh() which forces a repaint, Update() only repaints areas that are already marked as needing redraw. Useful during long operations to keep the UI responsive.</td>
+    <td>All visual controls</td>
+  </tr>
+  <tr>
+    <td><code>Invalidate()</code></td>
+    <td>none</td>
+    <td>nil</td>
+    <td>Marks the control's entire area as needing repaint, but does not force an immediate redraw. The actual painting happens during the next paint cycle. More efficient than Refresh() when you plan to make multiple changes before the display updates.</td>
+    <td>All visual controls</td>
+  </tr>
+</table>
+
+<h3>Refresh Examples</h3>
+
+<pre><span class="cm">--- Refresh after changing appearance properties ---</span>
+oShape:<span class="nb">nBrushColor</span> := <span class="nb">CLR_RED</span>
+oShape:<span class="nb">nPenWidth</span>   := <span class="nb">3</span>
+oShape:<span class="fn">Refresh</span>()    <span class="cm">/// immediate visual update</span>
+
+<span class="cm">--- Refresh a custom-drawn PaintBox ---</span>
+oPaintBox:<span class="fn">OnTimer</span> := { || ;
+   <span class="fn">UpdateData</span>(), ;       <span class="cm">/// recalculate data</span>
+   oPaintBox:<span class="fn">Invalidate</span>() <span class="cm">/// mark for repaint</span>
+}</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Complete Method Summary Table</h2>
+
+<table>
+  <tr><th>Method</th><th>Returns</th><th>Category</th><th>Primary Controls</th></tr>
+  <tr><td><code>New( oParent )</code></td><td>Control object</td><td>Construction</td><td>All controls</td></tr>
+  <tr><td><code>Create()</code></td><td>Self</td><td>Construction</td><td>All visual controls</td></tr>
+  <tr><td><code>Release()</code></td><td>nil</td><td>Destruction</td><td>All controls</td></tr>
+  <tr><td><code>Close()</code></td><td>nil</td><td>Lifecycle</td><td>Form</td></tr>
+  <tr><td><code>Show()</code></td><td>nil</td><td>Visibility</td><td>All visual controls</td></tr>
+  <tr><td><code>Hide()</code></td><td>nil</td><td>Visibility</td><td>All visual controls</td></tr>
+  <tr><td><code>SetText( cText )</code></td><td>nil</td><td>Value</td><td>Label, Edit, Button, Memo, StatusBar</td></tr>
+  <tr><td><code>GetText()</code></td><td>String</td><td>Value</td><td>Label, Edit, Button, Memo</td></tr>
+  <tr><td><code>GetValue()</code></td><td>Any</td><td>Value</td><td>Edit, Memo, CheckBox, ListBox, ComboBox</td></tr>
+  <tr><td><code>SetValue( xVal )</code></td><td>nil</td><td>Value</td><td>Edit, Memo, CheckBox, ListBox, ComboBox</td></tr>
+  <tr><td><code>SetBounds()</code></td><td>nil</td><td>Position</td><td>All visual controls</td></tr>
+  <tr><td><code>SetPosition()</code></td><td>nil</td><td>Position</td><td>All visual controls</td></tr>
+  <tr><td><code>SetSize()</code></td><td>nil</td><td>Position</td><td>All visual controls</td></tr>
+  <tr><td><code>GetSize()</code></td><td>Array</td><td>Position</td><td>All visual controls</td></tr>
+  <tr><td><code>GetPosition()</code></td><td>Array</td><td>Position</td><td>All visual controls</td></tr>
+  <tr><td><code>SetFont()</code></td><td>nil</td><td>Font</td><td>All controls with text</td></tr>
+  <tr><td><code>GetFont()</code></td><td>Font object</td><td>Font</td><td>All controls with text</td></tr>
+  <tr><td><code>Refresh()</code></td><td>nil</td><td>Display</td><td>All visual controls</td></tr>
+  <tr><td><code>Update()</code></td><td>nil</td><td>Display</td><td>All visual controls</td></tr>
+  <tr><td><code>Invalidate()</code></td><td>nil</td><td>Display</td><td>All visual controls</td></tr>
+  <tr><td><code>SetFocus()</code></td><td>nil</td><td>Focus</td><td>All focusable controls</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Method chaining</strong>
+  <p>Some methods return <code>self</code>, enabling a fluent style:
+  <code>oBtn:New( oForm ):SetBounds( 50, 30, 120, 32 ):SetText( "OK" ):Show()</code>.
+  However, the traditional approach of setting properties individually is more readable and
+  is the style used by the HarbourBuilder code generator.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

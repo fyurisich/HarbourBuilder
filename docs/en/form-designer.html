@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form Designer - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html" class="active">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">IDE Features</a> <span>/</span> Form Designer
+</div>
+
+<h1>Visual Form Designer</h1>
+<p>The Form Designer is a WYSIWYG (What You See Is What You Get) form editor inspired by Borland C++Builder.
+Design forms visually, drop controls from the component palette, set properties in the Object Inspector,
+and watch the code generate automatically.</p>
+
+<div class="info-box tip">
+  <strong>Two-Way Design</strong>
+  <p>Changes in the designer instantly update the code, and changes in the code instantly update the designer.
+  Your METHOD implementations are always preserved during code regeneration.</p>
+</div>
+
+<h2>Designer Features</h2>
+
+<ul>
+  <li><strong>Dot grid background</strong> with snap-to-grid for precise alignment</li>
+  <li><strong>Selection handles</strong> — 8 handles per selected control for resizing</li>
+  <li><strong>Rubber band selection</strong> — click and drag to select multiple controls</li>
+  <li><strong>Drag &amp; drop</strong> from component palette onto form surface</li>
+  <li><strong>Real-time code generation</strong> — every action updates source code</li>
+  <li><strong>Copy/Paste controls</strong> — Cmd/Ctrl+C/V with automatic +16px offset</li>
+  <li><strong>Format menu</strong> — align and distribute controls</li>
+</ul>
+
+<h2>Control Selection</h2>
+
+<h3>Single Selection</h3>
+<p>Click any control on the form to select it. A blue border with 8 resize handles appears:</p>
+<ul>
+  <li><strong>Corner handles</strong> — resize both width and height simultaneously</li>
+  <li><strong>Edge handles</strong> — resize width or height only</li>
+  <li><strong>Drag body</strong> — move the control without resizing</li>
+</ul>
+
+<h3>Multi-Selection</h3>
+<p>Hold Shift and click to add/remove controls from selection, or click and drag to create a rubber band
+selection rectangle. All selected controls show handles simultaneously.</p>
+
+<h2>Copy and Paste Controls</h2>
+
+<p>HarbourBuilder supports full clipboard operations for controls:</p>
+
+<table>
+  <tr><th>Shortcut</th><th>Action</th></tr>
+  <tr><td><strong>Ctrl+C / Cmd+C</strong></td><td>Copy selected controls to clipboard</td></tr>
+  <tr><td><strong>Ctrl+V / Cmd+V</strong></td><td>Paste controls with +16px offset</td></tr>
+  <tr><td><strong>Ctrl+X / Cmd+X</strong></td><td>Cut selected controls (copy + delete)</td></tr>
+  <tr><td><strong>Delete</strong></td><td>Delete selected controls</td></tr>
+</table>
+
+<p>When pasting, controls are automatically offset by 16 pixels to avoid overlap with the original.</p>
+
+<h2>Format Menu</h2>
+
+<p>The Format menu provides 8 alignment and distribution modes:</p>
+
+<table>
+  <tr><th>Command</th><th>Description</th></tr>
+  <tr><td><strong>Align Left</strong></td><td>Align all selected controls to the leftmost control's left edge</td></tr>
+  <tr><td><strong>Align Right</strong></td><td>Align to the rightmost control's right edge</td></tr>
+  <tr><td><strong>Align Top</strong></td><td>Align to the topmost control's top edge</td></tr>
+  <tr><td><strong>Align Bottom</strong></td><td>Align to the bottommost control's bottom edge</td></tr>
+  <tr><td><strong>Center Horizontally</strong></td><td>Center all controls on the horizontal axis</td></tr>
+  <tr><td><strong>Center Vertically</strong></td><td>Center all controls on the vertical axis</td></tr>
+  <tr><td><strong>Space Evenly Horizontal</strong></td><td>Distribute controls evenly with equal horizontal spacing</td></tr>
+  <tr><td><strong>Space Evenly Vertical</strong></td><td>Distribute controls evenly with equal vertical spacing</td></tr>
+</table>
+
+<h2>Real-Time Code Generation</h2>
+
+<p>Every action in the designer generates corresponding xBase code. For example, dropping a button
+generates:</p>
+
+<pre>@ <span class="nb">120</span>, <span class="nb">140</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"Button1"</span> ;
+   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">120</span>, <span class="nb">32</span></pre>
+
+<p>Changing properties in the Object Inspector updates the code immediately. The two-way sync ensures
+your visual design and code are always in harmony.</p>
+
+<h2>Design Mode vs Run Mode</h2>
+
+<p>Forms have an <code>FDesignMode</code> property that controls behavior:</p>
+
+<table>
+  <tr><th>Mode</th><th>Behavior</th></tr>
+  <tr><td><strong>Design Mode</strong> (FDesignMode = .T.)</td><td>Controls can be selected, moved, resized. Grid background shown. Code generation active.</td></tr>
+  <tr><td><strong>Run Mode</strong> (FDesignMode = .F.)</td><td>Form runs normally. Controls respond to user interaction. No code generation.</td></tr>
+</table>
+
+<h2>Form Properties in Designer</h2>
+
+<table>
+  <tr><th>Property</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>nWidth, nHeight</code></td><td>Numeric</td><td>Form dimensions in pixels</td></tr>
+  <tr><td><code>nLeft, nTop</code></td><td>Numeric</td><td>Position on screen</td></tr>
+  <tr><td><code>cTitle</code></td><td>String</td><td>Window title bar text</td></tr>
+  <tr><td><code>nBorderStyle</code></td><td>Numeric</td><td>0=bsSizeable, 1=bsSingle, 2=bsNone, 3=bsToolWindow</td></tr>
+  <tr><td><code>nPosition</code></td><td>Numeric</td><td>0=poDesigned, 1=poCenter, 2=poCenterScreen</td></tr>
+  <tr><td><code>nWindowState</code></td><td>Numeric</td><td>0=wsNormal, 1=wsMinimized, 2=wsMaximized</td></tr>
+  <tr><td><code>nFormStyle</code></td><td>Numeric</td><td>0=fsNormal, 1=fsStayOnTop</td></tr>
+  <tr><td><code>lSizable</code></td><td>Logical</td><td>Allow user to resize the window</td></tr>
+  <tr><td><code>lCenter</code></td><td>Logical</td><td>Center form on screen when shown</td></tr>
+</table>
+
+<h2>Code Examples</h2>
+
+<h3>Simple DEFINE FORM Syntax</h3>
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+   <span class="kw">local</span> oForm
+
+   <span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Hello World"</span> ;
+      <span class="cmd">SIZE</span> <span class="nb">400</span>, <span class="nb">300</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+   <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Class-Based Approach (IDE Generated)</h3>
+<pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
+
+   <span class="kw">METHOD</span> <span class="fn">CreateForm</span>()
+
+<span class="kw">ENDCLASS</span>
+
+<span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
+   ::<span class="prop">cTitle</span>  := <span class="st">"Form1"</span>
+   ::<span class="prop">nLeft</span>   := <span class="nb">100</span>
+   ::<span class="prop">nTop</span>    := <span class="nb">170</span>
+   ::<span class="prop">nWidth</span>  := <span class="nb">400</span>
+   ::<span class="prop">nHeight</span> := <span class="nb">300</span>
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<div class="info-box info">
+  <strong>Both Styles Work</strong>
+  <p>You can use either approach. The DEFINE FORM syntax is simpler for small apps,
+  while the class-based approach is better for complex multi-form applications.</p>
+</div>
+
+<h2>Tips for Efficient Form Design</h2>
+
+<ol>
+  <li><strong>Use the Object Inspector</strong> — Set properties visually instead of writing code</li>
+  <li><strong>Double-click controls</strong> — Auto-generates event handlers (e.g., OnClick for buttons)</li>
+  <li><strong>Multi-select for alignment</strong> — Select multiple controls, then use Format menu to align</li>
+  <li><strong>Copy/Paste for similar controls</strong> — Design one button, paste and modify for others</li>
+  <li><strong>Use snap-to-grid</strong> — Keeps controls aligned without manual positioning</li>
+  <li><strong>Check Two-Way Tools</strong> — Switch between designer and code view to see real-time updates</li>
+  <li><strong>Save frequently</strong> — Ctrl+S saves both design data and code</li>
+</ol>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

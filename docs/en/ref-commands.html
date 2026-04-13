@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>xBase Commands Reference - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html" class="active">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Reference</a> <span>/</span> xBase Commands
+</div>
+
+<h1>xBase Commands Reference</h1>
+<p>HarbourBuilder uses Harbour's <code>#xcommand</code> and <code>#translate</code> preprocessor directives to
+provide a familiar xBase/Clipper-style syntax for creating and configuring controls. These commands
+are defined in <code>hbbuilder.ch</code> and are expanded at compile time into Harbour OOP method calls.</p>
+
+<div class="info-box info">
+  <strong>How xBase commands work</strong>
+  <p>When you write <code>DEFINE FORM oForm TITLE "My App"</code>, the Harbour preprocessor transforms it into
+  Harbour OOP code that creates a <code>TForm</code> object and sets its properties. This happens at
+  compile time &mdash; the generated OOP code is what actually gets compiled and executed. You can
+  use either style; the commands are simply a more readable shorthand.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Command Expansion Architecture</h2>
+
+<div class="mermaid">
+graph LR
+    A[".prg source<br/>with xBase commands"] --> B["Harbour Preprocessor<br/>#xcommand / #translate"]
+    B --> C["Harbour OOP code<br/>TForm:New(), oBtn:SetText()"]
+    C --> D["Harbour Compiler<br/>harbour.exe"]
+    D --> E["C code<br/>.c files"]
+    E --> F["Native binary"]
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style E fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style F fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Form Commands</h2>
+
+<table>
+  <tr><th>Command</th><th>Syntax</th><th>Description</th><th>OOP Equivalent</th></tr>
+  <tr>
+    <td><code>DEFINE FORM</code></td>
+    <td><code>DEFINE FORM &lt;oForm&gt; [TITLE &lt;cTitle&gt;] [SIZE &lt;nW&gt;, &lt;nH&gt;] [FONT &lt;cFont&gt;, &lt;nSize&gt;]</code></td>
+    <td>Creates a new form window with optional title, size, and font.</td>
+    <td><code>oForm := TForm():New( nil )</code><br><code>oForm:cTitle := cTitle</code><br><code>oForm:nWidth := nW</code><br><code>oForm:nHeight := nH</code></td>
+  </tr>
+  <tr>
+    <td><code>ACTIVATE FORM</code></td>
+    <td><code>ACTIVATE FORM &lt;oForm&gt; [CENTERED] [MAXIMIZED] [MODAL]</code></td>
+    <td>Displays the form and starts the event loop. Blocks until the form is closed.</td>
+    <td><code>oForm:Show()</code><br><code>if CENTERED: oForm:lCentered := .T.</code><br><code>if MAXIMIZED: oForm:nWindowState := 2</code></td>
+  </tr>
+  <tr>
+    <td><code>ON INIT</code></td>
+    <td><code>ON INIT &lt;oForm&gt; &lt;code&gt;</code></td>
+    <td>Assigns an initialization code block to the form's OnInit event.</td>
+    <td><code>oForm:OnInit := { || &lt;code&gt; }</code></td>
+  </tr>
+  <tr>
+    <td><code>ON CLOSE</code></td>
+    <td><code>ON CLOSE &lt;oForm&gt; &lt;code&gt;</code></td>
+    <td>Assigns a cleanup code block to the form's OnClose event.</td>
+    <td><code>oForm:OnClose := { || &lt;code&gt; }</code></td>
+  </tr>
+</table>
+
+<h3>Form Command Example</h3>
+
+<pre><span class="cm">--- xBase command style ---</span>
+<span class="kw">local</span> oForm
+
+<span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Main Window"</span> ;
+   <span class="cmd">SIZE</span> <span class="nb">800</span>, <span class="nb">600</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+<span class="cmd">ON INIT</span> oForm <span class="fn">MsgInfo</span>( <span class="st">"Form initialized"</span> )
+
+<span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+
+<span class="cm">--- What the preprocessor generates (OOP equivalent) ---</span>
+oForm := TForm():<span class="fn">New</span>( <span class="kw">nil</span> )
+oForm:<span class="nb">cTitle</span>  := <span class="st">"Main Window"</span>
+oForm:<span class="nb">nWidth</span>  := <span class="nb">800</span>
+oForm:<span class="nb">nHeight</span> := <span class="nb">600</span>
+oForm:<span class="fn">SetFont</span>( <span class="st">"Segoe UI"</span>, <span class="nb">10</span> )
+oForm:<span class="fn">OnInit</span>  := { || <span class="fn">MsgInfo</span>( <span class="st">"Form initialized"</span> ) }
+oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
+<span class="fn">MsgRun</span>( oForm )   <span class="cm">/// activates and enters event loop</span></pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Control Creation Commands</h2>
+
+<h3>@ row, col Syntax (Screen Coordinate Style)</h3>
+<p>The classic Clipper-style <code>@ row, col</code> syntax creates controls at specific coordinates within a parent container:</p>
+
+<table>
+  <tr><th>Command</th><th>Syntax</th><th>Description</th><th>OOP Equivalent</th></tr>
+  <tr>
+    <td><code>@ ... BUTTON</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; BUTTON &lt;oBtn&gt; PROMPT &lt;cCaption&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;] [ACTION &lt;code&gt;]</code></td>
+    <td>Creates a push button at the specified position.</td>
+    <td><code>oBtn := TButton():New( oParent )</code><br><code>oBtn:nLeft := col</code><br><code>oBtn:nTop := row</code><br><code>oBtn:cCaption := cCaption</code></td>
+  </tr>
+  <tr>
+    <td><code>@ ... LABEL</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; LABEL &lt;oLbl&gt; VALUE &lt;cText&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td>
+    <td>Creates a static text label.</td>
+    <td><code>oLbl := TLabel():New( oParent )</code><br><code>oLbl:nLeft := col</code><br><code>oLbl:nTop := row</code><br><code>oLbl:cValue := cText</code></td>
+  </tr>
+  <tr>
+    <td><code>@ ... EDIT</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; EDIT &lt;oEdt&gt; [VALUE &lt;cText&gt;] OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td>
+    <td>Creates a single-line text input field.</td>
+    <td><code>oEdt := TEdit():New( oParent )</code><br><code>oEdt:nLeft := col</code><br><code>oEdt:nTop := row</code></td>
+  </tr>
+  <tr>
+    <td><code>@ ... COMBOBOX</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; COMBOBOX &lt;oCbo&gt; ITEMS &lt;aItems&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td>
+    <td>Creates a dropdown combo box.</td>
+    <td><code>oCbo := TComboBox():New( oParent )</code><br><code>oCbo:nLeft := col</code><br><code>oCbo:nTop := row</code><br><code>oCbo:aItems := aItems</code></td>
+  </tr>
+  <tr>
+    <td><code>@ ... LISTBOX</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; LISTBOX &lt;oLbx&gt; ITEMS &lt;aItems&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td>
+    <td>Creates a list box control.</td>
+    <td><code>oLbx := TListBox():New( oParent )</code><br><code>oLbx:nLeft := col</code><br><code>oLbx:nTop := row</code></td>
+  </tr>
+  <tr>
+    <td><code>@ ... CHECKBOX</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; CHECKBOX &lt;oChk&gt; PROMPT &lt;cCaption&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td>
+    <td>Creates a check box.</td>
+    <td><code>oChk := TCheckBox():New( oParent )</code><br><code>oChk:nLeft := col</code><br><code>oChk:nTop := row</code></td>
+  </tr>
+  <tr>
+    <td><code>@ ... GROUPBOX</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; GROUPBOX &lt;oGrp&gt; PROMPT &lt;cCaption&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td>
+    <td>Creates a group box (framed container with caption).</td>
+    <td><code>oGrp := TGroupBox():New( oParent )</code><br><code>oGrp:nLeft := col</code><br><code>oGrp:nTop := row</code></td>
+  </tr>
+  <tr>
+    <td><code>@ ... MEMO</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; MEMO &lt;oMemo&gt; [VALUE &lt;cText&gt;] OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td>
+    <td>Creates a multi-line text edit control.</td>
+    <td><code>oMemo := TMemo():New( oParent )</code><br><code>oMemo:nLeft := col</code><br><code>oMemo:nTop := row</code></td>
+  </tr>
+  <tr>
+    <td><code>@ ... IMAGE</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; IMAGE &lt;oImg&gt; PICTURE &lt;cFile&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td>
+    <td>Creates an image display control.</td>
+    <td><code>oImg := TImage():New( oParent )</code><br><code>oImg:nLeft := col</code><br><code>oImg:nTop := row</code><br><code>oImg:cPicture := cFile</code></td>
+  </tr>
+  <tr>
+    <td><code>@ ... PROGRESSBAR</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; PROGRESSBAR &lt;oPb&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td>
+    <td>Creates a progress bar control.</td>
+    <td><code>oPb := TProgressBar():New( oParent )</code><br><code>oPb:nLeft := col</code><br><code>oPb:nTop := row</code></td>
+  </tr>
+  <tr>
+    <td><code>@ ... TIMER</code></td>
+    <td><code>@ &lt;row&gt;, &lt;col&gt; TIMER &lt;oTmr&gt; INTERVAL &lt;nMs&gt; OF &lt;oParent&gt; [ACTION &lt;code&gt;]</code></td>
+    <td>Creates a timer control (non-visual).</td>
+    <td><code>oTmr := TTimer():New( oParent )</code><br><code>oTmr:nInterval := nMs</code></td>
+  </tr>
+</table>
+
+<h3>@ row, col Example</h3>
+
+<pre><span class="kw">local</span> oForm, oBtn, oLabel, oEdit
+
+<span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Sample Form"</span> ;
+   <span class="cmd">SIZE</span> <span class="nb">400</span>, <span class="nb">300</span>
+
+@ <span class="nb">20</span>, <span class="nb">30</span> <span class="cmd">LABEL</span> oLabel <span class="cmd">VALUE</span> <span class="st">"Enter your name:"</span> ;
+   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">150</span>, <span class="nb">24</span>
+
+@ <span class="nb">50</span>, <span class="nb">30</span> <span class="cmd">EDIT</span> oEdit <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">200</span>, <span class="nb">26</span>
+
+@ <span class="nb">90</span>, <span class="nb">30</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"Submit"</span> ;
+   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">100</span>, <span class="nb">30</span> ;
+   <span class="cmd">ACTION</span> <span class="fn">MsgInfo</span>( <span class="st">"Hello, "</span> + oEdit:<span class="fn">GetValue</span>() )
+
+<span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span></pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Property Modifier Commands</h2>
+<p>These commands can be appended to any control definition to set additional properties:</p>
+
+<table>
+  <tr><th>Modifier</th><th>Syntax</th><th>Description</th></tr>
+  <tr><td><code>SIZE</code></td><td><code>SIZE &lt;nWidth&gt;, &lt;nHeight&gt;</code></td><td>Sets the control's width and height in pixels.</td></tr>
+  <tr><td><code>FONT</code></td><td><code>FONT &lt;cName&gt;, &lt;nSize&gt; [BOLD] [ITALIC]</code></td><td>Sets the control's font with optional style modifiers.</td></tr>
+  <tr><td><code>COLOR</code></td><td><code>COLOR &lt;nFore&gt; [, &lt;nBack&gt;]</code></td><td>Sets the foreground and optional background color.</td></tr>
+  <tr><td><code>VISIBLE</code></td><td><code>VISIBLE &lt;lVisible&gt;</code></td><td>Sets initial visibility (.T. / .F.).</td></tr>
+  <tr><td><code>ENABLED</code></td><td><code>ENABLED &lt;lEnabled&gt;</code></td><td>Sets initial enabled state (.T. / .F.).</td></tr>
+  <tr><td><code>VALUE</code></td><td><code>VALUE &lt;xValue&gt;</code></td><td>Sets the initial value (text for Edit, checked state for CheckBox, etc.).</td></tr>
+  <tr><td><code>PROMPT</code></td><td><code>PROMPT &lt;cCaption&gt;</code></td><td>Sets the caption/label text.</td></tr>
+  <tr><td><code>OF</code></td><td><code>OF &lt;oParent&gt;</code></td><td>Specifies the parent container (required for all controls except DEFINE FORM).</td></tr>
+  <tr><td><code>ACTION</code></td><td><code>ACTION &lt;code&gt;</code></td><td>Assigns a code block to the control's default event (OnClick for buttons, OnChange for edits).</td></tr>
+  <tr><td><code>WHEN</code></td><td><code>WHEN &lt;lCondition&gt;</code></td><td>Conditional expression that determines if the control is enabled.</td></tr>
+  <tr><td><code>VALID</code></td><td><code>VALID &lt;lCondition&gt;</code></td><td>Validation expression checked when the control loses focus.</td></tr>
+  <tr><td><code>PICTURE</code></td><td><code>PICTURE &lt;cFile&gt;</code></td><td>Sets the image file for Image controls.</td></tr>
+  <tr><td><code>ITEMS</code></td><td><code>ITEMS &lt;aArray&gt;</code></td><td>Sets the list of items for ListBox, ComboBox, and similar controls.</td></tr>
+  <tr><td><code>INTERVAL</code></td><td><code>INTERVAL &lt;nMs&gt;</code></td><td>Sets the timer interval in milliseconds.</td></tr>
+  <tr><td><code>MESSAGE</code></td><td><code>MESSAGE &lt;cHint&gt;</code></td><td>Sets the tooltip/hint text.</td></tr>
+</table>
+
+<h3>Modifier Example</h3>
+
+<pre>@ <span class="nb">30</span>, <span class="nb">40</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"&lt;S&gt;ave"</span> ;
+   <span class="cmd">OF</span> oForm ;
+   <span class="cmd">SIZE</span> <span class="nb">100</span>, <span class="nb">30</span> ;
+   <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span> <span class="cmd">BOLD</span> ;
+   <span class="cmd">COLOR</span> <span class="nb">CLR_WHITE</span>, <span class="nb">CLR_BLUE</span> ;
+   <span class="cmd">ACTION</span> <span class="fn">SaveData</span>() ;
+   <span class="cmd">WHEN</span> <span class="kw">lDataModified</span> ;
+   <span class="cmd">MESSAGE</span> <span class="st">"Save current changes (Ctrl+S)"</span></pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Menu and Toolbar Commands</h2>
+
+<table>
+  <tr><th>Command</th><th>Syntax</th><th>Description</th></tr>
+  <tr>
+    <td><code>DEFINE POPUP</code></td>
+    <td><code>DEFINE POPUP &lt;oMenu&gt; [MENU]</code></td>
+    <td>Creates a popup/menu object.</td>
+  </tr>
+  <tr>
+    <td><code>DEFINE BAR</code></td>
+    <td><code>DEFINE BAR &lt;nId&gt; OF &lt;oMenu&gt; PROMPT &lt;cText&gt; [ACTION &lt;code&gt;]</code></td>
+    <td>Adds a menu item (bar) to a menu.</td>
+  </tr>
+  <tr>
+    <td><code>DEFINE TOOLBAR</code></td>
+    <td><code>DEFINE TOOLBAR &lt;oTb&gt; [OF &lt;oForm&gt;]</code></td>
+    <td>Creates a toolbar container on the form.</td>
+  </tr>
+  <tr>
+    <td><code>DEFINE BUTTON</code></td>
+    <td><code>DEFINE BUTTON &lt;oTbBtn&gt; OF &lt;oTb&gt; PROMPT &lt;cCaption&gt; [ACTION &lt;code&gt;]</code></td>
+    <td>Adds a button to a toolbar.</td>
+  </tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Dialog Commands</h2>
+
+<table>
+  <tr><th>Command</th><th>Syntax</th><th>Description</th></tr>
+  <tr>
+    <td><code>MsgInfo()</code></td>
+    <td><code>MsgInfo( &lt;cMessage&gt; [, &lt;cTitle&gt; ] )</code></td>
+    <td>Displays an information message box.</td>
+  </tr>
+  <tr>
+    <td><code>MsgStop()</code></td>
+    <td><code>MsgStop( &lt;cMessage&gt; [, &lt;cTitle&gt; ] )</code></td>
+    <td>Displays an error/stop message box.</td>
+  </tr>
+  <tr>
+    <td><code>MsgYesNo()</code></td>
+    <td><code>MsgYesNo( &lt;cMessage&gt; [, &lt;cTitle&gt; ] ) &rarr; nResponse</code></td>
+    <td>Displays a Yes/No dialog. Returns 6 (Yes) or 7 (No).</td>
+  </tr>
+  <tr>
+    <td><code>MsgYesNoCancel()</code></td>
+    <td><code>MsgYesNoCancel( &lt;cMessage&gt; [, &lt;cTitle&gt; ] ) &rarr; nResponse</code></td>
+    <td>Displays a Yes/No/Cancel dialog. Returns 6 (Yes), 7 (No), or 2 (Cancel).</td>
+  </tr>
+  <tr>
+    <td><code>MsgRun()</code></td>
+    <td><code>MsgRun( &lt;oForm&gt; )</code></td>
+    <td>Activates a form and enters the event loop. Equivalent to ACTIVATE FORM.</td>
+  </tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Complete Command Summary</h2>
+
+<table>
+  <tr><th>Command</th><th>Category</th><th>Header File</th></tr>
+  <tr><td><code>DEFINE FORM</code></td><td>Form</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>ACTIVATE FORM</code></td><td>Form</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>ON INIT</code></td><td>Form</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>ON CLOSE</code></td><td>Form</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... BUTTON</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... LABEL</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... EDIT</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... COMBOBOX</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... LISTBOX</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... CHECKBOX</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... GROUPBOX</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... MEMO</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... IMAGE</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... PROGRESSBAR</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... TIMER</code></td><td>Control</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>DEFINE POPUP</code></td><td>Menu</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>DEFINE BAR</code></td><td>Menu</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>DEFINE TOOLBAR</code></td><td>Toolbar</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>DEFINE BUTTON</code></td><td>Toolbar</td><td>hbbuilder.ch</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Commands vs. OOP</strong>
+  <p>Both styles are fully supported. The xBase commands are more concise and familiar to Clipper/xBase
+  developers. The OOP style gives you more fine-grained control and is preferred for dynamic control
+  creation at runtime. The Form Designer generates xBase commands by default, but you can switch
+  to OOP-style code at any time &mdash; the two-way parser understands both.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

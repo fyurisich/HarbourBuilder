@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Assistant - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html" class="active">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">IDE Features</a> <span>/</span> AI Assistant
+</div>
+
+<h1>AI Assistant</h1>
+<p>The AI Assistant is a built-in chat panel within HarbourBuilder that connects to
+<strong>Ollama</strong> for local AI-powered coding help. No API keys, no cloud services,
+no data leaving your machine &mdash; just a local model providing instant assistance
+while you code.</p>
+
+<div class="info-box tip">
+  <strong>100% Local &amp; Private</strong>
+  <p>The AI Assistant communicates with a local Ollama instance running on your machine.
+  Your code, questions, and prompts never leave your computer. This is ideal for enterprise
+  environments, proprietary codebases, and developers who value privacy.</p>
+</div>
+
+<h2>Supported Backends</h2>
+
+<table>
+  <tr><th>Backend</th><th>Type</th><th>API Key</th><th>Network</th></tr>
+  <tr><td><strong>Ollama</strong></td><td>Local</td><td>None</td><td>localhost only</td></tr>
+  <tr><td><strong>LM Studio</strong></td><td>Local</td><td>None</td><td>localhost only</td></tr>
+</table>
+
+<h2>Model Selector</h2>
+
+<p>The AI Assistant includes a model selector dropdown that lists all available models detected
+from your running Ollama or LM Studio instance. Available options typically include:</p>
+
+<table>
+  <tr><th>Model</th><th>Size</th><th>Best For</th></tr>
+  <tr><td><code>llama3</code></td><td>~5 GB</td><td>General purpose, coding, explanation</td></tr>
+  <tr><td><code>codellama</code></td><td>~4 GB</td><td>Code generation and refactoring</td></tr>
+  <tr><td><code>mistral</code></td><td>~4 GB</td><td>Fast responses, coding tasks</td></tr>
+  <tr><td><code>deepseek-coder</code></td><td>~4 GB</td><td>Code-specific queries</td></tr>
+  <tr><td><code>phi3</code></td><td>~2 GB</td><td>Lightweight, fast on modest hardware</td></tr>
+  <tr><td><code>qwen2.5-coder</code></td><td>~3 GB</td><td>Multi-language code assistance</td></tr>
+</table>
+
+<div class="info-box info">
+  <strong>Model Management</strong>
+  <p>Run <code>ollama list</code> in your terminal to see installed models.
+  Install new models with <code>ollama pull &lt;model-name&gt;</code>. The AI Assistant
+  auto-detects available models when you open the panel.</p>
+</div>
+
+<h2>Chat Interface</h2>
+
+<p>The AI Assistant panel provides a familiar chat experience:</p>
+
+<ul>
+  <li><strong>Chat history</strong> &mdash; scrollable conversation view with your messages and AI responses.</li>
+  <li><strong>Input field</strong> &mdash; type your question or paste code for analysis.</li>
+  <li><strong>Send button</strong> &mdash; submit your message to the model.</li>
+  <li><strong>Streaming responses</strong> &mdash; watch the response appear token by token.</li>
+  <li><strong>Code blocks</strong> &mdash; generated code is displayed in formatted, syntax-highlighted blocks with a copy button.</li>
+  <li><strong>Model selector</strong> &mdash; switch models without restarting.</li>
+  <li><strong>Clear chat</strong> &mdash; reset the conversation history.</li>
+</ul>
+
+<h2>Example Prompts</h2>
+
+<p>Here are some effective prompts to try with the AI Assistant:</p>
+
+<table>
+  <tr><th>Category</th><th>Prompt</th></tr>
+  <tr><td>Code generation</td><td><em>"Write a Harbour function that sorts an array using quicksort"</em></td></tr>
+  <tr><td>Explanation</td><td><em>"Explain how the TTransformer component works"</em></td></tr>
+  <tr><td>Debugging</td><td><em>"Why am I getting a 'variable not found' error on this line?"</em></td></tr>
+  <tr><td>Refactoring</td><td><em>"Rewrite this procedural code as a Harbour class"</em></td></tr>
+  <tr><td>Best practices</td><td><em>"What's the best way to handle database connections in HarbourBuilder?"</em></td></tr>
+  <tr><td>Learning</td><td><em>"Show me how to use events with a TButton"</em></td></tr>
+</table>
+
+<h2>Using TOllama in Your Code</h2>
+
+<p>The same TOllama component that powers the AI Assistant is available in your own applications.
+Here's how to use it:</p>
+
+<h3>Basic Usage</h3>
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oOllama, cResponse
+
+   <span class="cmd">DEFINE OLLAMA</span> oOllama ;
+      <span class="cmd">HOST</span> <span class="st">"localhost"</span> ;
+      <span class="cmd">PORT</span> <span class="nb">11434</span> ;
+      <span class="cmd">MODEL</span> <span class="st">"llama3"</span>
+
+   cResponse := oOllama:<span class="fn">Chat</span>( <span class="st">"What is Harbour programming language?"</span> )
+
+   ? cResponse
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Streaming Response</h3>
+<pre><span class="kw">static function</span> <span class="fn">StreamExample</span>( oOllama, oMemo )
+
+   <span class="kw">local</span> cPrompt := <span class="st">"Write a Harbour function to calculate fibonacci"</span>
+
+   oMemo:<span class="fn">Append</span>( <span class="st">"Generating...\n\n"</span> )
+
+   <span class="cm">// Stream the response token by token into a Memo</span>
+   oOllama:<span class="fn">ChatStream</span>( cPrompt, ;
+      { |cToken| oMemo:<span class="fn">Append</span>( cToken ) } )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Setting a System Prompt</h3>
+<pre>oOllama:<span class="fn">SetSystem</span>( <span class="st">"You are a Harbour/xBase expert. </span>;
+   <span class="st">Always provide complete, working code examples. </span>;
+   <span class="st">Explain your reasoning clearly."</span> )
+
+cResponse := oOllama:<span class="fn">Chat</span>( <span class="st">"How do I read a file line by line?"</span> )</pre>
+
+<h3>Using LM Studio</h3>
+<p>LM Studio provides a compatible API. Simply point TOllama at the LM Studio server:</p>
+
+<pre>oOllama := TOllama():New()
+oOllama:<span class="prop">cHost</span> := <span class="st">"localhost"</span>
+oOllama:<span class="prop">nPort</span> := <span class="nb">1234</span>  <span class="cm">// LM Studio default port</span>
+oOllama:<span class="prop">cModel</span> := <span class="st">"local-model"</span></pre>
+
+<h2>Privacy Benefits</h2>
+
+<div class="mermaid">
+graph LR
+    A["Your Code"] --> B["Ollama / LM Studio\n(on your machine)"]
+    B --> C["AI Model\n(local)"]
+    C --> D["Response\n(back to you)"]
+    style A fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style B fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style C fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style D fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<ul>
+  <li><strong>No data exfiltration</strong> &mdash; your source code, business logic, and API keys never leave your machine.</li>
+  <li><strong>No API keys to manage</strong> &mdash; local models require no authentication or billing setup.</li>
+  <li><strong>Works offline</strong> &mdash; once models are downloaded, no internet connection is required.</li>
+  <li><strong>No rate limits</strong> &mdash; unlimited queries with no usage caps or per-token costs.</li>
+  <li><strong>Enterprise-safe</strong> &mdash; compliant with policies that prohibit sending code to external AI services.</li>
+</ul>
+
+<div class="info-box tip">
+  <strong>AI Assistant vs TOllama Component</strong>
+  <p>The AI Assistant uses TOllama internally. Anything you can do in the assistant panel,
+  you can also do programmatically in your own HarbourBuilder applications. See the
+  <a href="tutorial-ai.html">AI Integration tutorial</a> for a complete walkthrough.</p>
+</div>
+
+<h2>Configuration</h2>
+
+<p>Open the AI Assistant panel from the menu <strong>Tools &gt; AI Assistant</strong> or use the
+toolbar button. The settings gear icon lets you configure:</p>
+
+<table>
+  <tr><th>Setting</th><th>Description</th><th>Default</th></tr>
+  <tr><td><strong>Backend</strong></td><td>Ollama or LM Studio</td><td>Ollama</td></tr>
+  <tr><td><strong>Host</strong></td><td>Server hostname or IP</td><td>localhost</td></tr>
+  <tr><td><strong>Port</strong></td><td>Server port</td><td>11434</td></tr>
+  <tr><td><strong>Model</strong></td><td>Model to use for chat</td><td>llama3</td></tr>
+  <tr><td><strong>Temperature</strong></td><td>Creativity (0.0&ndash;2.0)</td><td>0.7</td></tr>
+  <tr><td><strong>Max Tokens</strong></td><td>Maximum response length</td><td>2048</td></tr>
+  <tr><td><strong>System Prompt</strong></td><td>Custom system instructions</td><td>(empty)</td></tr>
+</table>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

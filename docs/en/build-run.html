@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Build &amp; Run - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html" class="active">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">IDE Features</a> <span>/</span> Build &amp; Run
+</div>
+
+<h1>Build &amp; Run</h1>
+<p>Press <strong>F9</strong> to compile, link, and run your application in a single step.
+HarbourBuilder orchestrates the entire build process automatically, from preprocessing
+your .prg files to launching the resulting executable.</p>
+
+<div class="info-box tip">
+  <strong>One Key to Build</strong>
+  <p>Press <strong>F9</strong> and HarbourBuilder handles everything: Harbour compilation,
+  C compiler invocation, linking, resource embedding, and launching your app. No makefiles,
+  no command-line scripts, no manual steps.</p>
+</div>
+
+<h2>The 7-Step Build Process</h2>
+
+<div class="mermaid">
+graph LR
+    S1["1. Preprocess\n.prg files"] --> S2["2. Compile\nHarbour → .c"]
+    S2 --> S3["3. Compile C\n.c → .o / .obj"]
+    S3 --> S4["4. Link\n.o + libs → exe"]
+    S4 --> S5["5. Embed\nresources"]
+    S5 --> S6["6. Validate\ncheck errors"]
+    S6 --> S7["7. Launch\nrun the app"]
+    style S1 fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style S2 fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style S3 fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style S4 fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style S5 fill:#f0883e,stroke:#db6d28,color:#0d1117
+    style S6 fill:#f0883e,stroke:#db6d28,color:#0d1117
+    style S7 fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<h3>Step Details</h3>
+
+<table>
+  <tr><th>Step</th><th>Tool</th><th>Input</th><th>Output</th><th>Description</th></tr>
+  <tr><td><strong>1. Preprocess</strong></td><td>Harbour</td><td>.prg, .ch</td><td>.ppo</td><td>Processes #include, #define, and xBase preprocessor directives.</td></tr>
+  <tr><td><strong>2. Compile</strong></td><td>Harbour</td><td>.ppo</td><td>.c</td><td>Translates preprocessed Harbour source into C code.</td></tr>
+  <tr><td><strong>3. Compile C</strong></td><td>C Compiler</td><td>.c</td><td>.o / .obj</td><td>Invokes MSVC, BCC, GCC, or Clang to produce object files.</td></tr>
+  <tr><td><strong>4. Link</strong></td><td>Linker</td><td>.o / .obj</td><td>.exe</td><td>Links object files with Harbour runtime libraries and system libs.</td></tr>
+  <tr><td><strong>5. Embed</strong></td><td>Resource tool</td><td>icons, images</td><td>.exe</td><td>Embeds application resources (icons, images, forms) into the executable.</td></tr>
+  <tr><td><strong>6. Validate</strong></td><td>IDE</td><td>build log</td><td>report</td><td>Checks for compilation/linking errors and displays them in the Build Messages panel.</td></tr>
+  <tr><td><strong>7. Launch</strong></td><td>IDE</td><td>.exe</td><td>running app</td><td>Launches the compiled application for testing.</td></tr>
+</table>
+
+<h2>Progress Dialog</h2>
+
+<p>During the build, a progress dialog shows real-time status of each step:</p>
+
+<ul>
+  <li><strong>Progress bar</strong> &mdash; visual indication of build completion across all 7 steps.</li>
+  <li><strong>Current step label</strong> &mdash; shows which step is executing (e.g., "Compiling main.prg...").</li>
+  <li><strong>Cancel button</strong> &mdash; abort the build at any point.</li>
+  <li><strong>Log output</strong> &mdash; raw compiler and linker output shown in a scrollable text area.</li>
+</ul>
+
+<h2>Error Dialog</h2>
+
+<p>If the build fails, an error dialog appears with:</p>
+
+<ul>
+  <li><strong>Error count</strong> &mdash; total number of errors encountered.</li>
+  <li><strong>Warning count</strong> &mdash; total number of non-fatal warnings.</li>
+  <li><strong>Clickable error list</strong> &mdash; each error shows the file, line number, and description.</li>
+  <li><strong>Double-click to navigate</strong> &mdash; clicking an error opens the source file at the exact line.</li>
+</ul>
+
+<h2>Build Messages Panel</h2>
+
+<p>The Build Messages panel at the bottom of the IDE shows the output from every build:</p>
+
+<table>
+  <tr><th>Column</th><th>Description</th></tr>
+  <tr><td><strong>Type</strong></td><td>Error (red), Warning (yellow), or Info (blue) icon.</td></tr>
+  <tr><td><strong>File</strong></td><td>Source file where the message originated.</td></tr>
+  <tr><td><strong>Line</strong></td><td>Line number of the issue.</td></tr>
+  <tr><td><strong>Message</strong></td><td>Compiler or linker error description.</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Clickable Errors</strong>
+  <p>Double-click any error in the Build Messages panel to jump directly to that line in
+  the source editor. The editor highlights the problematic line for quick identification.</p>
+</div>
+
+<h2>Keyboard Shortcuts</h2>
+
+<table>
+  <tr><th>Shortcut</th><th>Action</th></tr>
+  <tr><td><strong>F9</strong></td><td>Compile and run</td></tr>
+  <tr><td><strong>Ctrl+F9</strong></td><td>Compile only (do not run)</td></tr>
+  <tr><td><strong>Shift+F9</strong></td><td>Rebuild all (clean + full compile)</td></tr>
+  <tr><td><strong>F5</strong></td><td>Start debugging (compile with debug flags)</td></tr>
+  <tr><td><strong>Ctrl+Shift+B</strong></td><td>Build current file only</td></tr>
+</table>
+
+<h2>Multi-Compiler Support</h2>
+
+<p>HarbourBuilder supports multiple C compilers for the linking step. Choose the one that
+best suits your platform and licensing:</p>
+
+<table>
+  <tr><th>Compiler</th><th>Platforms</th><th>License</th><th>Notes</th></tr>
+  <tr><td><strong>MSVC</strong> (Microsoft Visual C++)</td><td>Windows</td><td>Proprietary (free Build Tools available)</td><td>Recommended for Windows. Best performance and compatibility.</td></tr>
+  <tr><td><strong>BCC</strong> (Borland C++ Compiler)</td><td>Windows</td><td>Proprietary (free version available)</td><td>Legacy support. Compatible with older Harbour builds.</td></tr>
+  <tr><td><strong>GCC</strong></td><td>Linux, macOS (via Xcode)</td><td>GPL</td><td>Default on Linux. Available on macOS via Homebrew or Xcode.</td></tr>
+  <tr><td><strong>Clang</strong></td><td>macOS, Linux</td><td>BSD-style</td><td>Recommended for macOS. Part of Xcode Command Line Tools.</td></tr>
+</table>
+
+<h2>Smart Rebuild</h2>
+
+<p>HarbourBuilder uses a dependency-tracking system to avoid unnecessary recompilation:</p>
+
+<ul>
+  <li><strong>File modification timestamps</strong> &mdash; only .prg files modified since the last build are recompiled.</li>
+  <li><strong>Include dependency tracking</strong> &mdash; if a .ch header file changes, all .prg files that #include it are recompiled.</li>
+  <li><strong>Object file validation</strong> &mdash; .o / .obj files are reused if their source has not changed.</li>
+  <li><strong>Incremental linking</strong> &mdash; the linker only re-links changed object files when possible.</li>
+</ul>
+
+<div class="info-box info">
+  <strong>Smart vs. Full Rebuild</strong>
+  <p>Press <strong>F9</strong> for a smart build (only changed files). Press <strong>Shift+F9</strong>
+  for a full rebuild (clean everything and recompile all files). Use a full rebuild after changing
+  compiler settings, adding library dependencies, or when incremental builds produce unexpected results.</p>
+</div>
+
+<h2>Project Options</h2>
+
+<p>Configure your build settings via <strong>Project &gt; Options</strong>:</p>
+
+<table>
+  <tr><th>Category</th><th>Options</th></tr>
+  <tr><td><strong>Compiler</strong></td><td>Harbour flags: -n2, -w3, -gc, -gl, -gh, -b, and custom flags.</td></tr>
+  <tr><td><strong>C Compiler</strong></td><td>Select compiler (MSVC/BCC/GCC/Clang), include paths, defines, optimization level.</td></tr>
+  <tr><td><strong>Linker</strong></td><td>Library paths, additional libraries, subsystem (console/GUI), output file name.</td></tr>
+  <tr><td><strong>Resources</strong></td><td>Icon file, manifest, embedded files, resource compiler flags.</td></tr>
+  <tr><td><strong>Output</strong></td><td>Output directory, executable name, working directory, command-line arguments.</td></tr>
+  <tr><td><strong>Debug</strong></td><td>Enable debug build (-gh -b), generate map file, symbol output.</td></tr>
+</table>
+
+<h2>Build Output Directory</h2>
+
+<p>By default, compiled output goes to the <code>output/</code> folder within your project.
+You can customize this in Project Options:</p>
+
+<table>
+  <tr><th>File</th><th>Description</th></tr>
+  <tr><td><code>myapp.exe</code></td><td>The compiled application (Windows) or binary (macOS/Linux).</td></tr>
+  <tr><td><code>myapp.hrb</code></td><td>Bytecode file (when compiled with -b flag for debugging).</td></tr>
+  <tr><td><code>myapp.map</code></td><td>Linker map file (if enabled in project options).</td></tr>
+  <tr><td><code>*.o</code> / <code>*.obj</code></td><td>Intermediate object files (retained for smart rebuild).</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Release Builds</strong>
+  <p>For distribution, do a clean rebuild (Shift+F9) without debug flags (-gh -b).
+  This produces a smaller, faster executable with no debug symbols embedded.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

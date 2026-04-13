@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HB_FUNC Bridge Reference - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html" class="active">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Reference</a> <span>/</span> HB_FUNC Bridge
+</div>
+
+<h1>HB_FUNC Bridge Reference</h1>
+<p>The HB_FUNC bridge is the critical layer that connects Harbour's OOP runtime to native platform
+APIs. Every HarbourBuilder control operation &mdash; creating a window, setting a property, handling
+an event &mdash; flows through this bridge. This page documents the core HB_FUNC functions and
+explains how the architecture works.</p>
+
+<div class="info-box info">
+  <strong>What is an HB_FUNC?</strong>
+  <p><code>HB_FUNC</code> is a Harbour C API macro used to define C/C++ functions that can be called from
+  Harbour code. Each HB_FUNC receives parameters from the Harbour stack via <code>hb_par*</code> functions
+  and returns values via <code>hb_ret*</code> functions. HarbourBuilder uses approximately 130&ndash;160
+  HB_FUNC functions depending on the platform backend.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Bridge Architecture</h2>
+<p>The bridge sits between Harbour's OOP layer and the native platform API. When you call
+<code>oForm:Create()</code> in Harbour, the OOP method internally calls <code>UI_FormNew()</code>, which
+is an HB_FUNC that invokes the platform's native window creation API:</p>
+
+<div class="mermaid">
+graph TB
+    A["Harbour OOP Code<br/>oForm:Create()"] --> B["Harbour Class Method<br/>TForm:Create()"]
+    B --> C["HB_FUNC Call<br/>UI_FormNew( cTitle, nW, nH )"]
+    C --> D1["Win32 Backend<br/>CreateWindowEx()"]
+    C --> D2["Cocoa Backend<br/>[NSWindow alloc]"]
+    C --> D3["GTK3 Backend<br/>gtk_window_new()"]
+    D1 --> E["Native Window"]
+    D2 --> E
+    D3 --> E
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D1 fill:#0078d4,stroke:#005a9e,color:#fff
+    style D2 fill:#555,stroke:#333,color:#fff
+    style D3 fill:#e95420,stroke:#c34113,color:#fff
+    style E fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<div class="info-box tip">
+  <strong>One bridge, three backends</strong>
+  <p>The Harbour OOP code and the HB_FUNC names are <em>identical</em> across all platforms. Only the
+  C/C++/Obj-C implementation behind each HB_FUNC changes. This means your .prg code is 100% portable &mdash;
+  it doesn't need to know whether it's running on Windows, macOS, or Linux.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Core HB_FUNC Functions</h2>
+
+<h3>Form Management</h3>
+<table>
+  <tr><th>Function</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Backend</th></tr>
+  <tr>
+    <td><code>UI_FormNew</code></td>
+    <td><code>cTitle, nWidth, nHeight</code></td>
+    <td><code>nFormHandle</code></td>
+    <td>Creates a new top-level window with the specified title and dimensions. Returns a numeric handle that identifies the form in all subsequent calls.</td>
+    <td>Win32: <code>CreateWindowEx()</code><br>Cocoa: <code>[[NSWindow alloc] init]</code><br>GTK3: <code>gtk_window_new()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_FormShow</code></td>
+    <td><code>nFormHandle</code></td>
+    <td>void</td>
+    <td>Makes the form visible on screen. On Windows, calls ShowWindow(hWnd, SW_SHOW). On macOS, makes the NSWindow key and order front. On GTK3, calls gtk_widget_show_all().</td>
+    <td>Win32: <code>ShowWindow()</code><br>Cocoa: <code>[win orderFront:]</code><br>GTK3: <code>gtk_widget_show_all()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_FormClose</code></td>
+    <td><code>nFormHandle</code></td>
+    <td>void</td>
+    <td>Closes and destroys the form. Triggers cleanup of all child controls and native resources.</td>
+    <td>Win32: <code>DestroyWindow()</code><br>Cocoa: <code>[win close]</code><br>GTK3: <code>gtk_widget_destroy()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_FormCenter</code></td>
+    <td><code>nFormHandle</code></td>
+    <td>void</td>
+    <td>Centers the form on the screen. Calculates screen dimensions and positions the window accordingly.</td>
+    <td>Win32: <code>SetWindowPos()</code><br>Cocoa: <code>[win cascadeTopLeft:]</code><br>GTK3: <code>gtk_window_set_position()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetTitle</code></td>
+    <td><code>nHandle, cTitle</code></td>
+    <td>void</td>
+    <td>Sets the title bar text of a form.</td>
+    <td>Win32: <code>SetWindowText()</code><br>Cocoa: <code>[win setTitle:]</code><br>GTK3: <code>gtk_window_set_title()</code></td>
+  </tr>
+</table>
+
+<h3>Control Creation</h3>
+<table>
+  <tr><th>Function</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Backend</th></tr>
+  <tr>
+    <td><code>UI_ControlCreate</code></td>
+    <td><code>nType, nParentHandle, nLeft, nTop, nWidth, nHeight</code></td>
+    <td><code>nControlHandle</code></td>
+    <td>Creates a native widget of the specified type (CT_BUTTON, CT_EDIT, etc.) within a parent container. The type constant determines which native widget is instantiated. Returns a handle for subsequent property and event calls.</td>
+    <td>Win32: <code>CreateWindowEx()</code><br>Cocoa: <code>[[NSButton alloc] init]</code><br>GTK3: <code>gtk_button_new()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_ButtonCreate</code></td>
+    <td><code>nParentHandle, nLeft, nTop, nWidth, nHeight, cCaption</code></td>
+    <td><code>nHandle</code></td>
+    <td>Convenience function that creates a button with caption in one call.</td>
+    <td>Win32: <code>CreateWindowEx("BUTTON")</code><br>Cocoa: <code>NSButton</code><br>GTK3: <code>gtk_button_new_with_label()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_EditCreate</code></td>
+    <td><code>nParentHandle, nLeft, nTop, nWidth, nHeight</code></td>
+    <td><code>nHandle</code></td>
+    <td>Creates a single-line text input field.</td>
+    <td>Win32: <code>CreateWindowEx("EDIT")</code><br>Cocoa: <code>NSTextField</code><br>GTK3: <code>gtk_entry_new()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_LabelCreate</code></td>
+    <td><code>nParentHandle, nLeft, nTop, nWidth, nHeight, cText</code></td>
+    <td><code>nHandle</code></td>
+    <td>Creates a static text label.</td>
+    <td>Win32: <code>CreateWindowEx("STATIC")</code><br>Cocoa: <code>NSTextField</code><br>GTK3: <code>gtk_label_new()</code></td>
+  </tr>
+</table>
+
+<h3>Property Management</h3>
+<table>
+  <tr><th>Function</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Backend</th></tr>
+  <tr>
+    <td><code>UI_SetProp</code></td>
+    <td><code>nHandle, nPropId, xValue</code></td>
+    <td>void</td>
+    <td>Generic property setter. <code>nPropId</code> is a constant identifying which property to set (e.g., PROP_TEXT, PROP_VISIBLE, PROP_COLOR). The value type depends on the property. This is the primary way all control properties are modified at runtime.</td>
+    <td>Win32: various API calls<br>Cocoa: property setters<br>GTK3: g_object_set()</td>
+  </tr>
+  <tr>
+    <td><code>UI_GetProp</code></td>
+    <td><code>nHandle, nPropId</code></td>
+    <td><code>xValue</code></td>
+    <td>Generic property getter. Returns the current value of the specified property. The return type depends on the property being queried.</td>
+    <td>Win32: GetWindowText etc.<br>Cocoa: property getters<br>GTK3: g_object_get()</td>
+  </tr>
+  <tr>
+    <td><code>UI_SetText</code></td>
+    <td><code>nHandle, cText</code></td>
+    <td>void</td>
+    <td>Sets the text content of a control. Convenience wrapper around UI_SetProp(PROP_TEXT, cText).</td>
+    <td>Win32: <code>SetWindowText()</code><br>Cocoa: <code>[ctrl setStringValue:]</code><br>GTK3: <code>gtk_label_set_text()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_GetText</code></td>
+    <td><code>nHandle</code></td>
+    <td><code>cText</code></td>
+    <td>Gets the text content of a control. Convenience wrapper around UI_GetProp(PROP_TEXT).</td>
+    <td>Win32: <code>GetWindowText()</code><br>Cocoa: <code>[ctrl stringValue]</code><br>GTK3: <code>gtk_label_get_text()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetColor</code></td>
+    <td><code>nHandle, nForeColor, nBackColor</code></td>
+    <td>void</td>
+    <td>Sets the foreground and background colors of a control.</td>
+    <td>Win32: <code>SetTextColor()</code>/<code>SetBkColor()</code><br>Cocoa: <code>NSColor</code><br>GTK3: CSS/GDK RGBA</td>
+  </tr>
+  <tr>
+    <td><code>UI_SetFont</code></td>
+    <td><code>nHandle, cFontName, nSize, lBold, lItalic</code></td>
+    <td>void</td>
+    <td>Sets the font of a control with full style specification.</td>
+    <td>Win32: <code>CreateFont()</code><br>Cocoa: <code>NSFont</code><br>GTK3: <code>PangoFontDescription</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetBounds</code></td>
+    <td><code>nHandle, nLeft, nTop, nWidth, nHeight</code></td>
+    <td>void</td>
+    <td>Sets position and size in a single call for efficiency.</td>
+    <td>Win32: <code>MoveWindow()</code><br>Cocoa: <code>[view setFrame:]</code><br>GTK3: <code>gtk_widget_set_size_request()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetVisible</code></td>
+    <td><code>nHandle, lVisible</code></td>
+    <td>void</td>
+    <td>Shows or hides a control.</td>
+    <td>Win32: <code>ShowWindow()</code><br>Cocoa: <code>[view setHidden:]</code><br>GTK3: <code>gtk_widget_show/hide()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetEnabled</code></td>
+    <td><code>nHandle, lEnabled</code></td>
+    <td>void</td>
+    <td>Enables or disables a control (grayed out when disabled).</td>
+    <td>Win32: <code>EnableWindow()</code><br>Cocoa: <code>[ctrl setEnabled:]</code><br>GTK3: <code>gtk_widget_set_sensitive()</code></td>
+  </tr>
+</table>
+
+<h3>Event Management</h3>
+<table>
+  <tr><th>Function</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Backend</th></tr>
+  <tr>
+    <td><code>UI_OnEvent</code></td>
+    <td><code>nHandle, nEventId, bCodeBlock</code></td>
+    <td>void</td>
+    <td>Registers a Harbour code block to be executed when the specified event fires on the control. The code block is stored in a Harbour-side event table keyed by handle and event ID. When the native event fires, the backend calls <code>FireEvent()</code> to evaluate the block.</td>
+    <td>Stores block in Harbour<br>event table (cross-platform)</td>
+  </tr>
+  <tr>
+    <td><code>FireEvent</code></td>
+    <td><code>nHandle, nEventId, [params...]</code></td>
+    <td>Result of code block</td>
+    <td>Internal function called by the native backend's event handler (WndProc, action target, or g_signal callback). Looks up the registered code block and evaluates it with <code>hb_xcompEval()</code> or <code>Eval()</code>.</td>
+    <td>Called from native<br>event handler</td>
+  </tr>
+  <tr>
+    <td><code>UI_RemoveEvent</code></td>
+    <td><code>nHandle, nEventId</code></td>
+    <td>void</td>
+    <td>Removes a previously registered event handler.</td>
+    <td>Removes from Harbour<br>event table</td>
+  </tr>
+</table>
+
+<h3>Lifecycle and Utility</h3>
+<table>
+  <tr><th>Function</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Backend</th></tr>
+  <tr>
+    <td><code>UI_Destroy</code></td>
+    <td><code>nHandle</code></td>
+    <td>void</td>
+    <td>Destroys a control and frees all associated native resources. Removes the control from the Harbour-side object table and calls the platform's native destroy function.</td>
+    <td>Win32: <code>DestroyWindow()</code><br>Cocoa: <code>[view removeFromSuperview]</code><br>GTK3: <code>gtk_widget_destroy()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_Refresh</code></td>
+    <td><code>nHandle</code></td>
+    <td>void</td>
+    <td>Forces an immediate redraw of the control. Invalidates the display area and triggers a paint cycle.</td>
+    <td>Win32: <code>InvalidateRect()</code><br>Cocoa: <code>[view setNeedsDisplay:]</code><br>GTK3: <code>gtk_widget_queue_draw()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetFocus</code></td>
+    <td><code>nHandle</code></td>
+    <td>void</td>
+    <td>Gives input focus to the specified control.</td>
+    <td>Win32: <code>SetFocus()</code><br>Cocoa: <code>[win makeFirstResponder:]</code><br>GTK3: <code>gtk_widget_grab_focus()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_AppInit</code></td>
+    <td><code>cAppName</code></td>
+    <td>void</td>
+    <td>Initializes the application-level resources. Called once at startup. Sets up the event table, initializes the backend subsystem, and prepares the message loop.</td>
+    <td>Win32: <code>CoInitialize()</code><br>Cocoa: <code>[NSApplication sharedApplication]</code><br>GTK3: <code>gtk_init()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_MsgLoop</code></td>
+    <td>none</td>
+    <td>void (blocks)</td>
+    <td>Enters the platform event loop. This function blocks until the application exits. It dispatches native OS events to the appropriate Harbour code blocks.</td>
+    <td>Win32: <code>GetMessage/DispatchMessage</code><br>Cocoa: <code>[NSApp run]</code><br>GTK3: <code>gtk_main()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_Quit</code></td>
+    <td>none</td>
+    <td>void</td>
+    <td>Exits the event loop and terminates the application.</td>
+    <td>Win32: <code>PostQuitMessage()</code><br>Cocoa: <code>[NSApp terminate:]</code><br>GTK3: <code>gtk_main_quit()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_MsgInfo</code></td>
+    <td><code>cMessage, [cTitle]</code></td>
+    <td>void</td>
+    <td>Displays a simple information message box.</td>
+    <td>Win32: <code>MessageBox()</code><br>Cocoa: <code>NSAlert</code><br>GTK3: <code>GtkMessageDialog</code></td>
+  </tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>How the Bridge Works: A Complete Example</h2>
+
+<p>Here is the complete journey from Harbour source code to native API call:</p>
+
+<pre><span class="cm">=== Step 1: Your Harbour source code ===</span>
+<span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Hello"</span> <span class="cmd">SIZE</span> <span class="nb">400</span>, <span class="nb">300</span>
+<span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+
+<span class="cm">=== Step 2: Preprocessor expansion (hbbuilder.ch) ===</span>
+oForm := TForm():<span class="fn">New</span>( <span class="kw">nil</span> )
+oForm:<span class="nb">cTitle</span>  := <span class="st">"Hello"</span>
+oForm:<span class="nb">nWidth</span>  := <span class="nb">400</span>
+oForm:<span class="nb">nHeight</span> := <span class="nb">300</span>
+oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
+oForm:<span class="fn">Activate</span>()
+
+<span class="cm">=== Step 3: Harbour OOP layer (TForm class) ===</span>
+<span class="kw">METHOD</span> <span class="fn">Activate</span> <span class="kw">CLASS</span> TForm
+   <span class="kw">local</span> nHandle
+   nHandle := <span class="fn">UI_FormNew</span>( ::<span class="nb">cTitle</span>, ::<span class="nb">nWidth</span>, ::<span class="nb">nHeight</span> )
+   ::<span class="nb">nHandle</span> := nHandle
+   <span class="kw">if</span> ::<span class="nb">lCentered</span>
+      <span class="fn">UI_FormCenter</span>( nHandle )
+   <span class="kw">endif</span>
+   <span class="fn">UI_FormShow</span>( nHandle )
+   <span class="fn">UI_MsgLoop</span>()
+<span class="kw">RETURN</span> <span class="kw">nil</span>
+
+<span class="cm">=== Step 4: HB_FUNC bridge (C/C++ backend) ===</span>
+<span class="cm">// On Windows (win32_backend.cpp):</span>
+HB_FUNC( UI_FORMNEW )
+{
+   const char * cTitle = hb_parc( 1 );
+   int nWidth  = hb_parni( 2 );
+   int nHeight = hb_parni( 3 );
+
+   HWND hWnd = CreateWindowEx(
+      0,                              <span class="cm">// dwExStyle</span>
+      <span class="st">"HBBUILDER_FORM"</span>,               <span class="cm">// lpClassName</span>
+      cTitle,                          <span class="cm">// lpWindowName</span>
+      WS_OVERLAPPEDWINDOW,             <span class="cm">// dwStyle</span>
+      CW_USEDEFAULT, CW_USEDEFAULT,    <span class="cm">// x, y</span>
+      nWidth, nHeight,                 <span class="cm">// width, height</span>
+      <span class="kw">NULL</span>, <span class="kw">NULL</span>,                      <span class="cm">// parent, menu</span>
+      hInstance,                       <span class="cm">// hInstance</span>
+      <span class="kw">NULL</span>                             <span class="cm">// lpParam</span>
+   );
+
+   hb_retni( ( int ) ( intptr_t ) hWnd );
+}</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Platform-Specific Function Counts</h2>
+
+<table>
+  <tr><th>Backend</th><th>Language</th><th>HB_FUNC count</th><th>Lines of code</th></tr>
+  <tr>
+    <td><span class="badge win">Windows</span> Win32</td>
+    <td>C++</td>
+    <td>~135</td>
+    <td>~7,100</td>
+  </tr>
+  <tr>
+    <td><span class="badge mac">macOS</span> Cocoa</td>
+    <td>Objective-C++</td>
+    <td>~158</td>
+    <td>~3,800</td>
+  </tr>
+  <tr>
+    <td><span class="badge linux">Linux</span> GTK3</td>
+    <td>C</td>
+    <td>~132</td>
+    <td>~7,300</td>
+  </tr>
+</table>
+
+<div class="info-box info">
+  <strong>Why different counts?</strong>
+  <p>Each platform has slightly different capabilities. The macOS Cocoa backend has more HB_FUNC functions
+  because Objective-C's messaging style sometimes requires separate bridge functions for operations
+  that other platforms can combine. The GTK3 backend has the most lines because C requires more
+  boilerplate for equivalent functionality.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Adding a New HB_FUNC</h2>
+<p>To extend HarbourBuilder with a new native capability, you need to:</p>
+
+<ol>
+  <li><strong>Define the HB_FUNC</strong> in each platform's backend source file:
+    <pre><span class="cm">// In win32_backend.cpp:</span>
+HB_FUNC( UI_NEWWIDGET )
+{
+   <span class="cm">// ... Win32 implementation ...</span>
+   hb_retni( nResult );
+}</pre>
+  </li>
+  <li><strong>Register the function</strong> in the Harbour function table (usually automatic with <code>HB_FUNC</code> macro).</li>
+  <li><strong>Add the Harbour-side wrapper</strong> in the OOP class:
+    <pre><span class="kw">METHOD</span> <span class="fn">CreateNewWidget</span>( nType ) <span class="kw">CLASS</span> TControl
+   <span class="kw">local</span> nHandle := <span class="fn">UI_NewWidget</span>( nType, ::<span class="nb">nParent</span> )
+   ::<span class="nb">nHandle</span> := nHandle
+   <span class="kw">return</span> <span class="kw">self</span></pre>
+  </li>
+  <li><strong>Add the xBase command</strong> (optional) in <code>hbbuilder.ch</code>:
+    <pre><span class="cm">#xcommand DEFINE WIDGET &lt;o&gt; TYPE &lt;nType&gt; OF &lt;oParent&gt; ;
+   =&gt; &lt;o&gt; := TControl():New( &lt;oParent&gt; );
+      &lt;o&gt;:CreateNewWidget( &lt;nType&gt; )</pre>
+  </li>
+</ol>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

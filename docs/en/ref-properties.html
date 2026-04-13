@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Properties Reference A-Z - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html" class="active">Properties A-Z</a>
+    <a href="ref-events.html">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Reference</a> <span>/</span> Properties A-Z
+</div>
+
+<h1>Properties Reference A-Z</h1>
+<p>This page documents every property available across HarbourBuilder controls. Properties are
+grouped by category and include the property type (<code>PT_STRING</code>, <code>PT_NUMBER</code>,
+<code>PT_LOGICAL</code>, <code>PT_COLOR</code>, <code>PT_FONT</code>) and the controls that support each one.</p>
+
+<div class="info-box info">
+  <strong>Property Types</strong>
+  <p>Each property in the Object Inspector has an associated type that determines how it is edited
+  and stored:</p>
+  <table>
+    <tr><th>Type</th><th>Description</th><th>Example</th></tr>
+    <tr><td><code>PT_STRING</code></td><td>Text string</td><td><code>"Hello"</code></td></tr>
+    <tr><td><code>PT_NUMBER</code></td><td>Numeric value (integer or float)</td><td><code>120</code></td></tr>
+    <tr><td><code>PT_LOGICAL</code></td><td>Boolean (.T. / .F.)</td><td><code>.T.</code></td></tr>
+    <tr><td><code>PT_COLOR</code></td><td>RGB color value</td><td><code>CLR_RED</code> or <code>"#FF0000"</code></td></tr>
+    <tr><td><code>PT_FONT</code></td><td>Font descriptor (name, size, style)</td><td><code>"Segoe UI", 10</code></td></tr>
+  </table>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Appearance Properties</h2>
+<p>These properties control how a control looks on screen &mdash; colors, borders, styles, and visual state.</p>
+
+<table>
+  <tr><th>Property</th><th>Type</th><th>Description</th><th>Available For</th></tr>
+  <tr><td><code>nBackColor</code></td><td>PT_COLOR</td><td>Background color of the control</td><td>All visual controls</td></tr>
+  <tr><td><code>nFontColor</code></td><td>PT_COLOR</td><td>Text (foreground) color</td><td>All controls with text</td></tr>
+  <tr><td><code>cCaption</code></td><td>PT_STRING</td><td>Display text on the control</td><td>Button, GroupBox, Label, CheckBox, Radio, TabControl, Form</td></tr>
+  <tr><td><code>cValue</code></td><td>PT_STRING</td><td>Current value / text content</td><td>Edit, Memo, MaskEdit, StaticText, LabeledEdit</td></tr>
+  <tr><td><code>nBorderStyle</code></td><td>PT_NUMBER</td><td>Border style (0=none, 1=single, 2=raised, 3=sunken)</td><td>Edit, Memo, GroupBox, Panel, Bevel, ScrollBox</td></tr>
+  <tr><td><code>lBorder</code></td><td>PT_LOGICAL</td><td>Show a visible border around the control</td><td>Form, Panel, ScrollBox, GroupBox</td></tr>
+  <tr><td><code>nBevelWidth</code></td><td>PT_NUMBER</td><td>Width of the bevel edge in pixels</td><td>Bevel, Panel, GroupBox</td></tr>
+  <tr><td><code>nBevelStyle</code></td><td>PT_NUMBER</td><td>Bevel style (0=none, 1=raised, 2=sunken)</td><td>Bevel, Panel</td></tr>
+  <tr><td><code>lFlat</code></td><td>PT_LOGICAL</td><td>Use flat appearance instead of 3D</td><td>Button, SpeedBtn, BitBtn</td></tr>
+  <tr><td><code>nAlignment</code></td><td>PT_NUMBER</td><td>Text alignment (0=left, 1=center, 2=right)</td><td>Label, Edit, Memo, Button, StaticText</td></tr>
+  <tr><td><code>nTextAlignment</code></td><td>PT_NUMBER</td><td>Text alignment within the control bounds</td><td>Label, StaticText</td></tr>
+  <tr><td><code>nImageIndex</code></td><td>PT_NUMBER</td><td>Index of the image in the associated image list</td><td>Button, BitBtn, SpeedBtn, Image, TabControl, TreeView, ListView</td></tr>
+  <tr><td><code>lTransparent</code></td><td>PT_LOGICAL</td><td>Control background is transparent</td><td>Label, Image, Shape, StaticText, Panel</td></tr>
+  <tr><td><code>nShapeType</code></td><td>PT_NUMBER</td><td>Shape to draw (0=rectangle, 1=ellipse, 2=rounded rect, 3=triangle)</td><td>Shape</td></tr>
+  <tr><td><code>nPenColor</code></td><td>PT_COLOR</td><td>Outline/pen color for shapes</td><td>Shape, PaintBox</td></tr>
+  <tr><td><code>nBrushColor</code></td><td>PT_COLOR</td><td>Fill color for shapes</td><td>Shape, PaintBox</td></tr>
+  <tr><td><code>nPenWidth</code></td><td>PT_NUMBER</td><td>Width of the pen/stroke in pixels</td><td>Shape, PaintBox</td></tr>
+  <tr><td><code>nPenStyle</code></td><td>PT_NUMBER</td><td>Pen style (0=solid, 1=dash, 2=dot, 3=dash-dot)</td><td>Shape, PaintBox</td></tr>
+  <tr><td><code>cHint</code></td><td>PT_STRING</td><td>Tooltip text shown on mouse hover</td><td>All visual controls</td></tr>
+  <tr><td><code>nProgress</code></td><td>PT_NUMBER</td><td>Current progress value (0 to nMax)</td><td>ProgressBar</td></tr>
+  <tr><td><code>nMin</code></td><td>PT_NUMBER</td><td>Minimum value for range-based controls</td><td>ProgressBar, TrackBar, UpDown, ScrollBar</td></tr>
+  <tr><td><code>nMax</code></td><td>PT_NUMBER</td><td>Maximum value for range-based controls</td><td>ProgressBar, TrackBar, UpDown, ScrollBar</td></tr>
+  <tr><td><code>nPosition</code></td><td>PT_NUMBER</td><td>Current slider/thumb position</td><td>TrackBar, ScrollBar</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Position and Size</h2>
+<p>These properties determine where a control is placed and how large it is.</p>
+
+<table>
+  <tr><th>Property</th><th>Type</th><th>Description</th><th>Available For</th></tr>
+  <tr><td><code>nLeft</code></td><td>PT_NUMBER</td><td>X coordinate of the control's left edge (pixels from parent's left)</td><td>All visual controls</td></tr>
+  <tr><td><code>nTop</code></td><td>PT_NUMBER</td><td>Y coordinate of the control's top edge (pixels from parent's top)</td><td>All visual controls</td></tr>
+  <tr><td><code>nWidth</code></td><td>PT_NUMBER</td><td>Width of the control in pixels</td><td>All visual controls</td></tr>
+  <tr><td><code>nHeight</code></td><td>PT_NUMBER</td><td>Height of the control in pixels</td><td>All visual controls</td></tr>
+  <tr><td><code>lCentered</code></td><td>PT_LOGICAL</td><td>Center the form on screen at activation</td><td>Form, Dialog</td></tr>
+  <tr><td><code>nClientWidth</code></td><td>PT_NUMBER</td><td>Width of the form's client area (excluding borders/title bar)</td><td>Form</td></tr>
+  <tr><td><code>nClientHeight</code></td><td>PT_NUMBER</td><td>Height of the form's client area</td><td>Form</td></tr>
+  <tr><td><code>lResizable</code></td><td>PT_LOGICAL</td><td>Whether the form can be resized by the user</td><td>Form, Dialog</td></tr>
+  <tr><td><code>nMinWidth</code></td><td>PT_NUMBER</td><td>Minimum allowed width when resizing</td><td>Form</td></tr>
+  <tr><td><code>nMinHeight</code></td><td>PT_NUMBER</td><td>Minimum allowed height when resizing</td><td>Form</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Behavior Properties</h2>
+<p>These properties affect how a control behaves and responds to user interaction.</p>
+
+<table>
+  <tr><th>Property</th><th>Type</th><th>Description</th><th>Available For</th></tr>
+  <tr><td><code>lVisible</code></td><td>PT_LOGICAL</td><td>Whether the control is visible on screen</td><td>All visual controls</td></tr>
+  <tr><td><code>lEnabled</code></td><td>PT_LOGICAL</td><td>Whether the control responds to user input</td><td>All visual controls</td></tr>
+  <tr><td><code>lReadOnly</code></td><td>PT_LOGICAL</td><td>Content cannot be edited by the user (display only)</td><td>Edit, Memo, MaskEdit, StringGrid, DBEdit, DBMemo</td></tr>
+  <tr><td><code>lWordWrap</code></td><td>PT_LOGICAL</td><td>Wrap text to the next line when it exceeds the control width</td><td>Label, Memo, Edit, StaticText, DBMemo</td></tr>
+  <tr><td><code>lMultiLine</code></td><td>PT_LOGICAL</td><td>Allow multiple lines of text</td><td>Edit, Button</td></tr>
+  <tr><td><code>lPassword</code></td><td>PT_LOGICAL</td><td>Mask input characters (password field)</td><td>Edit</td></tr>
+  <tr><td><code>lCheck</code></td><td>PT_LOGICAL</td><td>Checked state of the control</td><td>CheckBox, Radio</td></tr>
+  <tr><td><code>lChecked</code></td><td>PT_LOGICAL</td><td>Checked state (alias for lCheck on some controls)</td><td>CheckBox</td></tr>
+  <tr><td><code>lSelected</code></td><td>PT_LOGICAL</td><td>Whether a list item is selected</td><td>ListBox, ComboBox, TreeView, ListView, StringGrid</td></tr>
+  <tr><td><code>nTabIndex</code></td><td>PT_NUMBER</td><td>Tab order index (determines focus traversal order)</td><td>All focusable controls</td></tr>
+  <tr><td><code>lTabStop</code></td><td>PT_LOGICAL</td><td>Whether the control can receive focus via Tab key</td><td>All focusable controls</td></tr>
+  <tr><td><code>cMask</code></td><td>PT_STRING</td><td>Input mask pattern (e.g., "99/99/9999" for dates)</td><td>MaskEdit</td></tr>
+  <tr><td><code>nInterval</code></td><td>PT_NUMBER</td><td>Timer interval in milliseconds</td><td>Timer</td></tr>
+  <tr><td><code>lRunning</code></td><td>PT_LOGICAL</td><td>Whether the timer is currently active</td><td>Timer</td></tr>
+  <tr><td><code>nScrollBars</code></td><td>PT_NUMBER</td><td>Scrollbar style (0=none, 1=horizontal, 2=vertical, 3=both)</td><td>Edit, Memo, ScrollBox, StringGrid, DBGrid, Browse</td></tr>
+  <tr><td><code>lAutoSize</code></td><td>PT_LOGICAL</td><td>Automatically size the control to fit its content</td><td>Label, Image, StaticText</td></tr>
+  <tr><td><code>lModal</code></td><td>PT_LOGICAL</td><td>Whether the form blocks interaction with other windows</td><td>Form, Dialog</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Font Properties</h2>
+<p>Font-related properties control the typography of text displayed on controls.</p>
+
+<table>
+  <tr><th>Property</th><th>Type</th><th>Description</th><th>Available For</th></tr>
+  <tr><td><code>cFontName</code></td><td>PT_FONT</td><td>Name of the font family (e.g., "Segoe UI", "Arial")</td><td>All controls with text</td></tr>
+  <tr><td><code>nFontSize</code></td><td>PT_NUMBER</td><td>Font size in points</td><td>All controls with text</td></tr>
+  <tr><td><code>lFontBold</code></td><td>PT_LOGICAL</td><td>Bold text style</td><td>All controls with text</td></tr>
+  <tr><td><code>lFontItalic</code></td><td>PT_LOGICAL</td><td>Italic text style</td><td>All controls with text</td></tr>
+  <tr><td><code>lFontUnderline</code></td><td>PT_LOGICAL</td><td>Underlined text style</td><td>All controls with text</td></tr>
+  <tr><td><code>lFontStrikeout</code></td><td>PT_LOGICAL</td><td>Strikethrough text style</td><td>All controls with text</td></tr>
+  <tr><td><code>oFont</code></td><td>PT_FONT</td><td>Complete font object (wraps all font properties)</td><td>All controls with text</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Inherited fonts</strong>
+  <p>Controls inherit the font of their parent by default. Set <code>oFont</code> on a form to change the
+  font for all child controls at once, unless a child overrides it with its own font settings.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Data Properties</h2>
+<p>Properties related to data binding, content, and data-aware controls.</p>
+
+<table>
+  <tr><th>Property</th><th>Type</th><th>Description</th><th>Available For</th></tr>
+  <tr><td><code>cDataSource</code></td><td>PT_STRING</td><td>Name or reference to the data source object</td><td>DBEdit, DBMemo, DBComboBox, DBCheckBox, DBText, DBGrid, DBNavigator, Browse</td></tr>
+  <tr><td><code>cDataField</code></td><td>PT_STRING</td><td>Field name in the data source to bind to</td><td>DBEdit, DBMemo, DBComboBox, DBCheckBox, DBText</td></tr>
+  <tr><td><code>cItems</code></td><td>PT_STRING</td><td>Array or list of items (for list-based controls)</td><td>ListBox, ComboBox, StringGrid, TreeView, ListView, TabControl</td></tr>
+  <tr><td><code>nColCount</code></td><td>PT_NUMBER</td><td>Number of columns in a grid or table control</td><td>StringGrid, DBGrid, Browse</td></tr>
+  <tr><td><code>nRowCount</code></td><td>PT_NUMBER</td><td>Number of rows in a grid or table control</td><td>StringGrid, DBGrid, Browse</td></tr>
+  <tr><td><code>nCol</code></td><td>PT_NUMBER</td><td>Current selected column index</td><td>StringGrid, DBGrid, Browse</td></tr>
+  <tr><td><code>nRow</code></td><td>PT_NUMBER</td><td>Current selected row index</td><td>StringGrid, DBGrid, Browse</td></tr>
+  <tr><td><code>nItemIndex</code></td><td>PT_NUMBER</td><td>Index of the currently selected item</td><td>ListBox, ComboBox, ListView, TreeView, TabControl</td></tr>
+  <tr><td><code>cText</code></td><td>PT_STRING</td><td>Text content of the control</td><td>Edit, Memo, Label, StaticText, LabeledEdit</td></tr>
+  <tr><td><code>cPrompt</code></td><td>PT_STRING</td><td>Label text displayed on the control</td><td>Button, CheckBox, Radio, GroupBox</td></tr>
+  <tr><td><code>lHeader</code></td><td>PT_LOGICAL</td><td>Show column headers in grid controls</td><td>StringGrid, DBGrid, Browse</td></tr>
+  <tr><td><code>cAlias</code></td><td>PT_STRING</td><td>Database table alias name</td><td>DbfTable, MySQL, MariaDB, PostgreSQL, SQLite, Firebird, SQLServer, Oracle, MongoDB</td></tr>
+  <tr><td><code>cTableName</code></td><td>PT_STRING</td><td>Database table name</td><td>DbfTable, MySQL, MariaDB, PostgreSQL, SQLite, Firebird, SQLServer, Oracle, MongoDB</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Control-Specific Properties</h2>
+<p>These properties are unique to specific control types and are not shared broadly.</p>
+
+<table>
+  <tr><th>Property</th><th>Type</th><th>Description</th><th>Available For</th></tr>
+  <tr><td><code>nWindowState</code></td><td>PT_NUMBER</td><td>Window state (0=normal, 1=minimized, 2=maximized)</td><td>Form</td></tr>
+  <tr><td><code>cIcon</code></td><td>PT_STRING</td><td>Path to the window icon file</td><td>Form</td></tr>
+  <tr><td><code>lMaxButton</code></td><td>PT_LOGICAL</td><td>Show the maximize button in the title bar</td><td>Form</td></tr>
+  <tr><td><code>lMinButton</code></td><td>PT_LOGICAL</td><td>Show the minimize button in the title bar</td><td>Form</td></tr>
+  <tr><td><code>lCloseButton</code></td><td>PT_LOGICAL</td><td>Show the close button in the title bar</td><td>Form</td></tr>
+  <tr><td><code>lSysMenu</code></td><td>PT_LOGICAL</td><td>Show the system menu (right-click on title bar)</td><td>Form</td></tr>
+  <tr><td><code>nToolBar</code></td><td>PT_NUMBER</td><td>Reference to the associated toolbar object</td><td>ToolBar</td></tr>
+  <tr><td><code>nStatusBar</code></td><td>PT_NUMBER</td><td>Reference to the associated status bar object</td><td>StatusBar</td></tr>
+  <tr><td><code>nTabPos</code></td><td>PT_NUMBER</td><td>Position of tab labels (0=top, 1=bottom, 2=left, 3=right)</td><td>TabControl</td></tr>
+  <tr><td><code>lHotTrack</code></td><td>PT_LOGICAL</td><td>Highlight tabs on mouse hover</td><td>TabControl</td></tr>
+  <tr><td><code>nStyle</code></td><td>PT_NUMBER</td><td>Control style flags (bitmask)</td><td>All native controls</td></tr>
+  <tr><td><code>nExStyle</code></td><td>PT_NUMBER</td><td>Extended style flags (bitmask)</td><td>All native controls</td></tr>
+  <tr><td><code>lDoubleBuffered</code></td><td>PT_LOGICAL</td><td>Use double buffering to reduce flicker</td><td>PaintBox, StringGrid, ScrollBox</td></tr>
+  <tr><td><code>cFileName</code></td><td>PT_STRING</td><td>Selected file path (for dialog controls)</td><td>OpenDialog, SaveDialog</td></tr>
+  <tr><td><code>cFilter</code></td><td>PT_STRING</td><td>File type filter for dialogs (e.g., "Text files|*.txt")</td><td>OpenDialog, SaveDialog</td></tr>
+  <tr><td><code>cApiKey</code></td><td>PT_STRING</td><td>API key for AI service authentication</td><td>OpenAI, Gemini, Claude, DeepSeek, Grok</td></tr>
+  <tr><td><code>cModel</code></td><td>PT_STRING</td><td>AI model identifier (e.g., "gpt-4", "claude-3")</td><td>OpenAI, Gemini, Claude, DeepSeek, Grok</td></tr>
+  <tr><td><code>nTimeout</code></td><td>PT_NUMBER</td><td>Request timeout in milliseconds</td><td>OpenAI, Gemini, Claude, DeepSeek, Grok, HttpClient, WebSocket</td></tr>
+  <tr><td><code>cHost</code></td><td>PT_STRING</td><td>Server hostname or IP address</td><td>MySQL, MariaDB, PostgreSQL, SQLite, HttpClient, FtpClient, TcpServer, TcpClient, WebServer</td></tr>
+  <tr><td><code>nPort</code></td><td>PT_NUMBER</td><td>Network port number</td><td>MySQL, MariaDB, PostgreSQL, HttpClient, FtpClient, TcpServer, TcpClient, WebServer, WebSocket</td></tr>
+  <tr><td><code>cUserName</code></td><td>PT_STRING</td><td>Username for authentication</td><td>MySQL, MariaDB, PostgreSQL, FtpClient, SMTPClient</td></tr>
+  <tr><td><code>cPassword</code></td><td>PT_STRING</td><td>Password for authentication</td><td>MySQL, MariaDB, PostgreSQL, FtpClient, SMTPClient</td></tr>
+  <tr><td><code>cDatabase</code></td><td>PT_STRING</td><td>Database name</td><td>MySQL, MariaDB, PostgreSQL, SQLite, Firebird, SQLServer, Oracle, MongoDB</td></tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Setting Properties in Code</h2>
+<p>Properties can be set in code after a control is created:</p>
+
+<pre><span class="kw">local</span> oForm, oBtn, oLabel
+
+<span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Properties Demo"</span> ;
+   <span class="cmd">SIZE</span> <span class="nb">500</span>, <span class="nb">350</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+<span class="cm">--- Set properties on the form ---</span>
+oForm:<span class="nb">lResizable</span>     := <span class="nb">.T.</span>
+oForm:<span class="nb">lCentered</span>      := <span class="nb">.T.</span>
+oForm:<span class="nb">nBackColor</span>     := <span class="nb">CLR_WHITE</span>
+oForm:<span class="nb">lMaxButton</span>     := <span class="nb">.T.</span>
+oForm:<span class="nb">lMinButton</span>     := <span class="nb">.T.</span>
+
+@ <span class="nb">30</span>, <span class="nb">40</span> <span class="cmd">LABEL</span> oLabel <span class="cmd">VALUE</span> <span class="st">"Hello World"</span> ;
+   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">200</span>, <span class="nb">28</span>
+
+<span class="cm">--- Set label properties ---</span>
+oLabel:<span class="nb">nFontColor</span>   := <span class="nb">CLR_BLUE</span>
+oLabel:<span class="nb">lFontBold</span>     := <span class="nb">.T.</span>
+oLabel:<span class="nb">nAlignment</span>    := <span class="nb">1</span>     <span class="cm">/// center</span>
+oLabel:<span class="nb">cHint</span>         := <span class="st">"This is a label"</span>
+
+@ <span class="nb">70</span>, <span class="nb">40</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"Click Me"</span> ;
+   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">130</span>, <span class="nb">32</span>
+
+<span class="cm">--- Set button properties ---</span>
+oBtn:<span class="nb">nBackColor</span>     := <span class="nb">CLR_GREEN</span>
+oBtn:<span class="nb">nFontColor</span>     := <span class="nb">CLR_WHITE</span>
+oBtn:<span class="nb">lFlat</span>          := <span class="nb">.T.</span>
+oBtn:<span class="nb">lTabStop</span>       := <span class="nb">.T.</span>
+oBtn:<span class="nb">nTabIndex</span>      := <span class="nb">0</span>
+
+<span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span></pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Setting Properties in the Object Inspector</h2>
+<p>In the HarbourBuilder IDE, select any control in the Form Designer and switch to the
+<strong>Properties</strong> tab in the Object Inspector. Properties are grouped by category:</p>
+
+<ul>
+  <li><strong>Appearance</strong> &mdash; Colors, borders, captions, images, hints</li>
+  <li><strong>Position</strong> &mdash; Left, Top, Width, Height</li>
+  <li><strong>Behavior</strong> &mdash; Visible, Enabled, ReadOnly, TabStop</li>
+  <li><strong>Font</strong> &mdash; FontName, FontSize, Bold, Italic, Underline</li>
+  <li><strong>Data</strong> &mdash; Items, DataSource, DataField (for data-aware controls)</li>
+  <li><strong>Layout</strong> &mdash; Anchoring, alignment, docking</li>
+</ul>
+
+<p>Double-click a property value to edit it inline. Color properties show a color picker; font
+properties open a font dialog; logical properties toggle between <code>.T.</code> and <code>.F.</code>.</p>
+
+<div class="info-box tip">
+  <strong>Live preview</strong>
+  <p>Changes made in the Object Inspector are applied to the Form Designer canvas in real time.
+  You can see the effect of every property change immediately without rebuilding.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Property Inheritance</h2>
+<p>Controls inherit certain properties from their parent container. The inheritance chain is:</p>
+
+<div class="mermaid">
+graph TD
+    A["Application defaults"] --> B["TForm / Parent Form"]
+    B --> C["Container (Panel, ScrollBox, GroupBox)"]
+    C --> D["Child Control (Button, Edit, Label, etc.)"]
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<p>Properties that are inherited include:</p>
+<ul>
+  <li><code>cFontName</code>, <code>nFontSize</code>, <code>lFontBold</code>, <code>lFontItalic</code> &mdash; Font properties cascade down</li>
+  <li><code>nBackColor</code> &mdash; If not explicitly set, the control uses the parent's background</li>
+  <li><code>lEnabled</code> &mdash; Disabling a parent container disables all children</li>
+  <li><code>lVisible</code> &mdash; Hiding a parent hides all children</li>
+</ul>
+
+<p>A child control can override any inherited property by setting it explicitly.</p>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

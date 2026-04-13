@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Events Reference A-Z - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3>Component Palette</h3>
+    <a href="controls-standard.html">Standard (11)</a>
+    <a href="controls-additional.html">Additional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">System (2)</a>
+    <a href="controls-dialogs.html">Dialogs (6)</a>
+    <a href="controls-database.html">Data Access (9)</a>
+    <a href="controls-datacontrols.html">Data Controls (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">AI (9)</a>
+    <a href="controls-connectivity.html">Connectivity (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Business (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>IDE Features</h3>
+    <a href="form-designer.html">Form Designer</a>
+    <a href="object-inspector.html">Object Inspector</a>
+    <a href="code-editor.html">Code Editor</a>
+    <a href="two-way-tools.html">Two-Way Tools</a>
+    <a href="debugger.html">Debugger</a>
+    <a href="ai-assistant.html">AI Assistant</a>
+    <a href="build-run.html">Build &amp; Run</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutorials</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Working with Forms</a>
+    <a href="tutorial-events.html">Event Handling</a>
+    <a href="tutorial-database.html">Database CRUD</a>
+    <a href="tutorial-webserver.html">Web Server</a>
+    <a href="tutorial-ai.html">AI Integration</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Reference</h3>
+    <a href="ref-properties.html">Properties A-Z</a>
+    <a href="ref-events.html" class="active">Events A-Z</a>
+    <a href="ref-methods.html">Methods A-Z</a>
+    <a href="ref-commands.html">xBase Commands</a>
+    <a href="ref-functions.html">HB_FUNC Bridge</a>
+  </div>
+  <div class="nav-section">
+    <h3>Platforms</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Reference</a> <span>/</span> Events A-Z
+</div>
+
+<h1>Events Reference A-Z</h1>
+<p>This page documents every event available in HarbourBuilder. Events are code blocks assigned
+to control properties that are invoked when the corresponding OS-level event fires. Events form
+the core of HarbourBuilder's reactive programming model.</p>
+
+<div class="info-box info">
+  <strong>How events work</strong>
+  <p>Each event is a property on a control object. You assign a Harbour code block
+  (<code>{ || ... }</code>) to it. When the user interacts with the control, HarbourBuilder routes
+  the native OS event through the backend (Win32/Cocoa/GTK3) and evaluates your code block.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Event Assignment Syntax</h2>
+<p>Events are assigned using the standard Harbour assignment operator with a code block:</p>
+
+<pre><span class="cm">--- Simple event: show a message ---</span>
+oBtn:<span class="fn">OnClick</span> := { || <span class="fn">MsgInfo</span>( <span class="st">"Button clicked!"</span> ) }
+
+<span class="cm">--- Event calling a function ---</span>
+oBtn:<span class="fn">OnClick</span> := { || <span class="fn">ProcessClick</span>( oBtn, oForm ) }
+
+<span class="cm">--- Event with parameters (keyboard events) ---</span>
+oEdit:<span class="fn">OnKeyDown</span> := { | nKey, nFlags | <span class="fn">HandleKey</span>( nKey, nFlags ) }
+
+<span class="cm">--- Event with mouse coordinates ---</span>
+oPaintBox:<span class="fn">OnMouseMove</span> := { | nX, nY | <span class="fn">TrackMouse</span>( nX, nY ) }
+
+<span class="cm">--- Multi-statement code block ---</span>
+oBtn:<span class="fn">OnClick</span> := { || ;
+   <span class="fn">LogAction</span>( <span class="st">"button clicked"</span> ), ;
+   <span class="fn">MsgInfo</span>( <span class="st">"Done!"</span> ), ;
+   oForm:<span class="fn">Close</span>() ;
+}</pre>
+
+<div class="info-box tip">
+  <strong>Designer-assigned events</strong>
+  <p>In the Form Designer, select a control, go to the <strong>Events</strong> tab in the Object Inspector,
+  and double-click an event. The IDE generates the code block and jumps to the code editor.</p>
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Mouse Events</h2>
+
+<table>
+  <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
+  <tr>
+    <td><code>OnClick</code></td>
+    <td>none</td>
+    <td>All interactive controls</td>
+    <td>Fires when the user clicks the control with the left mouse button. This is the most commonly used event for buttons, list items, and tree nodes.</td>
+  </tr>
+  <tr>
+    <td><code>OnDblClick</code></td>
+    <td>none</td>
+    <td>All interactive controls</td>
+    <td>Fires on a double-click. For list/grid controls, this often triggers an "edit" or "open" action. For forms, can trigger default behavior.</td>
+  </tr>
+  <tr>
+    <td><code>OnMouseDown</code></td>
+    <td><code>nButton, nShiftState, nX, nY</code></td>
+    <td>All visual controls</td>
+    <td>Fires when any mouse button is pressed. <code>nButton</code>: 1=left, 2=right, 3=middle. <code>nShiftState</code>: bitmask for Shift/Ctrl/Alt.</td>
+  </tr>
+  <tr>
+    <td><code>OnMouseUp</code></td>
+    <td><code>nButton, nShiftState, nX, nY</code></td>
+    <td>All visual controls</td>
+    <td>Fires when any mouse button is released. Useful for drag-and-drop completion or measuring click duration.</td>
+  </tr>
+  <tr>
+    <td><code>OnMouseMove</code></td>
+    <td><code>nX, nY</code></td>
+    <td>All visual controls</td>
+    <td>Fires continuously as the mouse moves over the control. Use sparingly; it fires very frequently. Good for tracking cursor position or hover effects.</td>
+  </tr>
+  <tr>
+    <td><code>OnMouseWheel</code></td>
+    <td><code>nDelta, nX, nY</code></td>
+    <td>All visual controls</td>
+    <td>Fires when the mouse wheel is scrolled. <code>nDelta</code> is positive for scroll up/forward, negative for scroll down/back. Typically used for zooming or scrolling content.</td>
+  </tr>
+</table>
+
+<h3>Mouse Event Examples</h3>
+
+<pre><span class="cm">--- OnClick: simple button action ---</span>
+oBtn:<span class="fn">OnClick</span> := { || <span class="fn">MsgInfo</span>( <span class="st">"Hello!"</span> ) }
+
+<span class="cm">--- OnMouseDown: detect right-click context menu ---</span>
+oPanel:<span class="fn">OnMouseDown</span> := { | nBtn, nShift, nX, nY | ;
+   <span class="kw">if</span> nBtn == <span class="nb">2</span>  <span class="cm">/// right click</span>
+      <span class="fn">ShowContextMenu</span>( nX, nY )
+   <span class="kw">endif</span> ;
+}
+
+<span class="cm">--- OnMouseWheel: zoom in/out on an image ---</span>
+oImage:<span class="fn">OnMouseWheel</span> := { | nDelta, nX, nY | ;
+   <span class="kw">if</span> nDelta &gt; <span class="nb">0</span>
+      oImage:<span class="nb">nZoom</span> += <span class="nb">0.1</span>
+   <span class="kw">else</span>
+      oImage:<span class="nb">nZoom</span> -= <span class="nb">0.1</span>
+   <span class="kw">endif</span>, ;
+   oImage:<span class="fn">Refresh</span>() ;
+}</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Keyboard Events</h2>
+
+<table>
+  <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
+  <tr>
+    <td><code>OnKeyDown</code></td>
+    <td><code>nKey, nFlags</code></td>
+    <td>All focusable controls</td>
+    <td>Fires when a key is pressed down. <code>nKey</code> is the virtual key code (VK_ constants). <code>nFlags</code> contains repeat count and scan code. Fires before the character is processed.</td>
+  </tr>
+  <tr>
+    <td><code>OnKeyUp</code></td>
+    <td><code>nKey, nFlags</code></td>
+    <td>All focusable controls</td>
+    <td>Fires when a key is released. Useful for detecting how long a key was held or for key-chord detection.</td>
+  </tr>
+  <tr>
+    <td><code>OnKeyPress</code></td>
+    <td><code>cKey</code></td>
+    <td>Edit, Memo, MaskEdit, ComboBox</td>
+    <td>Fires when a character key is typed. <code>cKey</code> is the actual character (not virtual code). Allows you to modify or cancel the character by changing the parameter.</td>
+  </tr>
+</table>
+
+<h3>Keyboard Event Examples</h3>
+
+<pre><span class="cm">--- OnKeyDown: handle Enter and Escape ---</span>
+oForm:<span class="fn">OnKeyDown</span> := { | nKey, nFlags | ;
+   <span class="kw">if</span> nKey == <span class="nb">VK_RETURN</span>
+      <span class="fn">AcceptForm</span>()
+   <span class="kw">elseif</span> nKey == <span class="nb">VK_ESCAPE</span>
+      <span class="fn">CancelForm</span>()
+   <span class="kw">endif</span> ;
+}
+
+<span class="cm">--- OnKeyPress: filter input to digits only ---</span>
+oEdit:<span class="fn">OnKeyPress</span> := { | cKey | ;
+   <span class="kw">if</span> !( cKey &gt;= <span class="st">"0"</span> .and. cKey &lt;= <span class="st">"9"</span> ) .and. cKey != <span class="fn">Chr</span>( <span class="nb">8</span> )
+      <span class="fn">Alert</span>( <span class="st">"Only digits allowed"</span> )
+      <span class="kw">return</span> <span class="nb">.F.</span>   <span class="cm">/// cancel the key</span>
+   <span class="kw">endif</span> ;
+}
+
+<span class="cm">--- OnKeyUp: detect Ctrl+S for save shortcut ---</span>
+oForm:<span class="fn">OnKeyUp</span> := { | nKey, nFlags | ;
+   <span class="kw">if</span> nKey == <span class="nb">83</span> .and. <span class="fn">GetKeyState</span>( <span class="nb">VK_CONTROL</span> ) &lt; <span class="nb">0</span>
+      <span class="fn">SaveProject</span>()
+   <span class="kw">endif</span> ;
+}</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Focus and Selection Events</h2>
+
+<table>
+  <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
+  <tr>
+    <td><code>OnEnter</code></td>
+    <td>none</td>
+    <td>All focusable controls</td>
+    <td>Fires when the control receives input focus (via Tab, click, or programmatically). Useful for highlighting the active field or showing context-sensitive help.</td>
+  </tr>
+  <tr>
+    <td><code>OnExit</code></td>
+    <td>none</td>
+    <td>All focusable controls</td>
+    <td>Fires when the control loses focus. Use this for validation: check the field value and prevent focus loss by returning <code>.F.</code> if invalid.</td>
+  </tr>
+  <tr>
+    <td><code>OnChange</code></td>
+    <td>none</td>
+    <td>Edit, Memo, ComboBox, CheckBox, Radio, TrackBar, UpDown</td>
+    <td>Fires when the control's value changes. For edit controls, fires on every keystroke. For combos, fires when the selection changes.</td>
+  </tr>
+</table>
+
+<h3>Focus Event Examples</h3>
+
+<pre><span class="cm">--- OnEnter: highlight the active field ---</span>
+oEdit:<span class="fn">OnEnter</span> := { || ;
+   oEdit:<span class="nb">nBackColor</span> := <span class="nb">CLR_YELLOW</span>, ;
+   oEdit:<span class="fn">Refresh</span>() ;
+}
+
+<span class="cm">--- OnExit: validate email format ---</span>
+oEmailEdit:<span class="fn">OnExit</span> := { || ;
+   <span class="kw">local</span> cVal := oEmailEdit:<span class="fn">GetValue</span>()
+   <span class="kw">if</span> <span class="st">"@"</span> $ cVal .and. <span class="st">"."</span> $ cVal
+      <span class="kw">return</span> <span class="nb">.T.</span>
+   <span class="kw">else</span>
+      <span class="fn">MsgStop</span>( <span class="st">"Invalid email address"</span> )
+      <span class="kw">return</span> <span class="nb">.F.</span>   <span class="cm">/// keep focus</span>
+   <span class="kw">endif</span> ;
+}
+
+<span class="cm">--- OnChange: live character counter ---</span>
+oMemo:<span class="fn">OnChange</span> := { || ;
+   oStatusLabel:<span class="fn">SetText</span>( ;
+      <span class="fn">LTrim</span>( <span class="fn">Str</span>( <span class="fn">Len</span>( oMemo:<span class="fn">GetValue</span>() ) ) ) + <span class="st">" characters"</span> ;
+   ) ;
+}</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Form Lifecycle Events</h2>
+
+<table>
+  <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
+  <tr>
+    <td><code>OnCreate</code></td>
+    <td>none</td>
+    <td>Form</td>
+    <td>Fires when the form object is first created, before any controls are added. Use this for early initialization, loading configuration, or setting up data connections.</td>
+  </tr>
+  <tr>
+    <td><code>OnInit</code></td>
+    <td>none</td>
+    <td>Form</td>
+    <td>Fires after all controls have been created and the form is about to be displayed. This is the ideal place for final setup: populating lists, setting default values, positioning.</td>
+  </tr>
+  <tr>
+    <td><code>OnShow</code></td>
+    <td>none</td>
+    <td>Form</td>
+    <td>Fires each time the form becomes visible. Fires on initial display and again if the form was hidden and shown again.</td>
+  </tr>
+  <tr>
+    <td><code>OnHide</code></td>
+    <td>none</td>
+    <td>Form</td>
+    <td>Fires when the form is hidden (via <code>Hide()</code> or minimized). Use to pause timers or stop background tasks.</td>
+  </tr>
+  <tr>
+    <td><code>OnActivate</code></td>
+    <td>none</td>
+    <td>Form</td>
+    <td>Fires when the form gains focus (becomes the active window). Distinct from OnShow: a form can be shown but not activated if another window is on top.</td>
+  </tr>
+  <tr>
+    <td><code>OnDeactivate</code></td>
+    <td>none</td>
+    <td>Form</td>
+    <td>Fires when the form loses focus to another window in the same application.</td>
+  </tr>
+  <tr>
+    <td><code>OnActivateApp</code></td>
+    <td><code>lActive</code></td>
+    <td>Form</td>
+    <td>Fires when the entire application gains or loses focus at the OS level. <code>lActive</code> is .T. when the app is foregrounded, .F. when backgrounded.</td>
+  </tr>
+  <tr>
+    <td><code>OnCloseQuery</code></td>
+    <td><code>@lCanClose</code></td>
+    <td>Form</td>
+    <td>Fires before the form closes. Set <code>lCanClose</code> to <code>.F.</code> to cancel the close operation. Use for "Save changes?" prompts.</td>
+  </tr>
+  <tr>
+    <td><code>OnClose</code></td>
+    <td>none</td>
+    <td>Form</td>
+    <td>Fires when the form is closing (after OnCloseQuery allows it). Use for cleanup: closing database connections, saving state, releasing resources.</td>
+  </tr>
+  <tr>
+    <td><code>OnDestroy</code></td>
+    <td>none</td>
+    <td>Form, all controls</td>
+    <td>Fires when the control/form is being destroyed and memory is about to be freed. Last chance for cleanup.</td>
+  </tr>
+</table>
+
+<h3>Form Lifecycle Examples</h3>
+
+<pre><span class="cm">--- OnCreate: early initialization ---</span>
+oForm:<span class="fn">OnCreate</span> := { || ;
+   <span class="fn">LoadConfig</span>( <span class="st">"app.ini"</span> ), ;
+   oForm:<span class="nb">cTitle</span> := <span class="st">"My App v"</span> + <span class="fn">GetVersion</span>() ;
+}
+
+<span class="cm">--- OnInit: populate controls after everything is created ---</span>
+oForm:<span class="fn">OnInit</span> := { || ;
+   oComboBox:<span class="nb">aItems</span> := { <span class="st">"Option A"</span>, <span class="st">"Option B"</span>, <span class="st">"Option C"</span> }, ;
+   oComboBox:<span class="nb">nItemIndex</span> := <span class="nb">0</span>, ;
+   <span class="fn">LoadRecentFiles</span>() ;
+}
+
+<span class="cm">--- OnCloseQuery: prompt to save changes ---</span>
+oForm:<span class="fn">OnCloseQuery</span> := { | @lCanClose | ;
+   <span class="kw">if</span> lDataModified
+      <span class="kw">local</span> nResp := <span class="fn">MsgYesNo</span>( <span class="st">"Save changes before closing?"</span> )
+      <span class="kw">if</span> nResp == <span class="nb">6</span>  <span class="cm">/// IDYES</span>
+         <span class="fn">SaveData</span>()
+      <span class="kw">elseif</span> nResp == <span class="nb">2</span>  <span class="cm">/// IDCANCEL</span>
+         lCanClose := <span class="nb">.F.</span>
+         <span class="kw">return</span>
+      <span class="kw">endif</span>
+   <span class="kw">endif</span>, ;
+   lCanClose := <span class="nb">.T.</span> ;
+}
+
+<span class="cm">--- OnClose: cleanup resources ---</span>
+oForm:<span class="fn">OnClose</span> := { || ;
+   oDb:<span class="fn">Close</span>(), ;
+   oTimer:<span class="nb">lRunning</span> := <span class="nb">.F.</span>, ;
+   <span class="fn">SaveWindowState</span>( oForm ) ;
+}</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Timer Events</h2>
+
+<table>
+  <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
+  <tr>
+    <td><code>OnTimer</code></td>
+    <td>none</td>
+    <td>Timer</td>
+    <td>Fires at regular intervals set by the Timer's <code>nInterval</code> property (in milliseconds). Use for periodic tasks: updating a clock, polling a server, animating, auto-saving.</td>
+  </tr>
+</table>
+
+<h3>Timer Event Example</h3>
+
+<pre><span class="cm">--- OnTimer: update a clock label every second ---</span>
+oTimer:<span class="nb">nInterval</span> := <span class="nb">1000</span>   <span class="cm">/// 1 second</span>
+oTimer:<span class="fn">OnTimer</span> := { || ;
+   oClockLabel:<span class="fn">SetText</span>( <span class="fn">Time</span>() ) ;
+}
+oTimer:<span class="nb">lRunning</span> := <span class="nb">.T.</span>    <span class="cm">/// start the timer</span>
+
+<span class="cm">--- OnTimer: auto-save every 5 minutes ---</span>
+oAutoSave:<span class="nb">nInterval</span> := <span class="nb">300000</span>   <span class="cm">/// 5 minutes</span>
+oAutoSave:<span class="fn">OnTimer</span> := { || ;
+   <span class="kw">if</span> lDataModified
+      <span class="fn">AutoSave</span>()
+   <span class="kw">endif</span> ;
+}</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Paint and Resize Events</h2>
+
+<table>
+  <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
+  <tr>
+    <td><code>OnPaint</code></td>
+    <td>none</td>
+    <td>PaintBox, Form, Panel, Shape, all visual controls</td>
+    <td>Fires when the control needs to be redrawn. Use with PaintBox for custom GDI/Cairo drawing. Access the device context via platform-specific drawing functions.</td>
+  </tr>
+  <tr>
+    <td><code>OnResize</code></td>
+    <td><code>nNewWidth, nNewHeight</code></td>
+    <td>Form, Panel, ScrollBox</td>
+    <td>Fires when the container is resized. Parameters provide the new dimensions. Use for repositioning child controls or recalculating layout.</td>
+  </tr>
+</table>
+
+<h3>Paint and Resize Examples</h3>
+
+<pre><span class="cm">--- OnPaint: custom drawing on a PaintBox ---</span>
+oPaintBox:<span class="fn">OnPaint</span> := { || ;
+   <span class="fn">DrawLine</span>( <span class="nb">0</span>, <span class="nb">0</span>, oPaintBox:<span class="nb">nWidth</span>, oPaintBox:<span class="nb">nHeight</span> ), ;
+   <span class="fn">DrawRect</span>( <span class="nb">10</span>, <span class="nb">10</span>, <span class="nb">50</span>, <span class="nb">50</span>, <span class="nb">CLR_BLUE</span> ), ;
+   <span class="fn">DrawText</span>( <span class="nb">70</span>, <span class="nb">10</span>, <span class="st">"Custom Drawing"</span>, <span class="nb">CLR_BLACK</span> ) ;
+}
+
+<span class="cm">--- OnResize: keep controls proportionally positioned ---</span>
+oForm:<span class="fn">OnResize</span> := { | nW, nH | ;
+   oGrid:<span class="nb">nWidth</span>  := nW - <span class="nb">40</span>, ;
+   oGrid:<span class="nb">nHeight</span> := nH - <span class="nb">100</span>, ;
+   oBtn:<span class="nb">nTop</span>    := nH - <span class="nb">50</span>, ;
+   oBtn:<span class="nb">nLeft</span>   := nW - <span class="nb">160</span> ;
+}</pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Complete Event Summary Table</h2>
+
+<table>
+  <tr><th>Event</th><th>Category</th><th>Primary Controls</th></tr>
+  <tr><td><code>OnClick</code></td><td>Mouse</td><td>Button, ListBox, TreeView, MenuItem, Image</td></tr>
+  <tr><td><code>OnDblClick</code></td><td>Mouse</td><td>ListBox, TreeView, StringGrid, Form</td></tr>
+  <tr><td><code>OnMouseDown</code></td><td>Mouse</td><td>All visual controls</td></tr>
+  <tr><td><code>OnMouseUp</code></td><td>Mouse</td><td>All visual controls</td></tr>
+  <tr><td><code>OnMouseMove</code></td><td>Mouse</td><td>All visual controls</td></tr>
+  <tr><td><code>OnMouseWheel</code></td><td>Mouse</td><td>All visual controls</td></tr>
+  <tr><td><code>OnKeyDown</code></td><td>Keyboard</td><td>All focusable controls</td></tr>
+  <tr><td><code>OnKeyUp</code></td><td>Keyboard</td><td>All focusable controls</td></tr>
+  <tr><td><code>OnKeyPress</code></td><td>Keyboard</td><td>Edit, Memo, MaskEdit, ComboBox</td></tr>
+  <tr><td><code>OnChange</code></td><td>Value</td><td>Edit, Memo, ComboBox, CheckBox, TrackBar</td></tr>
+  <tr><td><code>OnEnter</code></td><td>Focus</td><td>All focusable controls</td></tr>
+  <tr><td><code>OnExit</code></td><td>Focus</td><td>All focusable controls</td></tr>
+  <tr><td><code>OnCreate</code></td><td>Lifecycle</td><td>Form</td></tr>
+  <tr><td><code>OnInit</code></td><td>Lifecycle</td><td>Form</td></tr>
+  <tr><td><code>OnShow</code></td><td>Lifecycle</td><td>Form</td></tr>
+  <tr><td><code>OnHide</code></td><td>Lifecycle</td><td>Form</td></tr>
+  <tr><td><code>OnActivate</code></td><td>Lifecycle</td><td>Form</td></tr>
+  <tr><td><code>OnDeactivate</code></td><td>Lifecycle</td><td>Form</td></tr>
+  <tr><td><code>OnActivateApp</code></td><td>Lifecycle</td><td>Form</td></tr>
+  <tr><td><code>OnCloseQuery</code></td><td>Lifecycle</td><td>Form</td></tr>
+  <tr><td><code>OnClose</code></td><td>Lifecycle</td><td>Form</td></tr>
+  <tr><td><code>OnDestroy</code></td><td>Lifecycle</td><td>All controls</td></tr>
+  <tr><td><code>OnTimer</code></td><td>Timer</td><td>Timer</td></tr>
+  <tr><td><code>OnPaint</code></td><td>Drawing</td><td>PaintBox, Shape, Form, Panel</td></tr>
+  <tr><td><code>OnResize</code></td><td>Layout</td><td>Form, Panel, ScrollBox</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Event firing order</strong>
+  <p>When a user clicks a button, the event order is: <code>OnMouseDown</code> &rarr; <code>OnMouseUp</code> &rarr; <code>OnClick</code>.
+  For keyboard input: <code>OnKeyDown</code> &rarr; <code>OnKeyPress</code> &rarr; <code>OnKeyUp</code>.
+  Understanding this order helps you choose the right event for your use case.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,6 +1,50 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-13 (Documentation: complete refactor, 27 new pages, all platforms/IDE features documented)
+
+  DOCUMENTATION
+  - Complete refactoring of docs/ directory to match current codebase (130 controls, 16 tabs)
+  - Updated docs/en/index.html: control count 78→130, tabs 10→16, added Data Controls,
+    Printing, Connectivity, Git tabs to component table
+  - Updated docs/en/controls-ai.html: added TWhisper (CT=110) and TEmbeddings (CT=111),
+    AI count 7→9, comprehensive properties/methods/events tables for both components
+  - Updated docs/es/index.html and docs/pt/index.html: Spanish/Portuguese translations
+    synchronized with English version (130 controls, 16 tabs)
+
+  NEW PAGES CREATED (27 HTML files):
+  - Getting Started: installation.html (comprehensive guide for Windows/macOS/Linux)
+  - IDE Features (7): form-designer.html, object-inspector.html, code-editor.html,
+    two-way-tools.html, debugger.html, ai-assistant.html, build-run.html
+  - Control Documentation (2): controls-connectivity.html (9 language interop controls),
+    controls-git.html (10 Git integration controls with IDE Source Control panel)
+  - Tutorial (1): tutorial-transformer.html (TTransformer component, 7 sample projects)
+  - Reference (5): ref-properties.html, ref-events.html, ref-methods.html,
+    ref-commands.html, ref-functions.html
+  - Platform Guides (3): platform-windows.html, platform-macos.html, platform-linux.html
+
+  ALL SIDEBARS UPDATED:
+  - All 3 language versions (EN/ES/PT) now have complete navigation
+  - All 13 component palette tabs linked (Standard, Additional, Native, System, Dialogs,
+    Data Access, Data Controls, Internet, Threading, AI, Connectivity, Git, ERP)
+  - All 7 IDE features linked (Form Designer, Object Inspector, Code Editor, Two-Way Tools,
+    Debugger, AI Assistant, Build & Run)
+  - All 7 tutorials linked (Hello World, Forms, Events, Database, Web Server, AI, Transformer)
+  - All 5 reference pages linked (Properties, Events, Methods, Commands, Functions)
+  - All 5 platform pages linked (Windows, macOS, Linux, Android-Planned, iOS-Planned)
+  - Zero broken links — every sidebar reference points to an existing HTML file
+
+  CONTENT COVERAGE:
+  - 130 controls across 16 tabs fully documented
+  - Git integration: 10 components, 11 backend functions, IDE Source Control panel,
+    17-item Git menu, branch switching, common workflows
+  - Connectivity: 9 language interop controls (Python, Swift, Go, Node, Rust, Java,
+    DotNet, Lua, Ruby) with mechanism/use-case tables
+  - AI: 9 components including Whisper (speech-to-text) and Embeddings (vector search)
+  - Debugger: in-process .hrb execution, 5 dockable tabs, hb_dbg_SetEntry hook
+  - Code Editor: Scintilla 5.5+, syntax highlighting, folding, shortcuts, snippets
+  - Platform guides: backend architecture, build process, platform-specific features
+
 2026-04-13 (Linux: form loading, runtime control creation, label auto-size,
             multi-select rubber-band, palette icons)
 
