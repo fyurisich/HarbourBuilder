@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html" class="active">Linux</a>
@@ -107,7 +107,7 @@ with GNOME, XFCE, KDE, and other GTK-compatible desktop environments.</p>
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Architecture Overview</h2>
+<h2 id="architecture-overview">Architecture Overview</h2>
 
 <div class="mermaid">
 graph TB
@@ -129,7 +129,7 @@ graph TB
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Native Window Creation</h2>
+<h2 id="native-window-creation">Native Window Creation</h2>
 <p>Every HarbourBuilder form is a <code>GtkWindow</code> with a <code>GtkFixed</code> container for
 absolute-positioned child controls. The backend creates GTK widgets and stores their pointers
 in a handle table:</p>
@@ -178,7 +178,7 @@ HB_FUNC( UI_FORMNEW )
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Event Handling (g_signal)</h2>
+<h2 id="event-handling-g_signal">Event Handling (g_signal)</h2>
 <p>The GTK3 backend uses GObject's signal system (<code>g_signal_connect()</code>) to connect
 native widget events to Harbour event handlers:</p>
 
@@ -233,7 +233,7 @@ HB_FUNC( UI_ONEVENT )
 }</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Dark Mode</h2>
+<h2 id="dark-mode">Dark Mode</h2>
 <p>GTK3 dark mode is controlled via GTK settings:</p>
 
 <ul>
@@ -272,7 +272,7 @@ HB_FUNC( UI_ONEVENT )
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Scintilla Integration</h2>
+<h2 id="scintilla-integration">Scintilla Integration</h2>
 <p>On Linux, Scintilla 5.6.1 is built as a shared library:</p>
 
 <table>
@@ -297,9 +297,9 @@ ScintillaObject * sci = <span class="fn">scintilla_new</span>();
 <span class="fn">scintilla_send_message</span>( sci, SCI_SETLEXER, SCLEX_CPP, <span class="nb">0</span> );</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Build Process</h2>
+<h2 id="build-process">Build Process</h2>
 
-<h3>Prerequisites</h3>
+<h3 id="prerequisites">Prerequisites</h3>
 <ol>
   <li><strong>GCC compiler:</strong>
     <pre>sudo apt install gcc g++</pre>
@@ -313,7 +313,7 @@ ScintillaObject * sci = <span class="fn">scintilla_new</span>();
   </li>
 </ol>
 
-<h3>Build Script (<code>build_linux.sh</code>)</h3>
+<h3 id="build-script-build_linuxsh">Build Script (<code>build_linux.sh</code>)</h3>
 <p>The script performs these steps:</p>
 
 <ol>
@@ -344,7 +344,7 @@ ScintillaObject * sci = <span class="fn">scintilla_new</span>();
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Compilation Details</h2>
+<h2 id="compilation-details">Compilation Details</h2>
 
 <pre><span class="cm"># Manual compilation (what build_linux.sh does internally)</span>
 <span class="cm"># 1. Compile Harbour source to C</span>
@@ -369,7 +369,7 @@ gcc -o hbbuilder_linux hbbuilder.o gtk3_backend.o \
     -ldl -lm</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Platform-Specific Features</h2>
+<h2 id="platform-specific-features">Platform-Specific Features</h2>
 
 <table>
   <tr><th>Feature</th><th>Linux Implementation</th></tr>
@@ -386,7 +386,7 @@ gcc -o hbbuilder_linux hbbuilder.o gtk3_backend.o \
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Known Limitations</h2>
+<h2 id="known-limitations">Known Limitations</h2>
 
 <ul>
   <li><strong>Desktop environment variance</strong> &mdash; GTK3 widgets look different on GNOME, XFCE, KDE, etc. The backend targets the default Adwaita theme. Other themes may produce slightly different appearances.</li>
@@ -396,7 +396,7 @@ gcc -o hbbuilder_linux hbbuilder.o gtk3_backend.o \
 </ul>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Dependencies</h2>
+<h2 id="dependencies">Dependencies</h2>
 <table>
   <tr><th>Package/Library</th><th>Purpose</th></tr>
   <tr><td><code>libgtk-3-dev</code></td><td>GTK3 headers and libraries (widgets, windows, events)</td></tr>
@@ -411,6 +411,28 @@ gcc -o hbbuilder_linux hbbuilder.o gtk3_backend.o \
   <tr><td><code>-lm</code></td><td>Math library</td></tr>
 </table>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#architecture-overview" class="toc-h2">Architecture Overview</a>
+  <a href="#native-window-creation" class="toc-h2">Native Window Creation</a>
+  <a href="#event-handling-g_signal" class="toc-h2">Event Handling (g_signal)</a>
+  <a href="#dark-mode" class="toc-h2">Dark Mode</a>
+  <a href="#scintilla-integration" class="toc-h2">Scintilla Integration</a>
+  <a href="#build-process" class="toc-h2">Build Process</a>
+  <a href="#prerequisites" class="toc-h3">Prerequisites</a>
+  <a href="#build-script-build_linuxsh" class="toc-h3">Build Script (build_linux.sh)</a>
+  <a href="#compilation-details" class="toc-h2">Compilation Details</a>
+  <a href="#platform-specific-features" class="toc-h2">Platform-Specific Features</a>
+  <a href="#known-limitations" class="toc-h2">Known Limitations</a>
+  <a href="#dependencies" class="toc-h2">Dependencies</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

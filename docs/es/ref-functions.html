@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html" class="active">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -94,7 +94,7 @@ explica como funciona la arquitectura.</p>
   funciones HB_FUNC dependiendo del backend de la plataforma.</p>
 </div>
 
-<h2>Arquitectura del Puente</h2>
+<h2 id="arquitectura-del-puente">Arquitectura del Puente</h2>
 <p>El puente se sienta entre la capa OOP de Harbour y la API nativa de la plataforma. Cuando llamas
 <code>oForm:Create()</code> en Harbour, el metodo OOP internamente llama a <code>UI_FormNew()</code>, que
 es un HB_FUNC que invoca la API de creacion de ventanas nativa de la plataforma:</p>
@@ -124,9 +124,9 @@ gtk_window_new()"]
   no necesita saber si se ejecuta en Windows, macOS o Linux.</p>
 </div>
 
-<h2>Funciones HB_FUNC Principales</h2>
+<h2 id="funciones-hb_func-principales">Funciones HB_FUNC Principales</h2>
 
-<h3>Gestion de Formularios</h3>
+<h3 id="gestion-de-formularios">Gestion de Formularios</h3>
 <table>
   <tr><th>Funcion</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th></tr>
   <tr><td><code>UI_FormNew</code></td><td><code>cTitle, nWidth, nHeight</code></td><td><code>nFormHandle</code></td><td>Crea una nueva ventana de nivel superior con el titulo y dimensiones especificados. Retorna un manejador numerico que identifica el formulario en todas las llamadas posteriores.</td></tr>
@@ -136,7 +136,7 @@ gtk_window_new()"]
   <tr><td><code>UI_SetTitle</code></td><td><code>nHandle, cTitle</code></td><td>vacio</td><td>Establece el texto de la barra de titulo de un formulario.</td></tr>
 </table>
 
-<h3>Creacion de Controles</h3>
+<h3 id="creacion-de-controles">Creacion de Controles</h3>
 <table>
   <tr><th>Funcion</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th></tr>
   <tr><td><code>UI_ControlCreate</code></td><td><code>nType, nParentHandle, nLeft, nTop, nWidth, nHeight</code></td><td><code>nControlHandle</code></td><td>Crea un widget nativo del tipo especificado (CT_BUTTON, CT_EDIT, etc.) dentro de un contenedor padre. La constante de tipo determina que widget nativo se instancia.</td></tr>
@@ -145,7 +145,7 @@ gtk_window_new()"]
   <tr><td><code>UI_LabelCreate</code></td><td><code>nParentHandle, nLeft, nTop, nWidth, nHeight, cText</code></td><td><code>nHandle</code></td><td>Crea una etiqueta de texto estatico.</td></tr>
 </table>
 
-<h3>Gestion de Propiedades</h3>
+<h3 id="gestion-de-propiedades">Gestion de Propiedades</h3>
 <table>
   <tr><th>Funcion</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th></tr>
   <tr><td><code>UI_SetProp</code></td><td><code>nHandle, nPropId, xValue</code></td><td>vacio</td><td>Establecedor de propiedades generico. <code>nPropId</code> es una constante que identifica que propiedad establecer (p. ej., PROP_TEXT, PROP_VISIBLE, PROP_COLOR).</td></tr>
@@ -159,7 +159,7 @@ gtk_window_new()"]
   <tr><td><code>UI_SetEnabled</code></td><td><code>nHandle, lEnabled</code></td><td>vacio</td><td>Habilita o deshabilita un control (atenuado cuando esta deshabilitado).</td></tr>
 </table>
 
-<h3>Gestion de Eventos</h3>
+<h3 id="gestion-de-eventos">Gestion de Eventos</h3>
 <table>
   <tr><th>Funcion</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th></tr>
   <tr><td><code>UI_OnEvent</code></td><td><code>nHandle, nEventId, bCodeBlock</code></td><td>vacio</td><td>Registra un bloque de codigo Harbour para ejecutar cuando se dispare el evento especificado en el control. El bloque de codigo se almacena en una tabla de eventos del lado de Harbour.</td></tr>
@@ -167,7 +167,7 @@ gtk_window_new()"]
   <tr><td><code>UI_RemoveEvent</code></td><td><code>nHandle, nEventId</code></td><td>vacio</td><td>Elimina un manejador de eventos registrado previamente.</td></tr>
 </table>
 
-<h3>Ciclo de Vida y Utilidades</h3>
+<h3 id="ciclo-de-vida-y-utilidades">Ciclo de Vida y Utilidades</h3>
 <table>
   <tr><th>Funcion</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th></tr>
   <tr><td><code>UI_Destroy</code></td><td><code>nHandle</code></td><td>vacio</td><td>Destruye un control y libera todos los recursos nativos asociados.</td></tr>
@@ -179,7 +179,7 @@ gtk_window_new()"]
   <tr><td><code>UI_MsgInfo</code></td><td><code>cMessage, [cTitle]</code></td><td>vacio</td><td>Muestra un cuadro de mensaje de informacion simple.</td></tr>
 </table>
 
-<h2>Cantidad de Funciones por Plataforma</h2>
+<h2 id="cantidad-de-funciones-por-plataforma">Cantidad de Funciones por Plataforma</h2>
 
 <table>
   <tr><th>Backend</th><th>Lenguaje</th><th>Cantidad HB_FUNC</th><th>Lineas de codigo</th></tr>
@@ -196,7 +196,7 @@ gtk_window_new()"]
   codigo repetitivo para funcionalidad equivalente.</p>
 </div>
 
-<h2>Agregar un Nuevo HB_FUNC</h2>
+<h2 id="agregar-un-nuevo-hb_func">Agregar un Nuevo HB_FUNC</h2>
 <p>Para extender HarbourBuilder con una nueva capacidad nativa, necesitas:</p>
 
 <ol>
@@ -205,7 +205,27 @@ gtk_window_new()"]
   <li><strong>Agregar el envoltorio del lado de Harbour</strong> en la clase OOP.</li>
   <li><strong>Agregar el comando xBase</strong> (opcional) en <code>hbbuilder.ch</code>.</li>
 </ol>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#arquitectura-del-puente" class="toc-h2">Arquitectura del Puente</a>
+  <a href="#funciones-hb_func-principales" class="toc-h2">Funciones HB_FUNC Principales</a>
+  <a href="#gestion-de-formularios" class="toc-h3">Gestion de Formularios</a>
+  <a href="#creacion-de-controles" class="toc-h3">Creacion de Controles</a>
+  <a href="#gestion-de-propiedades" class="toc-h3">Gestion de Propiedades</a>
+  <a href="#gestion-de-eventos" class="toc-h3">Gestion de Eventos</a>
+  <a href="#ciclo-de-vida-y-utilidades" class="toc-h3">Ciclo de Vida y Utilidades</a>
+  <a href="#cantidad-de-funciones-por-plataforma" class="toc-h2">Cantidad de Funciones por Plataforma</a>
+  <a href="#agregar-un-nuevo-hb_func" class="toc-h2">Agregar un Nuevo HB_FUNC</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

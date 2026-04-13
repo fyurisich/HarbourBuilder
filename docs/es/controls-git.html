@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -90,7 +90,7 @@ Sin herramientas externas necesarias; gestiona tus repositorios directamente des
   proporcionando una experiencia de Control de Fuente estilo VS Code dentro del IDE.</p>
 </div>
 
-<h2>Componentes Git</h2>
+<h2 id="componentes-git">Componentes Git</h2>
 
 <table>
   <tr><th>Componente</th><th>ID CT</th><th>Descripcion</th></tr>
@@ -106,9 +106,9 @@ Sin herramientas externas necesarias; gestiona tus repositorios directamente des
   <tr><td><code>TGitMerge</code></td><td>130</td><td>Fusionar ramas y resolver conflictos</td></tr>
 </table>
 
-<h2>Integracion Git del IDE</h2>
+<h2 id="integracion-git-del-ide">Integracion Git del IDE</h2>
 
-<h3>Panel de Control de Fuente</h3>
+<h3 id="panel-de-control-de-fuente">Panel de Control de Fuente</h3>
 <p>Accede mediante el elemento de menu <strong>Git &gt; Estado</strong>. El panel muestra:</p>
 <ul>
   <li><strong>Etiqueta de rama</strong> — Nombre de la rama actual</li>
@@ -117,7 +117,7 @@ Sin herramientas externas necesarias; gestiona tus repositorios directamente des
   <li><strong>Botones de accion</strong> — Actualizar, Confirmar, Enviar, Extraer, Guardar</li>
 </ul>
 
-<h3>Menu Git (17 Elementos)</h3>
+<h3 id="menu-git-17-elementos">Menu Git (17 Elementos)</h3>
 
 <table>
   <tr><th>Elemento de Menu</th><th>Accion</th></tr>
@@ -137,7 +137,7 @@ Sin herramientas externas necesarias; gestiona tus repositorios directamente des
   <tr><td><strong>Blame</strong></td><td>Ver autoria linea por linea</td></tr>
 </table>
 
-<h2>Funciones del Backend</h2>
+<h2 id="funciones-del-backend">Funciones del Backend</h2>
 
 <p>11 funciones del backend envuelven la CLI de <code>git.exe</code> mediante <code>CreateProcess</code> con captura de stdout:</p>
 
@@ -153,9 +153,9 @@ Sin herramientas externas necesarias; gestiona tus repositorios directamente des
   <tr><td><code>GIT_IsRepo()</code></td><td><code>git rev-parse</code></td><td>Logico (.T./.F.)</td></tr>
 </table>
 
-<h2>Ejemplos de Codigo</h2>
+<h2 id="ejemplos-de-codigo">Ejemplos de Codigo</h2>
 
-<h3>Inicializar un Repositorio</h3>
+<h3 id="inicializar-un-repositorio">Inicializar un Repositorio</h3>
 <pre><span class="kw">local</span> oRepo
 
 oRepo := <span class="fn">TGitRepo</span>:New()
@@ -164,7 +164,7 @@ oRepo := <span class="fn">TGitRepo</span>:New()
    <span class="fn">MsgInfo</span>( <span class="st">"Repositorio inicializado"</span> )
 <span class="kw">endif</span></pre>
 
-<h3>Ver Estado y Confirmar</h3>
+<h3 id="ver-estado-y-confirmar">Ver Estado y Confirmar</h3>
 <pre><span class="kw">local</span> aEstado, cMsg
 
 aEstado := <span class="fn">GIT_Status</span>()
@@ -175,7 +175,7 @@ aEstado := <span class="fn">GIT_Status</span>()
 <span class="fn">GIT_Exec</span>( <span class="st">"git add ."</span> )
 <span class="fn">GIT_Exec</span>( <span class="st">"git commit -m "Confirmacion inicial""</span> )</pre>
 
-<h3>Operaciones de Rama</h3>
+<h3 id="operaciones-de-rama">Operaciones de Rama</h3>
 <pre><span class="kw">local</span> aRamas
 
 <span class="comment">// Listar todas las ramas</span>
@@ -187,7 +187,7 @@ aRamas := <span class="fn">GIT_BranchList</span>()
 <span class="comment">// Crear y cambiar a nueva rama</span>
 <span class="fn">GIT_Exec</span>( <span class="st">"git checkout -b feature/nueva-funcionalidad"</span> )</pre>
 
-<h3>Ver Registro de Confirmaciones</h3>
+<h3 id="ver-registro-de-confirmaciones">Ver Registro de Confirmaciones</h3>
 <pre><span class="kw">local</span> aLog
 
 aLog := <span class="fn">GIT_Log</span>( <span class="nb">20</span> )  <span class="comment">// Ultimas 20 confirmaciones</span>
@@ -198,9 +198,9 @@ aLog := <span class="fn">GIT_Log</span>( <span class="nb">20</span> )  <span cla
    ? aConf[<span class="nb">4</span>]  <span class="comment">// Mensaje</span>
 <span class="kw">next</span></pre>
 
-<h2>Flujos de Trabajo Git Comunes</h2>
+<h2 id="flujos-de-trabajo-git-comunes">Flujos de Trabajo Git Comunes</h2>
 
-<h3>Configuracion Inicial</h3>
+<h3 id="configuracion-inicial">Configuracion Inicial</h3>
 <pre><span class="comment">// 1. Inicializar repositorio</span>
 <span class="fn">GIT_Exec</span>( <span class="st">"git init"</span> )
 
@@ -216,7 +216,7 @@ aLog := <span class="fn">GIT_Log</span>( <span class="nb">20</span> )  <span cla
 <span class="comment">// 5. Enviar al remoto</span>
 <span class="fn">GIT_Exec</span>( <span class="st">"git push -u origin master"</span> )</pre>
 
-<h3>Flujo de Trabajo Diario</h3>
+<h3 id="flujo-de-trabajo-diario">Flujo de Trabajo Diario</h3>
 <pre><span class="comment">// 1. Extraer ultimos cambios</span>
 <span class="fn">GIT_Exec</span>( <span class="st">"git pull"</span> )
 
@@ -237,7 +237,31 @@ aEstado := <span class="fn">GIT_Status</span>()
   <p>La integracion Git de HarbourBuilder requiere que <code>git</code> este instalado y en el PATH de tu sistema.
   Descarga desde <a href="https://git-scm.com/">git-scm.com</a>.</p>
 </div>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#componentes-git" class="toc-h2">Componentes Git</a>
+  <a href="#integracion-git-del-ide" class="toc-h2">Integracion Git del IDE</a>
+  <a href="#panel-de-control-de-fuente" class="toc-h3">Panel de Control de Fuente</a>
+  <a href="#menu-git-17-elementos" class="toc-h3">Menu Git (17 Elementos)</a>
+  <a href="#funciones-del-backend" class="toc-h2">Funciones del Backend</a>
+  <a href="#ejemplos-de-codigo" class="toc-h2">Ejemplos de Codigo</a>
+  <a href="#inicializar-un-repositorio" class="toc-h3">Inicializar un Repositorio</a>
+  <a href="#ver-estado-y-confirmar" class="toc-h3">Ver Estado y Confirmar</a>
+  <a href="#operaciones-de-rama" class="toc-h3">Operaciones de Rama</a>
+  <a href="#ver-registro-de-confirmaciones" class="toc-h3">Ver Registro de Confirmaciones</a>
+  <a href="#flujos-de-trabajo-git-comunes" class="toc-h2">Flujos de Trabajo Git Comunes</a>
+  <a href="#configuracion-inicial" class="toc-h3">Configuracion Inicial</a>
+  <a href="#flujo-de-trabajo-diario" class="toc-h3">Flujo de Trabajo Diario</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

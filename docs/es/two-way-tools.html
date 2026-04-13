@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -99,13 +99,13 @@ es visible instantaneamente en el disenador.</p>
   Tus implementaciones de METHOD, manejadores de eventos y logica personalizada <strong>nunca</strong> se tocan ni se sobrescriben.</p>
 </div>
 
-<h2>Como Funciona</h2>
+<h2 id="como-funciona">Como Funciona</h2>
 
 <p>Cuando trabajas en el Disenador de Formularios, cada accion — colocar un control, redimensionar, mover,
 cambiar una propiedad — activa una regeneracion de codigo especifica. El motor analiza tu archivo
 fuente existente, identifica las secciones de definicion de interfaz, las actualiza y deja todo lo demas intacto.</p>
 
-<h2>Que se Regenera</h2>
+<h2 id="que-se-regenera">Que se Regenera</h2>
 
 <p>El motor de codigo identifica y actualiza solo estas categorias:</p>
 
@@ -122,9 +122,9 @@ fuente existente, identifica las secciones de definicion de interfaz, las actual
   <tr><td><strong>Comentarios</strong></td><td><code>// TODO: ...</code></td><td><strong>No</strong></td></tr>
 </table>
 
-<h2>Antes y Despues: Regeneracion de Codigo</h2>
+<h2 id="antes-y-despues-regeneracion-de-codigo">Antes y Despues: Regeneracion de Codigo</h2>
 
-<h3>Antes: Colocas un boton en el disenador</h3>
+<h3 id="antes-colocas-un-boton-en-el-disenador">Antes: Colocas un boton en el disenador</h3>
 <pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
 
    <span class="kw">DATA</span> oBtn1
@@ -145,7 +145,7 @@ fuente existente, identifica las secciones de definicion de interfaz, las actual
    MsgInfo( <span class="st">"¡Boton pulsado!"</span> )
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Despues: Codigo regenerado (boton agregado, metodo intacto)</h3>
+<h3 id="despues-codigo-regenerado-boton-agregado-metodo-intacto">Despues: Codigo regenerado (boton agregado, metodo intacto)</h3>
 <pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
 
    <span class="kw">DATA</span> oBtn1
@@ -177,7 +177,7 @@ fuente existente, identifica las secciones de definicion de interfaz, las actual
   metodo <code>CreateForm</code> recibio la nueva definicion del boton.</p>
 </div>
 
-<h2>Flujo de Trabajo</h2>
+<h2 id="flujo-de-trabajo">Flujo de Trabajo</h2>
 
 <ol>
   <li><strong>Comienza con formulario en blanco</strong> — Archivo &gt; Nuevo formulario</li>
@@ -189,7 +189,7 @@ fuente existente, identifica las secciones de definicion de interfaz, las actual
   <li><strong>Vuelve al disenador</strong> — Continua el diseno visual; tu logica esta segura</li>
 </ol>
 
-<h2>Reglas de Analisis de Codigo</h2>
+<h2 id="reglas-de-analisis-de-codigo">Reglas de Analisis de Codigo</h2>
 
 <p>El motor de regeneracion usa estas reglas para identificar secciones seguras de modificar:</p>
 
@@ -207,7 +207,7 @@ fuente existente, identifica las secciones de definicion de interfaz, las actual
   dentro de bloques DEFINE. Esto facilita que el motor de regeneracion identifique y preserve tu codigo.</p>
 </div>
 
-<h2>Manejo de Conflictos</h2>
+<h2 id="manejo-de-conflictos">Manejo de Conflictos</h2>
 
 <p>Si editas manualmente una linea que el disenador tambien gestiona (p. ej., cambiar la posicion de un boton en el codigo
 mientras tambien esta en el lienzo del formulario), la vista del disenador tiene prioridad en la siguiente regeneracion.
@@ -225,7 +225,7 @@ Para evitar conflictos:</p>
   multiples formularios en un archivo, sintaxis mixta basada en clases y procedural, y archivos con comentarios extensos.</p>
 </div>
 
-<h2>Alternar Entre Vistas</h2>
+<h2 id="alternar-entre-vistas">Alternar Entre Vistas</h2>
 
 <p>Usa el boton de la barra de herramientas o el atajo de teclado para alternar entre las vistas Disenador y Codigo:</p>
 
@@ -236,6 +236,25 @@ Para evitar conflictos:</p>
   <tr><td><strong>Ctrl+S</strong></td><td>Guardar (datos de diseno y codigo)</td></tr>
 </table>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#como-funciona" class="toc-h2">Como Funciona</a>
+  <a href="#que-se-regenera" class="toc-h2">Que se Regenera</a>
+  <a href="#antes-y-despues-regeneracion-de-codigo" class="toc-h2">Antes y Despues: Regeneracion de Codigo</a>
+  <a href="#antes-colocas-un-boton-en-el-disenador" class="toc-h3">Antes: Colocas un boton en el disenador</a>
+  <a href="#despues-codigo-regenerado-boton-agregado-metodo-intacto" class="toc-h3">Despues: Codigo regenerado (boton agregado, metodo intacto)</a>
+  <a href="#flujo-de-trabajo" class="toc-h2">Flujo de Trabajo</a>
+  <a href="#reglas-de-analisis-de-codigo" class="toc-h2">Reglas de Analisis de Codigo</a>
+  <a href="#manejo-de-conflictos" class="toc-h2">Manejo de Conflictos</a>
+  <a href="#alternar-entre-vistas" class="toc-h2">Alternar Entre Vistas</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

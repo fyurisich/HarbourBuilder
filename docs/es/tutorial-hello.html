@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de Formularios</a>
     <a href="object-inspector.html">Inspector de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Compilar y Ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html" class="active">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con Formularios</a>
     <a href="tutorial-events.html">Manejo de Eventos</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -94,7 +94,7 @@
 <h1>Tutorial: Hola Mundo</h1>
 <p>En este tutorial construira su primera aplicacion HarbourBuilder desde cero &mdash; una ventana simple con un boton que muestra un saludo. Al final, comprendera el flujo de trabajo basico del proyecto: crear, disenar, codificar, compilar y ejecutar.</p>
 
-<h2>Paso 1: Crear un Nuevo Proyecto</h2>
+<h2 id="paso-1-crear-un-nuevo-proyecto">Paso 1: Crear un Nuevo Proyecto</h2>
 <ol>
   <li>Inicie <strong>HarbourBuilder</strong>.</li>
   <li>Seleccione <strong>Archivo &rarr; Nuevo Proyecto</strong> desde la barra de menu.</li>
@@ -107,7 +107,7 @@
   <p>HarbourBuilder crea una carpeta limpia con su archivo de proyecto <code>.hbp</code> y un fuente <code>main.prg</code>. Toda la salida compilada va a una subcarpeta <code>build/</code> que puede agregar con seguridad a <code>.gitignore</code>.</p>
 </div>
 
-<h2>Paso 2: Abrir el Disenador de Formularios</h2>
+<h2 id="paso-2-abrir-el-disenador-de-formularios">Paso 2: Abrir el Disenador de Formularios</h2>
 <ol>
   <li>En el panel <strong>Gestor de Proyectos</strong>, haga doble clic en <code>main.prg</code>.</li>
   <li>El <strong>Disenador de Formularios</strong> se abre mostrando un formulario vacio titulado "Mi Primera App".</li>
@@ -115,7 +115,7 @@
   <li>Cambie la propiedad <code>cTitle</code> a <code>"Hola Mundo"</code> y presione Enter &mdash; la barra de titulo del formulario se actualiza inmediatamente.</li>
 </ol>
 
-<h2>Paso 3: Anadir un Boton</h2>
+<h2 id="paso-3-anadir-un-boton">Paso 3: Anadir un Boton</h2>
 <ol>
   <li>Haga clic en la pestania <strong>Estandar</strong> en la <strong>Paleta de Componentes</strong> en la parte superior del IDE.</li>
   <li>Haga clic en el icono <strong>Boton</strong> en la paleta.</li>
@@ -124,7 +124,7 @@
   <li>Opcionalmente ajuste las propiedades <code>nTop</code>, <code>nLeft</code>, <code>nWidth</code> y <code>nHeight</code> para posicionar y dimensionar el boton.</li>
 </ol>
 
-<h2>Paso 4: Anadir una Etiqueta</h2>
+<h2 id="paso-4-anadir-una-etiqueta">Paso 4: Anadir una Etiqueta</h2>
 <ol>
   <li>Desde la pestania <strong>Estandar</strong> de la paleta, haga clic en el icono <strong>Etiqueta</strong>.</li>
   <li>Haga clic en el formulario encima del boton para colocar la etiqueta.</li>
@@ -132,7 +132,7 @@
   <li>Establezca <code>nWidth</code> a <code>300</code> para que el texto quepa comodamente.</li>
 </ol>
 
-<h2>Paso 5: Establecer el Evento OnClick</h2>
+<h2 id="paso-5-establecer-el-evento-onclick">Paso 5: Establecer el Evento OnClick</h2>
 <ol>
   <li>Seleccione el boton en el formulario (haga clic una vez).</li>
   <li>En el Inspector de Objetos, cambie a la pestania <strong>Eventos</strong>.</li>
@@ -147,7 +147,7 @@
   <p>Para expresiones simples de una linea, un bloque de codigo en linea <code>{ || ... }</code> es perfecto. Para logica mas compleja, llame a una <code>static function</code> separada desde el bloque. Vea el tutorial de <a href="tutorial-events.html">Manejo de Eventos</a> para mas detalles.</p>
 </div>
 
-<h2>Paso 6: Compilar y Ejecutar</h2>
+<h2 id="paso-6-compilar-y-ejecutar">Paso 6: Compilar y Ejecutar</h2>
 <ol>
   <li>Presione <strong>F9</strong> (o seleccione <strong>Ejecutar &rarr; Compilar y Ejecutar</strong>).</li>
   <li>Observe el panel <strong>Mensajes</strong> en la parte inferior &mdash; muestra los pasos de preprocesamiento, compilacion, enlazado y lanzamiento.</li>
@@ -155,7 +155,7 @@
   <li>El texto de la etiqueta cambia a <strong>"Hola desde HarbourBuilder!"</strong>.</li>
 </ol>
 
-<h2>Listado Completo del Codigo</h2>
+<h2 id="listado-completo-del-codigo">Listado Completo del Codigo</h2>
 <p>Aqui esta el <code>main.prg</code> completo para la aplicacion Hola Mundo:</p>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
@@ -178,7 +178,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Que Aprendio</h2>
+<h2 id="que-aprendio">Que Aprendio</h2>
 <ul>
   <li>Como crear un nuevo proyecto HarbourBuilder.</li>
   <li>Como usar el Disenador de Formularios para colocar controles visualmente.</li>
@@ -192,6 +192,24 @@
   <p>Listo para mas? Continue al tutorial <a href="tutorial-forms.html">Trabajar con Formularios</a> para aprender como crear aplicaciones con multiples formularios y dialogos modales.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros Pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#paso-1-crear-un-nuevo-proyecto" class="toc-h2">Paso 1: Crear un Nuevo Proyecto</a>
+  <a href="#paso-2-abrir-el-disenador-de-formularios" class="toc-h2">Paso 2: Abrir el Disenador de Formularios</a>
+  <a href="#paso-3-anadir-un-boton" class="toc-h2">Paso 3: Anadir un Boton</a>
+  <a href="#paso-4-anadir-una-etiqueta" class="toc-h2">Paso 4: Anadir una Etiqueta</a>
+  <a href="#paso-5-establecer-el-evento-onclick" class="toc-h2">Paso 5: Establecer el Evento OnClick</a>
+  <a href="#paso-6-compilar-y-ejecutar" class="toc-h2">Paso 6: Compilar y Ejecutar</a>
+  <a href="#listado-completo-del-codigo" class="toc-h2">Listado Completo del Codigo</a>
+  <a href="#que-aprendio" class="toc-h2">Que Aprendio</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

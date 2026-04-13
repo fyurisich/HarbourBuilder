@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html" class="active">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -97,7 +97,7 @@
   HarbourBuilder will handle the rest.</p>
 </div>
 
-<h2>System Requirements</h2>
+<h2 id="system-requirements">System Requirements</h2>
 
 <table>
   <tr><th>Platform</th><th>Minimum</th><th>Recommended</th><th>Compiler</th></tr>
@@ -106,9 +106,9 @@
   <tr><td><span class="badge linux">Linux</span></td><td>GTK3, 2 GB RAM</td><td>GTK3, 4 GB RAM</td><td>GCC 11+</td></tr>
 </table>
 
-<h2>Windows Installation</h2>
+<h2 id="windows-installation">Windows Installation</h2>
 
-<h3>Prerequisites</h3>
+<h3 id="prerequisites">Prerequisites</h3>
 <ol>
   <li><strong>Harbour 3.2+</strong> — Download from <a href="https://harbour.github.io/">harbour.github.io</a> or use pre-built binaries</li>
   <li><strong>C Compiler</strong> — Choose one:
@@ -119,7 +119,7 @@
   </li>
 </ol>
 
-<h3>Step-by-Step</h3>
+<h3 id="step-by-step">Step-by-Step</h3>
 <ol>
   <li><strong>Clone the repository:</strong>
     <pre>git clone https://github.com/yourusername/HarbourBuilder.git
@@ -143,9 +143,9 @@ cd HarbourBuilder</pre>
   Use <strong>Tools &gt; Select Compiler</strong> to choose between detected compilers.</p>
 </div>
 
-<h2>macOS Installation</h2>
+<h2 id="macos-installation">macOS Installation</h2>
 
-<h3>Prerequisites</h3>
+<h3 id="prerequisites">Prerequisites</h3>
 <ol>
   <li><strong>Xcode Command Line Tools:</strong>
     <pre>xcode-select --install</pre>
@@ -153,7 +153,7 @@ cd HarbourBuilder</pre>
   </li>
 </ol>
 
-<h3>Step-by-Step</h3>
+<h3 id="step-by-step">Step-by-Step</h3>
 <ol>
   <li><strong>Navigate to samples:</strong>
     <pre>cd HarbourBuilder/samples</pre>
@@ -184,9 +184,9 @@ cd HarbourBuilder</pre>
   For native ARM builds, recompile Harbour for <code>darwin/clang/arm64</code> and update <code>HBDIR</code> in <code>build_mac.sh</code>.</p>
 </div>
 
-<h2>Linux Installation</h2>
+<h2 id="linux-installation">Linux Installation</h2>
 
-<h3>Prerequisites</h3>
+<h3 id="prerequisites">Prerequisites</h3>
 <ol>
   <li><strong>Harbour 3.2+</strong> — Install from package manager or build from source</li>
   <li><strong>GTK3 development libraries:</strong>
@@ -198,7 +198,7 @@ cd HarbourBuilder</pre>
   <li><strong>Scintilla</strong> — Built automatically by the build script</li>
 </ol>
 
-<h3>Step-by-Step (Ubuntu/Debian)</h3>
+<h3 id="step-by-step-ubuntudebian">Step-by-Step (Ubuntu/Debian)</h3>
 <ol>
   <li><strong>Install dependencies:</strong>
     <pre>sudo apt update
@@ -215,7 +215,7 @@ sudo apt install libgtk-3-dev gcc g++ harbour</pre>
   </li>
 </ol>
 
-<h2>Scintilla Setup</h2>
+<h2 id="scintilla-setup">Scintilla Setup</h2>
 
 <p>Scintilla is the code editing component used by HarbourBuilder. Setup varies by platform:</p>
 
@@ -228,7 +228,7 @@ sudo apt install libgtk-3-dev gcc g++ harbour</pre>
 
 <p>The build scripts handle Scintilla automatically — you don't need to build it manually unless you want a custom version.</p>
 
-<h2>Verifying Your Installation</h2>
+<h2 id="verifying-your-installation">Verifying Your Installation</h2>
 
 <p>After installation, verify everything works:</p>
 
@@ -245,7 +245,7 @@ sudo apt install libgtk-3-dev gcc g++ harbour</pre>
   <p>Check out the <code>samples/projects/</code> directory for working examples including database, AI, and transformer demos.</p>
 </div>
 
-<h2>Troubleshooting</h2>
+<h2 id="troubleshooting">Troubleshooting</h2>
 
 <table>
   <tr><th>Issue</th><th>Cause</th><th>Solution</th></tr>
@@ -257,7 +257,7 @@ sudo apt install libgtk-3-dev gcc g++ harbour</pre>
   <tr><td>Dark mode not working</td><td>OS theme not set</td><td>Ensure your OS is in dark mode; HarbourBuilder follows system theme</td></tr>
 </table>
 
-<h2>Next Steps</h2>
+<h2 id="next-steps">Next Steps</h2>
 
 <p>Once installed, continue with:</p>
 <ul>
@@ -266,6 +266,30 @@ sudo apt install libgtk-3-dev gcc g++ harbour</pre>
   <li><a href="tutorial-hello.html">Hello World Tutorial</a> — Step-by-step beginner's guide</li>
 </ul>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#system-requirements" class="toc-h2">System Requirements</a>
+  <a href="#windows-installation" class="toc-h2">Windows Installation</a>
+  <a href="#prerequisites" class="toc-h3">Prerequisites</a>
+  <a href="#step-by-step" class="toc-h3">Step-by-Step</a>
+  <a href="#macos-installation" class="toc-h2">macOS Installation</a>
+  <a href="#prerequisites" class="toc-h3">Prerequisites</a>
+  <a href="#step-by-step" class="toc-h3">Step-by-Step</a>
+  <a href="#linux-installation" class="toc-h2">Linux Installation</a>
+  <a href="#prerequisites" class="toc-h3">Prerequisites</a>
+  <a href="#step-by-step-ubuntudebian" class="toc-h3">Step-by-Step (Ubuntu/Debian)</a>
+  <a href="#scintilla-setup" class="toc-h2">Scintilla Setup</a>
+  <a href="#verifying-your-installation" class="toc-h2">Verifying Your Installation</a>
+  <a href="#troubleshooting" class="toc-h2">Troubleshooting</a>
+  <a href="#next-steps" class="toc-h2">Next Steps</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

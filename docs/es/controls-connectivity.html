@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -93,7 +93,7 @@ directas a traves de fronteras de lenguaje.</p>
   y llama funciones como si fueran metodos nativos de Harbour.</p>
 </div>
 
-<h2>Lenguajes Soportados</h2>
+<h2 id="lenguajes-soportados">Lenguajes Soportados</h2>
 
 <table>
   <tr><th>Componente</th><th>Lenguaje</th><th>Mecanismo</th><th>Caso de Uso</th></tr>
@@ -108,7 +108,7 @@ directas a traves de fronteras de lenguaje.</p>
   <tr><td><strong>TRuby</strong></td><td>Ruby</td><td>API C de Ruby (libruby)</td><td>Web scraping, procesamiento de texto, DSLs.</td></tr>
 </table>
 
-<h2>Patron de API Comun</h2>
+<h2 id="patron-de-api-comun">Patron de API Comun</h2>
 
 <p>Todos los componentes de conectividad siguen un patron de API consistente:</p>
 
@@ -122,7 +122,7 @@ directas a traves de fronteras de lenguaje.</p>
   <tr><td><code>:Shutdown()</code></td><td>—</td><td>Limpiar y descargar el runtime.</td></tr>
 </table>
 
-<h2>Ejemplo de Integracion con Python</h2>
+<h2 id="ejemplo-de-integracion-con-python">Ejemplo de Integracion con Python</h2>
 
 <p>El componente <strong>TPython</strong> es el control de conectividad mas comunmente usado.
 Incrusta un interprete Python completo en tu aplicacion Harbour:</p>
@@ -159,7 +159,7 @@ Incrusta un interprete Python completo en tu aplicacion Harbour:</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Ejemplo de Integracion con Node.js</h2>
+<h2 id="ejemplo-de-integracion-con-nodejs">Ejemplo de Integracion con Node.js</h2>
 <pre>oNode := TNode():New()
 oNode:<span class="fn">Init</span>()
 
@@ -172,7 +172,7 @@ cResultado := oNode:<span class="fn">Eval</span>( ;
 
 oNode:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Ejemplo de Integracion con Lua</h2>
+<h2 id="ejemplo-de-integracion-con-lua">Ejemplo de Integracion con Lua</h2>
 <pre>oLua := TLua():New()
 oLua:<span class="fn">Init</span>()
 
@@ -186,7 +186,7 @@ oLua:<span class="fn">Eval</span>( <span class="st">"result = 'Hola desde ' .. a
 
 oLua:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Ejemplo de Integracion con Go</h2>
+<h2 id="ejemplo-de-integracion-con-go">Ejemplo de Integracion con Go</h2>
 
 <p>Compila un paquete Go como biblioteca compartida:</p>
 
@@ -206,7 +206,7 @@ oGo:<span class="fn">Init</span>()
 
 oGo:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Ejemplo de Integracion con Rust</h2>
+<h2 id="ejemplo-de-integracion-con-rust">Ejemplo de Integracion con Rust</h2>
 
 <p>Compila Rust con <code>cdylib</code> y <code>extern "C"</code>:</p>
 
@@ -228,7 +228,7 @@ oRust:<span class="fn">Init</span>()
 
 oRust:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Consideraciones de Rendimiento</h2>
+<h2 id="consideraciones-de-rendimiento">Consideraciones de Rendimiento</h2>
 
 <table>
   <tr><th>Componente</th><th>Sobrecarga por Llamada</th><th>Ideal Para</th></tr>
@@ -250,7 +250,26 @@ oRust:<span class="fn">Shutdown</span>()</pre>
   Para acceder a funciones nativas de la plataforma en macOS, usa <strong>TSwift</strong>. La eleccion correcta
   depende de tu base de codigo existente y la experiencia de tu equipo.</p>
 </div>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#lenguajes-soportados" class="toc-h2">Lenguajes Soportados</a>
+  <a href="#patron-de-api-comun" class="toc-h2">Patron de API Comun</a>
+  <a href="#ejemplo-de-integracion-con-python" class="toc-h2">Ejemplo de Integracion con Python</a>
+  <a href="#ejemplo-de-integracion-con-nodejs" class="toc-h2">Ejemplo de Integracion con Node.js</a>
+  <a href="#ejemplo-de-integracion-con-lua" class="toc-h2">Ejemplo de Integracion con Lua</a>
+  <a href="#ejemplo-de-integracion-con-go" class="toc-h2">Ejemplo de Integracion con Go</a>
+  <a href="#ejemplo-de-integracion-con-rust" class="toc-h2">Ejemplo de Integracion con Rust</a>
+  <a href="#consideraciones-de-rendimiento" class="toc-h2">Consideraciones de Rendimiento</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

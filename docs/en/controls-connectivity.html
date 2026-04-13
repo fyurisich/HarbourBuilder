@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -103,7 +103,7 @@ calls across language boundaries.</p>
   library, and call functions as if they were native Harbour methods.</p>
 </div>
 
-<h2>Supported Languages</h2>
+<h2 id="supported-languages">Supported Languages</h2>
 
 <table>
   <tr><th>Component</th><th>Language</th><th>Mechanism</th><th>Use Case</th></tr>
@@ -118,7 +118,7 @@ calls across language boundaries.</p>
   <tr><td><strong>TRuby</strong></td><td>Ruby</td><td>Ruby C API (libruby)</td><td>Web scraping, text processing, DSLs.</td></tr>
 </table>
 
-<h2>Common API Pattern</h2>
+<h2 id="common-api-pattern">Common API Pattern</h2>
 
 <p>All connectivity components follow a consistent API pattern:</p>
 
@@ -132,7 +132,7 @@ calls across language boundaries.</p>
   <tr><td><code>:Shutdown()</code></td><td>&mdash;</td><td>Clean up and unload the runtime.</td></tr>
 </table>
 
-<h2>Python Integration Example</h2>
+<h2 id="python-integration-example">Python Integration Example</h2>
 
 <p>The <strong>TPython</strong> component is the most commonly used connectivity control.
 It embeds a full Python interpreter in your Harbour application:</p>
@@ -169,7 +169,7 @@ It embeds a full Python interpreter in your Harbour application:</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Node.js Integration Example</h2>
+<h2 id="nodejs-integration-example">Node.js Integration Example</h2>
 
 <pre>oNode := TNode():New()
 oNode:<span class="fn">Init</span>()
@@ -183,7 +183,7 @@ cResult := oNode:<span class="fn">Eval</span>( ;
 
 oNode:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Lua Integration Example</h2>
+<h2 id="lua-integration-example">Lua Integration Example</h2>
 
 <pre>oLua := TLua():New()
 oLua:<span class="fn">Init</span>()
@@ -198,7 +198,7 @@ oLua:<span class="fn">Eval</span>( <span class="st">"result = 'Hello from ' .. a
 
 oLua:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Go Integration Example</h2>
+<h2 id="go-integration-example">Go Integration Example</h2>
 
 <p>Compile a Go package as a shared library:</p>
 
@@ -218,7 +218,7 @@ oGo:<span class="fn">Init</span>()
 
 oGo:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Rust Integration Example</h2>
+<h2 id="rust-integration-example">Rust Integration Example</h2>
 
 <p>Compile Rust with <code>cdylib</code> and <code>extern "C"</code>:</p>
 
@@ -240,7 +240,7 @@ oRust:<span class="fn">Init</span>()
 
 oRust:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Architecture</h2>
+<h2 id="architecture">Architecture</h2>
 
 <div class="mermaid">
 graph TB
@@ -258,7 +258,7 @@ graph TB
     style B fill:#f0883e,stroke:#db6d28,color:#0d1117
 </div>
 
-<h2>Performance Considerations</h2>
+<h2 id="performance-considerations">Performance Considerations</h2>
 
 <table>
   <tr><th>Component</th><th>Overhead per Call</th><th>Best For</th></tr>
@@ -281,6 +281,25 @@ graph TB
   depends on your existing codebase and team expertise.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#supported-languages" class="toc-h2">Supported Languages</a>
+  <a href="#common-api-pattern" class="toc-h2">Common API Pattern</a>
+  <a href="#python-integration-example" class="toc-h2">Python Integration Example</a>
+  <a href="#nodejs-integration-example" class="toc-h2">Node.js Integration Example</a>
+  <a href="#lua-integration-example" class="toc-h2">Lua Integration Example</a>
+  <a href="#go-integration-example" class="toc-h2">Go Integration Example</a>
+  <a href="#rust-integration-example" class="toc-h2">Rust Integration Example</a>
+  <a href="#architecture" class="toc-h2">Architecture</a>
+  <a href="#performance-considerations" class="toc-h2">Performance Considerations</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

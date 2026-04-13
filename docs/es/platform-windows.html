@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html" class="active">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -96,7 +96,7 @@ y compilado con MSVC o BCC. Este es el backend mas maduro y completo en HarbourB
   </table>
 </div>
 
-<h2>Vision General de la Arquitectura</h2>
+<h2 id="vision-general-de-la-arquitectura">Vision General de la Arquitectura</h2>
 
 <p>Cada ventana y control de HarbourBuilder es una ventana Win32 nativa creada mediante <code>CreateWindowEx()</code>.
 El backend registra clases de ventana personalizadas al inicio. Los controles son controles comunes Win32 estandar:
@@ -104,7 +104,7 @@ El backend registra clases de ventana personalizadas al inicio. Los controles so
 <code>msctls_progress32</code>, <code>msctls_trackbar32</code>, <code>SysTreeView32</code>, <code>SysListView32</code>
 y <code>RichEdit</code>.</p>
 
-<h2>Manejo de Eventos (WndProc)</h2>
+<h2 id="manejo-de-eventos-wndproc">Manejo de Eventos (WndProc)</h2>
 <p>El backend de Windows usa un <code>WndProc</code> central (procedimiento de ventana) que recibe todos los mensajes
 del SO. Los despacha a los manejadores de eventos de Harbour:</p>
 
@@ -133,7 +133,7 @@ del SO. Los despacha a los manejadores de eventos de Harbour:</p>
    <span class="kw">return</span> <span class="fn">DefWindowProc</span>( hWnd, msg, wParam, lParam );
 }</pre>
 
-<h2>Soporte de Modo Oscuro</h2>
+<h2 id="soporte-de-modo-oscuro">Soporte de Modo Oscuro</h2>
 <p>HarbourBuilder en Windows sigue el tema del sistema. El modo oscuro se implementa usando:</p>
 
 <ul>
@@ -153,7 +153,7 @@ del SO. Los despacha a los manejadores de eventos de Harbour:</p>
   al inicio y configura todos los controles en consecuencia.</p>
 </div>
 
-<h2>Integracion de Scintilla</h2>
+<h2 id="integracion-de-scintilla">Integracion de Scintilla</h2>
 <p>El backend de Windows usa Scintilla 5.6.1 como biblioteca dinamica:</p>
 
 <table>
@@ -164,9 +164,9 @@ del SO. Los despacha a los manejadores de eventos de Harbour:</p>
 
 <p>Scintilla se carga en tiempo de ejecucion mediante <code>LoadLibrary()</code> y <code>GetProcAddress()</code>.</p>
 
-<h2>Opciones del Compilador</h2>
+<h2 id="opciones-del-compilador">Opciones del Compilador</h2>
 
-<h3>Compiladores Soportados</h3>
+<h3 id="compiladores-soportados">Compiladores Soportados</h3>
 <table>
   <tr><th>Compilador</th><th>Version</th><th>Notas</th></tr>
   <tr><td>MSVC 2022</td><td>19.3x</td><td>Recomendado. Soporte completo C++17, mejor optimizacion.</td></tr>
@@ -176,7 +176,7 @@ del SO. Los despacha a los manejadores de eventos de Harbour:</p>
   <tr><td>BCC</td><td>7.7</td><td>Embarcadero Borland C++ Compiler. Alternativa a MSVC.</td></tr>
 </table>
 
-<h3>Script de Construccion</h3>
+<h3 id="script-de-construccion">Script de Construccion</h3>
 <p>El script <code>build_win.bat</code> maneja todo el proceso de construccion:</p>
 
 <ol>
@@ -188,7 +188,7 @@ del SO. Los despacha a los manejadores de eventos de Harbour:</p>
   <li><strong>Enlazado</strong> — Enlaza contra <code>user32.lib</code>, <code>gdi32.lib</code>, <code>comctl32.lib</code>, <code>dwmapi.lib</code> y el runtime de Harbour.</li>
 </ol>
 
-<h2>Caracteristicas Especificas de la Plataforma</h2>
+<h2 id="caracteristicas-especificas-de-la-plataforma">Caracteristicas Especificas de la Plataforma</h2>
 
 <table>
   <tr><th>Caracteristica</th><th>Implementacion en Windows</th></tr>
@@ -203,7 +203,7 @@ del SO. Los despacha a los manejadores de eventos de Harbour:</p>
   <tr><td>Barras de titulo oscuras</td><td><code>DwmSetWindowAttribute()</code> con <code>DWMWA_USE_IMMERSIVE_DARK_MODE</code></td></tr>
 </table>
 
-<h2>Limitaciones Conocidas</h2>
+<h2 id="limitaciones-conocidas">Limitaciones Conocidas</h2>
 
 <ul>
   <li><strong>Requisito de manifiesto</strong> — Las aplicaciones de Windows necesitan un manifiesto incrustado para estilos visuales (ComCtl32 v6) y consciencia DPI.</li>
@@ -212,7 +212,7 @@ del SO. Los despacha a los manejadores de eventos de Harbour:</p>
   <li><strong>Windows XP/Vista/7/8</strong> — No soportados oficialmente. El backend apunta a APIs de Windows 10+.</li>
 </ul>
 
-<h2>Dependencias</h2>
+<h2 id="dependencias">Dependencias</h2>
 <table>
   <tr><th>Biblioteca</th><th>Proposito</th></tr>
   <tr><td><code>user32.lib</code></td><td>Gestion de ventanas, mensajes, controles</td></tr>
@@ -224,7 +224,28 @@ del SO. Los despacha a los manejadores de eventos de Harbour:</p>
   <tr><td><code>ole32.lib</code></td><td>Inicializacion COM, portapapeles</td></tr>
   <tr><td><code>shell32.lib</code></td><td>Funciones del shell, arrastrar y soltar</td></tr>
 </table>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#vision-general-de-la-arquitectura" class="toc-h2">Vision General de la Arquitectura</a>
+  <a href="#manejo-de-eventos-wndproc" class="toc-h2">Manejo de Eventos (WndProc)</a>
+  <a href="#soporte-de-modo-oscuro" class="toc-h2">Soporte de Modo Oscuro</a>
+  <a href="#integracion-de-scintilla" class="toc-h2">Integracion de Scintilla</a>
+  <a href="#opciones-del-compilador" class="toc-h2">Opciones del Compilador</a>
+  <a href="#compiladores-soportados" class="toc-h3">Compiladores Soportados</a>
+  <a href="#script-de-construccion" class="toc-h3">Script de Construccion</a>
+  <a href="#caracteristicas-especificas-de-la-plataforma" class="toc-h2">Caracteristicas Especificas de la Plataforma</a>
+  <a href="#limitaciones-conocidas" class="toc-h2">Limitaciones Conocidas</a>
+  <a href="#dependencias" class="toc-h2">Dependencias</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

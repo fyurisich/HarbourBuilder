@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -103,7 +103,7 @@ diretas atraves de fronteiras de linguagem.</p>
   biblioteca, e chame funcoes como se fossem metodos nativos Harbour.</p>
 </div>
 
-<h2>Linguagens Suportadas</h2>
+<h2 id="linguagens-suportadas">Linguagens Suportadas</h2>
 
 <table>
   <tr><th>Componente</th><th>Linguagem</th><th>Mecanismo</th><th>Caso de Uso</th></tr>
@@ -118,7 +118,7 @@ diretas atraves de fronteiras de linguagem.</p>
   <tr><td><strong>TRuby</strong></td><td>Ruby</td><td>Ruby C API (libruby)</td><td>Web scraping, processamento de texto, DSLs.</td></tr>
 </table>
 
-<h2>Padrao de API Comun</h2>
+<h2 id="padrao-de-api-comun">Padrao de API Comun</h2>
 
 <p>Todos os componentes de conectividade seguem um padrao de API consistente:</p>
 
@@ -132,7 +132,7 @@ diretas atraves de fronteiras de linguagem.</p>
   <tr><td><code>:Shutdown()</code></td><td>—</td><td>Limpa e descarrega o runtime.</td></tr>
 </table>
 
-<h2>Exemplo de Integracao Python</h2>
+<h2 id="exemplo-de-integracao-python">Exemplo de Integracao Python</h2>
 
 <p>O componente <strong>TPython</strong> e o mais comumente usado entre os controles de conectividade.
 Ele incorpora um interpretador Python completo na sua aplicacao Harbour:</p>
@@ -169,7 +169,7 @@ Ele incorpora um interpretador Python completo na sua aplicacao Harbour:</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Exemplo de Integracao Node.js</h2>
+<h2 id="exemplo-de-integracao-nodejs">Exemplo de Integracao Node.js</h2>
 
 <pre>oNode := TNode():New()
 oNode:<span class="fn">Init</span>()
@@ -183,7 +183,7 @@ cResult := oNode:<span class="fn">Eval</span>( ;
 
 oNode:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Exemplo de Integracao Lua</h2>
+<h2 id="exemplo-de-integracao-lua">Exemplo de Integracao Lua</h2>
 
 <pre>oLua := TLua():New()
 oLua:<span class="fn">Init</span>()
@@ -198,7 +198,7 @@ oLua:<span class="fn">Eval</span>( <span class="st">"result = 'Hello from ' .. a
 
 oLua:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Exemplo de Integracao Go</h2>
+<h2 id="exemplo-de-integracao-go">Exemplo de Integracao Go</h2>
 
 <p>Compile um pacote Go como biblioteca compartilhada:</p>
 
@@ -218,7 +218,7 @@ oGo:<span class="fn">Init</span>()
 
 oGo:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Exemplo de Integracao Rust</h2>
+<h2 id="exemplo-de-integracao-rust">Exemplo de Integracao Rust</h2>
 
 <p>Compile Rust com <code>cdylib</code> e <code>extern "C"</code>:</p>
 
@@ -240,7 +240,7 @@ oRust:<span class="fn">Init</span>()
 
 oRust:<span class="fn">Shutdown</span>()</pre>
 
-<h2>Arquitetura</h2>
+<h2 id="arquitetura">Arquitetura</h2>
 
 <div class="mermaid">
 graph TB
@@ -258,7 +258,7 @@ graph TB
     style B fill:#f0883e,stroke:#db6d28,color:#0d1117
 </div>
 
-<h2>Consideracoes de Desempenho</h2>
+<h2 id="consideracoes-de-desempenho">Consideracoes de Desempenho</h2>
 
 <table>
   <tr><th>Componente</th><th>Overhead por Chamada</th><th>Melhor Para</th></tr>
@@ -281,6 +281,25 @@ graph TB
   depende da sua base de codigo existente e da expertise da equipe.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#linguagens-suportadas" class="toc-h2">Linguagens Suportadas</a>
+  <a href="#padrao-de-api-comun" class="toc-h2">Padrao de API Comun</a>
+  <a href="#exemplo-de-integracao-python" class="toc-h2">Exemplo de Integracao Python</a>
+  <a href="#exemplo-de-integracao-nodejs" class="toc-h2">Exemplo de Integracao Node.js</a>
+  <a href="#exemplo-de-integracao-lua" class="toc-h2">Exemplo de Integracao Lua</a>
+  <a href="#exemplo-de-integracao-go" class="toc-h2">Exemplo de Integracao Go</a>
+  <a href="#exemplo-de-integracao-rust" class="toc-h2">Exemplo de Integracao Rust</a>
+  <a href="#arquitetura" class="toc-h2">Arquitetura</a>
+  <a href="#consideracoes-de-desempenho" class="toc-h2">Consideracoes de Desempenho</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

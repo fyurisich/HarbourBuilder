@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -102,7 +102,7 @@ are defined in <code>hbbuilder.ch</code> and are expanded at compile time into H
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Command Expansion Architecture</h2>
+<h2 id="command-expansion-architecture">Command Expansion Architecture</h2>
 
 <div class="mermaid">
 graph LR
@@ -120,7 +120,7 @@ graph LR
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Form Commands</h2>
+<h2 id="form-commands">Form Commands</h2>
 
 <table>
   <tr><th>Command</th><th>Syntax</th><th>Description</th><th>OOP Equivalent</th></tr>
@@ -150,7 +150,7 @@ graph LR
   </tr>
 </table>
 
-<h3>Form Command Example</h3>
+<h3 id="form-command-example">Form Command Example</h3>
 
 <pre><span class="cm">--- xBase command style ---</span>
 <span class="kw">local</span> oForm
@@ -173,9 +173,9 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
 <span class="fn">MsgRun</span>( oForm )   <span class="cm">/// activates and enters event loop</span></pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Control Creation Commands</h2>
+<h2 id="control-creation-commands">Control Creation Commands</h2>
 
-<h3>@ row, col Syntax (Screen Coordinate Style)</h3>
+<h3 id="row-col-syntax-screen-coordinate-style">@ row, col Syntax (Screen Coordinate Style)</h3>
 <p>The classic Clipper-style <code>@ row, col</code> syntax creates controls at specific coordinates within a parent container:</p>
 
 <table>
@@ -248,7 +248,7 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
   </tr>
 </table>
 
-<h3>@ row, col Example</h3>
+<h3 id="row-col-example">@ row, col Example</h3>
 
 <pre><span class="kw">local</span> oForm, oBtn, oLabel, oEdit
 
@@ -267,7 +267,7 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
 <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span></pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Property Modifier Commands</h2>
+<h2 id="property-modifier-commands">Property Modifier Commands</h2>
 <p>These commands can be appended to any control definition to set additional properties:</p>
 
 <table>
@@ -289,7 +289,7 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
   <tr><td><code>MESSAGE</code></td><td><code>MESSAGE &lt;cHint&gt;</code></td><td>Sets the tooltip/hint text.</td></tr>
 </table>
 
-<h3>Modifier Example</h3>
+<h3 id="modifier-example">Modifier Example</h3>
 
 <pre>@ <span class="nb">30</span>, <span class="nb">40</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"&lt;S&gt;ave"</span> ;
    <span class="cmd">OF</span> oForm ;
@@ -301,7 +301,7 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
    <span class="cmd">MESSAGE</span> <span class="st">"Save current changes (Ctrl+S)"</span></pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Menu and Toolbar Commands</h2>
+<h2 id="menu-and-toolbar-commands">Menu and Toolbar Commands</h2>
 
 <table>
   <tr><th>Command</th><th>Syntax</th><th>Description</th></tr>
@@ -328,7 +328,7 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Dialog Commands</h2>
+<h2 id="dialog-commands">Dialog Commands</h2>
 
 <table>
   <tr><th>Command</th><th>Syntax</th><th>Description</th></tr>
@@ -360,7 +360,7 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Complete Command Summary</h2>
+<h2 id="complete-command-summary">Complete Command Summary</h2>
 
 <table>
   <tr><th>Command</th><th>Category</th><th>Header File</th></tr>
@@ -393,6 +393,27 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
   to OOP-style code at any time &mdash; the two-way parser understands both.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#command-expansion-architecture" class="toc-h2">Command Expansion Architecture</a>
+  <a href="#form-commands" class="toc-h2">Form Commands</a>
+  <a href="#form-command-example" class="toc-h3">Form Command Example</a>
+  <a href="#control-creation-commands" class="toc-h2">Control Creation Commands</a>
+  <a href="#row-col-syntax-screen-coordinate-style" class="toc-h3">@ row, col Syntax (Screen Coordinate Style)</a>
+  <a href="#row-col-example" class="toc-h3">@ row, col Example</a>
+  <a href="#property-modifier-commands" class="toc-h2">Property Modifier Commands</a>
+  <a href="#modifier-example" class="toc-h3">Modifier Example</a>
+  <a href="#menu-and-toolbar-commands" class="toc-h2">Menu and Toolbar Commands</a>
+  <a href="#dialog-commands" class="toc-h2">Dialog Commands</a>
+  <a href="#complete-command-summary" class="toc-h2">Complete Command Summary</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

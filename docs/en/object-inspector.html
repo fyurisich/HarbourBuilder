@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html" class="active">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -92,7 +92,7 @@
 <p>The Object Inspector is a properties and events editor similar to Delphi and C++Builder.
 It allows you to visually configure control properties and assign event handlers without writing code manually.</p>
 
-<h2>Overview</h2>
+<h2 id="overview">Overview</h2>
 
 <p>The Object Inspector has two main tabs:</p>
 <ul>
@@ -108,9 +108,9 @@ It allows you to visually configure control properties and assign event handlers
   Changes you make are instantly reflected in the designer and code.</p>
 </div>
 
-<h2>Properties Tab</h2>
+<h2 id="properties-tab">Properties Tab</h2>
 
-<h3>Categorized Grid</h3>
+<h3 id="categorized-grid">Categorized Grid</h3>
 <p>Properties are organized into categories for easier navigation:</p>
 
 <table>
@@ -122,7 +122,7 @@ It allows you to visually configure control properties and assign event handlers
   <tr><td><strong>Font</strong></td><td>cFontName, nFontSize, lFontBold, lFontItalic</td></tr>
 </table>
 
-<h3>Property Editors</h3>
+<h3 id="property-editors">Property Editors</h3>
 <p>Different property types use different editors:</p>
 
 <table>
@@ -135,7 +135,7 @@ It allows you to visually configure control properties and assign event handlers
   <tr><td>Enum</td><td>Dropdown list</td><td>BorderStyle, Position, WindowState</td></tr>
 </table>
 
-<h3>Dropdown Editors for Enumerations</h3>
+<h3 id="dropdown-editors-for-enumerations">Dropdown Editors for Enumerations</h3>
 <p>Properties with predefined values show dropdown lists:</p>
 
 <table>
@@ -147,12 +147,12 @@ It allows you to visually configure control properties and assign event handlers
   <tr><td><code>nCursor</code></td><td>0=crDefault, 1=crArrow, 2=crIBeam, 3=crHand, etc.</td></tr>
 </table>
 
-<h2>Events Tab</h2>
+<h2 id="events-tab">Events Tab</h2>
 
 <p>The Events tab shows all available events for the selected control type. The event list is dynamic
 and retrieved via <code>UI_GETALLEVENTS</code> from the backend.</p>
 
-<h3>Assigning Event Handlers</h3>
+<h3 id="assigning-event-handlers">Assigning Event Handlers</h3>
 
 <ol>
   <li><strong>Double-click</strong> an event to auto-generate a handler</li>
@@ -167,7 +167,7 @@ oBtn:<span class="fn">OnClick</span> := { || <span class="fn">Button1Click</span
    <span class="fn">MsgInfo</span>( <span class="st">"Button clicked!"</span> )
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Common Events</h3>
+<h3 id="common-events">Common Events</h3>
 
 <table>
   <tr><th>Event</th><th>Fires When</th><th>Available For</th></tr>
@@ -193,7 +193,7 @@ oBtn:<span class="fn">OnClick</span> := { || <span class="fn">Button1Click</span
   <tr><td><code>OnPaint</code></td><td>Form needs repainting</td><td>Form only</td></tr>
 </table>
 
-<h2>Property Types (C++ Backend)</h2>
+<h2 id="property-types-c-backend">Property Types (C++ Backend)</h2>
 
 <p>In the C++ backend, properties are defined with types:</p>
 
@@ -206,9 +206,9 @@ oBtn:<span class="fn">OnClick</span> := { || <span class="fn">Button1Click</span
   <tr><td><code>PT_FONT</code></td><td>5</td><td>Font properties (name, size, style)</td></tr>
 </table>
 
-<h2>Code Examples</h2>
+<h2 id="code-examples">Code Examples</h2>
 
-<h3>Setting Properties via Object Inspector</h3>
+<h3 id="setting-properties-via-object-inspector">Setting Properties via Object Inspector</h3>
 <p>When you edit properties in the inspector, the generated code looks like:</p>
 
 <pre><span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
@@ -221,7 +221,7 @@ oBtn:<span class="fn">OnClick</span> := { || <span class="fn">Button1Click</span
    ::<span class="prop">nWindowState</span> := <span class="nb">0</span>  <span class="comment">// wsNormal</span>
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Event Assignment in Code</h3>
+<h3 id="event-assignment-in-code">Event Assignment in Code</h3>
 <pre><span class="comment">// Inline code block</span>
 oBtn:<span class="fn">OnClick</span> := { || <span class="fn">MsgInfo</span>( <span class="st">"Hello!"</span> ) }
 
@@ -232,7 +232,7 @@ oBtn:<span class="fn">OnClick</span> := { || ::<span class="fn">HandleButtonClic
    <span class="fn">MsgInfo</span>( <span class="st">"Button was clicked"</span> )
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Tips for Using Object Inspector</h2>
+<h2 id="tips-for-using-object-inspector">Tips for Using Object Inspector</h2>
 
 <ol>
   <li><strong>Use categories</strong> — Expand categories to find properties quickly</li>
@@ -244,6 +244,29 @@ oBtn:<span class="fn">OnClick</span> := { || ::<span class="fn">HandleButtonClic
   <li><strong>Reset to default</strong> — Right-click a property to reset to default value</li>
 </ol>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#overview" class="toc-h2">Overview</a>
+  <a href="#properties-tab" class="toc-h2">Properties Tab</a>
+  <a href="#categorized-grid" class="toc-h3">Categorized Grid</a>
+  <a href="#property-editors" class="toc-h3">Property Editors</a>
+  <a href="#dropdown-editors-for-enumerations" class="toc-h3">Dropdown Editors for Enumerations</a>
+  <a href="#events-tab" class="toc-h2">Events Tab</a>
+  <a href="#assigning-event-handlers" class="toc-h3">Assigning Event Handlers</a>
+  <a href="#common-events" class="toc-h3">Common Events</a>
+  <a href="#property-types-c-backend" class="toc-h2">Property Types (C++ Backend)</a>
+  <a href="#code-examples" class="toc-h2">Code Examples</a>
+  <a href="#setting-properties-via-object-inspector" class="toc-h3">Setting Properties via Object Inspector</a>
+  <a href="#event-assignment-in-code" class="toc-h3">Event Assignment in Code</a>
+  <a href="#tips-for-using-object-inspector" class="toc-h2">Tips for Using Object Inspector</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

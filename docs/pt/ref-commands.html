@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -101,7 +101,7 @@ sao definidos em <code>hbbuilder.ch</code> e sao expandidos em tempo de compilac
   os comandos sao simplesmente um atalho mais legivel.</p>
 </div>
 
-<h2>Arquitetura de Expansao de Comandos</h2>
+<h2 id="arquitetura-de-expansao-de-comandos">Arquitetura de Expansao de Comandos</h2>
 
 <div class="mermaid">
 graph LR
@@ -118,7 +118,7 @@ graph LR
     style F fill:#3fb950,stroke:#2ea043,color:#0d1117
 </div>
 
-<h2>Comandos de Formulario</h2>
+<h2 id="comandos-de-formulario">Comandos de Formulario</h2>
 
 <table>
   <tr><th>Comando</th><th>Sintaxe</th><th>Descricao</th><th>Equivalente OOP</th></tr>
@@ -148,9 +148,9 @@ graph LR
   </tr>
 </table>
 
-<h2>Comandos de Criacao de Controles</h2>
+<h2 id="comandos-de-criacao-de-controles">Comandos de Criacao de Controles</h2>
 
-<h3>Sintaxe @ row, col (Estilo de Coordenadas de Tela)</h3>
+<h3 id="sintaxe-row-col-estilo-de-coordenadas-de-tela">Sintaxe @ row, col (Estilo de Coordenadas de Tela)</h3>
 <p>A sintaxe classica estilo Clipper <code>@ row, col</code> cria controles em coordenadas especificas dentro de um container pai:</p>
 
 <table>
@@ -168,7 +168,7 @@ graph LR
   <tr><td><code>@ ... TIMER</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; TIMER &lt;oTmr&gt; INTERVAL &lt;nMs&gt; OF &lt;oParent&gt; [ACTION &lt;codigo&gt;]</code></td><td>Cria um controle de timer (nao visual).</td></tr>
 </table>
 
-<h2>Comandos Modificadores de Propriedade</h2>
+<h2 id="comandos-modificadores-de-propriedade">Comandos Modificadores de Propriedade</h2>
 <p>Estes comandos podem ser adicionados a qualquer definicao de controle para definir propriedades adicionais:</p>
 
 <table>
@@ -190,7 +190,7 @@ graph LR
   <tr><td><code>MESSAGE</code></td><td><code>MESSAGE &lt;cHint&gt;</code></td><td>Define o texto de dica/tooltip.</td></tr>
 </table>
 
-<h2>Comandos de Menu e Barra de Ferramentas</h2>
+<h2 id="comandos-de-menu-e-barra-de-ferramentas">Comandos de Menu e Barra de Ferramentas</h2>
 
 <table>
   <tr><th>Comando</th><th>Sintaxe</th><th>Descricao</th></tr>
@@ -200,7 +200,7 @@ graph LR
   <tr><td><code>DEFINE BUTTON</code></td><td><code>DEFINE BUTTON &lt;oTbBtn&gt; OF &lt;oTb&gt; PROMPT &lt;cCaption&gt; [ACTION &lt;codigo&gt;]</code></td><td>Adiciona um botao a uma barra de ferramentas.</td></tr>
 </table>
 
-<h2>Comandos de Dialogo</h2>
+<h2 id="comandos-de-dialogo">Comandos de Dialogo</h2>
 
 <table>
   <tr><th>Comando</th><th>Sintaxe</th><th>Descricao</th></tr>
@@ -211,7 +211,7 @@ graph LR
   <tr><td><code>MsgRun()</code></td><td><code>MsgRun( &lt;oForm&gt; )</code></td><td>Ativa um formulario e entra no loop de eventos. Equivalente a ACTIVATE FORM.</td></tr>
 </table>
 
-<h2>Resumo Completo de Comandos</h2>
+<h2 id="resumo-completo-de-comandos">Resumo Completo de Comandos</h2>
 
 <table>
   <tr><th>Comando</th><th>Categoria</th><th>Arquivo de Header</th></tr>
@@ -244,6 +244,24 @@ graph LR
   para codigo estilo OOP a qualquer momento — o parser bidirecional compreende ambos.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#arquitetura-de-expansao-de-comandos" class="toc-h2">Arquitetura de Expansao de Comandos</a>
+  <a href="#comandos-de-formulario" class="toc-h2">Comandos de Formulario</a>
+  <a href="#comandos-de-criacao-de-controles" class="toc-h2">Comandos de Criacao de Controles</a>
+  <a href="#sintaxe-row-col-estilo-de-coordenadas-de-tela" class="toc-h3">Sintaxe @ row, col (Estilo de Coordenadas de Tela)</a>
+  <a href="#comandos-modificadores-de-propriedade" class="toc-h2">Comandos Modificadores de Propriedade</a>
+  <a href="#comandos-de-menu-e-barra-de-ferramentas" class="toc-h2">Comandos de Menu e Barra de Ferramentas</a>
+  <a href="#comandos-de-dialogo" class="toc-h2">Comandos de Dialogo</a>
+  <a href="#resumo-completo-de-comandos" class="toc-h2">Resumo Completo de Comandos</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

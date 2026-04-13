@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -103,7 +103,7 @@ experience with full control over execution.</p>
   breakpoint hits, and accurate call stack information at all times.</p>
 </div>
 
-<h2>Architecture</h2>
+<h2 id="architecture">Architecture</h2>
 
 <div class="mermaid">
 graph TB
@@ -123,7 +123,7 @@ graph TB
     style F fill:#f0883e,stroke:#db6d28,color:#0d1117
 </div>
 
-<h2>Compilation for Debugging</h2>
+<h2 id="compilation-for-debugging">Compilation for Debugging</h2>
 
 <p>To generate debuggable bytecode, compile with these flags:</p>
 
@@ -138,7 +138,7 @@ graph TB
 <p>The <code>.hrb</code> file contains all the information the debugger needs to map bytecode
 instructions back to source code lines, display variable names, and reconstruct the call stack.</p>
 
-<h2>The Debug Hook: hb_dbg_SetEntry</h2>
+<h2 id="the-debug-hook-hb_dbg_setentry">The Debug Hook: hb_dbg_SetEntry</h2>
 
 <p>At the core of Harbour's debugging support is the <code>hb_dbg_SetEntry()</code> hook function.
 This callback is invoked by the Harbour VM on every bytecode instruction when debug mode is active,
@@ -160,7 +160,7 @@ allowing the IDE to:</p>
   and variable context on every step.</p>
 </div>
 
-<h2>Debug Toolbar</h2>
+<h2 id="debug-toolbar">Debug Toolbar</h2>
 
 <p>The debug toolbar provides five essential execution controls:</p>
 
@@ -173,7 +173,7 @@ allowing the IDE to:</p>
   <tr><td>&#9632;</td><td><strong>Shift+F5</strong></td><td><strong>Stop</strong></td><td>Terminate the debug session</td></tr>
 </table>
 
-<h2>Dockable Debug Panels</h2>
+<h2 id="dockable-debug-panels">Dockable Debug Panels</h2>
 
 <p>The debugger provides five dockable tabs that can be arranged to suit your workflow:</p>
 
@@ -186,7 +186,7 @@ allowing the IDE to:</p>
   <tr><td><strong>Output</strong></td><td>Console output from the debugged application, including <code>? </code> and <code>?? </code> output, <code>MsgInfo()</code> logs, and debug trace messages.</td></tr>
 </table>
 
-<h2>Setting Breakpoints</h2>
+<h2 id="setting-breakpoints">Setting Breakpoints</h2>
 
 <p>Click in the gutter next to any line number to toggle a breakpoint. Breakpoints are indicated
 by a red dot:</p>
@@ -197,7 +197,7 @@ by a red dot:</p>
   <li><strong>Hit count breakpoint</strong> &mdash; pause only after the breakpoint has been hit N times.</li>
 </ul>
 
-<h2>Debug Session Workflow</h2>
+<h2 id="debug-session-workflow">Debug Session Workflow</h2>
 
 <ol>
   <li><strong>Compile with debug flags</strong> &mdash; Press <strong>F9</strong> to build; the IDE automatically adds <code>-gh -b</code> when debugging.</li>
@@ -215,7 +215,7 @@ by a red dot:</p>
   in a tooltip. This works for local variables, object properties, and array elements.</p>
 </div>
 
-<h2>Unit Test Coverage</h2>
+<h2 id="unit-test-coverage">Unit Test Coverage</h2>
 
 <p>The debugger subsystem is covered by <strong>16 unit tests</strong> that verify:</p>
 
@@ -239,7 +239,7 @@ by a red dot:</p>
   <tr><td>16</td><td>Debug session cleanup</td><td>Resources are freed on stop</td></tr>
 </table>
 
-<h2>Debugger Shortcuts Summary</h2>
+<h2 id="debugger-shortcuts-summary">Debugger Shortcuts Summary</h2>
 
 <table>
   <tr><th>Shortcut</th><th>Action</th></tr>
@@ -259,6 +259,25 @@ by a red dot:</p>
   the <code>-gh -b</code> flags.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#architecture" class="toc-h2">Architecture</a>
+  <a href="#compilation-for-debugging" class="toc-h2">Compilation for Debugging</a>
+  <a href="#the-debug-hook-hb_dbg_setentry" class="toc-h2">The Debug Hook: hb_dbg_SetEntry</a>
+  <a href="#debug-toolbar" class="toc-h2">Debug Toolbar</a>
+  <a href="#dockable-debug-panels" class="toc-h2">Dockable Debug Panels</a>
+  <a href="#setting-breakpoints" class="toc-h2">Setting Breakpoints</a>
+  <a href="#debug-session-workflow" class="toc-h2">Debug Session Workflow</a>
+  <a href="#unit-test-coverage" class="toc-h2">Unit Test Coverage</a>
+  <a href="#debugger-shortcuts-summary" class="toc-h2">Debugger Shortcuts Summary</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

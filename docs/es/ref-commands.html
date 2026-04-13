@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -92,7 +92,7 @@ estan definidos en <code>hbbuilder.ch</code> y se expanden en tiempo de compilac
   tiempo de compilacion. Puedes usar cualquiera de los dos estilos; los comandos son simplemente una abreviatura mas legible.</p>
 </div>
 
-<h2>Arquitectura de Expansion de Comandos</h2>
+<h2 id="arquitectura-de-expansion-de-comandos">Arquitectura de Expansion de Comandos</h2>
 
 <p>Cuando escribes comandos xBase, el preprocesador de Harbour los traduce a llamadas OOP:</p>
 
@@ -116,7 +116,7 @@ oForm:<span class="fn">OnInit</span>  := { || <span class="fn">MsgInfo</span>( <
 oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
 <span class="fn">MsgRun</span>( oForm )   <span class="cm">/// activa y entra en bucle de eventos</span></pre>
 
-<h2>Comandos de Formulario</h2>
+<h2 id="comandos-de-formulario">Comandos de Formulario</h2>
 
 <table>
   <tr><th>Comando</th><th>Sintaxis</th><th>Descripcion</th></tr>
@@ -126,7 +126,7 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
   <tr><td><code>ON CLOSE</code></td><td><code>ON CLOSE &lt;oForm&gt; &lt;codigo&gt;</code></td><td>Asigna un bloque de codigo de limpieza al evento OnClose del formulario.</td></tr>
 </table>
 
-<h2>Comandos de Creacion de Controles (@ row, col)</h2>
+<h2 id="comandos-de-creacion-de-controles-row-col">Comandos de Creacion de Controles (@ row, col)</h2>
 <p>La sintaxis clasica estilo Clipper <code>@ row, col</code> crea controles en coordenadas especificas dentro de un contenedor padre:</p>
 
 <table>
@@ -143,7 +143,7 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
   <tr><td><code>@ ... TIMER</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; TIMER &lt;oTmr&gt; INTERVAL &lt;nMs&gt; OF &lt;oParent&gt; [ACTION &lt;codigo&gt;]</code></td><td>Crea un control de temporizador (no visual).</td></tr>
 </table>
 
-<h2>Comandos de Modificadores de Propiedad</h2>
+<h2 id="comandos-de-modificadores-de-propiedad">Comandos de Modificadores de Propiedad</h2>
 <p>Estos comandos se pueden agregar a cualquier definicion de control para establecer propiedades adicionales:</p>
 
 <table>
@@ -161,7 +161,7 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
   <tr><td><code>INTERVAL</code></td><td><code>INTERVAL &lt;nMs&gt;</code></td><td>Establece el intervalo del temporizador en milisegundos.</td></tr>
 </table>
 
-<h2>Comandos de Dialogo</h2>
+<h2 id="comandos-de-dialogo">Comandos de Dialogo</h2>
 
 <table>
   <tr><th>Comando</th><th>Sintaxis</th><th>Descripcion</th></tr>
@@ -179,7 +179,23 @@ oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
   en tiempo de ejecucion. El Disenador de Formularios genera comandos xBase por defecto, pero puedes cambiar
   a codigo estilo OOP en cualquier momento — el analizador bidireccional comprende ambos.</p>
 </div>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#arquitectura-de-expansion-de-comandos" class="toc-h2">Arquitectura de Expansion de Comandos</a>
+  <a href="#comandos-de-formulario" class="toc-h2">Comandos de Formulario</a>
+  <a href="#comandos-de-creacion-de-controles-row-col" class="toc-h2">Comandos de Creacion de Controles (@ row, col)</a>
+  <a href="#comandos-de-modificadores-de-propiedad" class="toc-h2">Comandos de Modificadores de Propiedad</a>
+  <a href="#comandos-de-dialogo" class="toc-h2">Comandos de Dialogo</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

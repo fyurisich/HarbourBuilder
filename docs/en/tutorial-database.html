@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -96,14 +96,14 @@
 and Delete operations using SQLite. You will connect to a database, display records in a TBrowse
 grid, and navigate them with TDBNavigator.</p>
 
-<h2>Step 1: Create the Project</h2>
+<h2 id="step-1-create-the-project">Step 1: Create the Project</h2>
 <ol>
   <li>Create a new project called <code>ContactsDB</code> via <strong>File &rarr; New Project</strong>.</li>
   <li>Open <code>main.prg</code> in the Code Editor.</li>
   <li>We will build a contacts manager with name, email, and phone fields.</li>
 </ol>
 
-<h2>Step 2: Connect to SQLite</h2>
+<h2 id="step-2-connect-to-sqlite">Step 2: Connect to SQLite</h2>
 <p>Drop a <strong>TSQLite</strong> component from the <strong>Data Access</strong> palette tab onto the form, or create
 it in code. HarbourBuilder's SQLite component handles the connection and query execution.</p>
 
@@ -132,7 +132,7 @@ it in code. HarbourBuilder's SQLite component handles the connection and query e
   applications &mdash; no installation, no configuration, and it works on all platforms.</p>
 </div>
 
-<h2>Step 3: Create the Table</h2>
+<h2 id="step-3-create-the-table">Step 3: Create the Table</h2>
 <p>Use <code>Execute()</code> to run a <code>CREATE TABLE IF NOT EXISTS</code> statement. This is safe to call
 every time the application starts.</p>
 
@@ -147,7 +147,7 @@ every time the application starts.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Step 4: Build the User Interface</h2>
+<h2 id="step-4-build-the-user-interface">Step 4: Build the User Interface</h2>
 <p>The UI consists of a TBrowse grid to display records, input fields for editing, a TDBNavigator
 for record navigation, and CRUD buttons.</p>
 
@@ -205,9 +205,9 @@ for record navigation, and CRUD buttons.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Step 5: Implement CRUD Operations</h2>
+<h2 id="step-5-implement-crud-operations">Step 5: Implement CRUD Operations</h2>
 
-<h3>INSERT &mdash; Adding a New Record</h3>
+<h3 id="insert-adding-a-new-record">INSERT &mdash; Adding a New Record</h3>
 <pre><span class="kw">static function</span> <span class="fn">DoInsert</span>( oDB, oBrw, oGetName, oGetEmail, oGetPhone )
 
    <span class="kw">local</span> cName  := oGetName:<span class="fn">GetValue</span>()
@@ -227,7 +227,7 @@ for record navigation, and CRUD buttons.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>SELECT &mdash; Refreshing the Grid</h3>
+<h3 id="select-refreshing-the-grid">SELECT &mdash; Refreshing the Grid</h3>
 <pre><span class="kw">static function</span> <span class="fn">RefreshBrowse</span>( oDB, oBrw )
 
    <span class="kw">local</span> aRows := oDB:<span class="fn">QueryToArray</span>( <span class="st">"SELECT id, name, email, phone FROM contacts ORDER BY name"</span> )
@@ -237,7 +237,7 @@ for record navigation, and CRUD buttons.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>UPDATE &mdash; Modifying the Selected Record</h3>
+<h3 id="update-modifying-the-selected-record">UPDATE &mdash; Modifying the Selected Record</h3>
 <pre><span class="kw">static function</span> <span class="fn">DoUpdate</span>( oDB, oBrw, oGetName, oGetEmail, oGetPhone )
 
    <span class="kw">local</span> nId    := oBrw:<span class="fn">GetValue</span>( <span class="nb">1</span> )  <span class="cm">// Column 1 = id</span>
@@ -258,7 +258,7 @@ for record navigation, and CRUD buttons.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>DELETE &mdash; Removing the Selected Record</h3>
+<h3 id="delete-removing-the-selected-record">DELETE &mdash; Removing the Selected Record</h3>
 <pre><span class="kw">static function</span> <span class="fn">DoDelete</span>( oDB, oBrw )
 
    <span class="kw">local</span> nId := oBrw:<span class="fn">GetValue</span>( <span class="nb">1</span> )
@@ -276,7 +276,7 @@ for record navigation, and CRUD buttons.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Row Selection &mdash; Populating Input Fields</h3>
+<h3 id="row-selection-populating-input-fields">Row Selection &mdash; Populating Input Fields</h3>
 <pre><span class="kw">static function</span> <span class="fn">OnRowSelect</span>( oBrw, oGetName, oGetEmail, oGetPhone )
 
    oGetName:<span class="fn">SetValue</span>(  oBrw:<span class="fn">GetValue</span>( <span class="nb">2</span> ) )
@@ -285,7 +285,7 @@ for record navigation, and CRUD buttons.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Step 6: Using TDBNavigator</h2>
+<h2 id="step-6-using-tdbnavigator">Step 6: Using TDBNavigator</h2>
 <p>The <strong>TDBNavigator</strong> control provides standard navigation buttons (First, Previous, Next, Last)
 that work directly with the TBrowse grid. Drop it from the <strong>Data Access</strong> palette and set its
 <code>oBrowse</code> property to your TBrowse instance.</p>
@@ -298,7 +298,7 @@ that work directly with the TBrowse grid. Drop it from the <strong>Data Access</
   directly into SQL strings. HarbourBuilder's SQLite component handles escaping automatically.</p>
 </div>
 
-<h2>Application Architecture</h2>
+<h2 id="application-architecture">Application Architecture</h2>
 
 <div class="mermaid">
 graph TD
@@ -321,6 +321,28 @@ graph TD
   tutorial to build a web application alongside your desktop app.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#step-1-create-the-project" class="toc-h2">Step 1: Create the Project</a>
+  <a href="#step-2-connect-to-sqlite" class="toc-h2">Step 2: Connect to SQLite</a>
+  <a href="#step-3-create-the-table" class="toc-h2">Step 3: Create the Table</a>
+  <a href="#step-4-build-the-user-interface" class="toc-h2">Step 4: Build the User Interface</a>
+  <a href="#step-5-implement-crud-operations" class="toc-h2">Step 5: Implement CRUD Operations</a>
+  <a href="#insert-adding-a-new-record" class="toc-h3">INSERT &amp;mdash; Adding a New Record</a>
+  <a href="#select-refreshing-the-grid" class="toc-h3">SELECT &amp;mdash; Refreshing the Grid</a>
+  <a href="#update-modifying-the-selected-record" class="toc-h3">UPDATE &amp;mdash; Modifying the Selected Record</a>
+  <a href="#delete-removing-the-selected-record" class="toc-h3">DELETE &amp;mdash; Removing the Selected Record</a>
+  <a href="#row-selection-populating-input-fields" class="toc-h3">Row Selection &amp;mdash; Populating Input Fields</a>
+  <a href="#step-6-using-tdbnavigator" class="toc-h2">Step 6: Using TDBNavigator</a>
+  <a href="#application-architecture" class="toc-h2">Application Architecture</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

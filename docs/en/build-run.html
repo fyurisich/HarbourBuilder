@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html" class="active">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -102,7 +102,7 @@ your .prg files to launching the resulting executable.</p>
   no command-line scripts, no manual steps.</p>
 </div>
 
-<h2>The 7-Step Build Process</h2>
+<h2 id="the-7-step-build-process">The 7-Step Build Process</h2>
 
 <div class="mermaid">
 graph LR
@@ -121,7 +121,7 @@ graph LR
     style S7 fill:#3fb950,stroke:#2ea043,color:#0d1117
 </div>
 
-<h3>Step Details</h3>
+<h3 id="step-details">Step Details</h3>
 
 <table>
   <tr><th>Step</th><th>Tool</th><th>Input</th><th>Output</th><th>Description</th></tr>
@@ -134,7 +134,7 @@ graph LR
   <tr><td><strong>7. Launch</strong></td><td>IDE</td><td>.exe</td><td>running app</td><td>Launches the compiled application for testing.</td></tr>
 </table>
 
-<h2>Progress Dialog</h2>
+<h2 id="progress-dialog">Progress Dialog</h2>
 
 <p>During the build, a progress dialog shows real-time status of each step:</p>
 
@@ -145,7 +145,7 @@ graph LR
   <li><strong>Log output</strong> &mdash; raw compiler and linker output shown in a scrollable text area.</li>
 </ul>
 
-<h2>Error Dialog</h2>
+<h2 id="error-dialog">Error Dialog</h2>
 
 <p>If the build fails, an error dialog appears with:</p>
 
@@ -156,7 +156,7 @@ graph LR
   <li><strong>Double-click to navigate</strong> &mdash; clicking an error opens the source file at the exact line.</li>
 </ul>
 
-<h2>Build Messages Panel</h2>
+<h2 id="build-messages-panel">Build Messages Panel</h2>
 
 <p>The Build Messages panel at the bottom of the IDE shows the output from every build:</p>
 
@@ -174,7 +174,7 @@ graph LR
   the source editor. The editor highlights the problematic line for quick identification.</p>
 </div>
 
-<h2>Keyboard Shortcuts</h2>
+<h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
 
 <table>
   <tr><th>Shortcut</th><th>Action</th></tr>
@@ -185,7 +185,7 @@ graph LR
   <tr><td><strong>Ctrl+Shift+B</strong></td><td>Build current file only</td></tr>
 </table>
 
-<h2>Multi-Compiler Support</h2>
+<h2 id="multi-compiler-support">Multi-Compiler Support</h2>
 
 <p>HarbourBuilder supports multiple C compilers for the linking step. Choose the one that
 best suits your platform and licensing:</p>
@@ -198,7 +198,7 @@ best suits your platform and licensing:</p>
   <tr><td><strong>Clang</strong></td><td>macOS, Linux</td><td>BSD-style</td><td>Recommended for macOS. Part of Xcode Command Line Tools.</td></tr>
 </table>
 
-<h2>Smart Rebuild</h2>
+<h2 id="smart-rebuild">Smart Rebuild</h2>
 
 <p>HarbourBuilder uses a dependency-tracking system to avoid unnecessary recompilation:</p>
 
@@ -216,7 +216,7 @@ best suits your platform and licensing:</p>
   compiler settings, adding library dependencies, or when incremental builds produce unexpected results.</p>
 </div>
 
-<h2>Project Options</h2>
+<h2 id="project-options">Project Options</h2>
 
 <p>Configure your build settings via <strong>Project &gt; Options</strong>:</p>
 
@@ -230,7 +230,7 @@ best suits your platform and licensing:</p>
   <tr><td><strong>Debug</strong></td><td>Enable debug build (-gh -b), generate map file, symbol output.</td></tr>
 </table>
 
-<h2>Build Output Directory</h2>
+<h2 id="build-output-directory">Build Output Directory</h2>
 
 <p>By default, compiled output goes to the <code>output/</code> folder within your project.
 You can customize this in Project Options:</p>
@@ -249,6 +249,26 @@ You can customize this in Project Options:</p>
   This produces a smaller, faster executable with no debug symbols embedded.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#the-7-step-build-process" class="toc-h2">The 7-Step Build Process</a>
+  <a href="#step-details" class="toc-h3">Step Details</a>
+  <a href="#progress-dialog" class="toc-h2">Progress Dialog</a>
+  <a href="#error-dialog" class="toc-h2">Error Dialog</a>
+  <a href="#build-messages-panel" class="toc-h2">Build Messages Panel</a>
+  <a href="#keyboard-shortcuts" class="toc-h2">Keyboard Shortcuts</a>
+  <a href="#multi-compiler-support" class="toc-h2">Multi-Compiler Support</a>
+  <a href="#smart-rebuild" class="toc-h2">Smart Rebuild</a>
+  <a href="#project-options" class="toc-h2">Project Options</a>
+  <a href="#build-output-directory" class="toc-h2">Build Output Directory</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html" class="active">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -95,7 +95,7 @@
 <p>Get up and running with HarbourBuilder in five minutes. This guide walks you through creating
 your first application, from an empty project to a running native program.</p>
 
-<h2>1. Create Your First Project</h2>
+<h2 id="1-create-your-first-project">1. Create Your First Project</h2>
 <p>Launch HarbourBuilder and select <strong>File &rarr; New Project</strong>. Choose a folder and project name.
 The IDE creates a main <code>.prg</code> file with a starter form definition:</p>
 
@@ -115,7 +115,7 @@ The IDE creates a main <code>.prg</code> file with a starter form definition:</p
 <p>This gives you an empty window, sized 640&times;480, centered on screen. The <code>DEFINE FORM</code>
 command is an xBase preprocessor macro that creates a native <code>TForm</code> object behind the scenes.</p>
 
-<h2>2. Add Controls</h2>
+<h2 id="2-add-controls">2. Add Controls</h2>
 <p>Open the <strong>Form Designer</strong> (double-click the form in the Project Manager) and use the
 <strong>Component Palette</strong> at the top of the IDE to drop controls onto the form:</p>
 
@@ -139,7 +139,7 @@ command is an xBase preprocessor macro that creates a native <code>TForm</code> 
 @ <span class="nb">70</span>, <span class="nb">50</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"Say Hello"</span> ;
    <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">120</span>, <span class="nb">32</span></pre>
 
-<h2>3. Handle Events</h2>
+<h2 id="3-handle-events">3. Handle Events</h2>
 <p>Select the button in the designer, switch to the <strong>Events</strong> tab in the Object Inspector,
 and double-click <code>OnClick</code>. The IDE jumps to the code editor with a method stub ready for you.
 You can also assign events directly in code:</p>
@@ -157,7 +157,7 @@ You can also assign events directly in code:</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>4. Build &amp; Run</h2>
+<h2 id="4-build-run">4. Build &amp; Run</h2>
 <p>Press <strong>F9</strong> (or select <strong>Run &rarr; Build &amp; Run</strong>) to compile and launch your application.
 HarbourBuilder performs these steps automatically:</p>
 
@@ -171,7 +171,7 @@ HarbourBuilder performs these steps automatically:</p>
 <p>Build output appears in the <strong>Messages</strong> panel at the bottom. Any errors are shown with
 clickable file/line references that jump directly to the source.</p>
 
-<h2>5. Save Your Project</h2>
+<h2 id="5-save-your-project">5. Save Your Project</h2>
 <p>Use <strong>File &rarr; Save Project</strong> (<strong>Ctrl+S</strong>) to save your work. HarbourBuilder stores
 project metadata in a <code>.hbp</code> file, which tracks:</p>
 
@@ -193,7 +193,7 @@ project metadata in a <code>.hbp</code> file, which tracks:</p>
   you never lose hand-written logic.</p>
 </div>
 
-<h2>Development Workflow</h2>
+<h2 id="development-workflow">Development Workflow</h2>
 <p>The typical HarbourBuilder development cycle follows four stages:</p>
 
 <div class="mermaid">
@@ -210,6 +210,22 @@ graph LR
 
 <p>Press <strong>F9</strong> at any time to go from design to a running application in seconds. Happy building!</p>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#1-create-your-first-project" class="toc-h2">1. Create Your First Project</a>
+  <a href="#2-add-controls" class="toc-h2">2. Add Controls</a>
+  <a href="#3-handle-events" class="toc-h2">3. Handle Events</a>
+  <a href="#4-build-run" class="toc-h2">4. Build &amp;amp; Run</a>
+  <a href="#5-save-your-project" class="toc-h2">5. Save Your Project</a>
+  <a href="#development-workflow" class="toc-h2">Development Workflow</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

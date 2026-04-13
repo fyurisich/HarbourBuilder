@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -103,7 +103,7 @@ while you code.</p>
   environments, proprietary codebases, and developers who value privacy.</p>
 </div>
 
-<h2>Supported Backends</h2>
+<h2 id="supported-backends">Supported Backends</h2>
 
 <table>
   <tr><th>Backend</th><th>Type</th><th>API Key</th><th>Network</th></tr>
@@ -111,7 +111,7 @@ while you code.</p>
   <tr><td><strong>LM Studio</strong></td><td>Local</td><td>None</td><td>localhost only</td></tr>
 </table>
 
-<h2>Model Selector</h2>
+<h2 id="model-selector">Model Selector</h2>
 
 <p>The AI Assistant includes a model selector dropdown that lists all available models detected
 from your running Ollama or LM Studio instance. Available options typically include:</p>
@@ -133,7 +133,7 @@ from your running Ollama or LM Studio instance. Available options typically incl
   auto-detects available models when you open the panel.</p>
 </div>
 
-<h2>Chat Interface</h2>
+<h2 id="chat-interface">Chat Interface</h2>
 
 <p>The AI Assistant panel provides a familiar chat experience:</p>
 
@@ -147,7 +147,7 @@ from your running Ollama or LM Studio instance. Available options typically incl
   <li><strong>Clear chat</strong> &mdash; reset the conversation history.</li>
 </ul>
 
-<h2>Example Prompts</h2>
+<h2 id="example-prompts">Example Prompts</h2>
 
 <p>Here are some effective prompts to try with the AI Assistant:</p>
 
@@ -161,12 +161,12 @@ from your running Ollama or LM Studio instance. Available options typically incl
   <tr><td>Learning</td><td><em>"Show me how to use events with a TButton"</em></td></tr>
 </table>
 
-<h2>Using TOllama in Your Code</h2>
+<h2 id="using-tollama-in-your-code">Using TOllama in Your Code</h2>
 
 <p>The same TOllama component that powers the AI Assistant is available in your own applications.
 Here's how to use it:</p>
 
-<h3>Basic Usage</h3>
+<h3 id="basic-usage">Basic Usage</h3>
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
 
 <span class="kw">function</span> <span class="fn">Main</span>()
@@ -184,7 +184,7 @@ Here's how to use it:</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Streaming Response</h3>
+<h3 id="streaming-response">Streaming Response</h3>
 <pre><span class="kw">static function</span> <span class="fn">StreamExample</span>( oOllama, oMemo )
 
    <span class="kw">local</span> cPrompt := <span class="st">"Write a Harbour function to calculate fibonacci"</span>
@@ -197,14 +197,14 @@ Here's how to use it:</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Setting a System Prompt</h3>
+<h3 id="setting-a-system-prompt">Setting a System Prompt</h3>
 <pre>oOllama:<span class="fn">SetSystem</span>( <span class="st">"You are a Harbour/xBase expert. </span>;
    <span class="st">Always provide complete, working code examples. </span>;
    <span class="st">Explain your reasoning clearly."</span> )
 
 cResponse := oOllama:<span class="fn">Chat</span>( <span class="st">"How do I read a file line by line?"</span> )</pre>
 
-<h3>Using LM Studio</h3>
+<h3 id="using-lm-studio">Using LM Studio</h3>
 <p>LM Studio provides a compatible API. Simply point TOllama at the LM Studio server:</p>
 
 <pre>oOllama := TOllama():New()
@@ -212,7 +212,7 @@ oOllama:<span class="prop">cHost</span> := <span class="st">"localhost"</span>
 oOllama:<span class="prop">nPort</span> := <span class="nb">1234</span>  <span class="cm">// LM Studio default port</span>
 oOllama:<span class="prop">cModel</span> := <span class="st">"local-model"</span></pre>
 
-<h2>Privacy Benefits</h2>
+<h2 id="privacy-benefits">Privacy Benefits</h2>
 
 <div class="mermaid">
 graph LR
@@ -240,7 +240,7 @@ graph LR
   <a href="tutorial-ai.html">AI Integration tutorial</a> for a complete walkthrough.</p>
 </div>
 
-<h2>Configuration</h2>
+<h2 id="configuration">Configuration</h2>
 
 <p>Open the AI Assistant panel from the menu <strong>Tools &gt; AI Assistant</strong> or use the
 toolbar button. The settings gear icon lets you configure:</p>
@@ -256,6 +256,27 @@ toolbar button. The settings gear icon lets you configure:</p>
   <tr><td><strong>System Prompt</strong></td><td>Custom system instructions</td><td>(empty)</td></tr>
 </table>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#supported-backends" class="toc-h2">Supported Backends</a>
+  <a href="#model-selector" class="toc-h2">Model Selector</a>
+  <a href="#chat-interface" class="toc-h2">Chat Interface</a>
+  <a href="#example-prompts" class="toc-h2">Example Prompts</a>
+  <a href="#using-tollama-in-your-code" class="toc-h2">Using TOllama in Your Code</a>
+  <a href="#basic-usage" class="toc-h3">Basic Usage</a>
+  <a href="#streaming-response" class="toc-h3">Streaming Response</a>
+  <a href="#setting-a-system-prompt" class="toc-h3">Setting a System Prompt</a>
+  <a href="#using-lm-studio" class="toc-h3">Using LM Studio</a>
+  <a href="#privacy-benefits" class="toc-h2">Privacy Benefits</a>
+  <a href="#configuration" class="toc-h2">Configuration</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

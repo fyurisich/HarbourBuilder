@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html" class="active">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de Formularios</a>
     <a href="object-inspector.html">Inspector de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Compilar y Ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con Formularios</a>
     <a href="tutorial-events.html">Manejo de Eventos</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -94,7 +94,7 @@
 <h1>Guia de Inicio Rapido</h1>
 <p>Ponga en marcha HarbourBuilder en cinco minutos. Esta guia lo lleva a traves de la creacion de su primera aplicacion, desde un proyecto vacio hasta un programa nativo en ejecucion.</p>
 
-<h2>1. Cree su Primer Proyecto</h2>
+<h2 id="1-cree-su-primer-proyecto">1. Cree su Primer Proyecto</h2>
 <p>Inicie HarbourBuilder y seleccione <strong>Archivo &rarr; Nuevo Proyecto</strong>. Elija una carpeta y un nombre de proyecto. El IDE crea un archivo <code>.prg</code> principal con una definicion de formulario inicial:</p>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
@@ -112,7 +112,7 @@
 
 <p>Esto le da una ventana vacia, de tamano 640&times;480, centrada en la pantalla. El comando <code>DEFINE FORM</code> es una macro del preprocesador xBase que crea un objeto <code>TForm</code> nativo entre bastidores.</p>
 
-<h2>2. Agregue Controles</h2>
+<h2 id="2-agregue-controles">2. Agregue Controles</h2>
 <p>Abra el <strong>Disenador de Formularios</strong> (doble clic en el formulario en el Gestor de Proyectos) y use la <strong>Paleta de Componentes</strong> en la parte superior del IDE para soltar controles en el formulario:</p>
 
 <ol>
@@ -135,7 +135,7 @@
 @ <span class="nb">70</span>, <span class="nb">50</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"Say Hello"</span> ;
    <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">120</span>, <span class="nb">32</span></pre>
 
-<h2>3. Maneje Eventos</h2>
+<h2 id="3-maneje-eventos">3. Maneje Eventos</h2>
 <p>Seleccione el boton en el disenador, cambie a la pestania <strong>Eventos</strong> en el Inspector de Objetos y haga doble clic en <code>OnClick</code>. El IDE lo lleva al editor de codigo con un esqueleto de metodo listo para usar. Tambien puede asignar eventos directamente en el codigo:</p>
 
 <pre>oBtn:<span class="fn">OnClick</span> := { || MsgInfo( <span class="st">"Hola desde HarbourBuilder!"</span> ) }</pre>
@@ -151,7 +151,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>4. Compilar y Ejecutar</h2>
+<h2 id="4-compilar-y-ejecutar">4. Compilar y Ejecutar</h2>
 <p>Presione <strong>F9</strong> (o seleccione <strong>Ejecutar &rarr; Compilar y Ejecutar</strong>) para compilar e iniciar su aplicacion. HarbourBuilder realiza estos pasos automaticamente:</p>
 
 <ol>
@@ -163,7 +163,7 @@
 
 <p>La salida de compilacion aparece en el panel <strong>Mensajes</strong> en la parte inferior. Cualquier error se muestra con referencias de archivo/linea en las que se puede hacer clic para ir directamente al fuente.</p>
 
-<h2>5. Guarde su Proyecto</h2>
+<h2 id="5-guarde-su-proyecto">5. Guarde su Proyecto</h2>
 <p>Use <strong>Archivo &rarr; Guardar Proyecto</strong> (<strong>Ctrl+S</strong>) para guardar su trabajo. HarbourBuilder almacena los metadatos del proyecto en un archivo <code>.hbp</code>, que rastrea:</p>
 
 <ul>
@@ -180,7 +180,7 @@
   <p>Las herramientas bidireccionales de HarbourBuilder aseguran que los cambios realizados en el Disenador de Formularios se reflejen instantaneamente en el Editor de Codigo, y viceversa. Edite una propiedad en el inspector y vea el codigo actualizado en tiempo real. Modifique un comando <code>DEFINE FORM</code> en el editor y observe como el disenador se redibuja. Sus implementaciones <code>METHOD</code> siempre se preservan durante la regeneracion de codigo; nunca pierde logica escrita a mano.</p>
 </div>
 
-<h2>Flujo de Trabajo de Desarrollo</h2>
+<h2 id="flujo-de-trabajo-de-desarrollo">Flujo de Trabajo de Desarrollo</h2>
 <p>El ciclo tipico de desarrollo de HarbourBuilder sigue cuatro etapas:</p>
 
 <div class="mermaid">
@@ -197,6 +197,22 @@ graph LR
 
 <p>Presione <strong>F9</strong> en cualquier momento para pasar del diseno a una aplicacion en ejecucion en segundos. Feliz construccion!</p>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros Pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#1-cree-su-primer-proyecto" class="toc-h2">1. Cree su Primer Proyecto</a>
+  <a href="#2-agregue-controles" class="toc-h2">2. Agregue Controles</a>
+  <a href="#3-maneje-eventos" class="toc-h2">3. Maneje Eventos</a>
+  <a href="#4-compilar-y-ejecutar" class="toc-h2">4. Compilar y Ejecutar</a>
+  <a href="#5-guarde-su-proyecto" class="toc-h2">5. Guarde su Proyecto</a>
+  <a href="#flujo-de-trabajo-de-desarrollo" class="toc-h2">Flujo de Trabajo de Desarrollo</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html" class="active">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -107,7 +107,7 @@ and full integration with the macOS windowing system.</p>
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Architecture Overview</h2>
+<h2 id="architecture-overview">Architecture Overview</h2>
 
 <div class="mermaid">
 graph TB
@@ -129,7 +129,7 @@ graph TB
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Native Window Creation</h2>
+<h2 id="native-window-creation">Native Window Creation</h2>
 <p>Every HarbourBuilder form is a native <code>NSWindow</code> with an <code>NSView</code> content view.
 Controls are Cocoa subclasses of <code>NSView</code>:</p>
 
@@ -182,7 +182,7 @@ HB_FUNC( UI_FORMNEW )
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Event Handling</h2>
+<h2 id="event-handling">Event Handling</h2>
 <p>The macOS backend uses Cocoa's target-action pattern and notification system. Each control
 registers an action target that calls into the Harbour event system:</p>
 
@@ -212,7 +212,7 @@ HB_FUNC( UI_ONEVENT )
 <span class="kw">@end</span></pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Dark Mode</h2>
+<h2 id="dark-mode">Dark Mode</h2>
 <p>macOS dark mode is handled natively by AppKit:</p>
 
 <ul>
@@ -245,7 +245,7 @@ HB_FUNC( UI_ONEVENT )
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Scintilla Integration</h2>
+<h2 id="scintilla-integration">Scintilla Integration</h2>
 <p>On macOS, Scintilla 5.5.3 is built as a static library and linked directly into the HarbourBuilder
 binary:</p>
 
@@ -269,9 +269,9 @@ SCIView * sciView = [[SCIView alloc] initWithFrame:frame];
 <span class="fn">Scintilla_SendMessage</span>( sciView, SCI_SETSTYLEBITS, <span class="nb">8</span>, <span class="nb">0</span> );</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Build Process</h2>
+<h2 id="build-process">Build Process</h2>
 
-<h3>Prerequisites</h3>
+<h3 id="prerequisites">Prerequisites</h3>
 <ol>
   <li><strong>Xcode Command Line Tools</strong> &mdash; This is the only prerequisite. Install with:
     <pre>xcode-select --install</pre>
@@ -280,7 +280,7 @@ SCIView * sciView = [[SCIView alloc] initWithFrame:frame];
   <li><strong>No separate Harbour install needed</strong> &mdash; The build script downloads and compiles Harbour automatically if it's not already present.</li>
 </ol>
 
-<h3>Build Script (<code>build_mac.sh</code>)</h3>
+<h3 id="build-script-build_macsh">Build Script (<code>build_mac.sh</code>)</h3>
 <p>The script performs these steps:</p>
 
 <ol>
@@ -304,7 +304,7 @@ SCIView * sciView = [[SCIView alloc] initWithFrame:frame];
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Apple Silicon Considerations</h2>
+<h2 id="apple-silicon-considerations">Apple Silicon Considerations</h2>
 
 <p>The default build targets <code>x86_64</code> for compatibility. On Apple Silicon Macs (M1/M2/M3/M4),
 the binary runs under Rosetta 2 translation. For native ARM64 builds:</p>
@@ -329,7 +329,7 @@ HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>.app Bundle Creation</h2>
+<h2 id="app-bundle-creation">.app Bundle Creation</h2>
 <p>To distribute a HarbourBuilder application as a standard macOS application bundle:</p>
 
 <pre>MyApp.app/
@@ -361,7 +361,7 @@ HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
 <span class="cm">&lt;/plist&gt;</span></pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Platform-Specific Features</h2>
+<h2 id="platform-specific-features">Platform-Specific Features</h2>
 
 <table>
   <tr><th>Feature</th><th>macOS Implementation</th></tr>
@@ -378,7 +378,7 @@ HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Known Limitations</h2>
+<h2 id="known-limitations">Known Limitations</h2>
 
 <ul>
   <li><strong>Gatekeeper</strong> &mdash; Unsigned applications may be blocked by Gatekeeper. Right-click &rarr; Open, or remove quarantine: <code>xattr -d com.apple.quarantine HbBuilder</code>.</li>
@@ -388,7 +388,7 @@ HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
 </ul>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Dependencies</h2>
+<h2 id="dependencies">Dependencies</h2>
 <table>
   <tr><th>Framework/Library</th><th>Purpose</th></tr>
   <tr><td><code>-framework Cocoa</code></td><td>Complete Cocoa/AppKit/Foundation umbrella framework</td></tr>
@@ -399,6 +399,29 @@ HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
   <tr><td><code>libharbour.a</code></td><td>Harbour runtime</td></tr>
 </table>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#architecture-overview" class="toc-h2">Architecture Overview</a>
+  <a href="#native-window-creation" class="toc-h2">Native Window Creation</a>
+  <a href="#event-handling" class="toc-h2">Event Handling</a>
+  <a href="#dark-mode" class="toc-h2">Dark Mode</a>
+  <a href="#scintilla-integration" class="toc-h2">Scintilla Integration</a>
+  <a href="#build-process" class="toc-h2">Build Process</a>
+  <a href="#prerequisites" class="toc-h3">Prerequisites</a>
+  <a href="#build-script-build_macsh" class="toc-h3">Build Script (build_mac.sh)</a>
+  <a href="#apple-silicon-considerations" class="toc-h2">Apple Silicon Considerations</a>
+  <a href="#app-bundle-creation" class="toc-h2">.app Bundle Creation</a>
+  <a href="#platform-specific-features" class="toc-h2">Platform-Specific Features</a>
+  <a href="#known-limitations" class="toc-h2">Known Limitations</a>
+  <a href="#dependencies" class="toc-h2">Dependencies</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

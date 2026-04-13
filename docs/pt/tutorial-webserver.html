@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos da IDE</h3>
+    <h3 id="recursos-da-ide">Recursos da IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Ola Mundo</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -96,14 +96,14 @@
 APIs JSON diretamente da sua aplicacao. Neste tutorial voce vai construir um app web de Tarefas simples
 com uma GUI desktop e uma interface via navegador rodando lado a lado.</p>
 
-<h2>Passo 1: Criar o Projeto</h2>
+<h2 id="passo-1-criar-o-projeto">Passo 1: Criar o Projeto</h2>
 <ol>
   <li>Crie um novo projeto chamado <code>TodoWebApp</code> via <strong>Arquivo &rarr; Novo Projeto</strong>.</li>
   <li>Abra <code>main.prg</code> no Editor de Codigo.</li>
   <li>Vamos construir um formulario desktop para gerenciar tarefas e um servidor web que expoe os mesmos dados.</li>
 </ol>
 
-<h2>Passo 2: Configurar o Servidor Web</h2>
+<h2 id="passo-2-configurar-o-servidor-web">Passo 2: Configurar o Servidor Web</h2>
 <p>Arraste um <strong>TWebServer</strong> da aba de paleta <strong>Internet</strong> para o formulario, ou crie no codigo.
 Defina a porta e defina suas rotas.</p>
 
@@ -157,7 +157,7 @@ Defina a porta e defina suas rotas.</p>
   sao imediatamente visiveis ao outro.</p>
 </div>
 
-<h2>Passo 3: Servir uma Pagina HTML</h2>
+<h2 id="passo-3-servir-uma-pagina-html">Passo 3: Servir uma Pagina HTML</h2>
 <p>A rota raiz <code>/</code> serve uma pagina HTML completa. Use <code>oRes:SendHTML()</code> para retornar conteudo HTML.</p>
 
 <pre><span class="kw">static function</span> <span class="fn">ServeHomePage</span>( oReq, oRes )
@@ -189,7 +189,7 @@ Defina a porta e defina suas rotas.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Passo 4: Retornar JSON para a API</h2>
+<h2 id="passo-4-retornar-json-para-a-api">Passo 4: Retornar JSON para a API</h2>
 <p>As rotas de API usam <code>oRes:SendJSON()</code> para retornar dados estruturados que o JavaScript do navegador
 (ou qualquer cliente HTTP) pode consumir.</p>
 
@@ -221,7 +221,7 @@ Defina a porta e defina suas rotas.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Passo 5: Atualizar a Grade Desktop</h2>
+<h2 id="passo-5-atualizar-a-grade-desktop">Passo 5: Atualizar a Grade Desktop</h2>
 
 <pre><span class="kw">static function</span> <span class="fn">RefreshGrid</span>( oBrw )
 
@@ -236,7 +236,7 @@ Defina a porta e defina suas rotas.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Passo 6: Compilar e Testar</h2>
+<h2 id="passo-6-compilar-e-testar">Passo 6: Compilar e Testar</h2>
 <ol>
   <li>Pressione <strong>F9</strong> para compilar e executar.</li>
   <li>O formulario desktop aparece com uma lista de tarefas vazia. Adicione algumas tarefas usando a GUI.</li>
@@ -247,7 +247,7 @@ Defina a porta e defina suas rotas.</p>
 
 <!-- Screenshot placeholder: Split view showing the desktop TODO form and a browser window at localhost:8080 side by side -->
 
-<h2>Visao Geral da Arquitetura</h2>
+<h2 id="visao-geral-da-arquitetura">Visao Geral da Arquitetura</h2>
 
 <div class="mermaid">
 graph TB
@@ -276,6 +276,23 @@ graph TB
   e executar inferencia diretamente da sua aplicacao.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-da-ide" class="toc-h3">Recursos da IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#passo-1-criar-o-projeto" class="toc-h2">Passo 1: Criar o Projeto</a>
+  <a href="#passo-2-configurar-o-servidor-web" class="toc-h2">Passo 2: Configurar o Servidor Web</a>
+  <a href="#passo-3-servir-uma-pagina-html" class="toc-h2">Passo 3: Servir uma Pagina HTML</a>
+  <a href="#passo-4-retornar-json-para-a-api" class="toc-h2">Passo 4: Retornar JSON para a API</a>
+  <a href="#passo-5-atualizar-a-grade-desktop" class="toc-h2">Passo 5: Atualizar a Grade Desktop</a>
+  <a href="#passo-6-compilar-e-testar" class="toc-h2">Passo 6: Compilar e Testar</a>
+  <a href="#visao-geral-da-arquitetura" class="toc-h2">Visao Geral da Arquitetura</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

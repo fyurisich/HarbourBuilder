@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -102,7 +102,7 @@ is instantly visible in the designer.</p>
   Your METHOD implementations, event handlers, and custom logic are <strong>never</strong> touched or overwritten.</p>
 </div>
 
-<h2>How It Works</h2>
+<h2 id="how-it-works">How It Works</h2>
 
 <p>When you work in the Form Designer, every action &mdash; dropping a control, resizing, moving,
 changing a property &mdash; triggers a targeted code regeneration. The engine parses your existing
@@ -123,7 +123,7 @@ sequenceDiagram
     Note over D,F: METHOD implementations are never modified
 </div>
 
-<h2>What Gets Regenerated</h2>
+<h2 id="what-gets-regenerated">What Gets Regenerated</h2>
 
 <p>The code engine identifies and updates only these categories:</p>
 
@@ -140,9 +140,9 @@ sequenceDiagram
   <tr><td><strong>Comments</strong></td><td><code>// TODO: ...</code></td><td><strong>No</strong></td></tr>
 </table>
 
-<h2>Before and After: Code Regeneration</h2>
+<h2 id="before-and-after-code-regeneration">Before and After: Code Regeneration</h2>
 
-<h3>Before: You drop a button in the designer</h3>
+<h3 id="before-you-drop-a-button-in-the-designer">Before: You drop a button in the designer</h3>
 <pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
 
    <span class="kw">DATA</span> oBtn1
@@ -163,7 +163,7 @@ sequenceDiagram
    MsgInfo( <span class="st">"Button clicked!"</span> )
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>After: Code regenerated (button added, method untouched)</h3>
+<h3 id="after-code-regenerated-button-added-method-untouched">After: Code regenerated (button added, method untouched)</h3>
 <pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
 
    <span class="kw">DATA</span> oBtn1
@@ -195,7 +195,7 @@ sequenceDiagram
   <code>CreateForm</code> method received the new button definition.</p>
 </div>
 
-<h2>Workflow</h2>
+<h2 id="workflow">Workflow</h2>
 
 <div class="mermaid">
 graph TD
@@ -216,7 +216,7 @@ graph TD
     style K fill:#3fb950,stroke:#2ea043,color:#0d1117
 </div>
 
-<h2>Code Parsing Rules</h2>
+<h2 id="code-parsing-rules">Code Parsing Rules</h2>
 
 <p>The regeneration engine uses these rules to identify safe-to-modify sections:</p>
 
@@ -234,7 +234,7 @@ graph TD
   within DEFINE blocks. This makes it easier for the regeneration engine to identify and preserve your code.</p>
 </div>
 
-<h2>Handling Conflicts</h2>
+<h2 id="handling-conflicts">Handling Conflicts</h2>
 
 <p>If you manually edit a line that the designer also manages (e.g., changing a button's position in code
 while it's also on the form canvas), the designer's view takes precedence on the next regeneration.
@@ -252,7 +252,7 @@ To avoid conflicts:</p>
   multiple forms in one file, mixed class-based and procedural syntax, and files with extensive comments.</p>
 </div>
 
-<h2>Switching Between Views</h2>
+<h2 id="switching-between-views">Switching Between Views</h2>
 
 <p>Use the toolbar toggle or keyboard shortcut to switch between Designer and Code views:</p>
 
@@ -263,6 +263,25 @@ To avoid conflicts:</p>
   <tr><td><strong>Ctrl+S</strong></td><td>Save (both design data and code)</td></tr>
 </table>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#how-it-works" class="toc-h2">How It Works</a>
+  <a href="#what-gets-regenerated" class="toc-h2">What Gets Regenerated</a>
+  <a href="#before-and-after-code-regeneration" class="toc-h2">Before and After: Code Regeneration</a>
+  <a href="#before-you-drop-a-button-in-the-designer" class="toc-h3">Before: You drop a button in the designer</a>
+  <a href="#after-code-regenerated-button-added-method-untouched" class="toc-h3">After: Code regenerated (button added, method untouched)</a>
+  <a href="#workflow" class="toc-h2">Workflow</a>
+  <a href="#code-parsing-rules" class="toc-h2">Code Parsing Rules</a>
+  <a href="#handling-conflicts" class="toc-h2">Handling Conflicts</a>
+  <a href="#switching-between-views" class="toc-h2">Switching Between Views</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

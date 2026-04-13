@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -96,14 +96,14 @@
 JSON APIs directly from your application. In this tutorial you will build a simple TODO web app
 with both a desktop GUI and a browser-based interface running side by side.</p>
 
-<h2>Step 1: Create the Project</h2>
+<h2 id="step-1-create-the-project">Step 1: Create the Project</h2>
 <ol>
   <li>Create a new project called <code>TodoWebApp</code> via <strong>File &rarr; New Project</strong>.</li>
   <li>Open <code>main.prg</code> in the Code Editor.</li>
   <li>We will build a desktop form for managing todos and a web server that exposes the same data.</li>
 </ol>
 
-<h2>Step 2: Set Up the Web Server</h2>
+<h2 id="step-2-set-up-the-web-server">Step 2: Set Up the Web Server</h2>
 <p>Drop a <strong>TWebServer</strong> from the <strong>Internet</strong> palette tab onto the form, or create it in code.
 Set the port and define your routes.</p>
 
@@ -157,7 +157,7 @@ Set the port and define your routes.</p>
   are immediately visible to the other.</p>
 </div>
 
-<h2>Step 3: Serve an HTML Page</h2>
+<h2 id="step-3-serve-an-html-page">Step 3: Serve an HTML Page</h2>
 <p>The root route <code>/</code> serves a complete HTML page. Use <code>oRes:SendHTML()</code> to return HTML content.</p>
 
 <pre><span class="kw">static function</span> <span class="fn">ServeHomePage</span>( oReq, oRes )
@@ -189,7 +189,7 @@ Set the port and define your routes.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Step 4: Return JSON for the API</h2>
+<h2 id="step-4-return-json-for-the-api">Step 4: Return JSON for the API</h2>
 <p>The API routes use <code>oRes:SendJSON()</code> to return structured data that the browser JavaScript
 (or any HTTP client) can consume.</p>
 
@@ -221,7 +221,7 @@ Set the port and define your routes.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Step 5: Refresh the Desktop Grid</h2>
+<h2 id="step-5-refresh-the-desktop-grid">Step 5: Refresh the Desktop Grid</h2>
 
 <pre><span class="kw">static function</span> <span class="fn">RefreshGrid</span>( oBrw )
 
@@ -236,7 +236,7 @@ Set the port and define your routes.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Step 6: Build and Test</h2>
+<h2 id="step-6-build-and-test">Step 6: Build and Test</h2>
 <ol>
   <li>Press <strong>F9</strong> to build and run.</li>
   <li>The desktop form appears with an empty task list. Add a few tasks using the GUI.</li>
@@ -247,7 +247,7 @@ Set the port and define your routes.</p>
 
 <!-- Screenshot placeholder: Split view showing the desktop TODO form and a browser window at localhost:8080 side by side -->
 
-<h2>Architecture Overview</h2>
+<h2 id="architecture-overview">Architecture Overview</h2>
 
 <div class="mermaid">
 graph TB
@@ -275,6 +275,23 @@ graph TB
   tutorial to connect to local LLMs and run inference directly from your application.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#step-1-create-the-project" class="toc-h2">Step 1: Create the Project</a>
+  <a href="#step-2-set-up-the-web-server" class="toc-h2">Step 2: Set Up the Web Server</a>
+  <a href="#step-3-serve-an-html-page" class="toc-h2">Step 3: Serve an HTML Page</a>
+  <a href="#step-4-return-json-for-the-api" class="toc-h2">Step 4: Return JSON for the API</a>
+  <a href="#step-5-refresh-the-desktop-grid" class="toc-h2">Step 5: Refresh the Desktop Grid</a>
+  <a href="#step-6-build-and-test" class="toc-h2">Step 6: Build and Test</a>
+  <a href="#architecture-overview" class="toc-h2">Architecture Overview</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

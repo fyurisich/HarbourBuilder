@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html" class="active">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -50,7 +50,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -60,7 +60,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -70,7 +70,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -78,7 +78,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -108,7 +108,7 @@ con un unico codigo fuente.</p>
   nativo en cada plataforma.
 </div>
 
-<h2>Arquitectura</h2>
+<h2 id="arquitectura">Arquitectura</h2>
 <div class="mermaid">
 graph TB
     A["Application Code (.prg)"] --> B["xBase Commands<br/>#xcommand (compile-time)"]
@@ -124,7 +124,7 @@ graph TB
     style E3 fill:#e95420,stroke:#c34113,color:#fff
 </div>
 
-<h2>Paleta de componentes</h2>
+<h2 id="paleta-de-componentes">Paleta de componentes</h2>
 <p>130 controles en 16 pestanas — la paleta de componentes mas completa de cualquier IDE Harbour:</p>
 
 <table>
@@ -146,7 +146,7 @@ graph TB
 </table>
 <p><strong>Total: 130 controles</strong> — todos disponibles en Windows, macOS y Linux.</p>
 
-<h2>Funciones principales</h2>
+<h2 id="funciones-principales">Funciones principales</h2>
 
 <details>
   <summary>Disenador visual de formularios</summary>
@@ -180,7 +180,7 @@ graph TB
   </div>
 </details>
 
-<h2>Ejemplo rapido</h2>
+<h2 id="ejemplo-rapido">Ejemplo rapido</h2>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
 
@@ -207,6 +207,20 @@ graph TB
   hasta la capa OOP de Harbour y el disenador visual. Un nuevo paradigma en el desarrollo de software.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#arquitectura" class="toc-h2">Arquitectura</a>
+  <a href="#paleta-de-componentes" class="toc-h2">Paleta de componentes</a>
+  <a href="#funciones-principales" class="toc-h2">Funciones principales</a>
+  <a href="#ejemplo-rapido" class="toc-h2">Ejemplo rapido</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

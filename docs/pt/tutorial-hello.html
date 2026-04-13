@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos da IDE</h3>
+    <h3 id="recursos-da-ide">Recursos da IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html" class="active">Ola Mundo</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -96,7 +96,7 @@
 janela com um botao que exibe uma saudacao. Ao final, voce entendera o fluxo basico de
 trabalho do projeto: criar, projetar, codificar, compilar e executar.</p>
 
-<h2>Passo 1: Criar um Novo Projeto</h2>
+<h2 id="passo-1-criar-um-novo-projeto">Passo 1: Criar um Novo Projeto</h2>
 <ol>
   <li>Inicie o <strong>HarbourBuilder</strong>.</li>
   <li>Selecione <strong>Arquivo &rarr; Novo Projeto</strong> na barra de menu.</li>
@@ -112,7 +112,7 @@ trabalho do projeto: criar, projetar, codificar, compilar e executar.</p>
   Toda saida compilada vai para uma subpasta <code>build/</code> que voce pode adicionar ao <code>.gitignore</code>.</p>
 </div>
 
-<h2>Passo 2: Abrir o Designer de Formularios</h2>
+<h2 id="passo-2-abrir-o-designer-de-formularios">Passo 2: Abrir o Designer de Formularios</h2>
 <ol>
   <li>No painel <strong>Gerenciador de Projetos</strong>, clique duas vezes em <code>main.prg</code>.</li>
   <li>O <strong>Designer de Formularios</strong> abre mostrando um formulario vazio intitulado "My First App".</li>
@@ -122,7 +122,7 @@ trabalho do projeto: criar, projetar, codificar, compilar e executar.</p>
 
 <!-- Screenshot placeholder: Form Designer with empty form, Object Inspector visible on the left -->
 
-<h2>Passo 3: Adicionar um Botao</h2>
+<h2 id="passo-3-adicionar-um-botao">Passo 3: Adicionar um Botao</h2>
 <ol>
   <li>Clique na aba <strong>Padrao</strong> na <strong>Paleta de Componentes</strong> no topo da IDE.</li>
   <li>Clique no icone <strong>Botao</strong> na paleta.</li>
@@ -133,7 +133,7 @@ trabalho do projeto: criar, projetar, codificar, compilar e executar.</p>
 
 <!-- Screenshot placeholder: Form Designer with the button placed on the form, Object Inspector showing button properties -->
 
-<h2>Passo 4: Adicionar um Rotulo</h2>
+<h2 id="passo-4-adicionar-um-rotulo">Passo 4: Adicionar um Rotulo</h2>
 <ol>
   <li>Na aba <strong>Padrao</strong> da paleta, clique no icone <strong>Rotulo</strong> (Label).</li>
   <li>Clique no formulario acima do botao para colocar o rotulo.</li>
@@ -141,7 +141,7 @@ trabalho do projeto: criar, projetar, codificar, compilar e executar.</p>
   <li>Defina <code>nWidth</code> como <code>300</code> para que o texto caiba confortavelmente.</li>
 </ol>
 
-<h2>Passo 5: Definir o Evento OnClick</h2>
+<h2 id="passo-5-definir-o-evento-onclick">Passo 5: Definir o Evento OnClick</h2>
 <ol>
   <li>Selecione o botao no formulario (clique uma vez).</li>
   <li>No Inspetor de Objetos, alterne para a aba <strong>Eventos</strong>.</li>
@@ -157,7 +157,7 @@ trabalho do projeto: criar, projetar, codificar, compilar e executar.</p>
   chame uma <code>static function</code> separada a partir do bloco. Veja o tutorial <a href="tutorial-events.html">Tratamento de Eventos</a> para detalhes.</p>
 </div>
 
-<h2>Passo 6: Compilar e Executar</h2>
+<h2 id="passo-6-compilar-e-executar">Passo 6: Compilar e Executar</h2>
 <ol>
   <li>Pressione <strong>F9</strong> (ou selecione <strong>Executar &rarr; Compilar e Executar</strong>).</li>
   <li>Observe o painel <strong>Mensagens</strong> na parte inferior &mdash; ele mostra as etapas de pre-processamento, compilacao, vinculacao e inicializacao.</li>
@@ -167,7 +167,7 @@ trabalho do projeto: criar, projetar, codificar, compilar e executar.</p>
 
 <!-- Screenshot placeholder: The running Hello World application with the label showing the greeting after clicking the button -->
 
-<h2>Listagem Completa do Codigo</h2>
+<h2 id="listagem-completa-do-codigo">Listagem Completa do Codigo</h2>
 <p>Aqui esta o <code>main.prg</code> completo para a aplicacao Ola Mundo:</p>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
@@ -190,7 +190,7 @@ trabalho do projeto: criar, projetar, codificar, compilar e executar.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>O Que Voce Aprendeu</h2>
+<h2 id="o-que-voce-aprendeu">O Que Voce Aprendeu</h2>
 <ul>
   <li>Como criar um novo projeto HarbourBuilder.</li>
   <li>Como usar o Designer de Formularios para colocar controles visualmente.</li>
@@ -205,6 +205,24 @@ trabalho do projeto: criar, projetar, codificar, compilar e executar.</p>
   como criar aplicacoes multi-formulario com dialogos modais e passagem de dados entre formularios.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-da-ide" class="toc-h3">Recursos da IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#passo-1-criar-um-novo-projeto" class="toc-h2">Passo 1: Criar um Novo Projeto</a>
+  <a href="#passo-2-abrir-o-designer-de-formularios" class="toc-h2">Passo 2: Abrir o Designer de Formularios</a>
+  <a href="#passo-3-adicionar-um-botao" class="toc-h2">Passo 3: Adicionar um Botao</a>
+  <a href="#passo-4-adicionar-um-rotulo" class="toc-h2">Passo 4: Adicionar um Rotulo</a>
+  <a href="#passo-5-definir-o-evento-onclick" class="toc-h2">Passo 5: Definir o Evento OnClick</a>
+  <a href="#passo-6-compilar-e-executar" class="toc-h2">Passo 6: Compilar e Executar</a>
+  <a href="#listagem-completa-do-codigo" class="toc-h2">Listagem Completa do Codigo</a>
+  <a href="#o-que-voce-aprendeu" class="toc-h2">O Que Voce Aprendeu</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

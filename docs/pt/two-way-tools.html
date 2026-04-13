@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -102,7 +102,7 @@ e instantaneamente visivel no designer.</p>
   Suas implementacoes de METHOD, manipuladores de eventos e logica customizada <strong>nunca</strong> sao tocados ou sobrescritos.</p>
 </div>
 
-<h2>Como Funciona</h2>
+<h2 id="como-funciona">Como Funciona</h2>
 
 <p>Quando voce trabalha no Designer de Formularios, cada acao — soltar um controle, redimensionar, mover,
 alterar uma propriedade — aciona uma regeneracao de codigo direcionada. O motor analisa seu arquivo fonte existente,
@@ -123,7 +123,7 @@ sequenceDiagram
     Note over D,F: Implementacoes de METHOD nunca sao modificadas
 </div>
 
-<h2>O Que e Regenerado</h2>
+<h2 id="o-que-e-regenerado">O Que e Regenerado</h2>
 
 <p>O motor de codigo identifica e atualiza apenas estas categorias:</p>
 
@@ -140,9 +140,9 @@ sequenceDiagram
   <tr><td><strong>Comentarios</strong></td><td><code>// TODO: ...</code></td><td><strong>Nao</strong></td></tr>
 </table>
 
-<h2>Antes e Depois: Regeneracao de Codigo</h2>
+<h2 id="antes-e-depois-regeneracao-de-codigo">Antes e Depois: Regeneracao de Codigo</h2>
 
-<h3>Antes: Voce solta um botao no designer</h3>
+<h3 id="antes-voce-solta-um-botao-no-designer">Antes: Voce solta um botao no designer</h3>
 <pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
 
    <span class="kw">DATA</span> oBtn1
@@ -163,7 +163,7 @@ sequenceDiagram
    MsgInfo( <span class="st">"Botao clicado!"</span> )
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Depois: Codigo regenerado (botao adicionado, metodo intacto)</h3>
+<h3 id="depois-codigo-regenerado-botao-adicionado-metodo-intacto">Depois: Codigo regenerado (botao adicionado, metodo intacto)</h3>
 <pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
 
    <span class="kw">DATA</span> oBtn1
@@ -195,7 +195,7 @@ sequenceDiagram
   metodo <code>CreateForm</code> recebeu a nova definicao do botao.</p>
 </div>
 
-<h2>Fluxo de Trabalho</h2>
+<h2 id="fluxo-de-trabalho">Fluxo de Trabalho</h2>
 
 <div class="mermaid">
 graph TD
@@ -216,7 +216,7 @@ graph TD
     style K fill:#3fb950,stroke:#2ea043,color:#0d1117
 </div>
 
-<h2>Regras de Analise de Codigo</h2>
+<h2 id="regras-de-analise-de-codigo">Regras de Analise de Codigo</h2>
 
 <p>O motor de regeneracao usa estas regras para identificar secoes seguras para modificar:</p>
 
@@ -234,7 +234,7 @@ graph TD
   dentro de blocos DEFINE. Isso facilita para o motor de regeneracao identificar e preservar seu codigo.</p>
 </div>
 
-<h2>Tratamento de Conflitos</h2>
+<h2 id="tratamento-de-conflitos">Tratamento de Conflitos</h2>
 
 <p>Se voce editar manualmente uma linha que o designer tambem gerencia (ex: alterar a posicao de um botao no codigo
 enquanto ele tambem esta na tela do formulario), a visao do designer prevalece na proxima regeneracao.
@@ -252,7 +252,7 @@ Para evitar conflitos:</p>
   multiplos formularios em um arquivo, sintaxe mista baseada em classes e procedural, e arquivos com comentarios extensivos.</p>
 </div>
 
-<h2>Alternando Entre Visoes</h2>
+<h2 id="alternando-entre-visoes">Alternando Entre Visoes</h2>
 
 <p>Use o botao de alternancia na barra de ferramentas ou o atalho de teclado para alternar entre as visoes Designer e Codigo:</p>
 
@@ -263,6 +263,25 @@ Para evitar conflitos:</p>
   <tr><td><strong>Ctrl+S</strong></td><td>Salvar (dados de design e codigo)</td></tr>
 </table>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#como-funciona" class="toc-h2">Como Funciona</a>
+  <a href="#o-que-e-regenerado" class="toc-h2">O Que e Regenerado</a>
+  <a href="#antes-e-depois-regeneracao-de-codigo" class="toc-h2">Antes e Depois: Regeneracao de Codigo</a>
+  <a href="#antes-voce-solta-um-botao-no-designer" class="toc-h3">Antes: Voce solta um botao no designer</a>
+  <a href="#depois-codigo-regenerado-botao-adicionado-metodo-intacto" class="toc-h3">Depois: Codigo regenerado (botao adicionado, metodo intacto)</a>
+  <a href="#fluxo-de-trabalho" class="toc-h2">Fluxo de Trabalho</a>
+  <a href="#regras-de-analise-de-codigo" class="toc-h2">Regras de Analise de Codigo</a>
+  <a href="#tratamento-de-conflitos" class="toc-h2">Tratamento de Conflitos</a>
+  <a href="#alternando-entre-visoes" class="toc-h2">Alternando Entre Visoes</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

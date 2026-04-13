@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html" class="active">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -92,9 +92,9 @@ de tus archivos .prg hasta lanzar el ejecutable resultante.</p>
   sin scripts de linea de comandos, sin pasos manuales.</p>
 </div>
 
-<h2>El Proceso de Construccion de 7 Pasos</h2>
+<h2 id="el-proceso-de-construccion-de-7-pasos">El Proceso de Construccion de 7 Pasos</h2>
 
-<h3>Detalles de los Pasos</h3>
+<h3 id="detalles-de-los-pasos">Detalles de los Pasos</h3>
 
 <table>
   <tr><th>Paso</th><th>Herramienta</th><th>Entrada</th><th>Salida</th><th>Descripcion</th></tr>
@@ -107,7 +107,7 @@ de tus archivos .prg hasta lanzar el ejecutable resultante.</p>
   <tr><td><strong>7. Lanzar</strong></td><td>IDE</td><td>.exe</td><td>aplicacion en ejecucion</td><td>Lanza la aplicacion compilada para pruebas.</td></tr>
 </table>
 
-<h2>Dialogo de Progreso</h2>
+<h2 id="dialogo-de-progreso">Dialogo de Progreso</h2>
 
 <p>Durante la construccion, un dialogo de progreso muestra el estado en tiempo real de cada paso:</p>
 
@@ -118,7 +118,7 @@ de tus archivos .prg hasta lanzar el ejecutable resultante.</p>
   <li><strong>Salida de registro</strong> — salida cruda del compilador y enlazador mostrada en un area de texto desplazable.</li>
 </ul>
 
-<h2>Dialogo de Errores</h2>
+<h2 id="dialogo-de-errores">Dialogo de Errores</h2>
 
 <p>Si la construccion falla, aparece un dialogo de errores con:</p>
 
@@ -129,7 +129,7 @@ de tus archivos .prg hasta lanzar el ejecutable resultante.</p>
   <li><strong>Doble clic para navegar</strong> — hacer clic en un error abre el archivo fuente en la linea exacta.</li>
 </ul>
 
-<h2>Panel de Mensajes de Construccion</h2>
+<h2 id="panel-de-mensajes-de-construccion">Panel de Mensajes de Construccion</h2>
 
 <p>El panel de Mensajes de Construccion en la parte inferior del IDE muestra la salida de cada construccion:</p>
 
@@ -147,7 +147,7 @@ de tus archivos .prg hasta lanzar el ejecutable resultante.</p>
   el editor de codigo. El editor resalta la linea problematica para identificacion rapida.</p>
 </div>
 
-<h2>Atajos de Teclado</h2>
+<h2 id="atajos-de-teclado">Atajos de Teclado</h2>
 
 <table>
   <tr><th>Atajo</th><th>Accion</th></tr>
@@ -158,7 +158,7 @@ de tus archivos .prg hasta lanzar el ejecutable resultante.</p>
   <tr><td><strong>Ctrl+Shift+B</strong></td><td>Construir solo el archivo actual</td></tr>
 </table>
 
-<h2>Soporte Multi-Compilador</h2>
+<h2 id="soporte-multi-compilador">Soporte Multi-Compilador</h2>
 
 <p>HarbourBuilder soporta multiples compiladores C para el paso de enlazado. Elige el que
 mejor se adapte a tu plataforma y licenciamiento:</p>
@@ -171,7 +171,7 @@ mejor se adapte a tu plataforma y licenciamiento:</p>
   <tr><td><strong>Clang</strong></td><td>macOS, Linux</td><td>BSD-style</td><td>Recomendado para macOS. Parte de Xcode Command Line Tools.</td></tr>
 </table>
 
-<h2>Reconstruccion Inteligente</h2>
+<h2 id="reconstruccion-inteligente">Reconstruccion Inteligente</h2>
 
 <p>HarbourBuilder usa un sistema de seguimiento de dependencias para evitar recompilaciones innecesarias:</p>
 
@@ -189,7 +189,7 @@ mejor se adapte a tu plataforma y licenciamiento:</p>
   configuraciones del compilador, agregar dependencias de bibliotecas, o cuando las construcciones incrementales producen resultados inesperados.</p>
 </div>
 
-<h2>Opciones del Proyecto</h2>
+<h2 id="opciones-del-proyecto">Opciones del Proyecto</h2>
 
 <p>Configura tus ajustes de construccion mediante <strong>Proyecto &gt; Opciones</strong>:</p>
 
@@ -203,7 +203,7 @@ mejor se adapte a tu plataforma y licenciamiento:</p>
   <tr><td><strong>Depuracion</strong></td><td>Habilitar construccion de depuracion (-gh -b), generar archivo de mapa, salida de simbolos.</td></tr>
 </table>
 
-<h2>Directorio de Salida de Construccion</h2>
+<h2 id="directorio-de-salida-de-construccion">Directorio de Salida de Construccion</h2>
 
 <p>Por defecto, la salida compilada va a la carpeta <code>output/</code> dentro de tu proyecto.
 Puedes personalizar esto en Opciones del Proyecto:</p>
@@ -221,7 +221,28 @@ Puedes personalizar esto en Opciones del Proyecto:</p>
   <p>Para distribucion, haz una reconstruccion limpia (Shift+F9) sin banderas de depuracion (-gh -b).
   Esto produce un ejecutable mas pequeno y rapido sin simbolos de depuracion incorporados.</p>
 </div>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#el-proceso-de-construccion-de-7-pasos" class="toc-h2">El Proceso de Construccion de 7 Pasos</a>
+  <a href="#detalles-de-los-pasos" class="toc-h3">Detalles de los Pasos</a>
+  <a href="#dialogo-de-progreso" class="toc-h2">Dialogo de Progreso</a>
+  <a href="#dialogo-de-errores" class="toc-h2">Dialogo de Errores</a>
+  <a href="#panel-de-mensajes-de-construccion" class="toc-h2">Panel de Mensajes de Construccion</a>
+  <a href="#atajos-de-teclado" class="toc-h2">Atajos de Teclado</a>
+  <a href="#soporte-multi-compilador" class="toc-h2">Soporte Multi-Compilador</a>
+  <a href="#reconstruccion-inteligente" class="toc-h2">Reconstruccion Inteligente</a>
+  <a href="#opciones-del-proyecto" class="toc-h2">Opciones del Proyecto</a>
+  <a href="#directorio-de-salida-de-construccion" class="toc-h2">Directorio de Salida de Construccion</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

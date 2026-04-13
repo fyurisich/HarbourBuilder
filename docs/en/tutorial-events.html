@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html" class="active">Event Handling</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -96,7 +96,7 @@
 a key, resizes a window, or closes a form, HarbourBuilder fires an event that your code can
 handle. This tutorial covers all the major event types and the different ways to respond to them.</p>
 
-<h2>Step 1: Understanding Events in HarbourBuilder</h2>
+<h2 id="step-1-understanding-events-in-harbourbuilder">Step 1: Understanding Events in HarbourBuilder</h2>
 <p>Every HarbourBuilder control exposes a set of event properties (e.g. <code>OnClick</code>, <code>OnChange</code>).
 You assign a <strong>code block</strong> or a <strong>method reference</strong> to these properties. When the event
 fires, HarbourBuilder executes your handler.</p>
@@ -112,7 +112,7 @@ graph LR
     style D fill:#f0883e,stroke:#d18616,color:#0d1117
 </div>
 
-<h2>Step 2: Generating Event Handlers via the Object Inspector</h2>
+<h2 id="step-2-generating-event-handlers-via-the-object-inspector">Step 2: Generating Event Handlers via the Object Inspector</h2>
 <ol>
   <li>Select a control on the form (e.g. a Button).</li>
   <li>In the Object Inspector, switch to the <strong>Events</strong> tab.</li>
@@ -132,7 +132,7 @@ graph LR
   properly named handlers (e.g. <code>OnBtnSaveClick</code>) and wires up the code block automatically.</p>
 </div>
 
-<h2>Step 3: OnClick &mdash; Button and Control Clicks</h2>
+<h2 id="step-3-onclick-button-and-control-clicks">Step 3: OnClick &mdash; Button and Control Clicks</h2>
 <p>The most common event. Fires when the user clicks a button, label, image, or any clickable control.</p>
 
 <p><strong>Inline code block (simple logic):</strong></p>
@@ -155,7 +155,7 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Step 4: OnChange &mdash; Value Changes</h2>
+<h2 id="step-4-onchange-value-changes">Step 4: OnChange &mdash; Value Changes</h2>
 <p>Fires whenever the value of an input control changes. Useful for TextBox (<code>TGet</code>), ComboBox,
 CheckBox, and Spinner controls.</p>
 
@@ -175,7 +175,7 @@ CheckBox, and Spinner controls.</p>
   operations (like database queries), consider using a <code>TTimer</code> to debounce the input.</p>
 </div>
 
-<h2>Step 5: OnKeyDown &mdash; Keyboard Input</h2>
+<h2 id="step-5-onkeydown-keyboard-input">Step 5: OnKeyDown &mdash; Keyboard Input</h2>
 <p>Fires when a key is pressed while the control has focus. The handler receives the key code
 and modifier flags as parameters.</p>
 
@@ -200,7 +200,7 @@ and modifier flags as parameters.</p>
 <p>Common key constants: <code>VK_RETURN</code>, <code>VK_ESCAPE</code>, <code>VK_TAB</code>, <code>VK_DELETE</code>,
 <code>VK_F1</code> through <code>VK_F12</code>, <code>VK_UP</code>, <code>VK_DOWN</code>, <code>VK_LEFT</code>, <code>VK_RIGHT</code>.</p>
 
-<h2>Step 6: OnResize &mdash; Form and Control Resizing</h2>
+<h2 id="step-6-onresize-form-and-control-resizing">Step 6: OnResize &mdash; Form and Control Resizing</h2>
 <p>Fires when the user resizes the form. Use this to reposition or resize controls dynamically
 for a responsive layout.</p>
 
@@ -220,7 +220,7 @@ for a responsive layout.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Step 7: OnClose &mdash; Form Closing</h2>
+<h2 id="step-7-onclose-form-closing">Step 7: OnClose &mdash; Form Closing</h2>
 <p>Fires when the user tries to close the form (clicking the X button, pressing Alt+F4, or calling
 <code>Close()</code>). Return <code>.F.</code> from the handler to <strong>prevent</strong> the form from closing &mdash; useful for
 unsaved-changes prompts.</p>
@@ -256,7 +256,7 @@ unsaved-changes prompts.</p>
   (e.g. the Cancel option) so they are never trapped in a form they cannot exit.</p>
 </div>
 
-<h2>Event Parameters Summary</h2>
+<h2 id="event-parameters-summary">Event Parameters Summary</h2>
 <table style="width:100%; border-collapse:collapse; margin:1em 0;">
   <tr style="border-bottom:1px solid #444;">
     <th style="text-align:left; padding:8px;">Event</th>
@@ -296,7 +296,7 @@ unsaved-changes prompts.</p>
   </tr>
 </table>
 
-<h2>Code Block vs. Method Handler</h2>
+<h2 id="code-block-vs-method-handler">Code Block vs. Method Handler</h2>
 <p>HarbourBuilder supports two styles for event handlers:</p>
 
 <p><strong>Code block</strong> &mdash; best for short, inline logic:</p>
@@ -322,6 +322,25 @@ unsaved-changes prompts.</p>
   tutorial to build a data-driven application with SQLite.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#step-1-understanding-events-in-harbourbuilder" class="toc-h2">Step 1: Understanding Events in HarbourBuilder</a>
+  <a href="#step-2-generating-event-handlers-via-the-object-inspector" class="toc-h2">Step 2: Generating Event Handlers via the Object Inspector</a>
+  <a href="#step-3-onclick-button-and-control-clicks" class="toc-h2">Step 3: OnClick &amp;mdash; Button and Control Clicks</a>
+  <a href="#step-4-onchange-value-changes" class="toc-h2">Step 4: OnChange &amp;mdash; Value Changes</a>
+  <a href="#step-5-onkeydown-keyboard-input" class="toc-h2">Step 5: OnKeyDown &amp;mdash; Keyboard Input</a>
+  <a href="#step-6-onresize-form-and-control-resizing" class="toc-h2">Step 6: OnResize &amp;mdash; Form and Control Resizing</a>
+  <a href="#step-7-onclose-form-closing" class="toc-h2">Step 7: OnClose &amp;mdash; Form Closing</a>
+  <a href="#event-parameters-summary" class="toc-h2">Event Parameters Summary</a>
+  <a href="#code-block-vs-method-handler" class="toc-h2">Code Block vs. Method Handler</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html" class="active">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -107,7 +107,7 @@ agrupadas por categoria e incluem o tipo da propriedade (<code>PT_STRING</code>,
   </table>
 </div>
 
-<h2>Propriedades de Aparencia</h2>
+<h2 id="propriedades-de-aparencia">Propriedades de Aparencia</h2>
 <p>Estas propriedades controlam a aparencia de um controle na tela — cores, bordas, estilos e estado visual.</p>
 
 <table>
@@ -137,7 +137,7 @@ agrupadas por categoria e incluem o tipo da propriedade (<code>PT_STRING</code>,
   <tr><td><code>nPosition</code></td><td>PT_NUMBER</td><td>Posicao atual do slider/thumb</td><td>TrackBar, ScrollBar</td></tr>
 </table>
 
-<h2>Posicao e Tamanho</h2>
+<h2 id="posicao-e-tamanho">Posicao e Tamanho</h2>
 <p>Estas propriedades determinam onde um controle e posicionado e qual seu tamanho.</p>
 
 <table>
@@ -154,7 +154,7 @@ agrupadas por categoria e incluem o tipo da propriedade (<code>PT_STRING</code>,
   <tr><td><code>nMinHeight</code></td><td>PT_NUMBER</td><td>Altura minima permitida ao redimensionar</td><td>Form</td></tr>
 </table>
 
-<h2>Propriedades de Comportamento</h2>
+<h2 id="propriedades-de-comportamento">Propriedades de Comportamento</h2>
 <p>Estas propriedades afetam como um controle se comporta e responde a interacao do usuario.</p>
 
 <table>
@@ -178,7 +178,7 @@ agrupadas por categoria e incluem o tipo da propriedade (<code>PT_STRING</code>,
   <tr><td><code>lModal</code></td><td>PT_LOGICAL</td><td>Se o formulario bloqueia interacao com outras janelas</td><td>Form, Dialog</td></tr>
 </table>
 
-<h2>Propriedades de Fonte</h2>
+<h2 id="propriedades-de-fonte">Propriedades de Fonte</h2>
 <p>Propriedades relacionadas a fonte controlam a tipografia do texto exibido nos controles.</p>
 
 <table>
@@ -198,7 +198,7 @@ agrupadas por categoria e incluem o tipo da propriedade (<code>PT_STRING</code>,
   fonte de todos os controles filhos de uma vez, a menos que um filho a substitua com suas proprias configuracoes.</p>
 </div>
 
-<h2>Propriedades de Dados</h2>
+<h2 id="propriedades-de-dados">Propriedades de Dados</h2>
 <p>Propriedades relacionadas a vinculacao de dados, conteudo e controles conscientes de dados.</p>
 
 <table>
@@ -218,7 +218,7 @@ agrupadas por categoria e incluem o tipo da propriedade (<code>PT_STRING</code>,
   <tr><td><code>cTableName</code></td><td>PT_STRING</td><td>Nome da tabela de banco de dados</td><td>DbfTable, MySQL, MariaDB, PostgreSQL, SQLite, Firebird, SQLServer, Oracle, MongoDB</td></tr>
 </table>
 
-<h2>Propriedades Especificas de Controle</h2>
+<h2 id="propriedades-especificas-de-controle">Propriedades Especificas de Controle</h2>
 <p>Estas propriedades sao unicas para tipos de controle especificos e nao sao compartilhadas amplamente.</p>
 
 <table>
@@ -248,7 +248,7 @@ agrupadas por categoria e incluem o tipo da propriedade (<code>PT_STRING</code>,
   <tr><td><code>cDatabase</code></td><td>PT_STRING</td><td>Nome do banco de dados</td><td>MySQL, MariaDB, PostgreSQL, SQLite, Firebird, SQLServer, Oracle, MongoDB</td></tr>
 </table>
 
-<h2>Definindo Propriedades em Codigo</h2>
+<h2 id="definindo-propriedades-em-codigo">Definindo Propriedades em Codigo</h2>
 <p>Propriedades podem ser definidas em codigo apos a criacao de um controle:</p>
 
 <pre><span class="kw">local</span> oForm, oBtn, oLabel
@@ -284,7 +284,7 @@ oBtn:<span class="nb">nTabIndex</span>      := <span class="nb">0</span>
 
 <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span></pre>
 
-<h2>Definindo Propriedades no Inspetor de Objetos</h2>
+<h2 id="definindo-propriedades-no-inspetor-de-objetos">Definindo Propriedades no Inspetor de Objetos</h2>
 <p>No IDE HarbourBuilder, selecione qualquer controle no Designer de Formularios e alterne para a
 aba <strong>Propriedades</strong> no Inspetor de Objetos. As propriedades sao agrupadas por categoria:</p>
 
@@ -306,7 +306,7 @@ abrem um dialogo de fonte; propriedades logicas alternam entre <code>.T.</code> 
   Voce pode ver o efeito de cada alteracao de propriedade imediatamente sem recompilar.</p>
 </div>
 
-<h2>Heranca de Propriedades</h2>
+<h2 id="heranca-de-propriedades">Heranca de Propriedades</h2>
 <p>Controles herdam certas propriedades do seu container pai. A cadeia de heranca e:</p>
 
 <div class="mermaid">
@@ -330,6 +330,25 @@ graph TD
 
 <p>Um controle filho pode substituir qualquer propriedade herdada definindo-a explicitamente.</p>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#propriedades-de-aparencia" class="toc-h2">Propriedades de Aparencia</a>
+  <a href="#posicao-e-tamanho" class="toc-h2">Posicao e Tamanho</a>
+  <a href="#propriedades-de-comportamento" class="toc-h2">Propriedades de Comportamento</a>
+  <a href="#propriedades-de-fonte" class="toc-h2">Propriedades de Fonte</a>
+  <a href="#propriedades-de-dados" class="toc-h2">Propriedades de Dados</a>
+  <a href="#propriedades-especificas-de-controle" class="toc-h2">Propriedades Especificas de Controle</a>
+  <a href="#definindo-propriedades-em-codigo" class="toc-h2">Definindo Propriedades em Codigo</a>
+  <a href="#definindo-propriedades-no-inspetor-de-objetos" class="toc-h2">Definindo Propriedades no Inspetor de Objetos</a>
+  <a href="#heranca-de-propriedades" class="toc-h2">Heranca de Propriedades</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

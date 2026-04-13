@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html" class="active">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -92,7 +92,7 @@ e incluso entrenar transformers pequenos desde cero — todo desde codigo Harbou
   con 7 ejemplos que cubren cada aspecto del componente transformer.</p>
 </div>
 
-<h2>Proyectos de Ejemplo</h2>
+<h2 id="proyectos-de-ejemplo">Proyectos de Ejemplo</h2>
 
 <table>
   <tr><th>#</th><th>Proyecto</th><th>Descripcion</th></tr>
@@ -105,7 +105,7 @@ e incluso entrenar transformers pequenos desde cero — todo desde codigo Harbou
   <tr><td>7</td><td><strong>Attention Walkthrough</strong></td><td>Recorrido paso a paso de la arquitectura "Attention Is All You Need".</td></tr>
 </table>
 
-<h2>Arquitectura del Transformer</h2>
+<h2 id="arquitectura-del-transformer">Arquitectura del Transformer</h2>
 
 <div class="mermaid">
 graph LR
@@ -119,7 +119,7 @@ graph LR
     H --> I["Probabilidades\nde Salida"]
 </div>
 
-<h2>Propiedades</h2>
+<h2 id="propiedades">Propiedades</h2>
 
 <table>
   <tr><th>Propiedad</th><th>Tipo</th><th>Valor por defecto</th><th>Descripcion</th></tr>
@@ -134,7 +134,7 @@ graph LR
   <tr><td><code>lCausal</code></td><td>Logico</td><td>.T.</td><td>Usar mascara causal (decodificador). Establecer a .F. para modo solo codificador o bidireccional.</td></tr>
 </table>
 
-<h2>Eventos</h2>
+<h2 id="eventos">Eventos</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Descripcion</th></tr>
@@ -144,7 +144,7 @@ graph LR
   <tr><td><code>OnLoss</code></td><td><code>nLoss</code></td><td>Se dispara cuando se calcula el valor de perdida durante el paso adelante. Usar para monitoreo y parada temprana.</td></tr>
 </table>
 
-<h2>Ejemplo 1: Cargar un Modelo Preentrenado</h2>
+<h2 id="ejemplo-1-cargar-un-modelo-preentrenado">Ejemplo 1: Cargar un Modelo Preentrenado</h2>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
 
@@ -171,7 +171,7 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Ejemplo 2: Generacion de Tokens en Streaming</h2>
+<h2 id="ejemplo-2-generacion-de-tokens-en-streaming">Ejemplo 2: Generacion de Tokens en Streaming</h2>
 <pre><span class="kw">static function</span> <span class="fn">EjemploStream</span>()
 
    <span class="kw">local</span> oTransformer
@@ -189,7 +189,7 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Ejemplo 3: Visualizacion de Atencion</h2>
+<h2 id="ejemplo-3-visualizacion-de-atencion">Ejemplo 3: Visualizacion de Atencion</h2>
 <pre><span class="kw">static function</span> <span class="fn">AtencionVis</span>()
 
    <span class="kw">local</span> oTransformer
@@ -212,7 +212,7 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Ejemplo 4: Entrenar desde Cero</h2>
+<h2 id="ejemplo-4-entrenar-desde-cero">Ejemplo 4: Entrenar desde Cero</h2>
 <pre><span class="kw">static function</span> <span class="fn">EjemploEntrenar</span>()
 
    <span class="kw">local</span> oTransformer
@@ -246,9 +246,9 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Detalles de Arquitectura</h2>
+<h2 id="detalles-de-arquitectura">Detalles de Arquitectura</h2>
 
-<h3>Mecanismo de Atencion</h3>
+<h3 id="mecanismo-de-atencion">Mecanismo de Atencion</h3>
 <p>Cada cabeza de atencion calcula la atencion estandar de producto escalar escalada:</p>
 
 <pre>Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V</pre>
@@ -256,13 +256,13 @@ graph LR
 <p>El mecanismo multi-cabeza ejecuta <code>nHeads</code> calculos de atencion en paralelo y
 concatena los resultados, luego aplica una proyeccion lineal.</p>
 
-<h3>Mascaramiento Causal</h3>
+<h3 id="mascaramiento-causal">Mascaramiento Causal</h3>
 <p>Cuando <code>lCausal</code> es <code>.T.</code> (por defecto), el transformer aplica una
 mascara causal (triangular) que impide que cada posicion atienda a posiciones futuras.
 Esto es esencial para la generacion de texto autorregresiva. Establece <code>lCausal := .F.</code> para
 tareas bidireccionales como clasificacion o modelado de lenguaje enmascarado.</p>
 
-<h3>Red Feed-Forward</h3>
+<h3 id="red-feed-forward">Red Feed-Forward</h3>
 <p>Cada capa contiene una red feed-forward posicional:</p>
 
 <pre>FFN(x) = max(0, x * W1 + b1) * W2 + b2</pre>
@@ -281,7 +281,30 @@ tareas bidireccionales como clasificacion o modelado de lenguaje enmascarado.</p
   <p>Abre cualquiera de los 7 proyectos de ejemplo en <code>samples/projects/transformer/</code> para
   ver implementaciones completas y ejecutables de cada patron descrito en este tutorial.</p>
 </div>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#proyectos-de-ejemplo" class="toc-h2">Proyectos de Ejemplo</a>
+  <a href="#arquitectura-del-transformer" class="toc-h2">Arquitectura del Transformer</a>
+  <a href="#propiedades" class="toc-h2">Propiedades</a>
+  <a href="#eventos" class="toc-h2">Eventos</a>
+  <a href="#ejemplo-1-cargar-un-modelo-preentrenado" class="toc-h2">Ejemplo 1: Cargar un Modelo Preentrenado</a>
+  <a href="#ejemplo-2-generacion-de-tokens-en-streaming" class="toc-h2">Ejemplo 2: Generacion de Tokens en Streaming</a>
+  <a href="#ejemplo-3-visualizacion-de-atencion" class="toc-h2">Ejemplo 3: Visualizacion de Atencion</a>
+  <a href="#ejemplo-4-entrenar-desde-cero" class="toc-h2">Ejemplo 4: Entrenar desde Cero</a>
+  <a href="#detalles-de-arquitectura" class="toc-h2">Detalles de Arquitectura</a>
+  <a href="#mecanismo-de-atencion" class="toc-h3">Mecanismo de Atencion</a>
+  <a href="#mascaramiento-causal" class="toc-h3">Mascaramiento Causal</a>
+  <a href="#red-feed-forward" class="toc-h3">Red Feed-Forward</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

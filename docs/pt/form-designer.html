@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html" class="active">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -99,7 +99,7 @@ e veja o codigo gerar automaticamente.</p>
   Suas implementacoes de METHOD sao sempre preservadas durante a regeneracao do codigo.</p>
 </div>
 
-<h2>Recursos do Designer</h2>
+<h2 id="recursos-do-designer">Recursos do Designer</h2>
 
 <ul>
   <li><strong>Fundo com grade de pontos</strong> com snap-to-grid para alinhamento preciso</li>
@@ -111,9 +111,9 @@ e veja o codigo gerar automaticamente.</p>
   <li><strong>Menu Formatar</strong> — alinhar e distribuir controles</li>
 </ul>
 
-<h2>Selecao de Controles</h2>
+<h2 id="selecao-de-controles">Selecao de Controles</h2>
 
-<h3>Selecao Unica</h3>
+<h3 id="selecao-unica">Selecao Unica</h3>
 <p>Clique em qualquer controle no formulario para seleciona-lo. Uma borda azul com 8 alcas de redimensionamento aparece:</p>
 <ul>
   <li><strong>Alcas de canto</strong> — redimensionam largura e altura simultaneamente</li>
@@ -121,11 +121,11 @@ e veja o codigo gerar automaticamente.</p>
   <li><strong>Arrastar corpo</strong> — move o controle sem redimensionar</li>
 </ul>
 
-<h3>Multi-Selecao</h3>
+<h3 id="multi-selecao">Multi-Selecao</h3>
 <p>Mantenha Shift pressionado e clique para adicionar/remover controles da selecao, ou clique e arraste para criar um retangulo
 de selecao por elastico. Todos os controles selecionados mostram alcas simultaneamente.</p>
 
-<h2>Copiar e Colar Controles</h2>
+<h2 id="copiar-e-colar-controles">Copiar e Colar Controles</h2>
 
 <p>O HarbourBuilder suporta operacoes completas de area de transferencia para controles:</p>
 
@@ -139,7 +139,7 @@ de selecao por elastico. Todos os controles selecionados mostram alcas simultane
 
 <p>Ao colar, os controles sao automaticamente deslocados em 16 pixels para evitar sobreposicao com o original.</p>
 
-<h2>Menu Formatar</h2>
+<h2 id="menu-formatar">Menu Formatar</h2>
 
 <p>O menu Formatar oferece 8 modos de alinhamento e distribuicao:</p>
 
@@ -155,7 +155,7 @@ de selecao por elastico. Todos os controles selecionados mostram alcas simultane
   <tr><td><strong>Espacar Verticalmente</strong></td><td>Distribui os controles com espacamento vertical igual</td></tr>
 </table>
 
-<h2>Geracao de Codigo em Tempo Real</h2>
+<h2 id="geracao-de-codigo-em-tempo-real">Geracao de Codigo em Tempo Real</h2>
 
 <p>Cada acao no designer gera codigo xBase correspondente. Por exemplo, soltar um botao
 gera:</p>
@@ -166,7 +166,7 @@ gera:</p>
 <p>Alterar propriedades no Inspetor de Objetos atualiza o codigo imediatamente. A sincronizacao bidirecional garante
 que seu design visual e codigo estejam sempre em harmonia.</p>
 
-<h2>Modo Design vs Modo Execucao</h2>
+<h2 id="modo-design-vs-modo-execucao">Modo Design vs Modo Execucao</h2>
 
 <p>Formularios possuem uma propriedade <code>FDesignMode</code> que controla o comportamento:</p>
 
@@ -176,7 +176,7 @@ que seu design visual e codigo estejam sempre em harmonia.</p>
   <tr><td><strong>Modo Execucao</strong> (FDesignMode = .F.)</td><td>Formulario roda normalmente. Controles respondem a interacao do usuario. Sem geracao de codigo.</td></tr>
 </table>
 
-<h2>Propriedades do Formulario no Designer</h2>
+<h2 id="propriedades-do-formulario-no-designer">Propriedades do Formulario no Designer</h2>
 
 <table>
   <tr><th>Propriedade</th><th>Tipo</th><th>Descricao</th></tr>
@@ -191,9 +191,9 @@ que seu design visual e codigo estejam sempre em harmonia.</p>
   <tr><td><code>lCenter</code></td><td>Logico</td><td>Centralizar formulario na tela ao exibir</td></tr>
 </table>
 
-<h2>Exemplos de Codigo</h2>
+<h2 id="exemplos-de-codigo">Exemplos de Codigo</h2>
 
-<h3>Sintaxe DEFINE FORM Simples</h3>
+<h3 id="sintaxe-define-form-simples">Sintaxe DEFINE FORM Simples</h3>
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
 
 <span class="kw">function</span> <span class="fn">Main</span>()
@@ -205,7 +205,7 @@ que seu design visual e codigo estejam sempre em harmonia.</p>
    <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Abordagem Baseada em Classe (Gerado pelo IDE)</h3>
+<h3 id="abordagem-baseada-em-classe-gerado-pelo-ide">Abordagem Baseada em Classe (Gerado pelo IDE)</h3>
 <pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
 
    <span class="kw">METHOD</span> <span class="fn">CreateForm</span>()
@@ -226,7 +226,7 @@ que seu design visual e codigo estejam sempre em harmonia.</p>
   enquanto a abordagem baseada em classes e melhor para aplicacoes complexas com multiplos formularios.</p>
 </div>
 
-<h2>Dicas para Design Eficiente de Formularios</h2>
+<h2 id="dicas-para-design-eficiente-de-formularios">Dicas para Design Eficiente de Formularios</h2>
 
 <ol>
   <li><strong>Use o Inspetor de Objetos</strong> — Defina propriedades visualmente em vez de escrever codigo</li>
@@ -238,6 +238,29 @@ que seu design visual e codigo estejam sempre em harmonia.</p>
   <li><strong>Salve frequentemente</strong> — Ctrl+S salva tanto os dados de design quanto o codigo</li>
 </ol>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#recursos-do-designer" class="toc-h2">Recursos do Designer</a>
+  <a href="#selecao-de-controles" class="toc-h2">Selecao de Controles</a>
+  <a href="#selecao-unica" class="toc-h3">Selecao Unica</a>
+  <a href="#multi-selecao" class="toc-h3">Multi-Selecao</a>
+  <a href="#copiar-e-colar-controles" class="toc-h2">Copiar e Colar Controles</a>
+  <a href="#menu-formatar" class="toc-h2">Menu Formatar</a>
+  <a href="#geracao-de-codigo-em-tempo-real" class="toc-h2">Geracao de Codigo em Tempo Real</a>
+  <a href="#modo-design-vs-modo-execucao" class="toc-h2">Modo Design vs Modo Execucao</a>
+  <a href="#propriedades-do-formulario-no-designer" class="toc-h2">Propriedades do Formulario no Designer</a>
+  <a href="#exemplos-de-codigo" class="toc-h2">Exemplos de Codigo</a>
+  <a href="#sintaxe-define-form-simples" class="toc-h3">Sintaxe DEFINE FORM Simples</a>
+  <a href="#abordagem-baseada-em-classe-gerado-pelo-ide" class="toc-h3">Abordagem Baseada em Classe (Gerado pelo IDE)</a>
+  <a href="#dicas-para-design-eficiente-de-formularios" class="toc-h2">Dicas para Design Eficiente de Formularios</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

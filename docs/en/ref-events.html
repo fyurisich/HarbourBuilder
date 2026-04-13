@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html" class="active">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -101,7 +101,7 @@ the core of HarbourBuilder's reactive programming model.</p>
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Event Assignment Syntax</h2>
+<h2 id="event-assignment-syntax">Event Assignment Syntax</h2>
 <p>Events are assigned using the standard Harbour assignment operator with a code block:</p>
 
 <pre><span class="cm">--- Simple event: show a message ---</span>
@@ -130,7 +130,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Mouse Events</h2>
+<h2 id="mouse-events">Mouse Events</h2>
 
 <table>
   <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
@@ -172,7 +172,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   </tr>
 </table>
 
-<h3>Mouse Event Examples</h3>
+<h3 id="mouse-event-examples">Mouse Event Examples</h3>
 
 <pre><span class="cm">--- OnClick: simple button action ---</span>
 oBtn:<span class="fn">OnClick</span> := { || <span class="fn">MsgInfo</span>( <span class="st">"Hello!"</span> ) }
@@ -195,7 +195,7 @@ oImage:<span class="fn">OnMouseWheel</span> := { | nDelta, nX, nY | ;
 }</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Keyboard Events</h2>
+<h2 id="keyboard-events">Keyboard Events</h2>
 
 <table>
   <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
@@ -219,7 +219,7 @@ oImage:<span class="fn">OnMouseWheel</span> := { | nDelta, nX, nY | ;
   </tr>
 </table>
 
-<h3>Keyboard Event Examples</h3>
+<h3 id="keyboard-event-examples">Keyboard Event Examples</h3>
 
 <pre><span class="cm">--- OnKeyDown: handle Enter and Escape ---</span>
 oForm:<span class="fn">OnKeyDown</span> := { | nKey, nFlags | ;
@@ -246,7 +246,7 @@ oForm:<span class="fn">OnKeyUp</span> := { | nKey, nFlags | ;
 }</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Focus and Selection Events</h2>
+<h2 id="focus-and-selection-events">Focus and Selection Events</h2>
 
 <table>
   <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
@@ -270,7 +270,7 @@ oForm:<span class="fn">OnKeyUp</span> := { | nKey, nFlags | ;
   </tr>
 </table>
 
-<h3>Focus Event Examples</h3>
+<h3 id="focus-event-examples">Focus Event Examples</h3>
 
 <pre><span class="cm">--- OnEnter: highlight the active field ---</span>
 oEdit:<span class="fn">OnEnter</span> := { || ;
@@ -297,7 +297,7 @@ oMemo:<span class="fn">OnChange</span> := { || ;
 }</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Form Lifecycle Events</h2>
+<h2 id="form-lifecycle-events">Form Lifecycle Events</h2>
 
 <table>
   <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
@@ -363,7 +363,7 @@ oMemo:<span class="fn">OnChange</span> := { || ;
   </tr>
 </table>
 
-<h3>Form Lifecycle Examples</h3>
+<h3 id="form-lifecycle-examples">Form Lifecycle Examples</h3>
 
 <pre><span class="cm">--- OnCreate: early initialization ---</span>
 oForm:<span class="fn">OnCreate</span> := { || ;
@@ -400,7 +400,7 @@ oForm:<span class="fn">OnClose</span> := { || ;
 }</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Timer Events</h2>
+<h2 id="timer-events">Timer Events</h2>
 
 <table>
   <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
@@ -412,7 +412,7 @@ oForm:<span class="fn">OnClose</span> := { || ;
   </tr>
 </table>
 
-<h3>Timer Event Example</h3>
+<h3 id="timer-event-example">Timer Event Example</h3>
 
 <pre><span class="cm">--- OnTimer: update a clock label every second ---</span>
 oTimer:<span class="nb">nInterval</span> := <span class="nb">1000</span>   <span class="cm">/// 1 second</span>
@@ -430,7 +430,7 @@ oAutoSave:<span class="fn">OnTimer</span> := { || ;
 }</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Paint and Resize Events</h2>
+<h2 id="paint-and-resize-events">Paint and Resize Events</h2>
 
 <table>
   <tr><th>Event</th><th>Parameters</th><th>Available Controls</th><th>Description</th></tr>
@@ -448,7 +448,7 @@ oAutoSave:<span class="fn">OnTimer</span> := { || ;
   </tr>
 </table>
 
-<h3>Paint and Resize Examples</h3>
+<h3 id="paint-and-resize-examples">Paint and Resize Examples</h3>
 
 <pre><span class="cm">--- OnPaint: custom drawing on a PaintBox ---</span>
 oPaintBox:<span class="fn">OnPaint</span> := { || ;
@@ -466,7 +466,7 @@ oForm:<span class="fn">OnResize</span> := { | nW, nH | ;
 }</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Complete Event Summary Table</h2>
+<h2 id="complete-event-summary-table">Complete Event Summary Table</h2>
 
 <table>
   <tr><th>Event</th><th>Category</th><th>Primary Controls</th></tr>
@@ -504,6 +504,30 @@ oForm:<span class="fn">OnResize</span> := { | nW, nH | ;
   Understanding this order helps you choose the right event for your use case.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#event-assignment-syntax" class="toc-h2">Event Assignment Syntax</a>
+  <a href="#mouse-events" class="toc-h2">Mouse Events</a>
+  <a href="#mouse-event-examples" class="toc-h3">Mouse Event Examples</a>
+  <a href="#keyboard-events" class="toc-h2">Keyboard Events</a>
+  <a href="#keyboard-event-examples" class="toc-h3">Keyboard Event Examples</a>
+  <a href="#focus-and-selection-events" class="toc-h2">Focus and Selection Events</a>
+  <a href="#focus-event-examples" class="toc-h3">Focus Event Examples</a>
+  <a href="#form-lifecycle-events" class="toc-h2">Form Lifecycle Events</a>
+  <a href="#form-lifecycle-examples" class="toc-h3">Form Lifecycle Examples</a>
+  <a href="#timer-events" class="toc-h2">Timer Events</a>
+  <a href="#timer-event-example" class="toc-h3">Timer Event Example</a>
+  <a href="#paint-and-resize-events" class="toc-h2">Paint and Resize Events</a>
+  <a href="#paint-and-resize-examples" class="toc-h3">Paint and Resize Examples</a>
+  <a href="#complete-event-summary-table" class="toc-h2">Complete Event Summary Table</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

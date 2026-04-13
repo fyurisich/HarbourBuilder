@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html" class="active">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -102,7 +102,7 @@ dos seus arquivos .prg ate a execucao do executavel resultante.</p>
   sem scripts de linha de comando, sem etapas manuais.</p>
 </div>
 
-<h2>O Processo de Build em 7 Etapas</h2>
+<h2 id="o-processo-de-build-em-7-etapas">O Processo de Build em 7 Etapas</h2>
 
 <div class="mermaid">
 graph LR
@@ -121,7 +121,7 @@ graph LR
     style S7 fill:#3fb950,stroke:#2ea043,color:#0d1117
 </div>
 
-<h3>Detalhes das Etapas</h3>
+<h3 id="detalhes-das-etapas">Detalhes das Etapas</h3>
 
 <table>
   <tr><th>Etapa</th><th>Ferramenta</th><th>Entrada</th><th>Saida</th><th>Descricao</th></tr>
@@ -134,7 +134,7 @@ graph LR
   <tr><td><strong>7. Executar</strong></td><td>IDE</td><td>.exe</td><td>app rodando</td><td>Inicia a aplicacao compilada para teste.</td></tr>
 </table>
 
-<h2>Dialogo de Progresso</h2>
+<h2 id="dialogo-de-progresso">Dialogo de Progresso</h2>
 
 <p>Durante o build, um dialogo de progresso mostra o status em tempo real de cada etapa:</p>
 
@@ -145,7 +145,7 @@ graph LR
   <li><strong>Saida de log</strong> — saida bruta do compilador e linker em uma area de texto rolavel.</li>
 </ul>
 
-<h2>Dialogo de Erros</h2>
+<h2 id="dialogo-de-erros">Dialogo de Erros</h2>
 
 <p>Se o build falhar, um dialogo de erros aparece com:</p>
 
@@ -156,7 +156,7 @@ graph LR
   <li><strong>Duplo clique para navegar</strong> — clicar em um erro abre o arquivo fonte na linha exata.</li>
 </ul>
 
-<h2>Painel de Mensagens de Build</h2>
+<h2 id="painel-de-mensagens-de-build">Painel de Mensagens de Build</h2>
 
 <p>O painel Mensagens de Build na parte inferior do IDE mostra a saida de cada build:</p>
 
@@ -174,7 +174,7 @@ graph LR
   editor fonte. O editor destaca a linha problematica para identificacao rapida.</p>
 </div>
 
-<h2>Atalhos de Teclado</h2>
+<h2 id="atalhos-de-teclado">Atalhos de Teclado</h2>
 
 <table>
   <tr><th>Atalho</th><th>Acao</th></tr>
@@ -185,7 +185,7 @@ graph LR
   <tr><td><strong>Ctrl+Shift+B</strong></td><td>Compilar apenas o arquivo atual</td></tr>
 </table>
 
-<h2>Suporte a Multiplos Compiladores</h2>
+<h2 id="suporte-a-multiplos-compiladores">Suporte a Multiplos Compiladores</h2>
 
 <p>O HarbourBuilder suporta multiplos compiladores C para a etapa de linkagem. Escolha o que
 melhor se adequa a sua plataforma e licenciamento:</p>
@@ -198,7 +198,7 @@ melhor se adequa a sua plataforma e licenciamento:</p>
   <tr><td><strong>Clang</strong></td><td>macOS, Linux</td><td>BSD-style</td><td>Recomendado para macOS. Parte do Xcode Command Line Tools.</td></tr>
 </table>
 
-<h2>Rebuild Inteligente</h2>
+<h2 id="rebuild-inteligente">Rebuild Inteligente</h2>
 
 <p>O HarbourBuilder usa um sistema de rastreamento de dependencias para evitar recompilacoes desnecessarias:</p>
 
@@ -216,7 +216,7 @@ melhor se adequa a sua plataforma e licenciamento:</p>
   configuracoes do compilador, adicionar dependencias de bibliotecas ou quando builds incrementais produzem resultados inesperados.</p>
 </div>
 
-<h2>Opcoes do Projeto</h2>
+<h2 id="opcoes-do-projeto">Opcoes do Projeto</h2>
 
 <p>Configure as opcoes de build via <strong>Projeto &gt; Opcoes</strong>:</p>
 
@@ -230,7 +230,7 @@ melhor se adequa a sua plataforma e licenciamento:</p>
   <tr><td><strong>Depuracao</strong></td><td>Habilitar build de depuracao (-gh -b), gerar arquivo de mapa, saida de simbolos.</td></tr>
 </table>
 
-<h2>Diretorio de Saida do Build</h2>
+<h2 id="diretorio-de-saida-do-build">Diretorio de Saida do Build</h2>
 
 <p>Por padrao, a saida compilada vai para a pasta <code>output/</code> dentro do seu projeto.
 Voce pode personalizar isso nas Opcoes do Projeto:</p>
@@ -249,6 +249,26 @@ Voce pode personalizar isso nas Opcoes do Projeto:</p>
   Isso produz um executavel menor e mais rapido sem simbolos de depuracao incorporados.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#o-processo-de-build-em-7-etapas" class="toc-h2">O Processo de Build em 7 Etapas</a>
+  <a href="#detalhes-das-etapas" class="toc-h3">Detalhes das Etapas</a>
+  <a href="#dialogo-de-progresso" class="toc-h2">Dialogo de Progresso</a>
+  <a href="#dialogo-de-erros" class="toc-h2">Dialogo de Erros</a>
+  <a href="#painel-de-mensagens-de-build" class="toc-h2">Painel de Mensagens de Build</a>
+  <a href="#atalhos-de-teclado" class="toc-h2">Atalhos de Teclado</a>
+  <a href="#suporte-a-multiplos-compiladores" class="toc-h2">Suporte a Multiplos Compiladores</a>
+  <a href="#rebuild-inteligente" class="toc-h2">Rebuild Inteligente</a>
+  <a href="#opcoes-do-projeto" class="toc-h2">Opcoes do Projeto</a>
+  <a href="#diretorio-de-saida-do-build" class="toc-h2">Diretorio de Saida do Build</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

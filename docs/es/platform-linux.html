@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html" class="active">Linux</a>
@@ -98,7 +98,7 @@ con GNOME, XFCE, KDE y otros entornos de escritorio compatibles con GTK.</p>
   </table>
 </div>
 
-<h2>Vision General de la Arquitectura</h2>
+<h2 id="vision-general-de-la-arquitectura">Vision General de la Arquitectura</h2>
 
 <p>Cada formulario de HarbourBuilder es un <code>GtkWindow</code> con un contenedor <code>GtkFixed</code> para
 controles hijos posicionados absolutamente. El backend crea widgets GTK y almacena sus punteros
@@ -144,7 +144,7 @@ HB_FUNC( UI_FORMNEW )
   <tr><td>ToolBar</td><td><code>gtk_toolbar_new()</code></td></tr>
 </table>
 
-<h2>Manejo de Eventos (g_signal)</h2>
+<h2 id="manejo-de-eventos-g_signal">Manejo de Eventos (g_signal)</h2>
 <p>El backend GTK3 usa el sistema de senales de GObject (<code>g_signal_connect()</code>) para conectar
 eventos nativos de widgets a manejadores de eventos de Harbour:</p>
 
@@ -181,7 +181,7 @@ HB_FUNC( UI_ONEVENT )
    }
 }</pre>
 
-<h2>Modo Oscuro</h2>
+<h2 id="modo-oscuro">Modo Oscuro</h2>
 <p>El modo oscuro de GTK3 se controla mediante configuraciones de GTK:</p>
 
 <ul>
@@ -202,7 +202,7 @@ HB_FUNC( UI_ONEVENT )
   <code>gtk-application-prefer-dark-theme</code> en consecuencia.</p>
 </div>
 
-<h2>Integracion de Scintilla</h2>
+<h2 id="integracion-de-scintilla">Integracion de Scintilla</h2>
 <p>En Linux, Scintilla 5.6.1 se construye como biblioteca compartida:</p>
 
 <table>
@@ -213,9 +213,9 @@ HB_FUNC( UI_ONEVENT )
 
 <p>Scintilla se carga con <code>dlopen()</code> y <code>dlsym()</code> en tiempo de ejecucion.</p>
 
-<h2>Proceso de Construccion</h2>
+<h2 id="proceso-de-construccion">Proceso de Construccion</h2>
 
-<h3>Requisitos Previos</h3>
+<h3 id="requisitos-previos">Requisitos Previos</h3>
 <ol>
   <li><strong>Compilador GCC:</strong>
     <pre>sudo apt install gcc g++</pre>
@@ -228,7 +228,7 @@ HB_FUNC( UI_ONEVENT )
   </li>
 </ol>
 
-<h3>Script de Construccion (<code>build_linux.sh</code>)</h3>
+<h3 id="script-de-construccion-build_linuxsh">Script de Construccion (<code>build_linux.sh</code>)</h3>
 <p>El script realiza estos pasos:</p>
 
 <ol>
@@ -258,7 +258,7 @@ HB_FUNC( UI_ONEVENT )
   En openSUSE: <code>sudo zypper install gtk3-devel harbour</code></p>
 </div>
 
-<h2>Caracteristicas Especificas de la Plataforma</h2>
+<h2 id="caracteristicas-especificas-de-la-plataforma">Caracteristicas Especificas de la Plataforma</h2>
 
 <table>
   <tr><th>Caracteristica</th><th>Implementacion en Linux</th></tr>
@@ -274,7 +274,7 @@ HB_FUNC( UI_ONEVENT )
   <tr><td>Impresion</td><td><code>GtkPrintOperation</code></td></tr>
 </table>
 
-<h2>Limitaciones Conocidas</h2>
+<h2 id="limitaciones-conocidas">Limitaciones Conocidas</h2>
 
 <ul>
   <li><strong>Varianza del entorno de escritorio</strong> — Los widgets GTK3 se ven diferentes en GNOME, XFCE, KDE, etc. El backend apunta al tema Adwaita predeterminado. Otros temas pueden producir apariencias ligeramente diferentes.</li>
@@ -283,7 +283,7 @@ HB_FUNC( UI_ONEVENT )
   <li><strong>Wayland</strong> — GTK3 soporta Wayland, pero algunas caracteristicas (bandeja del sistema, menus globales) pueden no funcionar bajo sesiones Wayland puras. X11 esta totalmente soportado.</li>
 </ul>
 
-<h2>Dependencias</h2>
+<h2 id="dependencias">Dependencias</h2>
 <table>
   <tr><th>Paquete/Biblioteca</th><th>Proposito</th></tr>
   <tr><td><code>libgtk-3-dev</code></td><td>Cabeceras y bibliotecas GTK3 (widgets, ventanas, eventos)</td></tr>
@@ -297,7 +297,28 @@ HB_FUNC( UI_ONEVENT )
   <tr><td><code>-ldl</code></td><td>Carga dinamica (dlopen/dlsym para Scintilla)</td></tr>
   <tr><td><code>-lm</code></td><td>Biblioteca matematica</td></tr>
 </table>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#vision-general-de-la-arquitectura" class="toc-h2">Vision General de la Arquitectura</a>
+  <a href="#manejo-de-eventos-g_signal" class="toc-h2">Manejo de Eventos (g_signal)</a>
+  <a href="#modo-oscuro" class="toc-h2">Modo Oscuro</a>
+  <a href="#integracion-de-scintilla" class="toc-h2">Integracion de Scintilla</a>
+  <a href="#proceso-de-construccion" class="toc-h2">Proceso de Construccion</a>
+  <a href="#requisitos-previos" class="toc-h3">Requisitos Previos</a>
+  <a href="#script-de-construccion-build_linuxsh" class="toc-h3">Script de Construccion (build_linux.sh)</a>
+  <a href="#caracteristicas-especificas-de-la-plataforma" class="toc-h2">Caracteristicas Especificas de la Plataforma</a>
+  <a href="#limitaciones-conocidas" class="toc-h2">Limitaciones Conocidas</a>
+  <a href="#dependencias" class="toc-h2">Dependencias</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

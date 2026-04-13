@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html" class="active">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -99,7 +99,7 @@ native code. This design enables a single <code>.prg</code> codebase to produce 
 <span class="badge linux">Linux</span>.</p>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>5-Layer Architecture</h2>
+<h2 id="5-layer-architecture">5-Layer Architecture</h2>
 <p>Every HarbourBuilder application flows through five layers, from high-level xBase syntax down to
 platform-native API calls:</p>
 
@@ -128,7 +128,7 @@ graph TB
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Platform Backends</h2>
+<h2 id="platform-backends">Platform Backends</h2>
 <p>Each layer maps to a different native technology depending on the target platform:</p>
 
 <table>
@@ -189,7 +189,7 @@ graph TB
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Control Type System</h2>
+<h2 id="control-type-system">Control Type System</h2>
 <p>Every visual component in HarbourBuilder is identified by a numeric <code>CT_</code> constant defined in
 <code>hbide.h</code>. These constants (ranging from 0 to 86) determine how the IDE serializes controls,
 how the designer renders them, and which native widget the backend creates at runtime.</p>
@@ -256,7 +256,7 @@ how the designer renders them, and which native widget the backend creates at ru
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>File Structure</h2>
+<h2 id="file-structure">File Structure</h2>
 <p>The HarbourBuilder project is organized into clearly separated directories:</p>
 
 <pre>HarbourBuilder/
@@ -284,7 +284,7 @@ how the designer renders them, and which native widget the backend creates at ru
     └── projects/       <span class="cm">// Example projects</span></pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Event System</h2>
+<h2 id="event-system">Event System</h2>
 <p>HarbourBuilder routes native OS events through a unified pipeline that ends in user-defined
 Harbour code blocks. The same event flow applies on all platforms &mdash; only the entry point differs
 (WndProc on Windows, NSResponder on macOS, g_signal on GTK3).</p>
@@ -314,7 +314,7 @@ sequenceDiagram
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Two-Way Tools</h2>
+<h2 id="two-way-tools">Two-Way Tools</h2>
 <p>HarbourBuilder maintains perfect synchronization between the visual designer and the source code.
 Changes in either direction are reflected instantly, and user-written METHOD implementations are
 never overwritten during code regeneration.</p>
@@ -350,7 +350,7 @@ flowchart LR
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Build Pipeline</h2>
+<h2 id="build-pipeline">Build Pipeline</h2>
 <p>The build process compiles Harbour source into native executables through a multi-stage pipeline:</p>
 
 <div class="mermaid">
@@ -408,6 +408,23 @@ graph LR
   the current platform and selects the appropriate compiler toolchain automatically.
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#5-layer-architecture" class="toc-h2">5-Layer Architecture</a>
+  <a href="#platform-backends" class="toc-h2">Platform Backends</a>
+  <a href="#control-type-system" class="toc-h2">Control Type System</a>
+  <a href="#file-structure" class="toc-h2">File Structure</a>
+  <a href="#event-system" class="toc-h2">Event System</a>
+  <a href="#two-way-tools" class="toc-h2">Two-Way Tools</a>
+  <a href="#build-pipeline" class="toc-h2">Build Pipeline</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos da IDE</h3>
+    <h3 id="recursos-da-ide">Recursos da IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Ola, Mundo!</a>
     <a href="tutorial-forms.html">Formularios e Controles</a>
     <a href="tutorial-events.html">Eventos e Acoes</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-webserver.html">Servidor Web</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades</a>
     <a href="ref-methods.html">Metodos</a>
     <a href="ref-events.html">Eventos</a>
@@ -90,7 +90,7 @@ Arraste componentes de IA para o seu formulario, configure uma chave de API e in
   funciona offline. Perfeito para desenvolvimento e ambientes corporativos.</p>
 </div>
 
-<h2>Visao Geral dos Componentes de IA</h2>
+<h2 id="visao-geral-dos-componentes-de-ia">Visao Geral dos Componentes de IA</h2>
 
 <table>
   <tr><th>Componente</th><th>ID CT</th><th>Fornecedor</th><th>Tipo</th></tr>
@@ -105,7 +105,7 @@ Arraste componentes de IA para o seu formulario, configure uma chave de API e in
   <tr><td><code>TEmbeddings</code></td><td>111</td><td>Diversos</td><td>Embeddings Vetoriais</td></tr>
 </table>
 
-<h2>Propriedades Comuns (todos os controles de IA)</h2>
+<h2 id="propriedades-comuns-todos-os-controles-de-ia">Propriedades Comuns (todos os controles de IA)</h2>
 <table>
   <tr><th>Propriedade</th><th>Tipo</th><th>Descricao</th></tr>
   <tr><td><code>cApiKey</code></td><td>String</td><td>Chave de autenticacao da API</td></tr>
@@ -116,7 +116,7 @@ Arraste componentes de IA para o seu formulario, configure uma chave de API e in
   <tr><td><code>lStream</code></td><td>Logico</td><td>Ativar respostas em streaming (token por token)</td></tr>
 </table>
 
-<h2>Eventos Comuns</h2>
+<h2 id="eventos-comuns">Eventos Comuns</h2>
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Descricao</th></tr>
   <tr><td><code>OnResponse</code></td><td><code>cResponse</code></td><td>Resposta completa recebida</td></tr>
@@ -125,7 +125,7 @@ Arraste componentes de IA para o seu formulario, configure uma chave de API e in
   <tr><td><code>OnTokenCount</code></td><td><code>nPrompt, nCompletion</code></td><td>Relatorio de uso de tokens</td></tr>
 </table>
 
-<h2>Metodos Comuns</h2>
+<h2 id="metodos-comuns">Metodos Comuns</h2>
 <table>
   <tr><th>Metodo</th><th>Parametros</th><th>Descricao</th></tr>
   <tr><td><code>:Chat( cMessage )</code></td><td>String</td><td>Enviar mensagem de chat, dispara OnResponse</td></tr>
@@ -285,6 +285,18 @@ oEmb:<span class="fn">Search</span>( <span class="st">"ambiente de desenvolvimen
 </div>
 
 
+
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#openai" class="toc-h2 active">TOpenAI CT = 46</a>
+  <a href="#gemini" class="toc-h2">TGemini CT = 47</a>
+  <a href="#claude" class="toc-h2">TClaude CT = 48</a>
+  <a href="#deepseek" class="toc-h2">TDeepSeek CT = 49</a>
+  <a href="#grok" class="toc-h2">TGrok CT = 50</a>
+  <a href="#ollama" class="toc-h2">TOllama CT = 51</a>
+  <a href="#transformer" class="toc-h2">TTransformer CT = 52</a>
+  <a href="#whisper" class="toc-h2">TWhisper CT = 110</a>
+  <a href="#embeddings" class="toc-h2">TEmbeddings CT = 111</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

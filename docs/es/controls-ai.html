@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -61,7 +61,7 @@ Coloque componentes de IA en su formulario, establezca una clave de API e intera
   <p>El componente TOllama se conecta a una instancia local de Ollama — no necesita clave de API, es totalmente privado y funciona sin conexion. Perfecto para desarrollo y entornos empresariales.</p>
 </div>
 
-<h2>Resumen de Componentes de IA</h2>
+<h2 id="resumen-de-componentes-de-ia">Resumen de Componentes de IA</h2>
 
 <table>
   <tr><th>Componente</th><th>CT ID</th><th>Proveedor</th><th>Tipo</th></tr>
@@ -76,7 +76,7 @@ Coloque componentes de IA en su formulario, establezca una clave de API e intera
   <tr><td><code>TEmbeddings</code></td><td>111</td><td>Varios</td><td>Vecores de Incrustacion</td></tr>
 </table>
 
-<h2>Propiedades Comunes (todos los controles de IA)</h2>
+<h2 id="propiedades-comunes-todos-los-controles-de-ia">Propiedades Comunes (todos los controles de IA)</h2>
 <table>
   <tr><th>Propiedad</th><th>Tipo</th><th>Descripcion</th></tr>
   <tr><td><code>cApiKey</code></td><td>String</td><td>Clave de autenticacion API</td></tr>
@@ -87,7 +87,7 @@ Coloque componentes de IA en su formulario, establezca una clave de API e intera
   <tr><td><code>lStream</code></td><td>Logico</td><td>Habilitar respuestas en flujo (token por token)</td></tr>
 </table>
 
-<h2>Eventos Comunes</h2>
+<h2 id="eventos-comunes">Eventos Comunes</h2>
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Descripcion</th></tr>
   <tr><td><code>OnResponse</code></td><td><code>cResponse</code></td><td>Respuesta completa recibida</td></tr>
@@ -96,7 +96,7 @@ Coloque componentes de IA en su formulario, establezca una clave de API e intera
   <tr><td><code>OnTokenCount</code></td><td><code>nPrompt, nCompletion</code></td><td>Informe de uso de tokens</td></tr>
 </table>
 
-<h2>Metodos Comunes</h2>
+<h2 id="metodos-comunes">Metodos Comunes</h2>
 <table>
   <tr><th>Metodo</th><th>Parametros</th><th>Descripcion</th></tr>
   <tr><td><code>:Chat( cMessage )</code></td><td>String</td><td>Enviar un mensaje de chat, dispara OnResponse</td></tr>
@@ -250,6 +250,18 @@ oEmb:<span class="fn">Search</span>( <span class="st">"entorno de desarrollo vis
   <p>Use TEmbeddings para construir un motor de busqueda semantica: indexe sus documentos, luego busque por significado en lugar de palabras clave. Perfecto para bases de conocimiento y preguntas frecuentes.</p>
 </div>
 
+
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#openai" class="toc-h2 active">TOpenAI CT = 46</a>
+  <a href="#gemini" class="toc-h2">TGemini CT = 47</a>
+  <a href="#claude" class="toc-h2">TClaude CT = 48</a>
+  <a href="#deepseek" class="toc-h2">TDeepSeek CT = 49</a>
+  <a href="#grok" class="toc-h2">TGrok CT = 50</a>
+  <a href="#ollama" class="toc-h2">TOllama CT = 51</a>
+  <a href="#transformer" class="toc-h2">TTransformer CT = 52</a>
+  <a href="#whisper" class="toc-h2">TWhisper CT = 110</a>
+  <a href="#embeddings" class="toc-h2">TEmbeddings CT = 111</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de Formularios</a>
     <a href="object-inspector.html">Inspector de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Compilar y Ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html" class="active">Trabajar con Formularios</a>
     <a href="tutorial-events.html">Manejo de Eventos</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -94,14 +94,14 @@
 <h1>Tutorial: Trabajar con Formularios</h1>
 <p>La mayoria de las aplicaciones del mundo real necesitan mas de una ventana. En este tutorial construira un proyecto con multiples formularios que incluye un formulario principal y un dialogo de configuracion. Aprendera a abrir formularios de forma modal, pasar datos entre ellos y configurar propiedades comunes de formularios.</p>
 
-<h2>Paso 1: Configurar el Proyecto</h2>
+<h2 id="paso-1-configurar-el-proyecto">Paso 1: Configurar el Proyecto</h2>
 <ol>
   <li>Cree un nuevo proyecto llamado <code>MultiFormDemo</code> mediante <strong>Archivo &rarr; Nuevo Proyecto</strong>.</li>
   <li>El IDE crea <code>main.prg</code> con un formulario inicial.</li>
   <li>Anadiremos un segundo archivo fuente para el formulario de configuracion en el siguiente paso.</li>
 </ol>
 
-<h2>Paso 2: Disenar el Formulario Principal</h2>
+<h2 id="paso-2-disenar-el-formulario-principal">Paso 2: Disenar el Formulario Principal</h2>
 <ol>
   <li>Abra <code>main.prg</code> en el Disenador de Formularios.</li>
   <li>Establezca el titulo del formulario a <code>"Demo Multi-Formulario"</code> y tamano a <code>700, 500</code>.</li>
@@ -131,7 +131,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Paso 3: Crear el Formulario de Configuracion</h2>
+<h2 id="paso-3-crear-el-formulario-de-configuracion">Paso 3: Crear el Formulario de Configuracion</h2>
 <ol>
   <li>Seleccione <strong>Archivo &rarr; Nuevo Formulario</strong> para anadir un segundo formulario al proyecto. Nombrelolo <code>settings.prg</code>.</li>
   <li>En el Disenador de Formularios para <code>settings.prg</code>, establezca el titulo a <code>"Configuracion"</code> y tamano a <code>400, 300</code>.</li>
@@ -141,7 +141,7 @@
   <li>Anada dos botones: <strong>"Aceptar"</strong> y <strong>"Cancelar"</strong> en la parte inferior.</li>
 </ol>
 
-<h2>Paso 4: Implementar ShowModal y Paso de Datos</h2>
+<h2 id="paso-4-implementar-showmodal-y-paso-de-datos">Paso 4: Implementar ShowModal y Paso de Datos</h2>
 <p>La tecnica clave es llamar a <code>ShowModal()</code> en el formulario de configuracion. Esto bloquea el formulario principal hasta que el usuario cierra el dialogo. Despues de que el dialogo modal se cierra, lee los valores que el usuario ingreso.</p>
 
 <pre><span class="kw">static function</span> <span class="fn">OpenSettings</span>( oMainForm, oLblUser )
@@ -189,7 +189,7 @@
   <p>Use <code>ShowModal( oParent )</code> cuando el usuario debe completar el dialogo antes de volver al padre. Use <code>Show()</code> para ventanas no bloqueantes entre las que el usuario puede cambiar libremente.</p>
 </div>
 
-<h2>Paso 5: Referencia de Propiedades del Formulario</h2>
+<h2 id="paso-5-referencia-de-propiedades-del-formulario">Paso 5: Referencia de Propiedades del Formulario</h2>
 <p>Aqui estan las propiedades de formulario mas usadas que puede establecer en el Inspector de Objetos o en codigo:</p>
 
 <table style="width:100%; border-collapse:collapse; margin:1em 0;">
@@ -235,7 +235,7 @@
   </tr>
 </table>
 
-<h2>Paso 6: Compilar y Probar</h2>
+<h2 id="paso-6-compilar-y-probar">Paso 6: Compilar y Probar</h2>
 <ol>
   <li>Presione <strong>F9</strong> para compilar y ejecutar.</li>
   <li>Haga clic en <strong>"Abrir Configuracion"</strong> en el formulario principal &mdash; aparece el dialogo de configuracion de forma modal.</li>
@@ -244,7 +244,7 @@
   <li>Abra el dialogo nuevamente y haga clic en <strong>Cancelar</strong> &mdash; el formulario principal permanece sin cambios.</li>
 </ol>
 
-<h2>Flujo del Ciclo de Vida del Formulario</h2>
+<h2 id="flujo-del-ciclo-de-vida-del-formulario">Flujo del Ciclo de Vida del Formulario</h2>
 
 <div class="mermaid">
 graph TD
@@ -266,6 +266,23 @@ graph TD
   <p>Ahora que puede trabajar con multiples formularios, continue al tutorial de <a href="tutorial-events.html">Manejo de Eventos</a> para aprender sobre todos los tipos de eventos disponibles en HarbourBuilder.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros Pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#paso-1-configurar-el-proyecto" class="toc-h2">Paso 1: Configurar el Proyecto</a>
+  <a href="#paso-2-disenar-el-formulario-principal" class="toc-h2">Paso 2: Disenar el Formulario Principal</a>
+  <a href="#paso-3-crear-el-formulario-de-configuracion" class="toc-h2">Paso 3: Crear el Formulario de Configuracion</a>
+  <a href="#paso-4-implementar-showmodal-y-paso-de-datos" class="toc-h2">Paso 4: Implementar ShowModal y Paso de Datos</a>
+  <a href="#paso-5-referencia-de-propiedades-del-formulario" class="toc-h2">Paso 5: Referencia de Propiedades del Formulario</a>
+  <a href="#paso-6-compilar-y-probar" class="toc-h2">Paso 6: Compilar y Probar</a>
+  <a href="#flujo-del-ciclo-de-vida-del-formulario" class="toc-h2">Flujo del Ciclo de Vida del Formulario</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

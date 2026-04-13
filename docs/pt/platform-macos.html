@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html" class="active">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -106,7 +106,7 @@ e integracao completa com o sistema de janelas do macOS.</p>
   </table>
 </div>
 
-<h2>Visao Geral da Arquitetura</h2>
+<h2 id="visao-geral-da-arquitetura">Visao Geral da Arquitetura</h2>
 
 <div class="mermaid">
 graph TB
@@ -127,7 +127,7 @@ graph TB
     style H fill:#555,stroke:#333,color:#fff
 </div>
 
-<h2>Criacao de Janelas Nativas</h2>
+<h2 id="criacao-de-janelas-nativas">Criacao de Janelas Nativas</h2>
 <p>Cada formulario HarbourBuilder e um <code>NSWindow</code> nativo com uma visao de conteudo <code>NSView</code>.
 Controles sao subclasses Cocoa de <code>NSView</code>:</p>
 
@@ -179,7 +179,7 @@ HB_FUNC( UI_FORMNEW )
   <tr><td>Timer</td><td><code>NSTimer</code></td></tr>
 </table>
 
-<h2>Tratamento de Eventos</h2>
+<h2 id="tratamento-de-eventos">Tratamento de Eventos</h2>
 <p>O backend macOS usa o padrao target-action do Cocoa e o sistema de notificacoes. Cada controle
 registra um target de acao que chama o sistema de eventos Harbour:</p>
 
@@ -208,7 +208,7 @@ HB_FUNC( UI_ONEVENT )
 }
 <span class="kw">@end</span></pre>
 
-<h2>Modo Escuro</h2>
+<h2 id="modo-escuro">Modo Escuro</h2>
 <p>O modo escuro do macOS e gerenciado nativamente pelo AppKit:</p>
 
 <ul>
@@ -229,7 +229,7 @@ HB_FUNC( UI_ONEVENT )
   o tema escuro. Sem configuracao necessaria.</p>
 </div>
 
-<h2>Integracao Scintilla</h2>
+<h2 id="integracao-scintilla">Integracao Scintilla</h2>
 <p>No macOS, Scintilla 5.5.3 e compilado como biblioteca estatica e linkado diretamente no binario do HarbourBuilder:</p>
 
 <table>
@@ -238,9 +238,9 @@ HB_FUNC( UI_ONEVENT )
   <tr><td><code>liblexilla.a</code></td><td>Biblioteca estatica</td><td>Biblioteca de lexer</td></tr>
 </table>
 
-<h2>Processo de Build</h2>
+<h2 id="processo-de-build">Processo de Build</h2>
 
-<h3>Pre-requisitos</h3>
+<h3 id="pre-requisitos">Pre-requisitos</h3>
 <ol>
   <li><strong>Xcode Command Line Tools</strong> — Este e o unico pre-requisito. Instale com:
     <pre>xcode-select --install</pre>
@@ -249,7 +249,7 @@ HB_FUNC( UI_ONEVENT )
   <li><strong>Nenhuma instalacao separada do Harbour necessaria</strong> — O script de build baixa e compila o Harbour automaticamente se nao estiver presente.</li>
 </ol>
 
-<h3>Script de Build (<code>build_mac.sh</code>)</h3>
+<h3 id="script-de-build-build_macsh">Script de Build (<code>build_mac.sh</code>)</h3>
 <p>O script executa estas etapas:</p>
 
 <ol>
@@ -272,7 +272,7 @@ HB_FUNC( UI_ONEVENT )
   <p>Se voce ja tem o Harbour instalado em outro local: <code>HBDIR=/caminho/para/harbour ./build_mac.sh</code></p>
 </div>
 
-<h2>Consideracoes Apple Silicon</h2>
+<h2 id="consideracoes-apple-silicon">Consideracoes Apple Silicon</h2>
 
 <p>O build padrao tem como alvo <code>x86_64</code> para compatibilidade. Em Macs Apple Silicon (M1/M2/M3/M4),
 o binario roda sob traducao Rosetta 2. Para builds ARM64 nativas:</p>
@@ -296,7 +296,7 @@ HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
   intensivas de CPU como compilacao — um build ARM64 nativo e recomendado.</p>
 </div>
 
-<h2>Criacao de Pacote .app</h2>
+<h2 id="criacao-de-pacote-app">Criacao de Pacote .app</h2>
 <p>Para distribuir uma aplicacao HarbourBuilder como um pacote de aplicacao macOS padrao:</p>
 
 <pre>MyApp.app/
@@ -309,7 +309,7 @@ HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
 │   │   └── MainMenu.nib    <span class="cm">// (opcional) MainMenu</span>
 │   └── PkgInfo             <span class="cm">// APPL????</span></pre>
 
-<h2>Recursos Especificos da Plataforma</h2>
+<h2 id="recursos-especificos-da-plataforma">Recursos Especificos da Plataforma</h2>
 
 <table>
   <tr><th>Recurso</th><th>Implementacao macOS</th></tr>
@@ -325,7 +325,7 @@ HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
   <tr><td>Suporte Retina</td><td>Automatico via <code>backing:NSBackingStoreBuffered</code></td></tr>
 </table>
 
-<h2>Limitacoes Conhecidas</h2>
+<h2 id="limitacoes-conhecidas">Limitacoes Conhecidas</h2>
 
 <ul>
   <li><strong>Gatekeeper</strong> — Aplicacoes nao assinadas podem ser bloqueadas pelo Gatekeeper. Clique direito &rarr; Abrir, ou remova a quarentena: <code>xattr -d com.apple.quarantine HbBuilder</code>.</li>
@@ -334,7 +334,7 @@ HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
   <li><strong>ARM64</strong> — Builds nativas Apple Silicon exigem recompilacao manual do Harbour e Scintilla para <code>arm64</code>.</li>
 </ul>
 
-<h2>Dependencias</h2>
+<h2 id="dependencias">Dependencias</h2>
 <table>
   <tr><th>Framework/Biblioteca</th><th>Proposito</th></tr>
   <tr><td><code>-framework Cocoa</code></td><td>Framework umbrella completo Cocoa/AppKit/Foundation</td></tr>
@@ -345,6 +345,29 @@ HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
   <tr><td><code>libharbour.a</code></td><td>Runtime Harbour</td></tr>
 </table>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#visao-geral-da-arquitetura" class="toc-h2">Visao Geral da Arquitetura</a>
+  <a href="#criacao-de-janelas-nativas" class="toc-h2">Criacao de Janelas Nativas</a>
+  <a href="#tratamento-de-eventos" class="toc-h2">Tratamento de Eventos</a>
+  <a href="#modo-escuro" class="toc-h2">Modo Escuro</a>
+  <a href="#integracao-scintilla" class="toc-h2">Integracao Scintilla</a>
+  <a href="#processo-de-build" class="toc-h2">Processo de Build</a>
+  <a href="#pre-requisitos" class="toc-h3">Pre-requisitos</a>
+  <a href="#script-de-build-build_macsh" class="toc-h3">Script de Build (build_mac.sh)</a>
+  <a href="#consideracoes-apple-silicon" class="toc-h2">Consideracoes Apple Silicon</a>
+  <a href="#criacao-de-pacote-app" class="toc-h2">Criacao de Pacote .app</a>
+  <a href="#recursos-especificos-da-plataforma" class="toc-h2">Recursos Especificos da Plataforma</a>
+  <a href="#limitacoes-conhecidas" class="toc-h2">Limitacoes Conhecidas</a>
+  <a href="#dependencias" class="toc-h2">Dependencias</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

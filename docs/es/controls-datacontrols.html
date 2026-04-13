@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,14 +44,14 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de Formularios</a>
     <a href="code-editor.html">Editor de Codigo</a>
     <a href="debugger.html">Depurador</a>
     <a href="ai-assistant.html">Asistente de IA</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -91,7 +91,7 @@
   <tr><td><code>nClrSelected</code></td><td>Color</td><td>sistema</td><td>Color de resaltado de fila seleccionada</td></tr>
 </table>
 
-<h3>Propiedades de TBrowseColumn</h3>
+<h3 id="propiedades-de-tbrowsecolumn">Propiedades de TBrowseColumn</h3>
 <table>
   <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
   <tr><td><code>cHeading</code></td><td>String</td><td>""</td><td>Texto del encabezado de columna</td></tr>
@@ -103,7 +103,7 @@
   <tr><td><code>lEditable</code></td><td>Logico</td><td>.T.</td><td>Permitir edicion en esta columna</td></tr>
 </table>
 
-<h3>Eventos de TBrowse</h3>
+<h3 id="eventos-de-tbrowse">Eventos de TBrowse</h3>
 <table>
   <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
   <tr><td><code>OnClick</code></td><td>Accion</td><td>Usuario hizo clic en una celda. Parametros: nRow, nCol</td></tr>
@@ -300,6 +300,18 @@
   <p>Los controles de datos se sincronizan automaticamente con su fuente de datos. Cuando el usuario navega a un registro diferente, todos los controles vinculados se actualizan instantaneamente. Los cambios se escriben en la base de datos al guardar.</p>
 </div>
 
+
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#browse" class="toc-h2 active">TBrowse CT_BROWSE = 79</a>
+  <a href="#dbgrid" class="toc-h2">TDBGrid CT_DBGRID = 80</a>
+  <a href="#dbnavigator" class="toc-h2">TDBNavigator CT_DBNAVIGATOR = 81</a>
+  <a href="#dbtext" class="toc-h2">TDBText CT_DBTEXT = 82</a>
+  <a href="#dbedit" class="toc-h2">TDBEdit CT_DBEDIT = 83</a>
+  <a href="#dbcombobox" class="toc-h2">TDBComboBox CT_DBCOMBOBOX = 84</a>
+  <a href="#dbcheckbox" class="toc-h2">TDBCheckBox CT_DBCHECKBOX = 85</a>
+  <a href="#dbimage" class="toc-h2">TDBImage CT_DBIMAGE = 86</a>
+  <a href="#example" class="toc-h2">Ejemplo de Codigo: TBrowse con Base de Datos</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

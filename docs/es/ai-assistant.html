@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -93,7 +93,7 @@ mientras programas.</p>
   bases de codigo propietarias y desarrolladores que valoran la privacidad.</p>
 </div>
 
-<h2>Backends Soportados</h2>
+<h2 id="backends-soportados">Backends Soportados</h2>
 
 <table>
   <tr><th>Backend</th><th>Tipo</th><th>Clave API</th><th>Red</th></tr>
@@ -101,7 +101,7 @@ mientras programas.</p>
   <tr><td><strong>LM Studio</strong></td><td>Local</td><td>Ninguna</td><td>Solo localhost</td></tr>
 </table>
 
-<h2>Selector de Modelos</h2>
+<h2 id="selector-de-modelos">Selector de Modelos</h2>
 
 <p>El Asistente de IA incluye un menu desplegable de seleccion de modelos que enumera todos los modelos disponibles detectados
 desde tu instancia de Ollama o LM Studio en ejecucion. Las opciones disponibles tipicamente incluyen:</p>
@@ -123,7 +123,7 @@ desde tu instancia de Ollama o LM Studio en ejecucion. Las opciones disponibles 
   detecta automaticamente los modelos disponibles cuando abres el panel.</p>
 </div>
 
-<h2>Interfaz de Chat</h2>
+<h2 id="interfaz-de-chat">Interfaz de Chat</h2>
 
 <p>El panel del Asistente de IA proporciona una experiencia de chat familiar:</p>
 
@@ -137,7 +137,7 @@ desde tu instancia de Ollama o LM Studio en ejecucion. Las opciones disponibles 
   <li><strong>Limpiar chat</strong> — reinicia el historial de conversacion.</li>
 </ul>
 
-<h2>Solicitudes de Ejemplo</h2>
+<h2 id="solicitudes-de-ejemplo">Solicitudes de Ejemplo</h2>
 
 <p>Aqui hay algunas solicitudes efectivas para probar con el Asistente de IA:</p>
 
@@ -151,12 +151,12 @@ desde tu instancia de Ollama o LM Studio en ejecucion. Las opciones disponibles 
   <tr><td>Aprendizaje</td><td><em>"Muestrame como usar eventos con un TButton"</em></td></tr>
 </table>
 
-<h2>Usar TOllama en Tu Codigo</h2>
+<h2 id="usar-tollama-en-tu-codigo">Usar TOllama en Tu Codigo</h2>
 
 <p>El mismo componente TOllama que impulsa el Asistente de IA esta disponible en tus propias aplicaciones.
 Asi es como usarlo:</p>
 
-<h3>Uso Basico</h3>
+<h3 id="uso-basico">Uso Basico</h3>
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
 
 <span class="kw">function</span> <span class="fn">Main</span>()
@@ -174,7 +174,7 @@ Asi es como usarlo:</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Respuesta en Streaming</h3>
+<h3 id="respuesta-en-streaming">Respuesta en Streaming</h3>
 <pre><span class="kw">static function</span> <span class="fn">EjemploStream</span>( oOllama, oMemo )
 
    <span class="kw">local</span> cSolicitud := <span class="st">"Escribe una funcion Harbour para calcular fibonacci"</span>
@@ -187,14 +187,14 @@ Asi es como usarlo:</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Configurar un Prompt de Sistema</h3>
+<h3 id="configurar-un-prompt-de-sistema">Configurar un Prompt de Sistema</h3>
 <pre>oOllama:<span class="fn">SetSystem</span>( <span class="st">"Eres un experto en Harbour/xBase. </span>;
    <span class="st">Siempre proporciona ejemplos de codigo completos y funcionales. </span>;
    <span class="st">Explica tu razonamiento claramente."</span> )
 
 cRespuesta := oOllama:<span class="fn">Chat</span>( <span class="st">"¿Como leo un archivo linea por linea?"</span> )</pre>
 
-<h3>Usar LM Studio</h3>
+<h3 id="usar-lm-studio">Usar LM Studio</h3>
 <p>LM Studio proporciona una API compatible. Simplemente apunta TOllama al servidor de LM Studio:</p>
 
 <pre>oOllama := TOllama():New()
@@ -202,7 +202,7 @@ oOllama:<span class="prop">cHost</span> := <span class="st">"localhost"</span>
 oOllama:<span class="prop">nPort</span> := <span class="nb">1234</span>  <span class="cm">// Puerto predeterminado de LM Studio</span>
 oOllama:<span class="prop">cModel</span> := <span class="st">"modelo-local"</span></pre>
 
-<h2>Beneficios de Privacidad</h2>
+<h2 id="beneficios-de-privacidad">Beneficios de Privacidad</h2>
 
 <ul>
   <li><strong>Sin exfiltracion de datos</strong> — tu codigo fuente, logica de negocio y claves de API nunca salen de tu maquina.</li>
@@ -219,7 +219,7 @@ oOllama:<span class="prop">cModel</span> := <span class="st">"modelo-local"</spa
   <a href="tutorial-ai.html">tutorial de Integracion con IA</a> para un recorrido completo.</p>
 </div>
 
-<h2>Configuracion</h2>
+<h2 id="configuracion">Configuracion</h2>
 
 <p>Abre el panel del Asistente de IA desde el menu <strong>Herramientas &gt; Asistente IA</strong> o usa el
 boton de la barra de herramientas. El icono de engranaje de configuracion te permite configurar:</p>
@@ -234,7 +234,29 @@ boton de la barra de herramientas. El icono de engranaje de configuracion te per
   <tr><td><strong>Max Tokens</strong></td><td>Longitud maxima de respuesta</td><td>2048</td></tr>
   <tr><td><strong>Prompt de Sistema</strong></td><td>Instrucciones personalizadas del sistema</td><td>(vacio)</td></tr>
 </table>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#backends-soportados" class="toc-h2">Backends Soportados</a>
+  <a href="#selector-de-modelos" class="toc-h2">Selector de Modelos</a>
+  <a href="#interfaz-de-chat" class="toc-h2">Interfaz de Chat</a>
+  <a href="#solicitudes-de-ejemplo" class="toc-h2">Solicitudes de Ejemplo</a>
+  <a href="#usar-tollama-en-tu-codigo" class="toc-h2">Usar TOllama en Tu Codigo</a>
+  <a href="#uso-basico" class="toc-h3">Uso Basico</a>
+  <a href="#respuesta-en-streaming" class="toc-h3">Respuesta en Streaming</a>
+  <a href="#configurar-un-prompt-de-sistema" class="toc-h3">Configurar un Prompt de Sistema</a>
+  <a href="#usar-lm-studio" class="toc-h3">Usar LM Studio</a>
+  <a href="#beneficios-de-privacidad" class="toc-h2">Beneficios de Privacidad</a>
+  <a href="#configuracion" class="toc-h2">Configuracion</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

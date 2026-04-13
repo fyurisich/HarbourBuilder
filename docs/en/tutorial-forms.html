@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html" class="active">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -96,14 +96,14 @@
 multi-form project with a main form and a settings dialog. You will learn how to open forms
 modally, pass data between them, and configure common form properties.</p>
 
-<h2>Step 1: Set Up the Project</h2>
+<h2 id="step-1-set-up-the-project">Step 1: Set Up the Project</h2>
 <ol>
   <li>Create a new project called <code>MultiFormDemo</code> via <strong>File &rarr; New Project</strong>.</li>
   <li>The IDE creates <code>main.prg</code> with a starter form.</li>
   <li>We will add a second source file for the settings form in the next step.</li>
 </ol>
 
-<h2>Step 2: Design the Main Form</h2>
+<h2 id="step-2-design-the-main-form">Step 2: Design the Main Form</h2>
 <ol>
   <li>Open <code>main.prg</code> in the Form Designer.</li>
   <li>Set the form title to <code>"Multi-Form Demo"</code> and size to <code>700, 500</code>.</li>
@@ -133,7 +133,7 @@ modally, pass data between them, and configure common form properties.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Step 3: Create the Settings Form</h2>
+<h2 id="step-3-create-the-settings-form">Step 3: Create the Settings Form</h2>
 <ol>
   <li>Select <strong>File &rarr; New Form</strong> to add a second form to the project. Name it <code>settings.prg</code>.</li>
   <li>In the Form Designer for <code>settings.prg</code>, set the title to <code>"Settings"</code> and size to <code>400, 300</code>.</li>
@@ -143,7 +143,7 @@ modally, pass data between them, and configure common form properties.</p>
   <li>Add two buttons: <strong>"OK"</strong> and <strong>"Cancel"</strong> at the bottom.</li>
 </ol>
 
-<h2>Step 4: Implement ShowModal and Data Passing</h2>
+<h2 id="step-4-implement-showmodal-and-data-passing">Step 4: Implement ShowModal and Data Passing</h2>
 <p>The key technique is to call <code>ShowModal()</code> on the settings form. This blocks the main form
 until the user closes the dialog. After the modal form closes, you read back the values the
 user entered.</p>
@@ -194,7 +194,7 @@ user entered.</p>
   Use <code>Show()</code> for non-blocking windows that the user can switch between freely.</p>
 </div>
 
-<h2>Step 5: Form Properties Reference</h2>
+<h2 id="step-5-form-properties-reference">Step 5: Form Properties Reference</h2>
 <p>Here are the most commonly used form properties you can set in the Object Inspector or in code:</p>
 
 <table style="width:100%; border-collapse:collapse; margin:1em 0;">
@@ -240,7 +240,7 @@ user entered.</p>
   </tr>
 </table>
 
-<h2>Step 6: Build and Test</h2>
+<h2 id="step-6-build-and-test">Step 6: Build and Test</h2>
 <ol>
   <li>Press <strong>F9</strong> to build and run.</li>
   <li>Click <strong>"Open Settings"</strong> on the main form &mdash; the settings dialog appears modally.</li>
@@ -251,7 +251,7 @@ user entered.</p>
 
 <!-- Screenshot placeholder: Main form showing "User: Antonio" after the settings dialog was submitted -->
 
-<h2>Form Lifecycle Flow</h2>
+<h2 id="form-lifecycle-flow">Form Lifecycle Flow</h2>
 
 <div class="mermaid">
 graph TD
@@ -274,6 +274,23 @@ graph TD
   tutorial to learn about all the event types available in HarbourBuilder.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#step-1-set-up-the-project" class="toc-h2">Step 1: Set Up the Project</a>
+  <a href="#step-2-design-the-main-form" class="toc-h2">Step 2: Design the Main Form</a>
+  <a href="#step-3-create-the-settings-form" class="toc-h2">Step 3: Create the Settings Form</a>
+  <a href="#step-4-implement-showmodal-and-data-passing" class="toc-h2">Step 4: Implement ShowModal and Data Passing</a>
+  <a href="#step-5-form-properties-reference" class="toc-h2">Step 5: Form Properties Reference</a>
+  <a href="#step-6-build-and-test" class="toc-h2">Step 6: Build and Test</a>
+  <a href="#form-lifecycle-flow" class="toc-h2">Form Lifecycle Flow</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

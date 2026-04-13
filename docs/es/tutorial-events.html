@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de Formularios</a>
     <a href="object-inspector.html">Inspector de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Compilar y Ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con Formularios</a>
     <a href="tutorial-events.html" class="active">Manejo de Eventos</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -94,7 +94,7 @@
 <h1>Tutorial: Manejo de Eventos</h1>
 <p>Los eventos son la columna vertebral de las aplicaciones interactivas. Cada vez que un usuario hace clic en un boton, escribe una tecla, redimensiona una ventana o cierra un formulario, HarbourBuilder dispara un evento que su codigo puede manejar. Este tutorial cubre todos los tipos principales de eventos y las diferentes formas de responder a ellos.</p>
 
-<h2>Paso 1: Comprender los Eventos en HarbourBuilder</h2>
+<h2 id="paso-1-comprender-los-eventos-en-harbourbuilder">Paso 1: Comprender los Eventos en HarbourBuilder</h2>
 <p>Cada control de HarbourBuilder expone un conjunto de propiedades de evento (ej. <code>OnClick</code>, <code>OnChange</code>). Asigna un <strong>bloque de codigo</strong> o una <strong>referencia a metodo</strong> a estas propiedades. Cuando el evento se dispara, HarbourBuilder ejecuta su manejador.</p>
 
 <div class="mermaid">
@@ -108,7 +108,7 @@ graph LR
     style D fill:#f0883e,stroke:#d18616,color:#0d1117
 </div>
 
-<h2>Paso 2: Generar Manejadores de Eventos mediante el Inspector de Objetos</h2>
+<h2 id="paso-2-generar-manejadores-de-eventos-mediante-el-inspector-de-objetos">Paso 2: Generar Manejadores de Eventos mediante el Inspector de Objetos</h2>
 <ol>
   <li>Seleccione un control en el formulario (ej. un Boton).</li>
   <li>En el Inspector de Objetos, cambie a la pestania <strong>Eventos</strong>.</li>
@@ -127,7 +127,7 @@ graph LR
   <p>Hacer doble clic en un evento en el Inspector de Objetos es el flujo de trabajo recomendado. Genera manejadores con nombres adecuados (ej. <code>OnBtnSaveClick</code>) y conecta el bloque de codigo automaticamente.</p>
 </div>
 
-<h2>Paso 3: OnClick &mdash; Clics en Botones y Controles</h2>
+<h2 id="paso-3-onclick-clics-en-botones-y-controles">Paso 3: OnClick &mdash; Clics en Botones y Controles</h2>
 <p>El evento mas comun. Se dispara cuando el usuario hace clic en un boton, etiqueta, imagen o cualquier control que acepte clics.</p>
 
 <p><strong>Bloque de codigo en linea (logica simple):</strong></p>
@@ -150,7 +150,7 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Paso 4: OnChange &mdash; Cambios de Valor</h2>
+<h2 id="paso-4-onchange-cambios-de-valor">Paso 4: OnChange &mdash; Cambios de Valor</h2>
 <p>Se dispara cada vez que cambia el valor de un control de entrada. Util para TextBox (<code>TGet</code>), ComboBox, CheckBox y controles Spinner.</p>
 
 <pre>oGetSearch:<span class="fn">OnChange</span> := { || <span class="fn">OnSearchChange</span>( oGetSearch, oListBox ) }
@@ -168,7 +168,7 @@ graph LR
   <p>Para controles TextBox, <code>OnChange</code> se dispara despues de cada caracter tecleado. Si esta realizando operaciones costosas (como consultas a base de datos), considere usar un <code>TTimer</code> para aplicar un retardo (debounce) a la entrada.</p>
 </div>
 
-<h2>Paso 5: OnKeyDown &mdash; Entrada de Teclado</h2>
+<h2 id="paso-5-onkeydown-entrada-de-teclado">Paso 5: OnKeyDown &mdash; Entrada de Teclado</h2>
 <p>Se dispara cuando se presiona una tecla mientras el control tiene el foco. El manejador recibe el codigo de tecla y las banderas de modificador como parametros.</p>
 
 <pre>oGet:<span class="fn">OnKeyDown</span> := { |nKey, nFlags| <span class="fn">OnGetKeyDown</span>( nKey, nFlags, oGet ) }
@@ -191,7 +191,7 @@ graph LR
 
 <p>Constantes de teclas comunes: <code>VK_RETURN</code>, <code>VK_ESCAPE</code>, <code>VK_TAB</code>, <code>VK_DELETE</code>, <code>VK_F1</code> hasta <code>VK_F12</code>, <code>VK_UP</code>, <code>VK_DOWN</code>, <code>VK_LEFT</code>, <code>VK_RIGHT</code>.</p>
 
-<h2>Paso 6: OnResize &mdash; Redimensionamiento de Formularios y Controles</h2>
+<h2 id="paso-6-onresize-redimensionamiento-de-formularios-y-controles">Paso 6: OnResize &mdash; Redimensionamiento de Formularios y Controles</h2>
 <p>Se dispara cuando el usuario redimensiona el formulario. Util para reposicionar o redimensionar controles dinamicamente para un diseno adaptable.</p>
 
 <pre>oForm:<span class="fn">OnResize</span> := { || <span class="fn">OnFormResize</span>( oForm, oMemo, oStatusBar ) }
@@ -210,7 +210,7 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Paso 7: OnClose &mdash; Cierre del Formulario</h2>
+<h2 id="paso-7-onclose-cierre-del-formulario">Paso 7: OnClose &mdash; Cierre del Formulario</h2>
 <p>Se dispara cuando el usuario intenta cerrar el formulario (haciendo clic en el boton X, presionando Alt+F4, o llamando a <code>Close()</code>). Devuelva <code>.F.</code> desde el manejador para <strong>prevenir</strong> que el formulario se cierre &mdash; util para avisos de cambios no guardados.</p>
 
 <pre>oForm:<span class="fn">OnClose</span> := { || <span class="fn">OnFormClose</span>( oForm ) }
@@ -243,7 +243,7 @@ graph LR
   <p>Este es un patron potente para formularios de entrada de datos. Siempre de al usuario una forma de forzar el cierre (ej. la opcion Cancelar) para que nunca quede atrapado en un formulario del que no pueda salir.</p>
 </div>
 
-<h2>Resumen de Parametros de Eventos</h2>
+<h2 id="resumen-de-parametros-de-eventos">Resumen de Parametros de Eventos</h2>
 <table style="width:100%; border-collapse:collapse; margin:1em 0;">
   <tr style="border-bottom:1px solid #444;">
     <th style="text-align:left; padding:8px;">Evento</th>
@@ -283,7 +283,7 @@ graph LR
   </tr>
 </table>
 
-<h2>Bloque de Codigo vs. Manejador de Metodo</h2>
+<h2 id="bloque-de-codigo-vs-manejador-de-metodo">Bloque de Codigo vs. Manejador de Metodo</h2>
 <p>HarbourBuilder soporta dos estilos para manejadores de eventos:</p>
 
 <p><strong>Bloque de codigo</strong> &mdash; ideal para logica corta en linea:</p>
@@ -307,6 +307,25 @@ graph LR
   <p>Ahora que comprende los eventos, continue al tutorial de <a href="tutorial-database.html">CRUD de Base de Datos</a> para construir una aplicacion basada en datos con SQLite.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros Pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#paso-1-comprender-los-eventos-en-harbourbuilder" class="toc-h2">Paso 1: Comprender los Eventos en HarbourBuilder</a>
+  <a href="#paso-2-generar-manejadores-de-eventos-mediante-el-inspector-de-objetos" class="toc-h2">Paso 2: Generar Manejadores de Eventos mediante el Inspector de Objetos</a>
+  <a href="#paso-3-onclick-clics-en-botones-y-controles" class="toc-h2">Paso 3: OnClick &amp;mdash; Clics en Botones y Controles</a>
+  <a href="#paso-4-onchange-cambios-de-valor" class="toc-h2">Paso 4: OnChange &amp;mdash; Cambios de Valor</a>
+  <a href="#paso-5-onkeydown-entrada-de-teclado" class="toc-h2">Paso 5: OnKeyDown &amp;mdash; Entrada de Teclado</a>
+  <a href="#paso-6-onresize-redimensionamiento-de-formularios-y-controles" class="toc-h2">Paso 6: OnResize &amp;mdash; Redimensionamiento de Formularios y Controles</a>
+  <a href="#paso-7-onclose-cierre-del-formulario" class="toc-h2">Paso 7: OnClose &amp;mdash; Cierre del Formulario</a>
+  <a href="#resumen-de-parametros-de-eventos" class="toc-h2">Resumen de Parametros de Eventos</a>
+  <a href="#bloque-de-codigo-vs-manejador-de-metodo" class="toc-h2">Bloque de Codigo vs. Manejador de Metodo</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

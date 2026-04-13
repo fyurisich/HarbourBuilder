@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html" class="active">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -102,7 +102,7 @@ complement property assignments and event handlers in the HarbourBuilder program
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Construction and Destruction</h2>
+<h2 id="construction-and-destruction">Construction and Destruction</h2>
 
 <table>
   <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
@@ -136,7 +136,7 @@ complement property assignments and event handlers in the HarbourBuilder program
   </tr>
 </table>
 
-<h3>Construction Examples</h3>
+<h3 id="construction-examples">Construction Examples</h3>
 
 <pre><span class="cm">--- New() and Create() are usually called by the preprocessor ---</span>
 <span class="cm">--- This is what the code generator produces from DEFINE FORM: ---</span>
@@ -160,7 +160,7 @@ oBtn:<span class="fn">Create</span>()
 oOldBtn:<span class="fn">Release</span>()   <span class="cm">/// removes and frees the native widget</span></pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Visibility and Focus</h2>
+<h2 id="visibility-and-focus">Visibility and Focus</h2>
 
 <table>
   <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
@@ -187,7 +187,7 @@ oOldBtn:<span class="fn">Release</span>()   <span class="cm">/// removes and fre
   </tr>
 </table>
 
-<h3>Visibility and Focus Examples</h3>
+<h3 id="visibility-and-focus-examples">Visibility and Focus Examples</h3>
 
 <pre><span class="cm">--- Show/hide a panel based on a checkbox ---</span>
 oCheck:<span class="fn">OnClick</span> := { || ;
@@ -208,7 +208,7 @@ oDialog:<span class="fn">Show</span>()
 oDialog:<span class="fn">SetFocus</span>()   <span class="cm">/// ensure focus is on the dialog</span></pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Value Methods</h2>
+<h2 id="value-methods">Value Methods</h2>
 
 <table>
   <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
@@ -242,7 +242,7 @@ oDialog:<span class="fn">SetFocus</span>()   <span class="cm">/// ensure focus i
   </tr>
 </table>
 
-<h3>Value Method Examples</h3>
+<h3 id="value-method-examples">Value Method Examples</h3>
 
 <pre><span class="cm">--- Read and write values ---</span>
 oBtn:<span class="fn">OnClick</span> := { || ;
@@ -267,7 +267,7 @@ oTitleLabel:<span class="fn">SetText</span>( <span class="st">"Welcome to the Ap
 oStatus:<span class="fn">SetText</span>( <span class="st">"Ready"</span> )</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Position and Size Methods</h2>
+<h2 id="position-and-size-methods">Position and Size Methods</h2>
 
 <table>
   <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
@@ -308,7 +308,7 @@ oStatus:<span class="fn">SetText</span>( <span class="st">"Ready"</span> )</pre>
   </tr>
 </table>
 
-<h3>Position and Size Examples</h3>
+<h3 id="position-and-size-examples">Position and Size Examples</h3>
 
 <pre><span class="cm">--- SetBounds: position and size in one call ---</span>
 oBtn:<span class="fn">SetBounds</span>( <span class="nb">50</span>, <span class="nb">30</span>, <span class="nb">120</span>, <span class="nb">32</span> )
@@ -324,7 +324,7 @@ aSize := oForm:<span class="fn">GetSize</span>()
          <span class="st">", Height: "</span> + <span class="fn">LTrim</span>( <span class="fn">Str</span>( aSize[ <span class="nb">2</span> ] ) ) )</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Font Methods</h2>
+<h2 id="font-methods">Font Methods</h2>
 
 <table>
   <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
@@ -344,7 +344,7 @@ aSize := oForm:<span class="fn">GetSize</span>()
   </tr>
 </table>
 
-<h3>Font Method Examples</h3>
+<h3 id="font-method-examples">Font Method Examples</h3>
 
 <pre><span class="cm">--- SetFont: set the complete font in one call ---</span>
 oTitleLabel:<span class="fn">SetFont</span>( <span class="st">"Segoe UI"</span>, <span class="nb">14</span>, <span class="nb">.T.</span> )     <span class="cm">/// bold</span>
@@ -356,7 +356,7 @@ oFont := oLabel:<span class="fn">GetFont</span>()
 <span class="fn">MsgInfo</span>( <span class="st">"Font: "</span> + oFont:<span class="nb">cName</span> + <span class="st">" Size: "</span> + <span class="fn">LTrim</span>( <span class="fn">Str</span>( oFont:<span class="nb">nSize</span> ) ) )</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Display and Refresh Methods</h2>
+<h2 id="display-and-refresh-methods">Display and Refresh Methods</h2>
 
 <table>
   <tr><th>Method</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Available For</th></tr>
@@ -383,7 +383,7 @@ oFont := oLabel:<span class="fn">GetFont</span>()
   </tr>
 </table>
 
-<h3>Refresh Examples</h3>
+<h3 id="refresh-examples">Refresh Examples</h3>
 
 <pre><span class="cm">--- Refresh after changing appearance properties ---</span>
 oShape:<span class="nb">nBrushColor</span> := <span class="nb">CLR_RED</span>
@@ -397,7 +397,7 @@ oPaintBox:<span class="fn">OnTimer</span> := { || ;
 }</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Complete Method Summary Table</h2>
+<h2 id="complete-method-summary-table">Complete Method Summary Table</h2>
 
 <table>
   <tr><th>Method</th><th>Returns</th><th>Category</th><th>Primary Controls</th></tr>
@@ -432,6 +432,29 @@ oPaintBox:<span class="fn">OnTimer</span> := { || ;
   is the style used by the HarbourBuilder code generator.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#construction-and-destruction" class="toc-h2">Construction and Destruction</a>
+  <a href="#construction-examples" class="toc-h3">Construction Examples</a>
+  <a href="#visibility-and-focus" class="toc-h2">Visibility and Focus</a>
+  <a href="#visibility-and-focus-examples" class="toc-h3">Visibility and Focus Examples</a>
+  <a href="#value-methods" class="toc-h2">Value Methods</a>
+  <a href="#value-method-examples" class="toc-h3">Value Method Examples</a>
+  <a href="#position-and-size-methods" class="toc-h2">Position and Size Methods</a>
+  <a href="#position-and-size-examples" class="toc-h3">Position and Size Examples</a>
+  <a href="#font-methods" class="toc-h2">Font Methods</a>
+  <a href="#font-method-examples" class="toc-h3">Font Method Examples</a>
+  <a href="#display-and-refresh-methods" class="toc-h2">Display and Refresh Methods</a>
+  <a href="#refresh-examples" class="toc-h3">Refresh Examples</a>
+  <a href="#complete-method-summary-table" class="toc-h2">Complete Method Summary Table</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

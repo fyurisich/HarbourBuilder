@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,14 +44,14 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="code-editor.html">Code Editor</a>
     <a href="debugger.html">Debugger</a>
     <a href="ai-assistant.html">AI Assistant</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -301,6 +301,18 @@
   Use TChannel for safe inter-thread communication instead of shared variables with locks.</p>
 </div>
 
+
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#thread" class="toc-h2 active">TThread CT_THREAD = 63</a>
+  <a href="#mutex" class="toc-h2">TMutex CT_MUTEX = 64</a>
+  <a href="#semaphore" class="toc-h2">TSemaphore CT_SEMAPHORE = 65</a>
+  <a href="#criticalsection" class="toc-h2">TCriticalSection CT_CRITICALSECTION = 66</a>
+  <a href="#threadpool" class="toc-h2">TThreadPool CT_THREADPOOL = 67</a>
+  <a href="#atomicint" class="toc-h2">TAtomicInt CT_ATOMICINT = 68</a>
+  <a href="#condvar" class="toc-h2">TCondVar CT_CONDVAR = 69</a>
+  <a href="#channel" class="toc-h2">TChannel CT_CHANNEL = 70</a>
+  <a href="#example" class="toc-h2">Code Example: Producer-Consumer Pattern</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

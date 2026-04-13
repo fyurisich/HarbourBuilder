@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html" class="active">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -50,7 +50,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -60,7 +60,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -70,7 +70,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -78,7 +78,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -108,7 +108,7 @@ with a single codebase.</p>
   performance on every platform.
 </div>
 
-<h2>Architecture</h2>
+<h2 id="architecture">Architecture</h2>
 <div class="mermaid">
 graph TB
     A["Application Code (.prg)"] --> B["xBase Commands<br/>#xcommand (compile-time)"]
@@ -124,7 +124,7 @@ graph TB
     style E3 fill:#e95420,stroke:#c34113,color:#fff
 </div>
 
-<h2>Component Palette</h2>
+<h2 id="component-palette">Component Palette</h2>
 <p>130 controls across 16 tabs — the most complete component palette of any Harbour IDE:</p>
 
 <table>
@@ -146,7 +146,7 @@ graph TB
 </table>
 <p><strong>Total: 130 controls</strong> — all available on Windows, macOS, and Linux.</p>
 
-<h2>Key Features</h2>
+<h2 id="key-features">Key Features</h2>
 
 <details>
   <summary>Visual Form Designer</summary>
@@ -180,7 +180,7 @@ graph TB
   </div>
 </details>
 
-<h2>Quick Example</h2>
+<h2 id="quick-example">Quick Example</h2>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
 
@@ -207,6 +207,20 @@ graph TB
   to the Harbour OOP layer and the visual designer. A new paradigm in software development.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#architecture" class="toc-h2">Architecture</a>
+  <a href="#component-palette" class="toc-h2">Component Palette</a>
+  <a href="#key-features" class="toc-h2">Key Features</a>
+  <a href="#quick-example" class="toc-h2">Quick Example</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

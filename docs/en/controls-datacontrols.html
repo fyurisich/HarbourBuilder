@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,14 +44,14 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="code-editor.html">Code Editor</a>
     <a href="debugger.html">Debugger</a>
     <a href="ai-assistant.html">AI Assistant</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -91,7 +91,7 @@
   <tr><td><code>nClrSelected</code></td><td>Color</td><td>system</td><td>Selected row highlight color</td></tr>
 </table>
 
-<h3>TBrowseColumn Properties</h3>
+<h3 id="tbrowsecolumn-properties">TBrowseColumn Properties</h3>
 <table>
   <tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr>
   <tr><td><code>cHeading</code></td><td>String</td><td>""</td><td>Column header text</td></tr>
@@ -103,7 +103,7 @@
   <tr><td><code>lEditable</code></td><td>Logical</td><td>.T.</td><td>Allow editing this column</td></tr>
 </table>
 
-<h3>TBrowse Events</h3>
+<h3 id="tbrowse-events">TBrowse Events</h3>
 <table>
   <tr><th>Event</th><th>Category</th><th>Description</th></tr>
   <tr><td><code>OnClick</code></td><td>Action</td><td>User clicked a cell. Params: nRow, nCol</td></tr>
@@ -301,6 +301,18 @@
   record, all bound controls update instantly. Changes are written back to the database when saved.</p>
 </div>
 
+
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#browse" class="toc-h2 active">TBrowse CT_BROWSE = 79</a>
+  <a href="#dbgrid" class="toc-h2">TDBGrid CT_DBGRID = 80</a>
+  <a href="#dbnavigator" class="toc-h2">TDBNavigator CT_DBNAVIGATOR = 81</a>
+  <a href="#dbtext" class="toc-h2">TDBText CT_DBTEXT = 82</a>
+  <a href="#dbedit" class="toc-h2">TDBEdit CT_DBEDIT = 83</a>
+  <a href="#dbcombobox" class="toc-h2">TDBComboBox CT_DBCOMBOBOX = 84</a>
+  <a href="#dbcheckbox" class="toc-h2">TDBCheckBox CT_DBCHECKBOX = 85</a>
+  <a href="#dbimage" class="toc-h2">TDBImage CT_DBIMAGE = 86</a>
+  <a href="#example" class="toc-h2">Code Example: TBrowse with Database</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

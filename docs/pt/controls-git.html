@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -98,7 +98,7 @@ Sem ferramentas externas necessarias; gerencie seus repositorios diretamente do 
   proporcionando uma experiencia de Source Control no estilo VS Code dentro do IDE.</p>
 </div>
 
-<h2>Componentes Git</h2>
+<h2 id="componentes-git">Componentes Git</h2>
 
 <table>
   <tr><th>Componente</th><th>CT ID</th><th>Descricao</th></tr>
@@ -114,9 +114,9 @@ Sem ferramentas externas necessarias; gerencie seus repositorios diretamente do 
   <tr><td><code>TGitMerge</code></td><td>130</td><td>Mesclar branches e resolver conflitos</td></tr>
 </table>
 
-<h2>Integracao Git no IDE</h2>
+<h2 id="integracao-git-no-ide">Integracao Git no IDE</h2>
 
-<h3>Painel de Controle de Codigo Fonte</h3>
+<h3 id="painel-de-controle-de-codigo-fonte">Painel de Controle de Codigo Fonte</h3>
 <p>Acesse via menu <strong>Git &gt; Status</strong>. O painel mostra:</p>
 <ul>
   <li><strong>Rotulo do branch</strong> — Nome do branch atual</li>
@@ -127,7 +127,7 @@ Sem ferramentas externas necessarias; gerencie seus repositorios diretamente do 
 
 <p>O painel usa um estilo escuro que corresponde a visao Source Control do VS Code.</p>
 
-<h3>Menu Git (17 Itens)</h3>
+<h3 id="menu-git-17-itens">Menu Git (17 Itens)</h3>
 
 <table>
   <tr><th>Item de Menu</th><th>Acao</th></tr>
@@ -147,7 +147,7 @@ Sem ferramentas externas necessarias; gerencie seus repositorios diretamente do 
   <tr><td><strong>Blame</strong></td><td>Visualizar autoria linha por linha</td></tr>
 </table>
 
-<h2>Funcoes de Backend</h2>
+<h2 id="funcoes-de-backend">Funcoes de Backend</h2>
 
 <p>11 funcoes de backend envolvem a CLI do <code>git.exe</code> via <code>CreateProcess</code> com captura de stdout:</p>
 
@@ -165,9 +165,9 @@ Sem ferramentas externas necessarias; gerencie seus repositorios diretamente do 
   <tr><td><code>GIT_StashList()</code></td><td><code>git stash list</code></td><td><code>{ { cStash, cMsg }, ... }</code></td></tr>
 </table>
 
-<h2>Exemplos de Codigo</h2>
+<h2 id="exemplos-de-codigo">Exemplos de Codigo</h2>
 
-<h3>Inicializar um Repositorio</h3>
+<h3 id="inicializar-um-repositorio">Inicializar um Repositorio</h3>
 <pre><span class="kw">local</span> oRepo
 
 oRepo := <span class="fn">TGitRepo</span>:New()
@@ -176,7 +176,7 @@ oRepo := <span class="fn">TGitRepo</span>:New()
    <span class="fn">MsgInfo</span>( <span class="st">"Repositorio inicializado"</span> )
 <span class="kw">endif</span></pre>
 
-<h3>Visualizar Status e Commit</h3>
+<h3 id="visualizar-status-e-commit">Visualizar Status e Commit</h3>
 <pre><span class="kw">local</span> aStatus, cMsg
 
 aStatus := <span class="fn">GIT_Status</span>()
@@ -187,7 +187,7 @@ aStatus := <span class="fn">GIT_Status</span>()
 <span class="fn">GIT_Exec</span>( <span class="st">"git add ."</span> )
 <span class="fn">GIT_Exec</span>( <span class="st">"git commit -m \"Commit inicial\""</span> )</pre>
 
-<h3>Operacoes com Branch</h3>
+<h3 id="operacoes-com-branch">Operacoes com Branch</h3>
 <pre><span class="kw">local</span> aBranches
 
 <span class="comment">// Listar todos os branches</span>
@@ -199,7 +199,7 @@ aBranches := <span class="fn">GIT_BranchList</span>()
 <span class="comment">// Criar e trocar para novo branch</span>
 <span class="fn">GIT_Exec</span>( <span class="st">"git checkout -b feature/nova-funcionalidade"</span> )</pre>
 
-<h3>Visualizar Log de Commits</h3>
+<h3 id="visualizar-log-de-commits">Visualizar Log de Commits</h3>
 <pre><span class="kw">local</span> aLog
 
 aLog := <span class="fn">GIT_Log</span>( <span class="nb">20</span> )  <span class="comment">// Ultimos 20 commits</span>
@@ -210,7 +210,7 @@ aLog := <span class="fn">GIT_Log</span>( <span class="nb">20</span> )  <span cla
    ? aCommit[<span class="nb">4</span>]  <span class="comment">// Mensagem</span>
 <span class="kw">next</span></pre>
 
-<h3>Blame em um Arquivo</h3>
+<h3 id="blame-em-um-arquivo">Blame em um Arquivo</h3>
 <pre><span class="kw">local</span> aBlame
 
 aBlame := <span class="fn">GIT_Blame</span>( <span class="st">"source/main.prg"</span> )
@@ -218,7 +218,7 @@ aBlame := <span class="fn">GIT_Blame</span>( <span class="st">"source/main.prg"<
    ? <span class="st">"Linha"</span>, aLine[<span class="nb">1</span>], <span class="st">"por"</span>, aLine[<span class="nb">3</span>], <span class="st">":"</span>, aLine[<span class="nb">4</span>]
 <span class="kw">next</span></pre>
 
-<h2>Troca de Branches</h2>
+<h2 id="troca-de-branches">Troca de Branches</h2>
 
 <p>Ao trocar de branches via <strong>Git &gt; Branch &gt; Switch</strong>, um dialogo de lista mostra todos os branches disponiveis.
 Selecione o branch alvo e clique em OK. O IDE ira:</p>
@@ -236,9 +236,9 @@ Selecione o branch alvo e clique em OK. O IDE ira:</p>
   Baixe em <a href="https://git-scm.com/">git-scm.com</a>.</p>
 </div>
 
-<h2>Fluxos de Trabalho Git Comuns</h2>
+<h2 id="fluxos-de-trabalho-git-comuns">Fluxos de Trabalho Git Comuns</h2>
 
-<h3>Configuracao Inicial</h3>
+<h3 id="configuracao-inicial">Configuracao Inicial</h3>
 <pre><span class="comment">// 1. Inicializar repositorio</span>
 <span class="fn">GIT_Exec</span>( <span class="st">"git init"</span> )
 
@@ -254,7 +254,7 @@ Selecione o branch alvo e clique em OK. O IDE ira:</p>
 <span class="comment">// 5. Push para o remoto</span>
 <span class="fn">GIT_Exec</span>( <span class="st">"git push -u origin master"</span> )</pre>
 
-<h3>Fluxo de Trabalho Diario</h3>
+<h3 id="fluxo-de-trabalho-diario">Fluxo de Trabalho Diario</h3>
 <pre><span class="comment">// 1. Baixar ultimas alteracoes</span>
 <span class="fn">GIT_Exec</span>( <span class="st">"git pull"</span> )
 
@@ -270,6 +270,31 @@ aStatus := <span class="fn">GIT_Status</span>()
 <span class="comment">// 5. Push para o remoto</span>
 <span class="fn">GIT_Exec</span>( <span class="st">"git push"</span> )</pre>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#componentes-git" class="toc-h2">Componentes Git</a>
+  <a href="#integracao-git-no-ide" class="toc-h2">Integracao Git no IDE</a>
+  <a href="#painel-de-controle-de-codigo-fonte" class="toc-h3">Painel de Controle de Codigo Fonte</a>
+  <a href="#menu-git-17-itens" class="toc-h3">Menu Git (17 Itens)</a>
+  <a href="#funcoes-de-backend" class="toc-h2">Funcoes de Backend</a>
+  <a href="#exemplos-de-codigo" class="toc-h2">Exemplos de Codigo</a>
+  <a href="#inicializar-um-repositorio" class="toc-h3">Inicializar um Repositorio</a>
+  <a href="#visualizar-status-e-commit" class="toc-h3">Visualizar Status e Commit</a>
+  <a href="#operacoes-com-branch" class="toc-h3">Operacoes com Branch</a>
+  <a href="#visualizar-log-de-commits" class="toc-h3">Visualizar Log de Commits</a>
+  <a href="#blame-em-um-arquivo" class="toc-h3">Blame em um Arquivo</a>
+  <a href="#troca-de-branches" class="toc-h2">Troca de Branches</a>
+  <a href="#fluxos-de-trabalho-git-comuns" class="toc-h2">Fluxos de Trabalho Git Comuns</a>
+  <a href="#configuracao-inicial" class="toc-h3">Configuracao Inicial</a>
+  <a href="#fluxo-de-trabalho-diario" class="toc-h3">Fluxo de Trabalho Diario</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

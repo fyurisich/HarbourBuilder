@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de Formularios</a>
     <a href="object-inspector.html">Inspector de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Compilar y Ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con Formularios</a>
     <a href="tutorial-events.html">Manejo de Eventos</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -94,14 +94,14 @@
 <h1>Tutorial: Construir una Aplicacion Web</h1>
 <p>HarbourBuilder incluye un componente <strong>TWebServer</strong> integrado que le permite servir paginas web y APIs JSON directamente desde su aplicacion. En este tutorial construira una aplicacion web TODO simple con una interfaz de escritorio GUI y una interfaz basada en navegador funcionando lado a lado.</p>
 
-<h2>Paso 1: Crear el Proyecto</h2>
+<h2 id="paso-1-crear-el-proyecto">Paso 1: Crear el Proyecto</h2>
 <ol>
   <li>Cree un nuevo proyecto llamado <code>TodoWebApp</code> mediante <strong>Archivo &rarr; Nuevo Proyecto</strong>.</li>
   <li>Abra <code>main.prg</code> en el Editor de Codigo.</li>
   <li>Construiremos un formulario de escritorio para gestionar tareas y un servidor web que expone los mismos datos.</li>
 </ol>
 
-<h2>Paso 2: Configurar el Servidor Web</h2>
+<h2 id="paso-2-configurar-el-servidor-web">Paso 2: Configurar el Servidor Web</h2>
 <p>Coloque un <strong>TWebServer</strong> desde la pestania de paleta <strong>Internet</strong> en el formulario, o creelo en codigo. Establezca el puerto y defina sus rutas.</p>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
@@ -152,7 +152,7 @@
   <p>El TWebServer se ejecuta en un hilo en segundo plano, por lo que su formulario de escritorio permanece completamente interactivo. Tanto la GUI como el navegador ven el mismo arreglo <code>aTodos</code>. Los cambios de cualquier lado son inmediatamente visibles para el otro.</p>
 </div>
 
-<h2>Paso 3: Servir una Pagina HTML</h2>
+<h2 id="paso-3-servir-una-pagina-html">Paso 3: Servir una Pagina HTML</h2>
 <p>La ruta raiz <code>/</code> sirve una pagina HTML completa. Use <code>oRes:SendHTML()</code> para devolver contenido HTML.</p>
 
 <pre><span class="kw">static function</span> <span class="fn">ServeHomePage</span>( oReq, oRes )
@@ -184,7 +184,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Paso 4: Devolver JSON para la API</h2>
+<h2 id="paso-4-devolver-json-para-la-api">Paso 4: Devolver JSON para la API</h2>
 <p>Las rutas de API usan <code>oRes:SendJSON()</code> para devolver datos estructurados que el JavaScript del navegador (o cualquier cliente HTTP) puede consumir.</p>
 
 <pre><span class="kw">static function</span> <span class="fn">GetTodosJSON</span>( oReq, oRes )
@@ -215,7 +215,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Paso 5: Actualizar la Cuadricula de Escritorio</h2>
+<h2 id="paso-5-actualizar-la-cuadricula-de-escritorio">Paso 5: Actualizar la Cuadricula de Escritorio</h2>
 
 <pre><span class="kw">static function</span> <span class="fn">RefreshGrid</span>( oBrw )
 
@@ -230,7 +230,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Paso 6: Compilar y Probar</h2>
+<h2 id="paso-6-compilar-y-probar">Paso 6: Compilar y Probar</h2>
 <ol>
   <li>Presione <strong>F9</strong> para compilar y ejecutar.</li>
   <li>Aparece el formulario de escritorio con una lista de tareas vacia. Anada algunas tareas usando la GUI.</li>
@@ -239,7 +239,7 @@
   <li>Vuelva al escritorio &mdash; los datos se comparten en tiempo real.</li>
 </ol>
 
-<h2>Descripcion General de la Arquitectura</h2>
+<h2 id="descripcion-general-de-la-arquitectura">Descripcion General de la Arquitectura</h2>
 
 <div class="mermaid">
 graph TB
@@ -265,6 +265,23 @@ graph TB
   <p>Listo para anadir inteligencia a su aplicacion? Continue al tutorial de <a href="tutorial-ai.html">Integracion de IA</a> para conectarse a LLMs locales y ejecutar inferencia directamente desde su aplicacion.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros Pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#paso-1-crear-el-proyecto" class="toc-h2">Paso 1: Crear el Proyecto</a>
+  <a href="#paso-2-configurar-el-servidor-web" class="toc-h2">Paso 2: Configurar el Servidor Web</a>
+  <a href="#paso-3-servir-una-pagina-html" class="toc-h2">Paso 3: Servir una Pagina HTML</a>
+  <a href="#paso-4-devolver-json-para-la-api" class="toc-h2">Paso 4: Devolver JSON para la API</a>
+  <a href="#paso-5-actualizar-la-cuadricula-de-escritorio" class="toc-h2">Paso 5: Actualizar la Cuadricula de Escritorio</a>
+  <a href="#paso-6-compilar-y-probar" class="toc-h2">Paso 6: Compilar y Probar</a>
+  <a href="#descripcion-general-de-la-arquitectura" class="toc-h2">Descripcion General de la Arquitectura</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

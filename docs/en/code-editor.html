@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html" class="active">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -99,7 +99,7 @@ Harbour-aware syntax highlighting and intelligent code folding.</p>
   and Linux uses shared libraries. The editing experience is identical across platforms.</p>
 </div>
 
-<h2>Platform-Specific Scintilla Setup</h2>
+<h2 id="platform-specific-scintilla-setup">Platform-Specific Scintilla Setup</h2>
 
 <table>
   <tr><th>Platform</th><th>Library Type</th><th>Files</th></tr>
@@ -108,7 +108,7 @@ Harbour-aware syntax highlighting and intelligent code folding.</p>
   <tr><td><span class="badge linux">Linux</span></td><td>Shared libraries</td><td><code>libscintilla.so</code>, <code>liblexilla.so</code></td></tr>
 </table>
 
-<h2>Syntax Highlighting</h2>
+<h2 id="syntax-highlighting">Syntax Highlighting</h2>
 
 <p>The editor uses a <strong>VS Code Dark+</strong> color theme with Harbour-aware syntax highlighting:</p>
 
@@ -122,7 +122,7 @@ Harbour-aware syntax highlighting and intelligent code folding.</p>
   <tr><td>Preprocessor</td><td><span style="color:#c586c0">Magenta</span></td><td>Normal</td><td><code>#include</code>, <code>#xcommand</code></td></tr>
 </table>
 
-<h2>Code Folding</h2>
+<h2 id="code-folding">Code Folding</h2>
 
 <p>Harbour-aware code folding understands xBase language structures:</p>
 
@@ -137,7 +137,7 @@ Harbour-aware syntax highlighting and intelligent code folding.</p>
   <li><code>#pragma begindump</code> / <code>#pragma enddump</code> — C code embedding</li>
 </ul>
 
-<h2>Keyboard Shortcuts</h2>
+<h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
 
 <table>
   <tr><th>Shortcut</th><th>Action</th></tr>
@@ -152,7 +152,7 @@ Harbour-aware syntax highlighting and intelligent code folding.</p>
   <tr><td><strong>F12</strong></td><td>Go to definition (function/procedure/method/class)</td></tr>
 </table>
 
-<h2>Auto-Completion</h2>
+<h2 id="auto-completion">Auto-Completion</h2>
 
 <p>Press <strong>Ctrl+Space / Cmd+Space</strong> to trigger auto-completion with 150+ items:</p>
 
@@ -162,7 +162,7 @@ Harbour-aware syntax highlighting and intelligent code folding.</p>
   <li><strong>xBase commands</strong> — DEFINE FORM, BUTTON, LABEL, ACTIVATE, etc.</li>
 </ul>
 
-<h2>Bracket Matching</h2>
+<h2 id="bracket-matching">Bracket Matching</h2>
 
 <p>The editor automatically highlights matching brackets:</p>
 <ul>
@@ -170,7 +170,7 @@ Harbour-aware syntax highlighting and intelligent code folding.</p>
   <li><strong>Unmatched/bad brackets</strong> — Highlighted in <span style="color:#ff4444">red</span></li>
 </ul>
 
-<h2>Bookmarks</h2>
+<h2 id="bookmarks">Bookmarks</h2>
 
 <p>Set bookmarks to quickly navigate to important code locations:</p>
 
@@ -180,7 +180,7 @@ Harbour-aware syntax highlighting and intelligent code folding.</p>
   <tr><td><strong>Ctrl+Shift+0..9 / Cmd+Shift+0..9</strong></td><td>Jump to bookmark</td></tr>
 </table>
 
-<h2>Code Snippets</h2>
+<h2 id="code-snippets">Code Snippets</h2>
 
 <p>Tab expansion for common code patterns:</p>
 
@@ -196,17 +196,17 @@ Harbour-aware syntax highlighting and intelligent code folding.</p>
   <tr><td><code>tryx</code></td><td><code>begin sequence ... end sequence</code></td></tr>
 </table>
 
-<h2>Auto-Indent</h2>
+<h2 id="auto-indent">Auto-Indent</h2>
 
 <p>When you press Enter, the editor automatically indents the new line to match the previous line's
 indentation level. This keeps your code properly formatted without manual spacing.</p>
 
-<h2>Tabbed Multi-File Editing</h2>
+<h2 id="tabbed-multi-file-editing">Tabbed Multi-File Editing</h2>
 
 <p>The editor supports tabbed editing, allowing you to work on multiple source files simultaneously.
 Tabs show the filename and an asterisk (*) when the file has unsaved changes.</p>
 
-<h2>Build Messages Panel</h2>
+<h2 id="build-messages-panel">Build Messages Panel</h2>
 
 <p>After building, the Messages panel appears at the bottom showing:</p>
 <ul>
@@ -216,7 +216,7 @@ Tabs show the filename and an asterisk (*) when the file has unsaved changes.</p
   <li><strong>Clear button</strong> — Clear the messages panel</li>
 </ul>
 
-<h2>Status Bar</h2>
+<h2 id="status-bar">Status Bar</h2>
 
 <p>The status bar at the bottom shows real-time editing information:</p>
 
@@ -236,6 +236,28 @@ Tabs show the filename and an asterisk (*) when the file has unsaved changes.</p
   The lexer understands Harbour keywords, commands, and xBase-specific constructs.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#platform-specific-scintilla-setup" class="toc-h2">Platform-Specific Scintilla Setup</a>
+  <a href="#syntax-highlighting" class="toc-h2">Syntax Highlighting</a>
+  <a href="#code-folding" class="toc-h2">Code Folding</a>
+  <a href="#keyboard-shortcuts" class="toc-h2">Keyboard Shortcuts</a>
+  <a href="#auto-completion" class="toc-h2">Auto-Completion</a>
+  <a href="#bracket-matching" class="toc-h2">Bracket Matching</a>
+  <a href="#bookmarks" class="toc-h2">Bookmarks</a>
+  <a href="#code-snippets" class="toc-h2">Code Snippets</a>
+  <a href="#auto-indent" class="toc-h2">Auto-Indent</a>
+  <a href="#tabbed-multi-file-editing" class="toc-h2">Tabbed Multi-File Editing</a>
+  <a href="#build-messages-panel" class="toc-h2">Build Messages Panel</a>
+  <a href="#status-bar" class="toc-h2">Status Bar</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

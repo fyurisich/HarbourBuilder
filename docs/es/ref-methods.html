@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html" class="active">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -92,7 +92,7 @@ Complementan las asignaciones de propiedades y manejadores de eventos en el mode
   que no se almacenan como propiedades simples.</p>
 </div>
 
-<h2>Construccion y Destruccion</h2>
+<h2 id="construccion-y-destruccion">Construccion y Destruccion</h2>
 
 <table>
   <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th><th>Disponible Para</th></tr>
@@ -102,7 +102,7 @@ Complementan las asignaciones de propiedades y manejadores de eventos en el mode
   <tr><td><code>Close()</code></td><td>ninguno</td><td>nil</td><td>Cierra el formulario. Dispara OnCloseQuery (que puede cancelar el cierre), luego OnClose, luego OnDestroy.</td><td>Form</td></tr>
 </table>
 
-<h2>Visibilidad y Foco</h2>
+<h2 id="visibilidad-y-foco">Visibilidad y Foco</h2>
 
 <table>
   <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th><th>Disponible Para</th></tr>
@@ -111,7 +111,7 @@ Complementan las asignaciones de propiedades y manejadores de eventos en el mode
   <tr><td><code>SetFocus()</code></td><td>ninguno</td><td>nil</td><td>Da foco de entrada al control. El control debe ser visible, habilitado y tener lTabStop en .T. Dispara el evento OnEnter.</td><td>Todos los controles enfocables</td></tr>
 </table>
 
-<h2>Metodos de Valor</h2>
+<h2 id="metodos-de-valor">Metodos de Valor</h2>
 
 <table>
   <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th><th>Disponible Para</th></tr>
@@ -121,7 +121,7 @@ Complementan las asignaciones de propiedades y manejadores de eventos en el mode
   <tr><td><code>GetText()</code></td><td>ninguno</td><td>Cadena</td><td>Retorna el texto mostrado. Para Edit/Memo, es el contenido de texto. Para Label/StaticText, la etiqueta. Para Button, el prompt.</td><td>Label, StaticText, Button, Edit, Memo, LabeledEdit</td></tr>
 </table>
 
-<h2>Metodos de Posicion y Tamano</h2>
+<h2 id="metodos-de-posicion-y-tamano">Metodos de Posicion y Tamano</h2>
 
 <table>
   <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th><th>Disponible Para</th></tr>
@@ -132,7 +132,7 @@ Complementan las asignaciones de propiedades y manejadores de eventos en el mode
   <tr><td><code>GetPosition()</code></td><td>ninguno</td><td>Arreglo <code>{ nLeft, nTop }</code></td><td>Retorna la posicion izquierda y arriba actuales como un arreglo de dos elementos.</td><td>Todos los controles visuales</td></tr>
 </table>
 
-<h2>Metodos de Fuente</h2>
+<h2 id="metodos-de-fuente">Metodos de Fuente</h2>
 
 <table>
   <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th><th>Disponible Para</th></tr>
@@ -140,7 +140,7 @@ Complementan las asignaciones de propiedades y manejadores de eventos en el mode
   <tr><td><code>GetFont()</code></td><td>ninguno</td><td>Objeto de fuente (o arreglo)</td><td>Retorna el descriptor de fuente actual.</td><td>Todos los controles con texto</td></tr>
 </table>
 
-<h2>Metodos de Visualizacion y Refresco</h2>
+<h2 id="metodos-de-visualizacion-y-refresco">Metodos de Visualizacion y Refresco</h2>
 
 <table>
   <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th><th>Disponible Para</th></tr>
@@ -149,7 +149,7 @@ Complementan las asignaciones de propiedades y manejadores de eventos en el mode
   <tr><td><code>Invalidate()</code></td><td>ninguno</td><td>nil</td><td>Marca el area completa del control como necesitada de redibujado, pero no fuerza un redibujado inmediato. El pintado real ocurre durante el siguiente ciclo de pintado.</td><td>Todos los controles visuales</td></tr>
 </table>
 
-<h2>Resumen Completo de Metodos</h2>
+<h2 id="resumen-completo-de-metodos">Resumen Completo de Metodos</h2>
 
 <table>
   <tr><th>Metodo</th><th>Retorna</th><th>Categoria</th><th>Controles Principales</th></tr>
@@ -183,7 +183,25 @@ Complementan las asignaciones de propiedades y manejadores de eventos en el mode
   Sin embargo, el enfoque tradicional de establecer propiedades individualmente es mas legible y
   es el estilo usado por el generador de codigo de HarbourBuilder.</p>
 </div>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#construccion-y-destruccion" class="toc-h2">Construccion y Destruccion</a>
+  <a href="#visibilidad-y-foco" class="toc-h2">Visibilidad y Foco</a>
+  <a href="#metodos-de-valor" class="toc-h2">Metodos de Valor</a>
+  <a href="#metodos-de-posicion-y-tamano" class="toc-h2">Metodos de Posicion y Tamano</a>
+  <a href="#metodos-de-fuente" class="toc-h2">Metodos de Fuente</a>
+  <a href="#metodos-de-visualizacion-y-refresco" class="toc-h2">Metodos de Visualizacion y Refresco</a>
+  <a href="#resumen-completo-de-metodos" class="toc-h2">Resumen Completo de Metodos</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,14 +44,14 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de Formularios</a>
     <a href="code-editor.html">Editor de Codigo</a>
     <a href="debugger.html">Depurador</a>
     <a href="ai-assistant.html">Asistente de IA</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -300,6 +300,18 @@
   <p>Todas las primitivas de hilos se asignan directamente a las instalaciones nativas del sistema operativo para maximo rendimiento. Use TChannel para comunicacion segura entre hilos en lugar de variables compartidas con bloqueos.</p>
 </div>
 
+
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#thread" class="toc-h2 active">TThread CT_THREAD = 63</a>
+  <a href="#mutex" class="toc-h2">TMutex CT_MUTEX = 64</a>
+  <a href="#semaphore" class="toc-h2">TSemaphore CT_SEMAPHORE = 65</a>
+  <a href="#criticalsection" class="toc-h2">TCriticalSection CT_CRITICALSECTION = 66</a>
+  <a href="#threadpool" class="toc-h2">TThreadPool CT_THREADPOOL = 67</a>
+  <a href="#atomicint" class="toc-h2">TAtomicInt CT_ATOMICINT = 68</a>
+  <a href="#condvar" class="toc-h2">TCondVar CT_CONDVAR = 69</a>
+  <a href="#channel" class="toc-h2">TChannel CT_CHANNEL = 70</a>
+  <a href="#example" class="toc-h2">Ejemplo de Codigo: Patron Productor-Consumidor</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

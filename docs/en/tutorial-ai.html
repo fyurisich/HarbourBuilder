@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -97,9 +97,9 @@ large language models via the Ollama service, and <strong>TTransformer</strong> 
 transformer model weights directly in-process. This tutorial covers both approaches with
 complete working examples.</p>
 
-<h2>Part 1: TOllama &mdash; Chat with a Local LLM</h2>
+<h2 id="part-1-tollama-chat-with-a-local-llm">Part 1: TOllama &mdash; Chat with a Local LLM</h2>
 
-<h3>Step 1: Prerequisites</h3>
+<h3 id="step-1-prerequisites">Step 1: Prerequisites</h3>
 <ol>
   <li>Install <a href="https://ollama.ai" target="_blank">Ollama</a> on your machine.</li>
   <li>Pull a model: run <code>ollama pull llama3</code> in your terminal.</li>
@@ -112,7 +112,7 @@ complete working examples.</p>
   &mdash; no cloud services, no API keys, no data leaves your computer.</p>
 </div>
 
-<h3>Step 2: Create the Chat UI</h3>
+<h3 id="step-2-create-the-chat-ui">Step 2: Create the Chat UI</h3>
 <p>Build a form with a Memo for the conversation history, a TextBox for user input, and a Send button.</p>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
@@ -146,7 +146,7 @@ complete working examples.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Step 3: Send a Message and Get a Response</h3>
+<h3 id="step-3-send-a-message-and-get-a-response">Step 3: Send a Message and Get a Response</h3>
 <p>Use <code>oOllama:Chat()</code> for a simple request/response, or <code>oOllama:ChatStream()</code>
 to receive the response token by token as it is generated.</p>
 
@@ -171,7 +171,7 @@ to receive the response token by token as it is generated.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Step 4: Streaming Response to a Memo</h3>
+<h3 id="step-4-streaming-response-to-a-memo">Step 4: Streaming Response to a Memo</h3>
 <p>For a better user experience, stream the response so tokens appear in the Memo as they are
 generated &mdash; just like a real chat interface.</p>
 
@@ -201,7 +201,7 @@ generated &mdash; just like a real chat interface.</p>
   to start a fresh conversation.</p>
 </div>
 
-<h3>Step 5: TOllama Properties and Methods</h3>
+<h3 id="step-5-tollama-properties-and-methods">Step 5: TOllama Properties and Methods</h3>
 <table style="width:100%; border-collapse:collapse; margin:1em 0;">
   <tr style="border-bottom:1px solid #444;">
     <th style="text-align:left; padding:8px;">Member</th>
@@ -247,12 +247,12 @@ generated &mdash; just like a real chat interface.</p>
 
 <hr style="border-color:#333; margin:2em 0;">
 
-<h2>Part 2: TTransformer &mdash; In-Process Inference</h2>
+<h2 id="part-2-ttransformer-in-process-inference">Part 2: TTransformer &mdash; In-Process Inference</h2>
 <p>For scenarios where you need to run a model without an external service, HarbourBuilder provides
 <strong>TTransformer</strong>. This component loads model weights (GGUF format) directly into your application's
 memory and runs inference using the CPU (or GPU if available).</p>
 
-<h3>Step 1: Obtain a Model File</h3>
+<h3 id="step-1-obtain-a-model-file">Step 1: Obtain a Model File</h3>
 <ol>
   <li>Download a GGUF model file (e.g. <code>tinyllama-1.1b-chat.Q4_K_M.gguf</code> from Hugging Face).</li>
   <li>Place it in your project folder or a known path.</li>
@@ -264,7 +264,7 @@ memory and runs inference using the CPU (or GPU if available).</p>
   with Q4 quantization needs only 1&ndash;2 GB of RAM. Larger models require more memory and a GPU.</p>
 </div>
 
-<h3>Step 2: Load the Model</h3>
+<h3 id="step-2-load-the-model">Step 2: Load the Model</h3>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
 
@@ -302,7 +302,7 @@ memory and runs inference using the CPU (or GPU if available).</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Step 3: Run Inference</h3>
+<h3 id="step-3-run-inference">Step 3: Run Inference</h3>
 <p>Use <code>Generate()</code> for a full response or <code>GenerateStream()</code> to stream tokens
 into a Memo control as they are produced.</p>
 
@@ -327,7 +327,7 @@ into a Memo control as they are produced.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Step 4: TTransformer Properties and Methods</h3>
+<h3 id="step-4-ttransformer-properties-and-methods">Step 4: TTransformer Properties and Methods</h3>
 <table style="width:100%; border-collapse:collapse; margin:1em 0;">
   <tr style="border-bottom:1px solid #444;">
     <th style="text-align:left; padding:8px;">Member</th>
@@ -371,7 +371,7 @@ into a Memo control as they are produced.</p>
   </tr>
 </table>
 
-<h2>When to Use Which</h2>
+<h2 id="when-to-use-which">When to Use Which</h2>
 
 <div class="mermaid">
 graph LR
@@ -398,6 +398,28 @@ graph LR
   components including TEmbedding, TRAGEngine, and TSpeechToText.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#part-1-tollama-chat-with-a-local-llm" class="toc-h2">Part 1: TOllama &amp;mdash; Chat with a Local LLM</a>
+  <a href="#step-1-prerequisites" class="toc-h3">Step 1: Prerequisites</a>
+  <a href="#step-2-create-the-chat-ui" class="toc-h3">Step 2: Create the Chat UI</a>
+  <a href="#step-3-send-a-message-and-get-a-response" class="toc-h3">Step 3: Send a Message and Get a Response</a>
+  <a href="#step-4-streaming-response-to-a-memo" class="toc-h3">Step 4: Streaming Response to a Memo</a>
+  <a href="#step-5-tollama-properties-and-methods" class="toc-h3">Step 5: TOllama Properties and Methods</a>
+  <a href="#part-2-ttransformer-in-process-inference" class="toc-h2">Part 2: TTransformer &amp;mdash; In-Process Inference</a>
+  <a href="#step-1-obtain-a-model-file" class="toc-h3">Step 1: Obtain a Model File</a>
+  <a href="#step-2-load-the-model" class="toc-h3">Step 2: Load the Model</a>
+  <a href="#step-3-run-inference" class="toc-h3">Step 3: Run Inference</a>
+  <a href="#step-4-ttransformer-properties-and-methods" class="toc-h3">Step 4: TTransformer Properties and Methods</a>
+  <a href="#when-to-use-which" class="toc-h2">When to Use Which</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

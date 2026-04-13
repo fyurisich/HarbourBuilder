@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html" class="active">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -92,7 +92,7 @@ el nucleo del modelo de programacion reactiva de HarbourBuilder.</p>
   el evento nativo del SO a traves del backend (Win32/Cocoa/GTK3) y evalua tu bloque de codigo.</p>
 </div>
 
-<h2>Sintaxis de Asignacion de Eventos</h2>
+<h2 id="sintaxis-de-asignacion-de-eventos">Sintaxis de Asignacion de Eventos</h2>
 <p>Los eventos se asignan usando el operador de asignacion estandar de Harbour con un bloque de codigo:</p>
 
 <pre><span class="cm">--- Evento simple: mostrar un mensaje ---</span>
@@ -120,7 +120,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   y haz doble clic en un evento. El IDE genera el bloque de codigo y salta al editor de codigo.</p>
 </div>
 
-<h2>Eventos del Raton</h2>
+<h2 id="eventos-del-raton">Eventos del Raton</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponibles</th><th>Descripcion</th></tr>
@@ -132,7 +132,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   <tr><td><code>OnMouseWheel</code></td><td><code>nDelta, nX, nY</code></td><td>Todos los controles visuales</td><td>Se dispara cuando se desplaza la rueda del raton. <code>nDelta</code> es positivo para desplazamiento adelante, negativo para atras.</td></tr>
 </table>
 
-<h2>Eventos del Teclado</h2>
+<h2 id="eventos-del-teclado">Eventos del Teclado</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponibles</th><th>Descripcion</th></tr>
@@ -141,7 +141,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   <tr><td><code>OnKeyPress</code></td><td><code>cKey</code></td><td>Edit, Memo, MaskEdit, ComboBox</td><td>Se dispara cuando se escribe un caracter. <code>cKey</code> es el caracter actual (no codigo virtual). Permite modificar o cancelar el caracter.</td></tr>
 </table>
 
-<h2>Eventos de Foco y Seleccion</h2>
+<h2 id="eventos-de-foco-y-seleccion">Eventos de Foco y Seleccion</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponibles</th><th>Descripcion</th></tr>
@@ -150,7 +150,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   <tr><td><code>OnChange</code></td><td>ninguno</td><td>Edit, Memo, ComboBox, CheckBox, Radio, TrackBar, UpDown</td><td>Se dispara cuando el valor del control cambia. Para controles de edicion, se dispara en cada pulsacion de tecla.</td></tr>
 </table>
 
-<h2>Eventos del Ciclo de Vida del Formulario</h2>
+<h2 id="eventos-del-ciclo-de-vida-del-formulario">Eventos del Ciclo de Vida del Formulario</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponibles</th><th>Descripcion</th></tr>
@@ -164,14 +164,14 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   <tr><td><code>OnDestroy</code></td><td>ninguno</td><td>Form, todos los controles</td><td>Se dispara cuando el control/formulario se esta destruyendo. Ultima oportunidad para limpieza.</td></tr>
 </table>
 
-<h2>Eventos de Temporizador</h2>
+<h2 id="eventos-de-temporizador">Eventos de Temporizador</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponibles</th><th>Descripcion</th></tr>
   <tr><td><code>OnTimer</code></td><td>ninguno</td><td>Timer</td><td>Se dispara a intervalos regulares establecidos por la propiedad <code>nInterval</code> del Timer (en milisegundos). Usar para tareas periodicas: actualizar un reloj, sondear un servidor, animar, guardado automatico.</td></tr>
 </table>
 
-<h2>Eventos de Dibujo y Redimension</h2>
+<h2 id="eventos-de-dibujo-y-redimension">Eventos de Dibujo y Redimension</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponibles</th><th>Descripcion</th></tr>
@@ -179,7 +179,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   <tr><td><code>OnResize</code></td><td><code>nNewWidth, nNewHeight</code></td><td>Form, Panel, ScrollBox</td><td>Se dispara cuando el contenedor se redimensiona. Los parametros proporcionan las nuevas dimensiones.</td></tr>
 </table>
 
-<h2>Resumen Completo de Eventos</h2>
+<h2 id="resumen-completo-de-eventos">Resumen Completo de Eventos</h2>
 
 <table>
   <tr><th>Evento</th><th>Categoria</th><th>Controles Principales</th></tr>
@@ -214,7 +214,26 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   Para entrada de teclado: <code>OnKeyDown</code> -> <code>OnKeyPress</code> -> <code>OnKeyUp</code>.
   Comprender este orden te ayuda a elegir el evento correcto para tu caso de uso.</p>
 </div>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#sintaxis-de-asignacion-de-eventos" class="toc-h2">Sintaxis de Asignacion de Eventos</a>
+  <a href="#eventos-del-raton" class="toc-h2">Eventos del Raton</a>
+  <a href="#eventos-del-teclado" class="toc-h2">Eventos del Teclado</a>
+  <a href="#eventos-de-foco-y-seleccion" class="toc-h2">Eventos de Foco y Seleccion</a>
+  <a href="#eventos-del-ciclo-de-vida-del-formulario" class="toc-h2">Eventos del Ciclo de Vida del Formulario</a>
+  <a href="#eventos-de-temporizador" class="toc-h2">Eventos de Temporizador</a>
+  <a href="#eventos-de-dibujo-y-redimension" class="toc-h2">Eventos de Dibujo y Redimension</a>
+  <a href="#resumen-completo-de-eventos" class="toc-h2">Resumen Completo de Eventos</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

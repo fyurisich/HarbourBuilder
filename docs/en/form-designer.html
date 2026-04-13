@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html" class="active">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -99,7 +99,7 @@ and watch the code generate automatically.</p>
   Your METHOD implementations are always preserved during code regeneration.</p>
 </div>
 
-<h2>Designer Features</h2>
+<h2 id="designer-features">Designer Features</h2>
 
 <ul>
   <li><strong>Dot grid background</strong> with snap-to-grid for precise alignment</li>
@@ -111,9 +111,9 @@ and watch the code generate automatically.</p>
   <li><strong>Format menu</strong> — align and distribute controls</li>
 </ul>
 
-<h2>Control Selection</h2>
+<h2 id="control-selection">Control Selection</h2>
 
-<h3>Single Selection</h3>
+<h3 id="single-selection">Single Selection</h3>
 <p>Click any control on the form to select it. A blue border with 8 resize handles appears:</p>
 <ul>
   <li><strong>Corner handles</strong> — resize both width and height simultaneously</li>
@@ -121,11 +121,11 @@ and watch the code generate automatically.</p>
   <li><strong>Drag body</strong> — move the control without resizing</li>
 </ul>
 
-<h3>Multi-Selection</h3>
+<h3 id="multi-selection">Multi-Selection</h3>
 <p>Hold Shift and click to add/remove controls from selection, or click and drag to create a rubber band
 selection rectangle. All selected controls show handles simultaneously.</p>
 
-<h2>Copy and Paste Controls</h2>
+<h2 id="copy-and-paste-controls">Copy and Paste Controls</h2>
 
 <p>HarbourBuilder supports full clipboard operations for controls:</p>
 
@@ -139,7 +139,7 @@ selection rectangle. All selected controls show handles simultaneously.</p>
 
 <p>When pasting, controls are automatically offset by 16 pixels to avoid overlap with the original.</p>
 
-<h2>Format Menu</h2>
+<h2 id="format-menu">Format Menu</h2>
 
 <p>The Format menu provides 8 alignment and distribution modes:</p>
 
@@ -155,7 +155,7 @@ selection rectangle. All selected controls show handles simultaneously.</p>
   <tr><td><strong>Space Evenly Vertical</strong></td><td>Distribute controls evenly with equal vertical spacing</td></tr>
 </table>
 
-<h2>Real-Time Code Generation</h2>
+<h2 id="real-time-code-generation">Real-Time Code Generation</h2>
 
 <p>Every action in the designer generates corresponding xBase code. For example, dropping a button
 generates:</p>
@@ -166,7 +166,7 @@ generates:</p>
 <p>Changing properties in the Object Inspector updates the code immediately. The two-way sync ensures
 your visual design and code are always in harmony.</p>
 
-<h2>Design Mode vs Run Mode</h2>
+<h2 id="design-mode-vs-run-mode">Design Mode vs Run Mode</h2>
 
 <p>Forms have an <code>FDesignMode</code> property that controls behavior:</p>
 
@@ -176,7 +176,7 @@ your visual design and code are always in harmony.</p>
   <tr><td><strong>Run Mode</strong> (FDesignMode = .F.)</td><td>Form runs normally. Controls respond to user interaction. No code generation.</td></tr>
 </table>
 
-<h2>Form Properties in Designer</h2>
+<h2 id="form-properties-in-designer">Form Properties in Designer</h2>
 
 <table>
   <tr><th>Property</th><th>Type</th><th>Description</th></tr>
@@ -191,9 +191,9 @@ your visual design and code are always in harmony.</p>
   <tr><td><code>lCenter</code></td><td>Logical</td><td>Center form on screen when shown</td></tr>
 </table>
 
-<h2>Code Examples</h2>
+<h2 id="code-examples">Code Examples</h2>
 
-<h3>Simple DEFINE FORM Syntax</h3>
+<h3 id="simple-define-form-syntax">Simple DEFINE FORM Syntax</h3>
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
 
 <span class="kw">function</span> <span class="fn">Main</span>()
@@ -205,7 +205,7 @@ your visual design and code are always in harmony.</p>
    <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Class-Based Approach (IDE Generated)</h3>
+<h3 id="class-based-approach-ide-generated">Class-Based Approach (IDE Generated)</h3>
 <pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
 
    <span class="kw">METHOD</span> <span class="fn">CreateForm</span>()
@@ -226,7 +226,7 @@ your visual design and code are always in harmony.</p>
   while the class-based approach is better for complex multi-form applications.</p>
 </div>
 
-<h2>Tips for Efficient Form Design</h2>
+<h2 id="tips-for-efficient-form-design">Tips for Efficient Form Design</h2>
 
 <ol>
   <li><strong>Use the Object Inspector</strong> — Set properties visually instead of writing code</li>
@@ -238,6 +238,29 @@ your visual design and code are always in harmony.</p>
   <li><strong>Save frequently</strong> — Ctrl+S saves both design data and code</li>
 </ol>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#designer-features" class="toc-h2">Designer Features</a>
+  <a href="#control-selection" class="toc-h2">Control Selection</a>
+  <a href="#single-selection" class="toc-h3">Single Selection</a>
+  <a href="#multi-selection" class="toc-h3">Multi-Selection</a>
+  <a href="#copy-and-paste-controls" class="toc-h2">Copy and Paste Controls</a>
+  <a href="#format-menu" class="toc-h2">Format Menu</a>
+  <a href="#real-time-code-generation" class="toc-h2">Real-Time Code Generation</a>
+  <a href="#design-mode-vs-run-mode" class="toc-h2">Design Mode vs Run Mode</a>
+  <a href="#form-properties-in-designer" class="toc-h2">Form Properties in Designer</a>
+  <a href="#code-examples" class="toc-h2">Code Examples</a>
+  <a href="#simple-define-form-syntax" class="toc-h3">Simple DEFINE FORM Syntax</a>
+  <a href="#class-based-approach-ide-generated" class="toc-h3">Class-Based Approach (IDE Generated)</a>
+  <a href="#tips-for-efficient-form-design" class="toc-h2">Tips for Efficient Form Design</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

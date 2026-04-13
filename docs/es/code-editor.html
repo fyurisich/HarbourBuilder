@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html" class="active">Editor de codigo</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -99,7 +99,7 @@ resaltado de sintaxis consciente de Harbour y plegado de codigo inteligente.</p>
   y Linux usa bibliotecas compartidas. La experiencia de edicion es identica en todas las plataformas.</p>
 </div>
 
-<h2>Configuracion de Scintilla por Plataforma</h2>
+<h2 id="configuracion-de-scintilla-por-plataforma">Configuracion de Scintilla por Plataforma</h2>
 
 <table>
   <tr><th>Plataforma</th><th>Tipo de biblioteca</th><th>Archivos</th></tr>
@@ -108,7 +108,7 @@ resaltado de sintaxis consciente de Harbour y plegado de codigo inteligente.</p>
   <tr><td><span class="badge linux">Linux</span></td><td>Bibliotecas compartidas</td><td><code>libscintilla.so</code>, <code>liblexilla.so</code></td></tr>
 </table>
 
-<h2>Resaltado de Sintaxis</h2>
+<h2 id="resaltado-de-sintaxis">Resaltado de Sintaxis</h2>
 
 <p>El editor usa un tema de color <strong>VS Code Dark+</strong> con resaltado de sintaxis consciente de Harbour:</p>
 
@@ -122,7 +122,7 @@ resaltado de sintaxis consciente de Harbour y plegado de codigo inteligente.</p>
   <tr><td>Preprocesador</td><td><span style="color:#c586c0">Magenta</span></td><td>Normal</td><td><code>#include</code>, <code>#xcommand</code></td></tr>
 </table>
 
-<h2>Plegado de Codigo</h2>
+<h2 id="plegado-de-codigo">Plegado de Codigo</h2>
 
 <p>El plegado de codigo consciente de Harbour comprende las estructuras del lenguaje xBase:</p>
 
@@ -137,7 +137,7 @@ resaltado de sintaxis consciente de Harbour y plegado de codigo inteligente.</p>
   <li><code>#pragma begindump</code> / <code>#pragma enddump</code> — Codigo C embebido</li>
 </ul>
 
-<h2>Atajos de Teclado</h2>
+<h2 id="atajos-de-teclado">Atajos de Teclado</h2>
 
 <table>
   <tr><th>Atajo</th><th>Accion</th></tr>
@@ -152,7 +152,7 @@ resaltado de sintaxis consciente de Harbour y plegado de codigo inteligente.</p>
   <tr><td><strong>F12</strong></td><td>Ir a la definicion (funcion/procedimiento/metodo/clase)</td></tr>
 </table>
 
-<h2>Autocompletado</h2>
+<h2 id="autocompletado">Autocompletado</h2>
 
 <p>Presiona <strong>Ctrl+Space / Cmd+Space</strong> para activar el autocompletado con 150+ elementos:</p>
 
@@ -162,7 +162,7 @@ resaltado de sintaxis consciente de Harbour y plegado de codigo inteligente.</p>
   <li><strong>Comandos xBase</strong> — DEFINE FORM, BUTTON, LABEL, ACTIVATE, etc.</li>
 </ul>
 
-<h2>Coincidencia de Corchetes</h2>
+<h2 id="coincidencia-de-corchetes">Coincidencia de Corchetes</h2>
 
 <p>El editor resalta automaticamente los corchetes coincidentes:</p>
 <ul>
@@ -170,7 +170,7 @@ resaltado de sintaxis consciente de Harbour y plegado de codigo inteligente.</p>
   <li><strong>Corchetes sin par/mal formados</strong> — Resaltados en <span style="color:#ff4444">rojo</span></li>
 </ul>
 
-<h2>Marcadores</h2>
+<h2 id="marcadores">Marcadores</h2>
 
 <p>Establece marcadores para navegar rapidamente a ubicaciones importantes del codigo:</p>
 
@@ -180,7 +180,7 @@ resaltado de sintaxis consciente de Harbour y plegado de codigo inteligente.</p>
   <tr><td><strong>Ctrl+Shift+0..9 / Cmd+Shift+0..9</strong></td><td>Saltar al marcador</td></tr>
 </table>
 
-<h2>Fragmentos de Codigo</h2>
+<h2 id="fragmentos-de-codigo">Fragmentos de Codigo</h2>
 
 <p>Expansion con Tab para patrones de codigo comunes:</p>
 
@@ -196,17 +196,17 @@ resaltado de sintaxis consciente de Harbour y plegado de codigo inteligente.</p>
   <tr><td><code>tryx</code></td><td><code>begin sequence ... end sequence</code></td></tr>
 </table>
 
-<h2>Auto-indentacion</h2>
+<h2 id="auto-indentacion">Auto-indentacion</h2>
 
 <p>Cuando presionas Enter, el editor sangra automaticamente la nueva linea para coincidir con el nivel de
 indentacion de la linea anterior. Esto mantiene tu codigo correctamente formateado sin espaciado manual.</p>
 
-<h2>Edicion Multi-Archivo con Pestanas</h2>
+<h2 id="edicion-multi-archivo-con-pestanas">Edicion Multi-Archivo con Pestanas</h2>
 
 <p>El editor soporta edicion con pestanas, permitiendote trabajar en multiples archivos fuente simultaneamente.
 Las pestanas muestran el nombre del archivo y un asterisco (*) cuando el archivo tiene cambios sin guardar.</p>
 
-<h2>Panel de Mensajes de Construccion</h2>
+<h2 id="panel-de-mensajes-de-construccion">Panel de Mensajes de Construccion</h2>
 
 <p>Despues de construir, el panel de Mensajes aparece en la parte inferior mostrando:</p>
 <ul>
@@ -216,7 +216,7 @@ Las pestanas muestran el nombre del archivo y un asterisco (*) cuando el archivo
   <li><strong>Boton limpiar</strong> — Limpia el panel de mensajes</li>
 </ul>
 
-<h2>Barra de Estado</h2>
+<h2 id="barra-de-estado">Barra de Estado</h2>
 
 <p>La barra de estado en la parte inferior muestra informacion de edicion en tiempo real:</p>
 
@@ -236,6 +236,28 @@ Las pestanas muestran el nombre del archivo y un asterisco (*) cuando el archivo
   El lexer comprende las palabras clave, comandos y constructos especificos de xBase de Harbour.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#configuracion-de-scintilla-por-plataforma" class="toc-h2">Configuracion de Scintilla por Plataforma</a>
+  <a href="#resaltado-de-sintaxis" class="toc-h2">Resaltado de Sintaxis</a>
+  <a href="#plegado-de-codigo" class="toc-h2">Plegado de Codigo</a>
+  <a href="#atajos-de-teclado" class="toc-h2">Atajos de Teclado</a>
+  <a href="#autocompletado" class="toc-h2">Autocompletado</a>
+  <a href="#coincidencia-de-corchetes" class="toc-h2">Coincidencia de Corchetes</a>
+  <a href="#marcadores" class="toc-h2">Marcadores</a>
+  <a href="#fragmentos-de-codigo" class="toc-h2">Fragmentos de Codigo</a>
+  <a href="#auto-indentacion" class="toc-h2">Auto-indentacion</a>
+  <a href="#edicion-multi-archivo-con-pestanas" class="toc-h2">Edicion Multi-Archivo con Pestanas</a>
+  <a href="#panel-de-mensajes-de-construccion" class="toc-h2">Panel de Mensajes de Construccion</a>
+  <a href="#barra-de-estado" class="toc-h2">Barra de Estado</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

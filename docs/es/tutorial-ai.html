@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de Formularios</a>
     <a href="object-inspector.html">Inspector de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Compilar y Ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con Formularios</a>
     <a href="tutorial-events.html">Manejo de Eventos</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -94,9 +94,9 @@
 <h1>Tutorial: Integracion de IA</h1>
 <p>HarbourBuilder proporciona dos componentes de IA complementarios: <strong>TOllama</strong> para conectarse a modelos de lenguaje locales a traves del servicio Ollama, y <strong>TTransformer</strong> para cargar y ejecutar modelos transformer directamente en proceso. Este tutorial cubre ambos enfoques con ejemplos de trabajo completos.</p>
 
-<h2>Parte 1: TOllama &mdash; Chat con un LLM Local</h2>
+<h2 id="parte-1-tollama-chat-con-un-llm-local">Parte 1: TOllama &mdash; Chat con un LLM Local</h2>
 
-<h3>Paso 1: Prerrequisitos</h3>
+<h3 id="paso-1-prerrequisitos">Paso 1: Prerrequisitos</h3>
 <ol>
   <li>Instale <a href="https://ollama.ai" target="_blank">Ollama</a> en su maquina.</li>
   <li>Obtenga un modelo: ejecute <code>ollama pull llama3</code> en su terminal.</li>
@@ -108,7 +108,7 @@
   <p>TOllama se conecta a una instancia local de Ollama. Toda la inferencia ocurre en su maquina &mdash; sin servicios en la nube, sin claves de API, ningun dato sale de su computadora.</p>
 </div>
 
-<h3>Paso 2: Crear la Interfaz de Chat</h3>
+<h3 id="paso-2-crear-la-interfaz-de-chat">Paso 2: Crear la Interfaz de Chat</h3>
 <p>Construya un formulario con un Memo para el historial de conversacion, un TextBox para la entrada del usuario y un boton de Enviar.</p>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
@@ -142,7 +142,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Paso 3: Enviar un Mensaje y Obtener una Respuesta</h3>
+<h3 id="paso-3-enviar-un-mensaje-y-obtener-una-respuesta">Paso 3: Enviar un Mensaje y Obtener una Respuesta</h3>
 <p>Use <code>oOllama:Chat()</code> para una solicitud/respuesta simple, o <code>oOllama:ChatStream()</code> para recibir la respuesta token por token mientras se genera.</p>
 
 <p><strong>Chat simple (bloqueante):</strong></p>
@@ -166,7 +166,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Paso 4: Respuesta en Flujo hacia un Memo</h3>
+<h3 id="paso-4-respuesta-en-flujo-hacia-un-memo">Paso 4: Respuesta en Flujo hacia un Memo</h3>
 <p>Para una mejor experiencia de usuario, transmita la respuesta para que los tokens aparezcan en el Memo mientras se generan &mdash; igual que una interfaz de chat real.</p>
 
 <pre><span class="kw">static function</span> <span class="fn">SendMessageStream</span>( oOllama, oMemo, oGetPrompt )
@@ -193,7 +193,7 @@
   <p>TOllama mantiene un historial de conversacion internamente. Cada llamada a <code>Chat()</code> o <code>ChatStream()</code> incluye mensajes anteriores como contexto. Llame a <code>oOllama:ClearHistory()</code> para iniciar una conversacion nueva.</p>
 </div>
 
-<h3>Paso 5: Propiedades y Metodos de TOllama</h3>
+<h3 id="paso-5-propiedades-y-metodos-de-tollama">Paso 5: Propiedades y Metodos de TOllama</h3>
 <table style="width:100%; border-collapse:collapse; margin:1em 0;">
   <tr style="border-bottom:1px solid #444;">
     <th style="text-align:left; padding:8px;">Miembro</th>
@@ -239,10 +239,10 @@
 
 <hr style="border-color:#333; margin:2em 0;">
 
-<h2>Parte 2: TTransformer &mdash; Inferencia en Proceso</h2>
+<h2 id="parte-2-ttransformer-inferencia-en-proceso">Parte 2: TTransformer &mdash; Inferencia en Proceso</h2>
 <p>Para escenarios donde necesita ejecutar un modelo sin un servicio externo, HarbourBuilder proporciona <strong>TTransformer</strong>. Este componente carga pesos de modelo (formato GGUF) directamente en la memoria de su aplicacion y ejecuta inferencia usando la CPU (o GPU si esta disponible).</p>
 
-<h3>Paso 1: Obtener un Archivo de Modelo</h3>
+<h3 id="paso-1-obtener-un-archivo-de-modelo">Paso 1: Obtener un Archivo de Modelo</h3>
 <ol>
   <li>Descargue un archivo de modelo GGUF (ej. <code>tinyllama-1.1b-chat.Q4_K_M.gguf</code> de Hugging Face).</li>
   <li>Coloquelo en su carpeta de proyecto o una ruta conocida.</li>
@@ -253,7 +253,7 @@
   <p>Los modelos cuantizados mas pequenos (Q4_K_M, Q5_K_M) funcionan bien en la mayoria del hardware. Un modelo de 1B&ndash;3B parametros con cuantizacion Q4 necesita solo 1&ndash;2 GB de RAM. Modelos mas grandes requieren mas memoria y una GPU.</p>
 </div>
 
-<h3>Paso 2: Cargar el Modelo</h3>
+<h3 id="paso-2-cargar-el-modelo">Paso 2: Cargar el Modelo</h3>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
 
@@ -291,7 +291,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Paso 3: Ejecutar Inferencia</h3>
+<h3 id="paso-3-ejecutar-inferencia">Paso 3: Ejecutar Inferencia</h3>
 <p>Use <code>Generate()</code> para una respuesta completa o <code>GenerateStream()</code> para transmitir tokens a un control Memo mientras se producen.</p>
 
 <pre><span class="kw">static function</span> <span class="fn">RunInference</span>( oTransformer, oMemo, oGetPrompt )
@@ -315,7 +315,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Paso 4: Propiedades y Metodos de TTransformer</h3>
+<h3 id="paso-4-propiedades-y-metodos-de-ttransformer">Paso 4: Propiedades y Metodos de TTransformer</h3>
 <table style="width:100%; border-collapse:collapse; margin:1em 0;">
   <tr style="border-bottom:1px solid #444;">
     <th style="text-align:left; padding:8px;">Miembro</th>
@@ -359,7 +359,7 @@
   </tr>
 </table>
 
-<h2>Cuando Usar Cual</h2>
+<h2 id="cuando-usar-cual">Cuando Usar Cual</h2>
 
 <div class="mermaid">
 graph LR
@@ -384,6 +384,28 @@ graph LR
   <p>Vea la referencia de la <a href="controls-ai.html">Paleta de Componentes de IA</a> para la lista completa de componentes de IA incluyendo TEmbedding, TRAGEngine y TSpeechToText.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros Pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#parte-1-tollama-chat-con-un-llm-local" class="toc-h2">Parte 1: TOllama &amp;mdash; Chat con un LLM Local</a>
+  <a href="#paso-1-prerrequisitos" class="toc-h3">Paso 1: Prerrequisitos</a>
+  <a href="#paso-2-crear-la-interfaz-de-chat" class="toc-h3">Paso 2: Crear la Interfaz de Chat</a>
+  <a href="#paso-3-enviar-un-mensaje-y-obtener-una-respuesta" class="toc-h3">Paso 3: Enviar un Mensaje y Obtener una Respuesta</a>
+  <a href="#paso-4-respuesta-en-flujo-hacia-un-memo" class="toc-h3">Paso 4: Respuesta en Flujo hacia un Memo</a>
+  <a href="#paso-5-propiedades-y-metodos-de-tollama" class="toc-h3">Paso 5: Propiedades y Metodos de TOllama</a>
+  <a href="#parte-2-ttransformer-inferencia-en-proceso" class="toc-h2">Parte 2: TTransformer &amp;mdash; Inferencia en Proceso</a>
+  <a href="#paso-1-obtener-un-archivo-de-modelo" class="toc-h3">Paso 1: Obtener un Archivo de Modelo</a>
+  <a href="#paso-2-cargar-el-modelo" class="toc-h3">Paso 2: Cargar el Modelo</a>
+  <a href="#paso-3-ejecutar-inferencia" class="toc-h3">Paso 3: Ejecutar Inferencia</a>
+  <a href="#paso-4-propiedades-y-metodos-de-ttransformer" class="toc-h3">Paso 4: Propiedades y Metodos de TTransformer</a>
+  <a href="#cuando-usar-cual" class="toc-h2">Cuando Usar Cual</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

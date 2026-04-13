@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html" class="active">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -108,7 +108,7 @@ grouped by category and include the property type (<code>PT_STRING</code>, <code
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Appearance Properties</h2>
+<h2 id="appearance-properties">Appearance Properties</h2>
 <p>These properties control how a control looks on screen &mdash; colors, borders, styles, and visual state.</p>
 
 <table>
@@ -139,7 +139,7 @@ grouped by category and include the property type (<code>PT_STRING</code>, <code
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Position and Size</h2>
+<h2 id="position-and-size">Position and Size</h2>
 <p>These properties determine where a control is placed and how large it is.</p>
 
 <table>
@@ -157,7 +157,7 @@ grouped by category and include the property type (<code>PT_STRING</code>, <code
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Behavior Properties</h2>
+<h2 id="behavior-properties">Behavior Properties</h2>
 <p>These properties affect how a control behaves and responds to user interaction.</p>
 
 <table>
@@ -182,7 +182,7 @@ grouped by category and include the property type (<code>PT_STRING</code>, <code
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Font Properties</h2>
+<h2 id="font-properties">Font Properties</h2>
 <p>Font-related properties control the typography of text displayed on controls.</p>
 
 <table>
@@ -203,7 +203,7 @@ grouped by category and include the property type (<code>PT_STRING</code>, <code
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Data Properties</h2>
+<h2 id="data-properties">Data Properties</h2>
 <p>Properties related to data binding, content, and data-aware controls.</p>
 
 <table>
@@ -224,7 +224,7 @@ grouped by category and include the property type (<code>PT_STRING</code>, <code
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Control-Specific Properties</h2>
+<h2 id="control-specific-properties">Control-Specific Properties</h2>
 <p>These properties are unique to specific control types and are not shared broadly.</p>
 
 <table>
@@ -255,7 +255,7 @@ grouped by category and include the property type (<code>PT_STRING</code>, <code
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Setting Properties in Code</h2>
+<h2 id="setting-properties-in-code">Setting Properties in Code</h2>
 <p>Properties can be set in code after a control is created:</p>
 
 <pre><span class="kw">local</span> oForm, oBtn, oLabel
@@ -292,7 +292,7 @@ oBtn:<span class="nb">nTabIndex</span>      := <span class="nb">0</span>
 <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span></pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Setting Properties in the Object Inspector</h2>
+<h2 id="setting-properties-in-the-object-inspector">Setting Properties in the Object Inspector</h2>
 <p>In the HarbourBuilder IDE, select any control in the Form Designer and switch to the
 <strong>Properties</strong> tab in the Object Inspector. Properties are grouped by category:</p>
 
@@ -315,7 +315,7 @@ properties open a font dialog; logical properties toggle between <code>.T.</code
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Property Inheritance</h2>
+<h2 id="property-inheritance">Property Inheritance</h2>
 <p>Controls inherit certain properties from their parent container. The inheritance chain is:</p>
 
 <div class="mermaid">
@@ -339,6 +339,25 @@ graph TD
 
 <p>A child control can override any inherited property by setting it explicitly.</p>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#appearance-properties" class="toc-h2">Appearance Properties</a>
+  <a href="#position-and-size" class="toc-h2">Position and Size</a>
+  <a href="#behavior-properties" class="toc-h2">Behavior Properties</a>
+  <a href="#font-properties" class="toc-h2">Font Properties</a>
+  <a href="#data-properties" class="toc-h2">Data Properties</a>
+  <a href="#control-specific-properties" class="toc-h2">Control-Specific Properties</a>
+  <a href="#setting-properties-in-code" class="toc-h2">Setting Properties in Code</a>
+  <a href="#setting-properties-in-the-object-inspector" class="toc-h2">Setting Properties in the Object Inspector</a>
+  <a href="#property-inheritance" class="toc-h2">Property Inheritance</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

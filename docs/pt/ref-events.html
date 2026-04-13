@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html" class="active">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -100,7 +100,7 @@ o nucleo do modelo de programacao reativa do HarbourBuilder.</p>
   o evento nativo do SO atraves do backend (Win32/Cocoa/GTK3) e avalia seu bloco de codigo.</p>
 </div>
 
-<h2>Sintaxe de Atribuicao de Eventos</h2>
+<h2 id="sintaxe-de-atribuicao-de-eventos">Sintaxe de Atribuicao de Eventos</h2>
 <p>Eventos sao atribuidos usando o operador de atribuicao padrao Harbour com um bloco de codigo:</p>
 
 <pre><span class="cm">--- Evento simples: mostrar uma mensagem ---</span>
@@ -128,7 +128,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   e de duplo clique em um evento. O IDE gera o bloco de codigo e salta para o editor de codigo.</p>
 </div>
 
-<h2>Eventos do Mouse</h2>
+<h2 id="eventos-do-mouse">Eventos do Mouse</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
@@ -170,7 +170,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   </tr>
 </table>
 
-<h2>Eventos do Teclado</h2>
+<h2 id="eventos-do-teclado">Eventos do Teclado</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
@@ -194,7 +194,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   </tr>
 </table>
 
-<h2>Eventos de Foco e Selecao</h2>
+<h2 id="eventos-de-foco-e-selecao">Eventos de Foco e Selecao</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
@@ -218,7 +218,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   </tr>
 </table>
 
-<h2>Eventos do Ciclo de Vida do Formulario</h2>
+<h2 id="eventos-do-ciclo-de-vida-do-formulario">Eventos do Ciclo de Vida do Formulario</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
@@ -284,7 +284,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   </tr>
 </table>
 
-<h2>Eventos de Timer</h2>
+<h2 id="eventos-de-timer">Eventos de Timer</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
@@ -296,7 +296,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   </tr>
 </table>
 
-<h2>Eventos de Pintura e Redimensionamento</h2>
+<h2 id="eventos-de-pintura-e-redimensionamento">Eventos de Pintura e Redimensionamento</h2>
 
 <table>
   <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
@@ -314,7 +314,7 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   </tr>
 </table>
 
-<h2>Tabela Resumo Completa de Eventos</h2>
+<h2 id="tabela-resumo-completa-de-eventos">Tabela Resumo Completa de Eventos</h2>
 
 <table>
   <tr><th>Evento</th><th>Categoria</th><th>Controles Principais</th></tr>
@@ -352,6 +352,24 @@ oBtn:<span class="fn">OnClick</span> := { || ;
   Entender esta ordem ajuda voce a escolher o evento certo para seu caso de uso.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#sintaxe-de-atribuicao-de-eventos" class="toc-h2">Sintaxe de Atribuicao de Eventos</a>
+  <a href="#eventos-do-mouse" class="toc-h2">Eventos do Mouse</a>
+  <a href="#eventos-do-teclado" class="toc-h2">Eventos do Teclado</a>
+  <a href="#eventos-de-foco-e-selecao" class="toc-h2">Eventos de Foco e Selecao</a>
+  <a href="#eventos-do-ciclo-de-vida-do-formulario" class="toc-h2">Eventos do Ciclo de Vida do Formulario</a>
+  <a href="#eventos-de-timer" class="toc-h2">Eventos de Timer</a>
+  <a href="#eventos-de-pintura-e-redimensionamento" class="toc-h2">Eventos de Pintura e Redimensionamento</a>
+  <a href="#tabela-resumo-completa-de-eventos" class="toc-h2">Tabela Resumo Completa de Eventos</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

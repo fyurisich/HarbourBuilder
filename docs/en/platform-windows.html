@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html" class="active">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -105,7 +105,7 @@ and compiled with MSVC or BCC. This is the most mature and feature-complete back
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Architecture Overview</h2>
+<h2 id="architecture-overview">Architecture Overview</h2>
 
 <div class="mermaid">
 graph TB
@@ -125,7 +125,7 @@ graph TB
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Native Window Creation</h2>
+<h2 id="native-window-creation">Native Window Creation</h2>
 <p>Every HarbourBuilder window and control is a native Win32 window created via <code>CreateWindowEx()</code>.
 The backend registers custom window classes at startup:</p>
 
@@ -152,7 +152,7 @@ The backend registers custom window classes at startup:</p>
 <code>SysTreeView32</code>, <code>SysListView32</code>, and <code>RichEdit</code>.</p>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Event Handling (WndProc)</h2>
+<h2 id="event-handling-wndproc">Event Handling (WndProc)</h2>
 <p>The Windows backend uses a central <code>WndProc</code> (window procedure) that receives all messages
 from the OS. It dispatches them to Harbour event handlers:</p>
 
@@ -188,7 +188,7 @@ from the OS. It dispatches them to Harbour event handlers:</p>
 }</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Dark Mode Support</h2>
+<h2 id="dark-mode-support">Dark Mode Support</h2>
 <p>HarbourBuilder on Windows follows the system theme. Dark mode is implemented using:</p>
 
 <ul>
@@ -221,7 +221,7 @@ from the OS. It dispatches them to Harbour event handlers:</p>
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Scintilla Integration</h2>
+<h2 id="scintilla-integration">Scintilla Integration</h2>
 <p>The Windows backend uses Scintilla 5.6.1 as a dynamic library:</p>
 
 <table>
@@ -247,9 +247,9 @@ HWND hEditor = <span class="fn">CreateWindowEx</span>(
 );</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Compiler Options</h2>
+<h2 id="compiler-options">Compiler Options</h2>
 
-<h3>Supported Compilers</h3>
+<h3 id="supported-compilers">Supported Compilers</h3>
 <table>
   <tr><th>Compiler</th><th>Version</th><th>Notes</th></tr>
   <tr><td>MSVC 2022</td><td>19.3x</td><td>Recommended. Full C++17 support, best optimization.</td></tr>
@@ -259,7 +259,7 @@ HWND hEditor = <span class="fn">CreateWindowEx</span>(
   <tr><td>BCC</td><td>7.7</td><td>Embarcadero Borland C++ Compiler. Alternative to MSVC.</td></tr>
 </table>
 
-<h3>Build Script</h3>
+<h3 id="build-script">Build Script</h3>
 <p>The <code>build_win.bat</code> script handles the entire build process:</p>
 
 <ol>
@@ -282,7 +282,7 @@ link hbbuilder.obj win32_backend.obj <span class="st">/SUBSYSTEM:WINDOWS</span> 
      %HBDIR%\lib\win\msvc64\harbour.lib</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Platform-Specific Features</h2>
+<h2 id="platform-specific-features">Platform-Specific Features</h2>
 
 <table>
   <tr><th>Feature</th><th>Windows Implementation</th></tr>
@@ -298,7 +298,7 @@ link hbbuilder.obj win32_backend.obj <span class="st">/SUBSYSTEM:WINDOWS</span> 
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Known Limitations</h2>
+<h2 id="known-limitations">Known Limitations</h2>
 
 <ul>
   <li><strong>Manifest requirement</strong> &mdash; Windows applications need an embedded manifest for visual styles (ComCtl32 v6) and DPI awareness. HarbourBuilder includes this in the build.</li>
@@ -308,7 +308,7 @@ link hbbuilder.obj win32_backend.obj <span class="st">/SUBSYSTEM:WINDOWS</span> 
 </ul>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Dependencies</h2>
+<h2 id="dependencies">Dependencies</h2>
 <table>
   <tr><th>Library</th><th>Purpose</th></tr>
   <tr><td><code>user32.lib</code></td><td>Window management, messages, controls</td></tr>
@@ -321,6 +321,27 @@ link hbbuilder.obj win32_backend.obj <span class="st">/SUBSYSTEM:WINDOWS</span> 
   <tr><td><code>shell32.lib</code></td><td>Shell functions, drag-and-drop</td></tr>
 </table>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#architecture-overview" class="toc-h2">Architecture Overview</a>
+  <a href="#native-window-creation" class="toc-h2">Native Window Creation</a>
+  <a href="#event-handling-wndproc" class="toc-h2">Event Handling (WndProc)</a>
+  <a href="#dark-mode-support" class="toc-h2">Dark Mode Support</a>
+  <a href="#scintilla-integration" class="toc-h2">Scintilla Integration</a>
+  <a href="#compiler-options" class="toc-h2">Compiler Options</a>
+  <a href="#supported-compilers" class="toc-h3">Supported Compilers</a>
+  <a href="#build-script" class="toc-h3">Build Script</a>
+  <a href="#platform-specific-features" class="toc-h2">Platform-Specific Features</a>
+  <a href="#known-limitations" class="toc-h2">Known Limitations</a>
+  <a href="#dependencies" class="toc-h2">Dependencies</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

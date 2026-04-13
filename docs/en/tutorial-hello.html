@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html" class="active">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -96,7 +96,7 @@
 window with a button that displays a greeting. By the end, you will understand the basic project
 workflow: create, design, code, build, and run.</p>
 
-<h2>Step 1: Create a New Project</h2>
+<h2 id="step-1-create-a-new-project">Step 1: Create a New Project</h2>
 <ol>
   <li>Launch <strong>HarbourBuilder</strong>.</li>
   <li>Select <strong>File &rarr; New Project</strong> from the menu bar.</li>
@@ -112,7 +112,7 @@ workflow: create, design, code, build, and run.</p>
   All compiled output goes into a <code>build/</code> subfolder that you can safely add to <code>.gitignore</code>.</p>
 </div>
 
-<h2>Step 2: Open the Form Designer</h2>
+<h2 id="step-2-open-the-form-designer">Step 2: Open the Form Designer</h2>
 <ol>
   <li>In the <strong>Project Manager</strong> panel, double-click <code>main.prg</code>.</li>
   <li>The <strong>Form Designer</strong> opens showing an empty form titled "My First App".</li>
@@ -122,7 +122,7 @@ workflow: create, design, code, build, and run.</p>
 
 <!-- Screenshot placeholder: Form Designer with empty form, Object Inspector visible on the left -->
 
-<h2>Step 3: Add a Button</h2>
+<h2 id="step-3-add-a-button">Step 3: Add a Button</h2>
 <ol>
   <li>Click the <strong>Standard</strong> tab in the <strong>Component Palette</strong> at the top of the IDE.</li>
   <li>Click the <strong>Button</strong> icon in the palette.</li>
@@ -133,7 +133,7 @@ workflow: create, design, code, build, and run.</p>
 
 <!-- Screenshot placeholder: Form Designer with the button placed on the form, Object Inspector showing button properties -->
 
-<h2>Step 4: Add a Label</h2>
+<h2 id="step-4-add-a-label">Step 4: Add a Label</h2>
 <ol>
   <li>From the <strong>Standard</strong> palette tab, click the <strong>Label</strong> icon.</li>
   <li>Click on the form above the button to place the label.</li>
@@ -141,7 +141,7 @@ workflow: create, design, code, build, and run.</p>
   <li>Set <code>nWidth</code> to <code>300</code> so the text fits comfortably.</li>
 </ol>
 
-<h2>Step 5: Set the OnClick Event</h2>
+<h2 id="step-5-set-the-onclick-event">Step 5: Set the OnClick Event</h2>
 <ol>
   <li>Select the button on the form (click it once).</li>
   <li>In the Object Inspector, switch to the <strong>Events</strong> tab.</li>
@@ -157,7 +157,7 @@ workflow: create, design, code, build, and run.</p>
   call a separate <code>static function</code> from the block. See the <a href="tutorial-events.html">Event Handling</a> tutorial for details.</p>
 </div>
 
-<h2>Step 6: Build and Run</h2>
+<h2 id="step-6-build-and-run">Step 6: Build and Run</h2>
 <ol>
   <li>Press <strong>F9</strong> (or select <strong>Run &rarr; Build &amp; Run</strong>).</li>
   <li>Watch the <strong>Messages</strong> panel at the bottom &mdash; it shows preprocessing, compiling, linking, and launching steps.</li>
@@ -167,7 +167,7 @@ workflow: create, design, code, build, and run.</p>
 
 <!-- Screenshot placeholder: The running Hello World application with the label showing the greeting after clicking the button -->
 
-<h2>Full Code Listing</h2>
+<h2 id="full-code-listing">Full Code Listing</h2>
 <p>Here is the complete <code>main.prg</code> for the Hello World application:</p>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
@@ -190,7 +190,7 @@ workflow: create, design, code, build, and run.</p>
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>What You Learned</h2>
+<h2 id="what-you-learned">What You Learned</h2>
 <ul>
   <li>How to create a new HarbourBuilder project.</li>
   <li>How to use the Form Designer to place controls visually.</li>
@@ -205,6 +205,24 @@ workflow: create, design, code, build, and run.</p>
   how to create multi-form applications with modal dialogs and data passing between forms.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#step-1-create-a-new-project" class="toc-h2">Step 1: Create a New Project</a>
+  <a href="#step-2-open-the-form-designer" class="toc-h2">Step 2: Open the Form Designer</a>
+  <a href="#step-3-add-a-button" class="toc-h2">Step 3: Add a Button</a>
+  <a href="#step-4-add-a-label" class="toc-h2">Step 4: Add a Label</a>
+  <a href="#step-5-set-the-onclick-event" class="toc-h2">Step 5: Set the OnClick Event</a>
+  <a href="#step-6-build-and-run" class="toc-h2">Step 6: Build and Run</a>
+  <a href="#full-code-listing" class="toc-h2">Full Code Listing</a>
+  <a href="#what-you-learned" class="toc-h2">What You Learned</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

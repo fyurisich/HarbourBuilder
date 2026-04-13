@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html" class="active">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -102,7 +102,7 @@ and even train small transformers from scratch &mdash; all from Harbour xBase co
   with 7 examples covering every aspect of the transformer component.</p>
 </div>
 
-<h2>Sample Projects</h2>
+<h2 id="sample-projects">Sample Projects</h2>
 
 <table>
   <tr><th>#</th><th>Project</th><th>Description</th></tr>
@@ -115,7 +115,7 @@ and even train small transformers from scratch &mdash; all from Harbour xBase co
   <tr><td>7</td><td><strong>Attention Walkthrough</strong></td><td>Step-by-step walkthrough of the "Attention Is All You Need" architecture.</td></tr>
 </table>
 
-<h2>Transformer Architecture</h2>
+<h2 id="transformer-architecture">Transformer Architecture</h2>
 
 <div class="mermaid">
 graph LR
@@ -132,7 +132,7 @@ graph LR
     style G fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
 </div>
 
-<h2>Properties</h2>
+<h2 id="properties">Properties</h2>
 
 <table>
   <tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr>
@@ -147,7 +147,7 @@ graph LR
   <tr><td><code>lCausal</code></td><td>Logical</td><td>.T.</td><td>Use causal (decoder) mask. Set to .F. for encoder-only or bidirectional mode.</td></tr>
 </table>
 
-<h2>Events</h2>
+<h2 id="events">Events</h2>
 
 <table>
   <tr><th>Event</th><th>Parameters</th><th>Description</th></tr>
@@ -157,7 +157,7 @@ graph LR
   <tr><td><code>OnLoss</code></td><td><code>nLoss</code></td><td>Fired when the loss value is computed during forward pass. Use for monitoring and early stopping.</td></tr>
 </table>
 
-<h2>Example 1: Load a Pre-Trained Model</h2>
+<h2 id="example-1-load-a-pre-trained-model">Example 1: Load a Pre-Trained Model</h2>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
 
@@ -184,7 +184,7 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Example 2: Streaming Token Generation</h2>
+<h2 id="example-2-streaming-token-generation">Example 2: Streaming Token Generation</h2>
 
 <pre><span class="kw">static function</span> <span class="fn">StreamExample</span>()
 
@@ -203,7 +203,7 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Example 3: Attention Visualization</h2>
+<h2 id="example-3-attention-visualization">Example 3: Attention Visualization</h2>
 
 <pre><span class="kw">static function</span> <span class="fn">AttentionVis</span>()
 
@@ -227,7 +227,7 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Example 4: Training from Scratch</h2>
+<h2 id="example-4-training-from-scratch">Example 4: Training from Scratch</h2>
 
 <pre><span class="kw">static function</span> <span class="fn">TrainExample</span>()
 
@@ -262,9 +262,9 @@ graph LR
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Architecture Details</h2>
+<h2 id="architecture-details">Architecture Details</h2>
 
-<h3>Attention Mechanism</h3>
+<h3 id="attention-mechanism">Attention Mechanism</h3>
 <p>Each attention head computes the standard scaled dot-product attention:</p>
 
 <pre>Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V</pre>
@@ -272,13 +272,13 @@ graph LR
 <p>The multi-head mechanism runs <code>nHeads</code> parallel attention computations and
 concatenates the results, then applies a linear projection.</p>
 
-<h3>Causal Masking</h3>
+<h3 id="causal-masking">Causal Masking</h3>
 <p>When <code>lCausal</code> is <code>.T.</code> (the default), the transformer applies a
 causal (triangular) mask that prevents each position from attending to future positions.
 This is essential for autoregressive text generation. Set <code>lCausal := .F.</code> for
 bidirectional tasks like classification or masked language modeling.</p>
 
-<h3>Feed-Forward Network</h3>
+<h3 id="feed-forward-network">Feed-Forward Network</h3>
 <p>Each layer contains a position-wise feed-forward network:</p>
 
 <pre>FFN(x) = max(0, x * W1 + b1) * W2 + b2</pre>
@@ -299,6 +299,28 @@ bidirectional tasks like classification or masked language modeling.</p>
   see complete, runnable implementations of each pattern described in this tutorial.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#sample-projects" class="toc-h2">Sample Projects</a>
+  <a href="#transformer-architecture" class="toc-h2">Transformer Architecture</a>
+  <a href="#properties" class="toc-h2">Properties</a>
+  <a href="#events" class="toc-h2">Events</a>
+  <a href="#example-1-load-a-pre-trained-model" class="toc-h2">Example 1: Load a Pre-Trained Model</a>
+  <a href="#example-2-streaming-token-generation" class="toc-h2">Example 2: Streaming Token Generation</a>
+  <a href="#example-3-attention-visualization" class="toc-h2">Example 3: Attention Visualization</a>
+  <a href="#example-4-training-from-scratch" class="toc-h2">Example 4: Training from Scratch</a>
+  <a href="#architecture-details" class="toc-h2">Architecture Details</a>
+  <a href="#attention-mechanism" class="toc-h3">Attention Mechanism</a>
+  <a href="#causal-masking" class="toc-h3">Causal Masking</a>
+  <a href="#feed-forward-network" class="toc-h3">Feed-Forward Network</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

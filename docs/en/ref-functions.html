@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Getting Started</h3>
+    <h3 id="getting-started">Getting Started</h3>
     <a href="index.html">Overview</a>
     <a href="quickstart.html">Quick Start</a>
     <a href="installation.html">Installation</a>
     <a href="architecture.html">Architecture</a>
   </div>
   <div class="nav-section">
-    <h3>Component Palette</h3>
+    <h3 id="component-palette">Component Palette</h3>
     <a href="controls-standard.html">Standard (11)</a>
     <a href="controls-additional.html">Additional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Business (12)</a>
   </div>
   <div class="nav-section">
-    <h3>IDE Features</h3>
+    <h3 id="ide-features">IDE Features</h3>
     <a href="form-designer.html">Form Designer</a>
     <a href="object-inspector.html">Object Inspector</a>
     <a href="code-editor.html">Code Editor</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html">Build &amp; Run</a>
   </div>
   <div class="nav-section">
-    <h3>Tutorials</h3>
+    <h3 id="tutorials">Tutorials</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Working with Forms</a>
     <a href="tutorial-events.html">Event Handling</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Reference</h3>
+    <h3 id="reference">Reference</h3>
     <a href="ref-properties.html">Properties A-Z</a>
     <a href="ref-events.html">Events A-Z</a>
     <a href="ref-methods.html">Methods A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html" class="active">HB_FUNC Bridge</a>
   </div>
   <div class="nav-section">
-    <h3>Platforms</h3>
+    <h3 id="platforms">Platforms</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -105,7 +105,7 @@ explains how the architecture works.</p>
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Bridge Architecture</h2>
+<h2 id="bridge-architecture">Bridge Architecture</h2>
 <p>The bridge sits between Harbour's OOP layer and the native platform API. When you call
 <code>oForm:Create()</code> in Harbour, the OOP method internally calls <code>UI_FormNew()</code>, which
 is an HB_FUNC that invokes the platform's native window creation API:</p>
@@ -137,9 +137,9 @@ graph TB
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Core HB_FUNC Functions</h2>
+<h2 id="core-hb_func-functions">Core HB_FUNC Functions</h2>
 
-<h3>Form Management</h3>
+<h3 id="form-management">Form Management</h3>
 <table>
   <tr><th>Function</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Backend</th></tr>
   <tr>
@@ -179,7 +179,7 @@ graph TB
   </tr>
 </table>
 
-<h3>Control Creation</h3>
+<h3 id="control-creation">Control Creation</h3>
 <table>
   <tr><th>Function</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Backend</th></tr>
   <tr>
@@ -212,7 +212,7 @@ graph TB
   </tr>
 </table>
 
-<h3>Property Management</h3>
+<h3 id="property-management">Property Management</h3>
 <table>
   <tr><th>Function</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Backend</th></tr>
   <tr>
@@ -280,7 +280,7 @@ graph TB
   </tr>
 </table>
 
-<h3>Event Management</h3>
+<h3 id="event-management">Event Management</h3>
 <table>
   <tr><th>Function</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Backend</th></tr>
   <tr>
@@ -306,7 +306,7 @@ graph TB
   </tr>
 </table>
 
-<h3>Lifecycle and Utility</h3>
+<h3 id="lifecycle-and-utility">Lifecycle and Utility</h3>
 <table>
   <tr><th>Function</th><th>Parameters</th><th>Returns</th><th>Description</th><th>Backend</th></tr>
   <tr>
@@ -361,7 +361,7 @@ graph TB
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>How the Bridge Works: A Complete Example</h2>
+<h2 id="how-the-bridge-works-a-complete-example">How the Bridge Works: A Complete Example</h2>
 
 <p>Here is the complete journey from Harbour source code to native API call:</p>
 
@@ -413,7 +413,7 @@ HB_FUNC( UI_FORMNEW )
 }</pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Platform-Specific Function Counts</h2>
+<h2 id="platform-specific-function-counts">Platform-Specific Function Counts</h2>
 
 <table>
   <tr><th>Backend</th><th>Language</th><th>HB_FUNC count</th><th>Lines of code</th></tr>
@@ -446,7 +446,7 @@ HB_FUNC( UI_FORMNEW )
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Adding a New HB_FUNC</h2>
+<h2 id="adding-a-new-hb_func">Adding a New HB_FUNC</h2>
 <p>To extend HarbourBuilder with a new native capability, you need to:</p>
 
 <ol>
@@ -472,6 +472,26 @@ HB_FUNC( UI_NEWWIDGET )
   </li>
 </ol>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>On This Page</h4>
+  <a href="#getting-started" class="toc-h3 active">Getting Started</a>
+  <a href="#component-palette" class="toc-h3">Component Palette</a>
+  <a href="#ide-features" class="toc-h3">IDE Features</a>
+  <a href="#tutorials" class="toc-h3">Tutorials</a>
+  <a href="#reference" class="toc-h3">Reference</a>
+  <a href="#platforms" class="toc-h3">Platforms</a>
+  <a href="#bridge-architecture" class="toc-h2">Bridge Architecture</a>
+  <a href="#core-hb_func-functions" class="toc-h2">Core HB_FUNC Functions</a>
+  <a href="#form-management" class="toc-h3">Form Management</a>
+  <a href="#control-creation" class="toc-h3">Control Creation</a>
+  <a href="#property-management" class="toc-h3">Property Management</a>
+  <a href="#event-management" class="toc-h3">Event Management</a>
+  <a href="#lifecycle-and-utility" class="toc-h3">Lifecycle and Utility</a>
+  <a href="#how-the-bridge-works-a-complete-example" class="toc-h2">How the Bridge Works: A Complete Example</a>
+  <a href="#platform-specific-function-counts" class="toc-h2">Platform-Specific Function Counts</a>
+  <a href="#adding-a-new-hb_func" class="toc-h2">Adding a New HB_FUNC</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

@@ -19,14 +19,14 @@
 </div>
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros pasos</h3>
+    <h3 id="primeros-pasos">Primeros pasos</h3>
     <a href="index.html">Vision general</a>
     <a href="quickstart.html">Inicio rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -42,7 +42,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de formularios</a>
     <a href="object-inspector.html">Inspector de objetos</a>
     <a href="code-editor.html">Editor de codigo</a>
@@ -52,7 +52,7 @@
     <a href="build-run.html">Compilar y ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con formularios</a>
     <a href="tutorial-events.html">Manejo de eventos</a>
@@ -62,7 +62,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -70,7 +70,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -93,7 +93,7 @@ con control total sobre la ejecucion.</p>
   e informacion precisa de la pila de llamadas en todo momento.</p>
 </div>
 
-<h2>Arquitectura</h2>
+<h2 id="arquitectura">Arquitectura</h2>
 
 <div class="mermaid">
 graph TB
@@ -109,7 +109,7 @@ graph TB
     F --> K["Panel de Salida"]
 </div>
 
-<h2>Compilacion para Depuracion</h2>
+<h2 id="compilacion-para-depuracion">Compilacion para Depuracion</h2>
 
 <p>Para generar bytecode depurable, compila con estas banderas:</p>
 
@@ -124,7 +124,7 @@ graph TB
 <p>El archivo <code>.hrb</code> contiene toda la informacion que el depurador necesita para mapear instrucciones de bytecode
 de vuelta a lineas de codigo fuente, mostrar nombres de variables y reconstruir la pila de llamadas.</p>
 
-<h2>El Gancho de Depuracion: hb_dbg_SetEntry</h2>
+<h2 id="el-gancho-de-depuracion-hb_dbg_setentry">El Gancho de Depuracion: hb_dbg_SetEntry</h2>
 
 <p>En el nucleo del soporte de depuracion de Harbour esta la funcion gancho <code>hb_dbg_SetEntry()</code>.
 Esta funcion de retrollamada es invocada por el Harbour VM en cada instruccion de bytecode cuando el modo de depuracion esta activo,
@@ -146,7 +146,7 @@ permitiendo al IDE:</p>
   y contexto de variables en cada paso.</p>
 </div>
 
-<h2>Barra de Herramientas de Depuracion</h2>
+<h2 id="barra-de-herramientas-de-depuracion">Barra de Herramientas de Depuracion</h2>
 
 <p>La barra de herramientas de depuracion proporciona cinco controles de ejecucion esenciales:</p>
 
@@ -159,7 +159,7 @@ permitiendo al IDE:</p>
   <tr><td>&#9632;</td><td><strong>Shift+F5</strong></td><td><strong>Detener</strong></td><td>Terminar la sesion de depuracion</td></tr>
 </table>
 
-<h2>Paneles Acoplables del Depurador</h2>
+<h2 id="paneles-acoplables-del-depurador">Paneles Acoplables del Depurador</h2>
 
 <p>El depurador proporciona cinco pestanas acoplables que se pueden organizar segun tu flujo de trabajo:</p>
 
@@ -172,7 +172,7 @@ permitiendo al IDE:</p>
   <tr><td><strong>Salida</strong></td><td>Salida de consola de la aplicacion depurada, incluyendo salida <code>? </code> y <code>?? </code>, registros <code>MsgInfo()</code> y mensajes de traza de depuracion.</td></tr>
 </table>
 
-<h2>Configurar Puntos de Interrupcion</h2>
+<h2 id="configurar-puntos-de-interrupcion">Configurar Puntos de Interrupcion</h2>
 
 <p>Haz clic en el margen junto a cualquier numero de linea para alternar un punto de interrupcion. Los puntos de interrupcion se indican
 con un punto rojo:</p>
@@ -183,7 +183,7 @@ con un punto rojo:</p>
   <li><strong>Punto de interrupcion por contador</strong> — pausar solo despues de que el punto de interrupcion haya sido alcanzado N veces.</li>
 </ul>
 
-<h2>Flujo de Trabajo de Sesion de Depuracion</h2>
+<h2 id="flujo-de-trabajo-de-sesion-de-depuracion">Flujo de Trabajo de Sesion de Depuracion</h2>
 
 <ol>
   <li><strong>Compilar con banderas de depuracion</strong> — Presiona <strong>F9</strong> para construir; el IDE agrega automaticamente <code>-gh -b</code> al depurar.</li>
@@ -201,7 +201,7 @@ con un punto rojo:</p>
   en una descripcion emergente. Esto funciona para variables locales, propiedades de objetos y elementos de arreglos.</p>
 </div>
 
-<h2>Cobertura de Pruebas Unitarias</h2>
+<h2 id="cobertura-de-pruebas-unitarias">Cobertura de Pruebas Unitarias</h2>
 
 <p>El subsistema del depurador esta cubierto por <strong>16 pruebas unitarias</strong> que verifican:</p>
 
@@ -225,7 +225,7 @@ con un punto rojo:</p>
   <tr><td>16</td><td>Limpieza de sesion de depuracion</td><td>Los recursos se liberan al detener</td></tr>
 </table>
 
-<h2>Resumen de Atajos del Depurador</h2>
+<h2 id="resumen-de-atajos-del-depurador">Resumen de Atajos del Depurador</h2>
 
 <table>
   <tr><th>Atajo</th><th>Accion</th></tr>
@@ -244,7 +244,27 @@ con un punto rojo:</p>
   sin simbolos de depuracion para distribucion. Las versiones de lanzamiento son mas pequenas y rapidas ya que omiten
   las banderas <code>-gh -b</code>.</p>
 </div>
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#arquitectura" class="toc-h2">Arquitectura</a>
+  <a href="#compilacion-para-depuracion" class="toc-h2">Compilacion para Depuracion</a>
+  <a href="#el-gancho-de-depuracion-hb_dbg_setentry" class="toc-h2">El Gancho de Depuracion: hb_dbg_SetEntry</a>
+  <a href="#barra-de-herramientas-de-depuracion" class="toc-h2">Barra de Herramientas de Depuracion</a>
+  <a href="#paneles-acoplables-del-depurador" class="toc-h2">Paneles Acoplables del Depurador</a>
+  <a href="#configurar-puntos-de-interrupcion" class="toc-h2">Configurar Puntos de Interrupcion</a>
+  <a href="#flujo-de-trabajo-de-sesion-de-depuracion" class="toc-h2">Flujo de Trabajo de Sesion de Depuracion</a>
+  <a href="#cobertura-de-pruebas-unitarias" class="toc-h2">Cobertura de Pruebas Unitarias</a>
+  <a href="#resumen-de-atajos-del-depurador" class="toc-h2">Resumen de Atajos del Depurador</a>
 </div>
+
 <script src="../assets/js/docs.js"></script>
 </body>
 </html>

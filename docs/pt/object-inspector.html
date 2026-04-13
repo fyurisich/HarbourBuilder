@@ -21,14 +21,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -44,7 +44,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html" class="active">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -54,7 +54,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -64,7 +64,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -72,7 +72,7 @@
     <a href="ref-functions.html">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -92,7 +92,7 @@
 <p>O Inspetor de Objetos e um editor de propriedades e eventos similar ao Delphi e C++Builder.
 Ele permite configurar visualmente propriedades de controles e atribuir manipuladores de eventos sem escrever codigo manualmente.</p>
 
-<h2>Visao Geral</h2>
+<h2 id="visao-geral">Visao Geral</h2>
 
 <p>O Inspetor de Objetos possui duas abas principais:</p>
 <ul>
@@ -108,9 +108,9 @@ Ele permite configurar visualmente propriedades de controles e atribuir manipula
   As alteracoes sao instantaneamente refletidas no designer e no codigo.</p>
 </div>
 
-<h2>Aba Propriedades</h2>
+<h2 id="aba-propriedades">Aba Propriedades</h2>
 
-<h3>Grade Categorizada</h3>
+<h3 id="grade-categorizada">Grade Categorizada</h3>
 <p>As propriedades sao organizadas em categorias para facilitar a navegacao:</p>
 
 <table>
@@ -122,7 +122,7 @@ Ele permite configurar visualmente propriedades de controles e atribuir manipula
   <tr><td><strong>Fonte</strong></td><td>cFontName, nFontSize, lFontBold, lFontItalic</td></tr>
 </table>
 
-<h3>Editores de Propriedades</h3>
+<h3 id="editores-de-propriedades">Editores de Propriedades</h3>
 <p>Diferentes tipos de propriedade usam editores diferentes:</p>
 
 <table>
@@ -135,7 +135,7 @@ Ele permite configurar visualmente propriedades de controles e atribuir manipula
   <tr><td>Enum</td><td>Lista suspensa</td><td>BorderStyle, Position, WindowState</td></tr>
 </table>
 
-<h3>Editores Dropdown para Enumeracoes</h3>
+<h3 id="editores-dropdown-para-enumeracoes">Editores Dropdown para Enumeracoes</h3>
 <p>Propriedades com valores predefinidos mostram listas suspensas:</p>
 
 <table>
@@ -147,12 +147,12 @@ Ele permite configurar visualmente propriedades de controles e atribuir manipula
   <tr><td><code>nCursor</code></td><td>0=crDefault, 1=crArrow, 2=crIBeam, 3=crHand, etc.</td></tr>
 </table>
 
-<h2>Aba Eventos</h2>
+<h2 id="aba-eventos">Aba Eventos</h2>
 
 <p>A aba Eventos mostra todos os eventos disponiveis para o tipo de controle selecionado. A lista de eventos e dinamica
 e recuperada via <code>UI_GETALLEVENTS</code> do backend.</p>
 
-<h3>Atribuindo Manipuladores de Eventos</h3>
+<h3 id="atribuindo-manipuladores-de-eventos">Atribuindo Manipuladores de Eventos</h3>
 
 <ol>
   <li><strong>Duplo clique</strong> em um evento para gerar automaticamente um manipulador</li>
@@ -167,7 +167,7 @@ oBtn:<span class="fn">OnClick</span> := { || <span class="fn">Button1Click</span
    <span class="fn">MsgInfo</span>( <span class="st">"Botao clicado!"</span> )
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Eventos Comuns</h3>
+<h3 id="eventos-comuns">Eventos Comuns</h3>
 
 <table>
   <tr><th>Evento</th><th>Quando Ocorre</th><th>Disponivel Para</th></tr>
@@ -193,7 +193,7 @@ oBtn:<span class="fn">OnClick</span> := { || <span class="fn">Button1Click</span
   <tr><td><code>OnPaint</code></td><td>Formulario precisa ser redesenhado</td><td>Apenas Form</td></tr>
 </table>
 
-<h2>Tipos de Propriedade (Backend C++)</h2>
+<h2 id="tipos-de-propriedade-backend-c">Tipos de Propriedade (Backend C++)</h2>
 
 <p>No backend C++, as propriedades sao definidas com tipos:</p>
 
@@ -206,9 +206,9 @@ oBtn:<span class="fn">OnClick</span> := { || <span class="fn">Button1Click</span
   <tr><td><code>PT_FONT</code></td><td>5</td><td>Propriedades de fonte (nome, tamanho, estilo)</td></tr>
 </table>
 
-<h2>Exemplos de Codigo</h2>
+<h2 id="exemplos-de-codigo">Exemplos de Codigo</h2>
 
-<h3>Definindo Propriedades via Inspetor de Objetos</h3>
+<h3 id="definindo-propriedades-via-inspetor-de-objetos">Definindo Propriedades via Inspetor de Objetos</h3>
 <p>Quando voce edita propriedades no inspetor, o codigo gerado fica assim:</p>
 
 <pre><span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
@@ -221,7 +221,7 @@ oBtn:<span class="fn">OnClick</span> := { || <span class="fn">Button1Click</span
    ::<span class="prop">nWindowState</span> := <span class="nb">0</span>  <span class="comment">// wsNormal</span>
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Atribuicao de Eventos em Codigo</h3>
+<h3 id="atribuicao-de-eventos-em-codigo">Atribuicao de Eventos em Codigo</h3>
 <pre><span class="comment">// Code block inline</span>
 oBtn:<span class="fn">OnClick</span> := { || <span class="fn">MsgInfo</span>( <span class="st">"Ola!"</span> ) }
 
@@ -232,7 +232,7 @@ oBtn:<span class="fn">OnClick</span> := { || ::<span class="fn">HandleButtonClic
    <span class="fn">MsgInfo</span>( <span class="st">"Botao foi clicado"</span> )
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Dicas para Usar o Inspetor de Objetos</h2>
+<h2 id="dicas-para-usar-o-inspetor-de-objetos">Dicas para Usar o Inspetor de Objetos</h2>
 
 <ol>
   <li><strong>Use categorias</strong> — Expanda categorias para encontrar propriedades rapidamente</li>
@@ -244,6 +244,29 @@ oBtn:<span class="fn">OnClick</span> := { || ::<span class="fn">HandleButtonClic
   <li><strong>Restaurar padrao</strong> — Clique direito em uma propriedade para restaurar o valor padrao</li>
 </ol>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#visao-geral" class="toc-h2">Visao Geral</a>
+  <a href="#aba-propriedades" class="toc-h2">Aba Propriedades</a>
+  <a href="#grade-categorizada" class="toc-h3">Grade Categorizada</a>
+  <a href="#editores-de-propriedades" class="toc-h3">Editores de Propriedades</a>
+  <a href="#editores-dropdown-para-enumeracoes" class="toc-h3">Editores Dropdown para Enumeracoes</a>
+  <a href="#aba-eventos" class="toc-h2">Aba Eventos</a>
+  <a href="#atribuindo-manipuladores-de-eventos" class="toc-h3">Atribuindo Manipuladores de Eventos</a>
+  <a href="#eventos-comuns" class="toc-h3">Eventos Comuns</a>
+  <a href="#tipos-de-propriedade-backend-c" class="toc-h2">Tipos de Propriedade (Backend C++)</a>
+  <a href="#exemplos-de-codigo" class="toc-h2">Exemplos de Codigo</a>
+  <a href="#definindo-propriedades-via-inspetor-de-objetos" class="toc-h3">Definindo Propriedades via Inspetor de Objetos</a>
+  <a href="#atribuicao-de-eventos-em-codigo" class="toc-h3">Atribuicao de Eventos em Codigo</a>
+  <a href="#dicas-para-usar-o-inspetor-de-objetos" class="toc-h2">Dicas para Usar o Inspetor de Objetos</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

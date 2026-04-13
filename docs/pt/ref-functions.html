@@ -23,14 +23,14 @@
 
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeiros Passos</h3>
+    <h3 id="primeiros-passos">Primeiros Passos</h3>
     <a href="index.html">Visao Geral</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacao</a>
     <a href="architecture.html">Arquitetura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Padrao (11)</a>
     <a href="controls-additional.html">Adicional (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -46,7 +46,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Recursos do IDE</h3>
+    <h3 id="recursos-do-ide">Recursos do IDE</h3>
     <a href="form-designer.html">Designer de Formularios</a>
     <a href="object-inspector.html">Inspetor de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -56,7 +56,7 @@
     <a href="build-run.html">Compilar &amp; Executar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriais</h3>
+    <h3 id="tutoriais">Tutoriais</h3>
     <a href="tutorial-hello.html">Hello World</a>
     <a href="tutorial-forms.html">Trabalhando com Formularios</a>
     <a href="tutorial-events.html">Tratamento de Eventos</a>
@@ -66,7 +66,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propriedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -74,7 +74,7 @@
     <a href="ref-functions.html" class="active">Bridge HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -103,7 +103,7 @@ passa por esta bridge. Esta pagina documenta as funcoes HB_FUNC principais e exp
   funcoes HB_FUNC dependendo do backend da plataforma.</p>
 </div>
 
-<h2>Arquitetura da Bridge</h2>
+<h2 id="arquitetura-da-bridge">Arquitetura da Bridge</h2>
 <p>A bridge fica entre a camada OOP do Harbour e a API nativa da plataforma. Quando voce chama
 <code>oForm:Create()</code> em Harbour, o metodo OOP internamente chama <code>UI_FormNew()</code>, que
 e um HB_FUNC que invoca a API nativa de criacao de janelas da plataforma:</p>
@@ -134,9 +134,9 @@ graph TB
   ele nao precisa saber se esta rodando no Windows, macOS ou Linux.</p>
 </div>
 
-<h2>Funcoes HB_FUNC Principais</h2>
+<h2 id="funcoes-hb_func-principais">Funcoes HB_FUNC Principais</h2>
 
-<h3>Gerenciamento de Formularios</h3>
+<h3 id="gerenciamento-de-formularios">Gerenciamento de Formularios</h3>
 <table>
   <tr><th>Funcao</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Backend</th></tr>
   <tr>
@@ -176,7 +176,7 @@ graph TB
   </tr>
 </table>
 
-<h3>Criacao de Controles</h3>
+<h3 id="criacao-de-controles">Criacao de Controles</h3>
 <table>
   <tr><th>Funcao</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Backend</th></tr>
   <tr>
@@ -209,7 +209,7 @@ graph TB
   </tr>
 </table>
 
-<h3>Gerenciamento de Propriedades</h3>
+<h3 id="gerenciamento-de-propriedades">Gerenciamento de Propriedades</h3>
 <table>
   <tr><th>Funcao</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Backend</th></tr>
   <tr>
@@ -277,7 +277,7 @@ graph TB
   </tr>
 </table>
 
-<h3>Gerenciamento de Eventos</h3>
+<h3 id="gerenciamento-de-eventos">Gerenciamento de Eventos</h3>
 <table>
   <tr><th>Funcao</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Backend</th></tr>
   <tr>
@@ -303,7 +303,7 @@ graph TB
   </tr>
 </table>
 
-<h3>Ciclo de Vida e Utilitarios</h3>
+<h3 id="ciclo-de-vida-e-utilitarios">Ciclo de Vida e Utilitarios</h3>
 <table>
   <tr><th>Funcao</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Backend</th></tr>
   <tr>
@@ -357,7 +357,7 @@ graph TB
   </tr>
 </table>
 
-<h2>Como a Bridge Funciona: Um Exemplo Completo</h2>
+<h2 id="como-a-bridge-funciona-um-exemplo-completo">Como a Bridge Funciona: Um Exemplo Completo</h2>
 
 <p>Aqui esta a jornada completa do codigo fonte Harbour ate a chamada de API nativa:</p>
 
@@ -408,7 +408,7 @@ HB_FUNC( UI_FORMNEW )
    hb_retni( ( int ) ( intptr_t ) hWnd );
 }</pre>
 
-<h2>Contagem de Funcoes por Plataforma</h2>
+<h2 id="contagem-de-funcoes-por-plataforma">Contagem de Funcoes por Plataforma</h2>
 
 <table>
   <tr><th>Backend</th><th>Linguagem</th><th>Contagem HB_FUNC</th><th>Linhas de codigo</th></tr>
@@ -440,7 +440,7 @@ HB_FUNC( UI_FORMNEW )
   codigo boilerplate para funcionalidade equivalente.</p>
 </div>
 
-<h2>Adicionando um Novo HB_FUNC</h2>
+<h2 id="adicionando-um-novo-hb_func">Adicionando um Novo HB_FUNC</h2>
 <p>Para estender o HarbourBuilder com um novo recurso nativo, voce precisa:</p>
 
 <ol>
@@ -466,6 +466,26 @@ HB_FUNC( UI_NEWWIDGET )
   </li>
 </ol>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>Nesta Página</h4>
+  <a href="#primeiros-passos" class="toc-h3 active">Primeiros Passos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#recursos-do-ide" class="toc-h3">Recursos do IDE</a>
+  <a href="#tutoriais" class="toc-h3">Tutoriais</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#arquitetura-da-bridge" class="toc-h2">Arquitetura da Bridge</a>
+  <a href="#funcoes-hb_func-principais" class="toc-h2">Funcoes HB_FUNC Principais</a>
+  <a href="#gerenciamento-de-formularios" class="toc-h3">Gerenciamento de Formularios</a>
+  <a href="#criacao-de-controles" class="toc-h3">Criacao de Controles</a>
+  <a href="#gerenciamento-de-propriedades" class="toc-h3">Gerenciamento de Propriedades</a>
+  <a href="#gerenciamento-de-eventos" class="toc-h3">Gerenciamento de Eventos</a>
+  <a href="#ciclo-de-vida-e-utilitarios" class="toc-h3">Ciclo de Vida e Utilitarios</a>
+  <a href="#como-a-bridge-funciona-um-exemplo-completo" class="toc-h2">Como a Bridge Funciona: Um Exemplo Completo</a>
+  <a href="#contagem-de-funcoes-por-plataforma" class="toc-h2">Contagem de Funcoes por Plataforma</a>
+  <a href="#adicionando-um-novo-hb_func" class="toc-h2">Adicionando um Novo HB_FUNC</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

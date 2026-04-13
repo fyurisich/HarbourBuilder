@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de Formularios</a>
     <a href="object-inspector.html">Inspector de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Compilar y Ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con Formularios</a>
     <a href="tutorial-events.html">Manejo de Eventos</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -94,14 +94,14 @@
 <h1>Tutorial: CRUD de Base de Datos</h1>
 <p>Este tutorial lo guia a traves de la construccion de una aplicacion de base de datos completa con operaciones de Crear, Leer, Actualizar y Eliminar usando SQLite. Conectara a una base de datos, mostrara registros en una cuadricula TBrowse y los navegara con TDBNavigator.</p>
 
-<h2>Paso 1: Crear el Proyecto</h2>
+<h2 id="paso-1-crear-el-proyecto">Paso 1: Crear el Proyecto</h2>
 <ol>
   <li>Cree un nuevo proyecto llamado <code>ContactsDB</code> mediante <strong>Archivo &rarr; Nuevo Proyecto</strong>.</li>
   <li>Abra <code>main.prg</code> en el Editor de Codigo.</li>
   <li>Construiremos un gestor de contactos con campos de nombre, correo y telefono.</li>
 </ol>
 
-<h2>Paso 2: Conectar a SQLite</h2>
+<h2 id="paso-2-conectar-a-sqlite">Paso 2: Conectar a SQLite</h2>
 <p>Coloque un componente <strong>TSQLite</strong> desde la pestania de paleta <strong>Acceso a Datos</strong> en el formulario, o creelo en codigo. El componente SQLite de HarbourBuilder maneja la conexion y ejecucion de consultas.</p>
 
 <pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
@@ -128,7 +128,7 @@
   <p>SQLite almacena toda la base de datos en un unico archivo. Esto lo hace perfecto para aplicaciones de escritorio &mdash; sin instalacion, sin configuracion, y funciona en todas las plataformas.</p>
 </div>
 
-<h2>Paso 3: Crear la Tabla</h2>
+<h2 id="paso-3-crear-la-tabla">Paso 3: Crear la Tabla</h2>
 <p>Use <code>Execute()</code> para ejecutar una sentencia <code>CREATE TABLE IF NOT EXISTS</code>. Es seguro llamar a esto cada vez que la aplicacion se inicia.</p>
 
 <pre><span class="kw">static function</span> <span class="fn">CreateTable</span>( oDB )
@@ -142,7 +142,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Paso 4: Construir la Interfaz de Usuario</h2>
+<h2 id="paso-4-construir-la-interfaz-de-usuario">Paso 4: Construir la Interfaz de Usuario</h2>
 <p>La UI consiste en una cuadricula TBrowse para mostrar registros, campos de entrada para edicion, un TDBNavigator para navegacion de registros y botones CRUD.</p>
 
 <pre><span class="kw">static function</span> <span class="fn">BuildUI</span>( oDB )
@@ -199,9 +199,9 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Paso 5: Implementar Operaciones CRUD</h2>
+<h2 id="paso-5-implementar-operaciones-crud">Paso 5: Implementar Operaciones CRUD</h2>
 
-<h3>INSERT &mdash; Anadir un Nuevo Registro</h3>
+<h3 id="insert-anadir-un-nuevo-registro">INSERT &mdash; Anadir un Nuevo Registro</h3>
 <pre><span class="kw">static function</span> <span class="fn">DoInsert</span>( oDB, oBrw, oGetName, oGetEmail, oGetPhone )
 
    <span class="kw">local</span> cName  := oGetName:<span class="fn">GetValue</span>()
@@ -221,7 +221,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>SELECT &mdash; Actualizar la Cuadricula</h3>
+<h3 id="select-actualizar-la-cuadricula">SELECT &mdash; Actualizar la Cuadricula</h3>
 <pre><span class="kw">static function</span> <span class="fn">RefreshBrowse</span>( oDB, oBrw )
 
    <span class="kw">local</span> aRows := oDB:<span class="fn">QueryToArray</span>( <span class="st">"SELECT id, name, email, phone FROM contacts ORDER BY name"</span> )
@@ -231,7 +231,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>UPDATE &mdash; Modificar el Registro Seleccionado</h3>
+<h3 id="update-modificar-el-registro-seleccionado">UPDATE &mdash; Modificar el Registro Seleccionado</h3>
 <pre><span class="kw">static function</span> <span class="fn">DoUpdate</span>( oDB, oBrw, oGetName, oGetEmail, oGetPhone )
 
    <span class="kw">local</span> nId    := oBrw:<span class="fn">GetValue</span>( <span class="nb">1</span> )  <span class="cm">// Columna 1 = id</span>
@@ -252,7 +252,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>DELETE &mdash; Eliminar el Registro Seleccionado</h3>
+<h3 id="delete-eliminar-el-registro-seleccionado">DELETE &mdash; Eliminar el Registro Seleccionado</h3>
 <pre><span class="kw">static function</span> <span class="fn">DoDelete</span>( oDB, oBrw )
 
    <span class="kw">local</span> nId := oBrw:<span class="fn">GetValue</span>( <span class="nb">1</span> )
@@ -270,7 +270,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h3>Seleccion de Fila &mdash; Poblar Campos de Entrada</h3>
+<h3 id="seleccion-de-fila-poblar-campos-de-entrada">Seleccion de Fila &mdash; Poblar Campos de Entrada</h3>
 <pre><span class="kw">static function</span> <span class="fn">OnRowSelect</span>( oBrw, oGetName, oGetEmail, oGetPhone )
 
    oGetName:<span class="fn">SetValue</span>(  oBrw:<span class="fn">GetValue</span>( <span class="nb">2</span> ) )
@@ -279,7 +279,7 @@
 
 <span class="kw">return</span> <span class="kw">nil</span></pre>
 
-<h2>Paso 6: Usar TDBNavigator</h2>
+<h2 id="paso-6-usar-tdbnavigator">Paso 6: Usar TDBNavigator</h2>
 <p>El control <strong>TDBNavigator</strong> proporciona botones de navegacion estandar (Primero, Anterior, Siguiente, Ultimo) que funcionan directamente con la cuadricula TBrowse. Coloquelo desde la pestania <strong>Acceso a Datos</strong> y establezca su propiedad <code>oBrowse</code> a su instancia TBrowse.</p>
 
 <div class="info-box tip">
@@ -287,7 +287,7 @@
   <p>Siempre use marcadores <code>?</code> y pase los valores como un arreglo. Nunca concatene entrada del usuario directamente en cadenas SQL. El componente SQLite de HarbourBuilder maneja el escape automaticamente.</p>
 </div>
 
-<h2>Arquitectura de la Aplicacion</h2>
+<h2 id="arquitectura-de-la-aplicacion">Arquitectura de la Aplicacion</h2>
 
 <div class="mermaid">
 graph TD
@@ -309,6 +309,28 @@ graph TD
   <p>Listo para servir datos por HTTP? Continue al tutorial de <a href="tutorial-webserver.html">Servidor Web</a> para construir una aplicacion web junto a su aplicacion de escritorio.</p>
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros Pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#paso-1-crear-el-proyecto" class="toc-h2">Paso 1: Crear el Proyecto</a>
+  <a href="#paso-2-conectar-a-sqlite" class="toc-h2">Paso 2: Conectar a SQLite</a>
+  <a href="#paso-3-crear-la-tabla" class="toc-h2">Paso 3: Crear la Tabla</a>
+  <a href="#paso-4-construir-la-interfaz-de-usuario" class="toc-h2">Paso 4: Construir la Interfaz de Usuario</a>
+  <a href="#paso-5-implementar-operaciones-crud" class="toc-h2">Paso 5: Implementar Operaciones CRUD</a>
+  <a href="#insert-anadir-un-nuevo-registro" class="toc-h3">INSERT &amp;mdash; Anadir un Nuevo Registro</a>
+  <a href="#select-actualizar-la-cuadricula" class="toc-h3">SELECT &amp;mdash; Actualizar la Cuadricula</a>
+  <a href="#update-modificar-el-registro-seleccionado" class="toc-h3">UPDATE &amp;mdash; Modificar el Registro Seleccionado</a>
+  <a href="#delete-eliminar-el-registro-seleccionado" class="toc-h3">DELETE &amp;mdash; Eliminar el Registro Seleccionado</a>
+  <a href="#seleccion-de-fila-poblar-campos-de-entrada" class="toc-h3">Seleccion de Fila &amp;mdash; Poblar Campos de Entrada</a>
+  <a href="#paso-6-usar-tdbnavigator" class="toc-h2">Paso 6: Usar TDBNavigator</a>
+  <a href="#arquitectura-de-la-aplicacion" class="toc-h2">Arquitectura de la Aplicacion</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>

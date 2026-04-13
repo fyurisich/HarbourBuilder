@@ -27,14 +27,14 @@
 <!-- Sidebar -->
 <div class="sidebar">
   <div class="nav-section">
-    <h3>Primeros Pasos</h3>
+    <h3 id="primeros-pasos">Primeros Pasos</h3>
     <a href="index.html">Descripcion General</a>
     <a href="quickstart.html">Inicio Rapido</a>
     <a href="installation.html">Instalacion</a>
     <a href="architecture.html" class="active">Arquitectura</a>
   </div>
   <div class="nav-section">
-    <h3>Paleta de Componentes</h3>
+    <h3 id="paleta-de-componentes">Paleta de Componentes</h3>
     <a href="controls-standard.html">Estandar (11)</a>
     <a href="controls-additional.html">Adicionales (10)</a>
     <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
@@ -47,7 +47,7 @@
     <a href="controls-erp.html">ERP / Negocios (12)</a>
   </div>
   <div class="nav-section">
-    <h3>Funciones del IDE</h3>
+    <h3 id="funciones-del-ide">Funciones del IDE</h3>
     <a href="form-designer.html">Disenador de Formularios</a>
     <a href="object-inspector.html">Inspector de Objetos</a>
     <a href="code-editor.html">Editor de Codigo</a>
@@ -57,7 +57,7 @@
     <a href="build-run.html">Compilar y Ejecutar</a>
   </div>
   <div class="nav-section">
-    <h3>Tutoriales</h3>
+    <h3 id="tutoriales">Tutoriales</h3>
     <a href="tutorial-hello.html">Hola Mundo</a>
     <a href="tutorial-forms.html">Trabajar con Formularios</a>
     <a href="tutorial-events.html">Manejo de Eventos</a>
@@ -67,7 +67,7 @@
     <a href="tutorial-transformer.html">Transformer</a>
   </div>
   <div class="nav-section">
-    <h3>Referencia</h3>
+    <h3 id="referencia">Referencia</h3>
     <a href="ref-properties.html">Propiedades A-Z</a>
     <a href="ref-events.html">Eventos A-Z</a>
     <a href="ref-methods.html">Metodos A-Z</a>
@@ -75,7 +75,7 @@
     <a href="ref-functions.html">Puente HB_FUNC</a>
   </div>
   <div class="nav-section">
-    <h3>Plataformas</h3>
+    <h3 id="plataformas">Plataformas</h3>
     <a href="platform-windows.html">Windows</a>
     <a href="platform-macos.html">macOS</a>
     <a href="platform-linux.html">Linux</a>
@@ -98,7 +98,7 @@
 <span class="badge linux">Linux</span>.</p>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Arquitectura de 5 Capas</h2>
+<h2 id="arquitectura-de-5-capas">Arquitectura de 5 Capas</h2>
 <p>Cada aplicacion HarbourBuilder fluye a traves de cinco capas, desde la sintaxis xBase de alto nivel hasta las llamadas a la API nativa de la plataforma:</p>
 
 <div class="mermaid">
@@ -124,7 +124,7 @@ graph TB
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Backends de Plataforma</h2>
+<h2 id="backends-de-plataforma">Backends de Plataforma</h2>
 <p>Cada capa se asigna a una tecnologia nativa diferente segun la plataforma objetivo:</p>
 
 <table>
@@ -185,7 +185,7 @@ graph TB
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Sistema de Tipos de Control</h2>
+<h2 id="sistema-de-tipos-de-control">Sistema de Tipos de Control</h2>
 <p>Cada componente visual en HarbourBuilder se identifica mediante una constante numerica <code>CT_</code> definida en
 <code>hbide.h</code>. Estas constantes (que van de 0 a 86) determinan como el IDE serializa los controles,
 como el disenador los renderiza y que widget nativo crea el backend en tiempo de ejecucion.</p>
@@ -250,7 +250,7 @@ como el disenador los renderiza y que widget nativo crea el backend en tiempo de
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Estructura de Archivos</h2>
+<h2 id="estructura-de-archivos">Estructura de Archivos</h2>
 <p>El proyecto HarbourBuilder esta organizado en directorios claramente separados:</p>
 
 <pre>HarbourBuilder/
@@ -278,7 +278,7 @@ como el disenador los renderiza y que widget nativo crea el backend en tiempo de
     └── projects/       <span class="cm">// Proyectos de ejemplo</span></pre>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Sistema de Eventos</h2>
+<h2 id="sistema-de-eventos">Sistema de Eventos</h2>
 <p>HarbourBuilder enruta los eventos nativos del sistema operativo a traves de una canalizacion unificada que termina en bloques de codigo Harbour definidos por el usuario. El mismo flujo de eventos se aplica en todas las plataformas; solo difiere el punto de entrada (WndProc en Windows, NSResponder en macOS, g_signal en GTK3).</p>
 
 <div class="mermaid">
@@ -305,7 +305,7 @@ sequenceDiagram
 </div>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Herramientas Bidireccionales</h2>
+<h2 id="herramientas-bidireccionales">Herramientas Bidireccionales</h2>
 <p>HarbourBuilder mantiene una sincronizacion perfecta entre el disenador visual y el codigo fuente. Los cambios en cualquier direccion se reflejan instantaneamente, y las implementaciones METHOD escritas por el usuario nunca se sobrescriben durante la regeneracion de codigo.</p>
 
 <div class="mermaid">
@@ -339,7 +339,7 @@ flowchart LR
 </table>
 
 <!-- ──────────────────────────────────────────── -->
-<h2>Canalizacion de Compilacion</h2>
+<h2 id="canalizacion-de-compilacion">Canalizacion de Compilacion</h2>
 <p>El proceso de compilacion transforma el codigo fuente Harbour en ejecutables nativos a traves de una canalizacion de multiples etapas:</p>
 
 <div class="mermaid">
@@ -396,6 +396,23 @@ graph LR
   Presione <strong>F9</strong> en el IDE para compilar, enlazar y ejecutar su proyecto. HarbourBuilder detecta la plataforma actual y selecciona la cadena de herramientas del compilador apropiada automaticamente.
 </div>
 
+
+<!-- Table of Contents Rail -->
+<div class="toc-rail">
+  <h4>En Esta Página</h4>
+  <a href="#primeros-pasos" class="toc-h3 active">Primeros Pasos</a>
+  <a href="#paleta-de-componentes" class="toc-h3">Paleta de Componentes</a>
+  <a href="#funciones-del-ide" class="toc-h3">Funciones del IDE</a>
+  <a href="#tutoriales" class="toc-h3">Tutoriales</a>
+  <a href="#referencia" class="toc-h3">Referencia</a>
+  <a href="#plataformas" class="toc-h3">Plataformas</a>
+  <a href="#arquitectura-de-5-capas" class="toc-h2">Arquitectura de 5 Capas</a>
+  <a href="#backends-de-plataforma" class="toc-h2">Backends de Plataforma</a>
+  <a href="#sistema-de-tipos-de-control" class="toc-h2">Sistema de Tipos de Control</a>
+  <a href="#estructura-de-archivos" class="toc-h2">Estructura de Archivos</a>
+  <a href="#sistema-de-eventos" class="toc-h2">Sistema de Eventos</a>
+  <a href="#herramientas-bidireccionales" class="toc-h2">Herramientas Bidireccionales</a>
+  <a href="#canalizacion-de-compilacion" class="toc-h2">Canalizacion de Compilacion</a>
 </div>
 
 <script src="../assets/js/docs.js"></script>
