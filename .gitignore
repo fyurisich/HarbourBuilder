@@ -15,6 +15,9 @@ credentials/
 *.apikey
 google-services.json
 
+# Android: auto-generated PRG from the IDE form designer (regenerated each build)
+source/backends/android/_generated.prg
+
 # Compiled / build artifacts
 *.obj
 *.exe

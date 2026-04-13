@@ -2655,71 +2655,167 @@ static function TBRun()
 return nil
 
 // === Android target: build APK and run on emulator ===
-// Reuses the pre-validated pipeline in C:\HarbourAndroid\.
-// See memory/project_android_build.md for the toolchain layout.
+//
+// Pipeline:
+//   1. Generate a UI_*-based PRG from the active form (aForms[1]).
+//   2. Invoke build-apk-gui.sh to produce a signed APK.
+//   3. Install it on the first connected device / emulator and launch.
+//
+// See memory/project_android_build.md and project_android_gui_validated.md.
 static function TBRunAndroid()
 
+   local cRepoRoot   := "C:\HarbourBuilder"
    local cAndroidDir := "C:\HarbourAndroid"
-   local cDemoDir    := cAndroidDir + "\apk-demo"
-   local cPrgPath    := cDemoDir + "\src\prg\hello.prg"
-   local cLogPath    := cDemoDir + "\build-apk.log"
+   local cBackend    := cRepoRoot + "\source\backends\android"
+   local cGenPrg     := cBackend + "\_generated.prg"
+   local cBuildSh    := cBackend + "\build-apk-gui.sh"
+   local cApkPath    := cAndroidDir + "\apk-gui\harbour-gui.apk"
+   local cLogPath    := cAndroidDir + "\apk-gui\build.log"
    local cBash       := "C:\Program Files\Git\bin\bash.exe"
-   local cCurrentPrg, cLog, cCmd, nRet
+   local cAdb        := "C:\Android\Sdk\platform-tools\adb.exe"
+   local cPrg, cLog, cCmd
 
    if ! lIsDir( cAndroidDir )
       MsgInfo( "Android toolchain not found at " + cAndroidDir + Chr(10) + ;
-                 "Expected layout described in memory/project_android_build.md." + Chr(10) + ;
-                 "The Setup Android Wizard is not implemented yet - install manually for now.", ;
-                 "Android target" )
+               "See memory/project_android_build.md for the required layout.", ;
+               "Android target" )
       return nil
    endif
-
    if ! File( cBash )
       MsgInfo( "bash.exe not found at " + cBash + Chr(10) + ;
-                 "Install Git for Windows to provide bash.", "Android target" )
+               "Install Git for Windows to provide bash.", "Android target" )
       return nil
    endif
 
    SaveActiveFormCode()
+   SyncDesignerToCode()
 
-   // Use Project1.prg tab content as the Android entry point.
-   // Caveat: the current sample backend expects a console-style prg that
-   // writes to stdout (gtstd). GUI forms will not render yet - that needs
-   // a native Android GT. This is documented; step 1 is plumbing only.
-   cCurrentPrg := CodeEditorGetTabText( hCodeEditor, 1 )
-   if Empty( cCurrentPrg )
-      MsgInfo( "Project1.prg is empty - nothing to build.", "Android target" )
+   // Generate the Android PRG from the current form
+   cPrg := GenerateAndroidPRG()
+   if Empty( cPrg )
+      MsgInfo( "No form to build - add at least one control to the designer.", ;
+               "Android target" )
       return nil
    endif
-   MemoWrit( cPrgPath, cCurrentPrg )
+   MemoWrit( cGenPrg, cPrg )
 
-   W32_ProgressOpen( "Building Android APK...", 2 )
-   W32_ProgressStep( "Compiling PRG -> C -> .so -> APK..." )
+   W32_ProgressOpen( "Building Android APK...", 3 )
+   W32_ProgressStep( "Compiling generated PRG -> signed APK..." )
 
-   // Run build-apk.sh synchronously, piping output to build-apk.log.
-   cCmd := 'cmd /c ""' + cBash + '" -lc "cd /c/HarbourAndroid/apk-demo && ' + ;
-           './build-apk.sh > build-apk.log 2>&1""'
-   nRet := W32_ShellExec( cCmd )
+   // Run the GUI pipeline (forward slashes to make bash happy)
+   cCmd := 'cmd /c ""' + cBash + '" -lc "bash /c/HarbourBuilder/source/backends/android/build-apk-gui.sh ' + ;
+           '/c/HarbourBuilder/source/backends/android/_generated.prg > /c/HarbourAndroid/apk-gui/build.log 2>&1""'
+   W32_ShellExec( cCmd )
 
    cLog := iif( File( cLogPath ), MemoRead( cLogPath ), "(no log produced)" )
 
-   if ! File( cDemoDir + "\build\harbour-demo.apk" )
+   if ! File( cApkPath )
       W32_ProgressClose()
       W32_BuildErrorDialog( "Android Build Failed", cLog )
       return nil
    endif
 
-   W32_ProgressStep( "Launching emulator..." )
-   cCmd := 'cmd /c start "" "' + cBash + '" -lc "cd /c/HarbourAndroid && ' + ;
-           './run-on-emulator.sh > emulator-run.log 2>&1"'
+   W32_ProgressStep( "Installing on device..." )
+   cCmd := 'cmd /c ""' + cAdb + '" install -r "' + cApkPath + '""'
+   W32_ShellExec( cCmd )
+
+   W32_ProgressStep( "Launching app..." )
+   cCmd := 'cmd /c ""' + cAdb + '" shell am start -n com.harbour.builder/.MainActivity"'
    W32_ShellExec( cCmd )
    W32_ProgressClose()
 
-   MsgInfo( "APK built: " + cDemoDir + "\build\harbour-demo.apk" + Chr(10) + ;
-              "Launching emulator in background - see emulator-run.log.", ;
-              "Android target" )
+   MsgInfo( "APK built and launched:" + Chr(10) + cApkPath + Chr(10) + Chr(10) + ;
+            "If no device is connected, start the emulator first.", ;
+            "Android target" )
 
 return nil
+
+// Build a UI_*-based PRG from the currently designed form.
+// Supported in iteration 1b: Label (1), Edit (2), Button (3) + button OnClick
+// codeblocks if the user named a handler function <CtrlName>Click. Other
+// control types emit a comment line (rendered as no-op on Android).
+static function GenerateAndroidPRG()
+
+   local cPRG, e := Chr(10)
+   local hForm, nCount, i, hCtrl, nType
+   local cName, cText, nL, nT, nW, nH, cTitle, nFW, nFH
+   local cEventTab, aDecls := {}, aCreate := {}, aBind := {}
+   local cQ := Chr(34)
+
+   if Empty( aForms )
+      return ""
+   endif
+
+   // Use the first/active form (iteration 1b supports a single form).
+   if aForms[1][2] == nil .or. aForms[1][2]:hCpp == nil
+      return ""
+   endif
+   hForm := aForms[1][2]:hCpp
+
+   cTitle := UI_GetProp( hForm, "cText" )
+   if Empty( cTitle ); cTitle := aForms[1][1]; endif
+   nFW := UI_GetProp( hForm, "nWidth" )
+   nFH := UI_GetProp( hForm, "nHeight" )
+
+   // User's event-handler code (tab 2+): scan by name to detect OnClick bindings.
+   cEventTab := aForms[1][3]
+   if Empty( cEventTab ); cEventTab := ""; endif
+
+   nCount := UI_GetChildCount( hForm )
+   for i := 1 to nCount
+      hCtrl := UI_GetChild( hForm, i )
+      if hCtrl == 0; loop; endif
+
+      nType := UI_GetType( hCtrl )
+      cName := AllTrim( UI_GetProp( hCtrl, "cName" ) )
+      if Empty( cName ); cName := "ctrl" + LTrim( Str( i ) ); endif
+
+      cText := StrTran( UI_GetProp( hCtrl, "cText" ), cQ, "'" )  // strip embedded "
+      nL := UI_GetProp( hCtrl, "nLeft" )
+      nT := UI_GetProp( hCtrl, "nTop" )
+      nW := UI_GetProp( hCtrl, "nWidth" )
+      nH := UI_GetProp( hCtrl, "nHeight" )
+
+      do case
+         case nType == 1  // Label
+            AAdd( aDecls,  "   LOCAL h" + cName )
+            AAdd( aCreate, '   h' + cName + ' := UI_LabelNew( hForm, "' + cText + '", ' + ;
+                  LTrim(Str(nL)) + ', ' + LTrim(Str(nT)) + ', ' + ;
+                  LTrim(Str(nW)) + ', ' + LTrim(Str(nH)) + ' )' )
+         case nType == 2  // Edit
+            AAdd( aDecls,  "   LOCAL h" + cName )
+            AAdd( aCreate, '   h' + cName + ' := UI_EditNew( hForm, "' + cText + '", ' + ;
+                  LTrim(Str(nL)) + ', ' + LTrim(Str(nT)) + ', ' + ;
+                  LTrim(Str(nW)) + ', ' + LTrim(Str(nH)) + ' )' )
+         case nType == 3  // Button
+            AAdd( aDecls,  "   LOCAL h" + cName )
+            AAdd( aCreate, '   h' + cName + ' := UI_ButtonNew( hForm, "' + cText + '", ' + ;
+                  LTrim(Str(nL)) + ', ' + LTrim(Str(nT)) + ', ' + ;
+                  LTrim(Str(nW)) + ', ' + LTrim(Str(nH)) + ' )' )
+            if ( cName + "Click" ) $ cEventTab
+               AAdd( aBind, '   UI_OnClick( h' + cName + ', {|| ' + cName + 'Click() } )' )
+            endif
+         otherwise
+            AAdd( aCreate, '   // ' + cName + ' (type ' + LTrim(Str(nType)) + ') - not yet supported on Android' )
+      endcase
+   next
+
+   cPRG := "// Auto-generated for Android target - DO NOT EDIT" + e
+   cPRG += "// Regenerated every time you click Run on Android..." + e + e
+   cPRG += "PROCEDURE Main()" + e
+   cPRG += "   LOCAL hForm" + e
+   AEval( aDecls, {|c| cPRG += c + e } )
+   cPRG += e
+   cPRG += '   hForm := UI_FormNew( "' + StrTran( cTitle, cQ, "'" ) + '", ' + ;
+           LTrim( Str( nFW ) ) + ', ' + LTrim( Str( nFH ) ) + ' )' + e
+   AEval( aCreate, {|c| cPRG += c + e } )
+   if ! Empty( aBind )
+      cPRG += e
+      AEval( aBind, {|c| cPRG += c + e } )
+   endif
+   cPRG += e + "   UI_FormRun( hForm )" + e + "RETURN" + e
+
+return cPRG
 
 static function lIsDir( cPath )
 return ! Empty( hb_DirExists( cPath ) )
