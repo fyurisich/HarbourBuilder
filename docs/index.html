@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HarbourBuilder — Visual IDE for Harbour</title>
+<meta name="description" content="A modern visual IDE for Harbour/xBase. Drag, drop, code. Native on Windows, macOS and Linux.">
+<link rel="canonical" href="https://fivetechsoft.github.io/HarbourBuilder/">
+<meta property="og:title" content="HarbourBuilder">
+<meta property="og:description" content="Modern visual IDE for Harbour. Native on Windows, macOS and Linux.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://fivetechsoft.github.io/HarbourBuilder/">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#0a0e1a;
+    --bg2:#0f1524;
+    --surface:#141a2a;
+    --surface-2:#1a2238;
+    --border:#222a40;
+    --border-2:#2d3654;
+    --fg:#e7ecf3;
+    --muted:#8892b0;
+    --muted-2:#64748b;
+    --accent:#7c3aed;
+    --accent-2:#3b82f6;
+    --accent-3:#06b6d4;
+    --ok:#10b981;
+    --pink:#ec4899;
+    --orange:#f59e0b;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    font:16px/1.6 "Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    background:var(--bg);
+    color:var(--fg);
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent-2);text-decoration:none;transition:opacity .2s}
+  a:hover{opacity:.85}
+  code,pre,.mono{font-family:"JetBrains Mono",Menlo,Consolas,monospace;font-size:14px}
+  pre{
+    background:#0d1220;
+    padding:20px 22px;border-radius:12px;overflow:auto;
+    border:1px solid var(--border);
+    line-height:1.55;
+  }
+  pre code{background:none;padding:0;color:#cbd5e1}
+  .kw{color:#c084fc}.st{color:#86efac}.cm{color:#64748b}.fn{color:#60a5fa}.nm{color:#fbbf24}
+  code:not(pre code){background:var(--surface);padding:2px 7px;border-radius:4px;color:#fbbf24;font-size:13px}
+
+  .wrap{max-width:1160px;margin:0 auto;padding:0 24px}
+
+  /* -------- NAV -------- */
+  nav{
+    position:fixed;top:0;left:0;right:0;z-index:50;
+    backdrop-filter:blur(20px);
+    background:rgba(10,14,26,.7);
+    border-bottom:1px solid var(--border);
+    padding:14px 0;
+  }
+  nav .wrap{display:flex;align-items:center;justify-content:space-between}
+  .logo{font-weight:800;font-size:18px;display:flex;align-items:center;gap:10px;color:var(--fg)}
+  .logo .dot{
+    width:10px;height:10px;border-radius:50%;
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent-3) 100%);
+    box-shadow:0 0 20px var(--accent);
+  }
+  nav ul{display:flex;gap:28px;list-style:none}
+  nav ul a{color:var(--muted);font-size:14px;font-weight:500}
+  nav ul a:hover{color:var(--fg);opacity:1}
+  nav .cta{
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);
+    color:#fff;padding:8px 16px;border-radius:8px;font-weight:600;font-size:14px;
+  }
+  nav .cta:hover{opacity:.9}
+  @media(max-width:800px){nav ul{display:none}}
+
+  /* -------- HERO -------- */
+  .hero{
+    position:relative;
+    padding:140px 0 120px;
+    text-align:center;
+    overflow:hidden;
+  }
+  .hero::before{
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(ellipse 800px 400px at 50% 0%,rgba(124,58,237,.18),transparent 60%),
+      radial-gradient(ellipse 600px 400px at 20% 30%,rgba(59,130,246,.12),transparent 60%),
+      radial-gradient(ellipse 500px 300px at 80% 40%,rgba(6,182,212,.1),transparent 60%);
+    pointer-events:none;
+  }
+  .hero .inner{position:relative;z-index:1}
+  .pill{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--surface);border:1px solid var(--border);
+    padding:6px 14px;border-radius:100px;
+    font-size:13px;color:var(--muted);margin-bottom:28px;
+  }
+  .pill .new{
+    background:linear-gradient(135deg,var(--accent) 0%,var(--pink) 100%);
+    color:#fff;padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;
+  }
+  .hero h1{
+    font-size:clamp(42px,7vw,84px);
+    line-height:1.05;font-weight:800;letter-spacing:-.03em;
+    margin-bottom:24px;
+  }
+  .hero h1 .grad{
+    background:linear-gradient(135deg,#a78bfa 0%,#60a5fa 50%,#22d3ee 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .hero p.sub{
+    font-size:clamp(17px,2vw,22px);
+    color:var(--muted);max-width:680px;margin:0 auto 40px;
+  }
+  .hero .actions{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-bottom:56px}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:14px 28px;border-radius:10px;font-weight:600;font-size:15px;
+    border:1px solid var(--border);background:var(--surface);color:var(--fg);
+    transition:transform .15s,box-shadow .15s,border-color .15s;
+  }
+  .btn:hover{transform:translateY(-1px);border-color:var(--border-2);opacity:1}
+  .btn.primary{
+    background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);
+    border-color:transparent;color:#fff;
+    box-shadow:0 10px 30px -10px rgba(124,58,237,.6);
+  }
+  .btn.primary:hover{box-shadow:0 16px 40px -10px rgba(124,58,237,.8)}
+  .stats{display:flex;gap:48px;justify-content:center;flex-wrap:wrap;color:var(--muted);font-size:14px}
+  .stats b{color:var(--fg);font-size:22px;display:block;font-weight:700}
+
+  /* -------- HERO SHOWCASE -------- */
+  .showcase{
+    position:relative;
+    margin-top:40px;
+    padding:0 24px;
+  }
+  .showcase .frame{
+    max-width:1000px;margin:0 auto;
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:16px;padding:8px;
+    box-shadow:
+      0 60px 120px -30px rgba(124,58,237,.3),
+      0 40px 80px -20px rgba(0,0,0,.5);
+  }
+  .showcase .titlebar{
+    display:flex;gap:6px;padding:10px 14px;
+  }
+  .showcase .titlebar span{width:12px;height:12px;border-radius:50%;background:#3d4455}
+  .showcase .titlebar span:nth-child(1){background:#ef4444}
+  .showcase .titlebar span:nth-child(2){background:#f59e0b}
+  .showcase .titlebar span:nth-child(3){background:#10b981}
+  .showcase img{
+    width:100%;height:auto;display:block;border-radius:10px;
+    border:1px solid var(--border);
+  }
+
+  /* -------- SECTIONS -------- */
+  section{padding:100px 0;position:relative}
+  .section-eyebrow{
+    color:var(--accent-2);font-size:13px;font-weight:600;
+    letter-spacing:.15em;text-transform:uppercase;margin-bottom:12px;
+  }
+  h2{
+    font-size:clamp(32px,4vw,48px);
+    font-weight:800;letter-spacing:-.02em;line-height:1.1;margin-bottom:20px;
+  }
+  h2 .grad{
+    background:linear-gradient(135deg,#a78bfa 0%,#60a5fa 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+  }
+  .lead{font-size:18px;color:var(--muted);max-width:680px}
+  .center{text-align:center;margin:0 auto}
+
+  /* -------- CODE SPLIT -------- */
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:60px}
+  .split h3{
+    font-size:13px;text-transform:uppercase;letter-spacing:.12em;
+    color:var(--muted-2);font-weight:600;margin-bottom:12px;
+  }
+  @media(max-width:880px){.split{grid-template-columns:1fr}}
+
+  /* -------- FEATURES -------- */
+  .features{
+    display:grid;gap:20px;margin-top:64px;
+    grid-template-columns:repeat(3,1fr);
+  }
+  .feat{
+    padding:28px;border-radius:14px;
+    background:var(--surface);border:1px solid var(--border);
+    transition:transform .2s,border-color .2s;position:relative;overflow:hidden;
+  }
+  .feat:hover{transform:translateY(-3px);border-color:var(--border-2)}
+  .feat .icon{
+    width:44px;height:44px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;margin-bottom:16px;
+    background:linear-gradient(135deg,rgba(124,58,237,.2),rgba(59,130,246,.15));
+    border:1px solid var(--border-2);
+  }
+  .feat h3{font-size:17px;font-weight:700;margin-bottom:8px}
+  .feat p{color:var(--muted);font-size:14px;line-height:1.6}
+  @media(max-width:900px){.features{grid-template-columns:repeat(2,1fr)}}
+  @media(max-width:600px){.features{grid-template-columns:1fr}}
+
+  /* -------- PLATFORMS -------- */
+  .platforms{
+    display:grid;gap:16px;margin-top:60px;
+    grid-template-columns:repeat(3,1fr);
+  }
+  .plat{
+    position:relative;border-radius:14px;overflow:hidden;
+    border:1px solid var(--border);background:var(--surface);
+    transition:transform .2s,border-color .2s;
+  }
+  .plat:hover{transform:translateY(-3px);border-color:var(--border-2)}
+  .plat img{width:100%;height:auto;display:block}
+  .plat .label{
+    padding:14px 18px;display:flex;align-items:center;justify-content:space-between;
+    border-top:1px solid var(--border);
+  }
+  .plat .label b{font-weight:600}
+  .plat .label span{color:var(--muted);font-size:13px}
+  @media(max-width:880px){.platforms{grid-template-columns:1fr}}
+
+  /* -------- DOWNLOAD -------- */
+  .downloads{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+  .dl{
+    display:block;padding:24px;border-radius:14px;
+    background:var(--surface);border:1px solid var(--border);
+    transition:transform .2s,border-color .2s;color:var(--fg);
+  }
+  .dl:hover{transform:translateY(-3px);border-color:var(--accent);opacity:1}
+  .dl .os{font-size:28px;margin-bottom:12px}
+  .dl h3{font-weight:700;font-size:17px;margin-bottom:6px}
+  .dl p{color:var(--muted);font-size:13px;line-height:1.5}
+  .dl .how{
+    margin-top:14px;padding-top:14px;border-top:1px dashed var(--border);
+    color:var(--muted-2);font-size:12px;font-family:"JetBrains Mono",monospace;
+  }
+  @media(max-width:800px){.downloads{grid-template-columns:1fr}}
+
+  /* -------- DOCS -------- */
+  .langs{display:flex;gap:12px;margin-top:32px;flex-wrap:wrap}
+  .langs a{
+    padding:10px 18px;border:1px solid var(--border);border-radius:10px;
+    background:var(--surface);color:var(--fg);font-weight:500;font-size:14px;
+  }
+  .langs a:hover{border-color:var(--accent);opacity:1}
+  .doc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:32px}
+  .doc-card{
+    padding:24px;border-radius:14px;
+    background:var(--surface);border:1px solid var(--border);
+  }
+  .doc-card h3{font-weight:700;margin-bottom:14px;font-size:16px}
+  .doc-card ul{list-style:none}
+  .doc-card li{margin:6px 0;font-size:14px}
+  .doc-card a{color:var(--muted);display:inline-block;padding:3px 0}
+  .doc-card a:hover{color:var(--accent-2);opacity:1}
+  @media(max-width:900px){.doc-grid{grid-template-columns:1fr}}
+
+  /* -------- CTA -------- */
+  .cta-band{
+    margin-top:40px;
+    padding:56px 40px;
+    border-radius:24px;text-align:center;
+    background:
+      linear-gradient(135deg,rgba(124,58,237,.15) 0%,rgba(59,130,246,.1) 100%),
+      var(--surface);
+    border:1px solid var(--border-2);
+  }
+  .cta-band h2{margin-bottom:16px}
+  .cta-band .lead{margin:0 auto 28px}
+
+  /* -------- FOOTER -------- */
+  footer{
+    padding:48px 0 40px;border-top:1px solid var(--border);
+    color:var(--muted);font-size:14px;
+  }
+  footer .wrap{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:20px}
+  footer .links a{color:var(--muted);margin-right:20px}
+  footer .links a:hover{color:var(--fg);opacity:1}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a href="#" class="logo"><span class="dot"></span>HarbourBuilder</a>
+    <ul>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#platforms">Platforms</a></li>
+      <li><a href="#download">Download</a></li>
+      <li><a href="#docs">Docs</a></li>
+      <li><a href="https://github.com/FiveTechSoft/HarbourBuilder">GitHub</a></li>
+    </ul>
+    <a class="cta" href="#download">Download</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="wrap inner">
+    <div class="pill">
+      <span class="new">NEW</span>
+      In-process Python via dlopen — zero runtime deps
+    </div>
+    <h1>The visual IDE for <span class="grad">Harbour</span>.<br>Design. Code. Ship.</h1>
+    <p class="sub">
+      Drop controls, set properties, write event handlers. Your app compiles to a
+      native binary on Windows, macOS and Linux — no theming, no electron, no runtime.
+    </p>
+    <div class="actions">
+      <a class="btn primary" href="#download">↓ Download</a>
+      <a class="btn" href="en/index.html">Read the docs</a>
+      <a class="btn" href="https://github.com/FiveTechSoft/HarbourBuilder">★ Star on GitHub</a>
+    </div>
+    <div class="stats">
+      <div><b>130</b>components</div>
+      <div><b>16</b>palette tabs</div>
+      <div><b>3</b>native backends</div>
+      <div><b>MIT</b>licensed</div>
+    </div>
+  </div>
+  <div class="showcase">
+    <div class="frame">
+      <div class="titlebar"><span></span><span></span><span></span></div>
+      <img src="https://raw.githubusercontent.com/FiveTechSoft/HarbourBuilder/main/images/macos_scintilla.png" alt="HarbourBuilder on macOS">
+    </div>
+  </div>
+</div>
+
+<section id="what">
+  <div class="wrap">
+    <div class="section-eyebrow">The pitch</div>
+    <h2>xBase meets <span class="grad">C++Builder-style</span> productivity.</h2>
+    <p class="lead">
+      HarbourBuilder is a modern visual IDE that generates Harbour/xBase code. The
+      designer, the inspector and the editor stay in sync — edit one and the others
+      update instantly. Forms are just Harbour classes; the code is yours.
+    </p>
+    <div class="split">
+      <div>
+        <h3>What you write</h3>
+<pre><code><span class="cm">// Form1.prg</span>
+<span class="kw">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+   <span class="kw">local</span> oForm, oBtn
+
+   <span class="kw">DEFINE FORM</span> oForm ;
+      <span class="kw">TITLE</span> <span class="st">"Hello World"</span> ;
+      <span class="kw">SIZE</span> 400, 300
+
+   @ 120, 140 <span class="kw">BUTTON</span> oBtn ;
+      <span class="kw">PROMPT</span> <span class="st">"Click Me!"</span> ;
+      <span class="kw">OF</span> oForm <span class="kw">SIZE</span> 120, 32
+   oBtn:OnClick := { || <span class="fn">MsgInfo</span>( <span class="st">"Hi!"</span> ) }
+
+   <span class="kw">ACTIVATE FORM</span> oForm <span class="kw">CENTERED</span>
+<span class="kw">return</span> <span class="nm">nil</span></code></pre>
+      </div>
+      <div>
+        <h3>What the IDE generates</h3>
+<pre><code><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
+   <span class="kw">DATA</span> oBtn1  <span class="cm">// TButton</span>
+   <span class="kw">METHOD</span> <span class="fn">CreateForm</span>()
+<span class="kw">ENDCLASS</span>
+
+<span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
+   ::Title := <span class="st">"Hello World"</span>
+   ::Width := 400
+   ::Height := 300
+
+   @ 120, 140 <span class="kw">BUTTON</span> ::oBtn1 ;
+      <span class="kw">PROMPT</span> <span class="st">"Click Me!"</span> ;
+      <span class="kw">OF</span> Self <span class="kw">SIZE</span> 120, 32
+<span class="kw">return</span> <span class="nm">nil</span></code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="wrap">
+    <div class="section-eyebrow">Features</div>
+    <h2>Everything a modern Harbour IDE should have.</h2>
+    <p class="lead">From drag-and-drop design to AI pair-programming, all natively integrated.</p>
+    <div class="features">
+      <div class="feat"><div class="icon">🎨</div><h3>Visual Designer</h3><p>130 controls across 16 palette tabs. Snap-to-grid, rubber-band selection, resize handles, two-way sync with code.</p></div>
+      <div class="feat"><div class="icon">🔍</div><h3>Object Inspector</h3><p>Properties, events, and component tree. Specialized editors for colors, fonts, files, arrays, hierarchies.</p></div>
+      <div class="feat"><div class="icon">📝</div><h3>Scintilla Editor</h3><p>Harbour syntax highlighting, tabs, find/replace dialog, autocomplete, bracket matching, dark theme.</p></div>
+      <div class="feat"><div class="icon">🐞</div><h3>Integrated Debugger</h3><p>Watch, call stack, locals, breakpoints, step in/over/out — all inside the IDE, no external tools.</p></div>
+      <div class="feat"><div class="icon">↔️</div><h3>Two-Way Sync</h3><p>The designer updates code; the code updates the designer. Live, debounced, loss-free. Works both ways.</p></div>
+      <div class="feat"><div class="icon">🖥️</div><h3>100% Native UI</h3><p>Win32, Cocoa, GTK3 backends. Real native controls on each platform — not themed widgets or a browser.</p></div>
+      <div class="feat"><div class="icon">🗄️</div><h3>Data-Aware</h3><p>TBrowse, DBGrid, DBNavigator. DBF, MySQL, MariaDB, PostgreSQL, SQLite, Firebird, SQL Server, Oracle, MongoDB.</p></div>
+      <div class="feat"><div class="icon">🤖</div><h3>AI Assistant</h3><p>OpenAI, Gemini, Claude, DeepSeek, Grok, Ollama, Whisper, Embeddings, Transformers — all as drop-in components.</p></div>
+      <div class="feat"><div class="icon">🔌</div><h3>Language Interop</h3><p>TPython (in-process via dlopen), TNode, TLua, TRuby, TGo, TRust, TSwift, TJava, TDotNet.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="platforms">
+  <div class="wrap">
+    <div class="section-eyebrow">Native on every platform</div>
+    <h2>One codebase. <span class="grad">Three native frontends.</span></h2>
+    <p class="lead">Same Harbour source, same .hbp project — different native backend per OS. No compromises.</p>
+    <div class="platforms">
+      <div class="plat">
+        <img src="https://raw.githubusercontent.com/FiveTechSoft/HarbourBuilder/main/images/windows_scintilla.png" alt="Windows screenshot">
+        <div class="label"><b>Windows</b><span>Win32 · native</span></div>
+      </div>
+      <div class="plat">
+        <img src="https://raw.githubusercontent.com/FiveTechSoft/HarbourBuilder/main/images/macos_scintilla.png" alt="macOS screenshot">
+        <div class="label"><b>macOS</b><span>Cocoa · native</span></div>
+      </div>
+      <div class="plat">
+        <img src="https://raw.githubusercontent.com/FiveTechSoft/HarbourBuilder/main/images/linux_scintilla.png" alt="Linux screenshot">
+        <div class="label"><b>Linux</b><span>GTK3 · native</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="download">
+  <div class="wrap">
+    <div class="section-eyebrow">Get started</div>
+    <h2>Download &amp; build.</h2>
+    <p class="lead">Clone the repo and build from source. Pre-built binaries are distributed via GitHub Releases.</p>
+    <div class="downloads">
+      <a class="dl" href="https://github.com/FiveTechSoft/HarbourBuilder#-quick-start">
+        <div class="os">🪟</div>
+        <h3>Windows</h3>
+        <p>MSYS2 / MinGW build. Ships a native Win32 IDE.</p>
+        <div class="how">build_win.bat</div>
+      </a>
+      <a class="dl" href="https://github.com/FiveTechSoft/HarbourBuilder#-quick-start">
+        <div class="os">🍎</div>
+        <h3>macOS</h3>
+        <p>Universal Cocoa build. Apple Silicon + Intel.</p>
+        <div class="how">./build_mac.sh</div>
+      </a>
+      <a class="dl" href="https://github.com/FiveTechSoft/HarbourBuilder#-quick-start">
+        <div class="os">🐧</div>
+        <h3>Linux</h3>
+        <p>GTK3 build. Tested on Ubuntu, Fedora, Arch.</p>
+        <div class="how">./build_linux.sh</div>
+      </a>
+    </div>
+    <div class="cta-band">
+      <h2>Clone it in 10 seconds.</h2>
+      <p class="lead">The full source is MIT-licensed. Build it, fork it, ship it.</p>
+<pre style="max-width:700px;margin:0 auto;text-align:left"><code><span class="cm">$ </span>git clone https://github.com/FiveTechSoft/HarbourBuilder.git
+<span class="cm">$ </span>cd HarbourBuilder
+<span class="cm">$ </span>./build_mac.sh   <span class="cm"># or build_linux.sh / build_win.bat</span>
+<span class="cm">$ </span>./bin/HbBuilder</code></pre>
+    </div>
+  </div>
+</section>
+
+<section id="docs">
+  <div class="wrap">
+    <div class="section-eyebrow">Documentation</div>
+    <h2>Deep docs. Real tutorials.</h2>
+    <p class="lead">20+ pages covering every control, every event, every platform — in three languages.</p>
+    <div class="langs">
+      <a href="en/index.html">🇬🇧 English</a>
+      <a href="es/index.html">🇪🇸 Español</a>
+      <a href="pt/index.html">🇵🇹 Português</a>
+    </div>
+    <div class="doc-grid">
+      <div class="doc-card">
+        <h3>Getting Started</h3>
+        <ul>
+          <li><a href="en/installation.html">Installation</a></li>
+          <li><a href="en/quickstart.html">Quick start</a></li>
+          <li><a href="en/tutorial-transformer.html">Your first app</a></li>
+          <li><a href="en/platform-macos.html">macOS guide</a></li>
+          <li><a href="en/platform-windows.html">Windows guide</a></li>
+          <li><a href="en/platform-linux.html">Linux guide</a></li>
+        </ul>
+      </div>
+      <div class="doc-card">
+        <h3>IDE Features</h3>
+        <ul>
+          <li><a href="en/form-designer.html">Form designer</a></li>
+          <li><a href="en/object-inspector.html">Object inspector</a></li>
+          <li><a href="en/code-editor.html">Code editor</a></li>
+          <li><a href="en/two-way-tools.html">Two-way tools</a></li>
+          <li><a href="en/debugger.html">Debugger</a></li>
+          <li><a href="en/ai-assistant.html">AI assistant</a></li>
+        </ul>
+      </div>
+      <div class="doc-card">
+        <h3>Reference</h3>
+        <ul>
+          <li><a href="en/ref-commands.html">Commands</a></li>
+          <li><a href="en/ref-functions.html">Functions</a></li>
+          <li><a href="en/ref-properties.html">Properties</a></li>
+          <li><a href="en/ref-events.html">Events</a></li>
+          <li><a href="en/ref-methods.html">Methods</a></li>
+          <li><a href="en/controls-standard.html">Control catalogue</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="logo" style="margin-bottom:6px"><span class="dot"></span>HarbourBuilder</div>
+      <span style="color:var(--muted-2);font-size:13px">MIT licensed · Built with ❤️ by the Harbour community</span>
+    </div>
+    <div class="links">
+      <a href="https://github.com/FiveTechSoft/HarbourBuilder">GitHub</a>
+      <a href="https://github.com/FiveTechSoft/HarbourBuilder/issues">Issues</a>
+      <a href="https://github.com/FiveTechSoft/HarbourBuilder/blob/main/ChangeLog.txt">ChangeLog</a>
+      <a href="https://harbour.github.io">Harbour</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
