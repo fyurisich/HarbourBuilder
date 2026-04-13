@@ -355,5 +355,19 @@ adb shell am start -n com.harbour.builder/.MainActivity</pre>
 </div>
 
 <script src="../assets/js/docs.js"></script>
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+  const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: isDark ? 'dark' : 'default',
+    themeVariables: {
+      fontFamily: 'Inter, -apple-system, sans-serif',
+      fontSize: '14px'
+    },
+    flowchart: { htmlLabels: true, curve: 'basis' },
+    securityLevel: 'loose'
+  });
+</script>
 </body>
 </html>
