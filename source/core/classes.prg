@@ -499,6 +499,41 @@ return Self
 
 //----------------------------------------------------------------------------//
 
+CLASS TTreeView INHERIT TControl
+
+   DATA aItems   INIT {}
+
+   METHOD New( oParent, nLeft, nTop, nWidth, nHeight )
+   METHOD SetItems( aLabels )
+
+ENDCLASS
+
+METHOD New( oParent, nLeft, nTop, nWidth, nHeight ) CLASS TTreeView
+
+   if nWidth  == nil; nWidth  := 150; endif
+   if nHeight == nil; nHeight := 200; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_TreeViewNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight )
+
+return Self
+
+METHOD SetItems( aLabels ) CLASS TTreeView
+
+   local cVal := "", i
+   if aLabels != nil .and. Len( aLabels ) > 0
+      for i := 1 to Len( aLabels )
+         if i > 1; cVal += "|"; endif
+         cVal += aLabels[i]
+      next
+      ::aItems := aLabels
+      UI_SetProp( ::hCpp, "aItems", cVal )
+   endif
+
+return Self
+
+//----------------------------------------------------------------------------//
+
 CLASS TBrowse INHERIT TControl
 
    DATA aColumns    INIT {}         // Array of TBrwColumn objects

@@ -338,7 +338,7 @@ static function CreatePalette()
    // Cocoa tab (equivalent to Win32 in C++Builder)
    nTab := oPal:AddTab( "Cocoa" )
    oPal:AddComp( nTab, "Tab",  "TFolder",     33 )
-   oPal:AddComp( nTab, "TV",   "OutlineView", 20 )
+   oPal:AddComp( nTab, "TV",   "TTreeView",   20 )
    oPal:AddComp( nTab, "LV",   "TableView",   21 )
    oPal:AddComp( nTab, "PB",   "ProgressBar", 22 )
    oPal:AddComp( nTab, "RE",   "TextView",    23 )
@@ -708,6 +708,22 @@ static function RegenerateFormCode( cName, hForm )
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' MEMO ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
+            case nType == 20  // TreeView
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' TREEVIEW ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               cVal := UI_GetProp( hCtrl, "aItems" )
+               if ! Empty( cVal )
+                  aHdrs := hb_ATokens( cVal, "|" )
+                  cCreate += ' ITEMS '
+                  for kk := 1 to Len( aHdrs )
+                     if kk > 1; cCreate += ', '; endif
+                     // Preserve leading whitespace (indentation = hierarchy);
+                     // only strip trailing spaces.
+                     cCreate += '"' + RTrim( aHdrs[kk] ) + '"'
+                  next
+               endif
+               cCreate += e
             case nType == 33  // TFolder
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' FOLDER ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
@@ -1166,6 +1182,26 @@ static function RestoreFormFromCode( hForm, cCode )
             hCtrl := UI_RadioButtonNew( hForm, cText, nL, nT, nW, nH )
          case " MEMO " $ Upper( cTrim )
             hCtrl := UI_MemoNew( hForm, "", nL, nT, nW, nH )
+         case " TREEVIEW " $ Upper( cTrim )
+            hCtrl := UI_TreeViewNew( hForm, nL, nT, nW, nH )
+            nPos := At( "ITEMS ", Upper( cTrim ) )
+            if nPos > 0
+               cText := SubStr( cTrim, nPos + 6 )
+               cVal := ""
+               do while ! Empty( cText )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  cText := SubStr( cText, nPos2 + 1 )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  if ! Empty( cVal ); cVal += "|"; endif
+                  cVal += Left( cText, nPos2 - 1 )
+                  cText := SubStr( cText, nPos2 + 1 )
+               enddo
+               if hCtrl != 0 .and. ! Empty( cVal )
+                  UI_SetProp( hCtrl, "aItems", cVal )
+               endif
+            endif
          case " FOLDER " $ Upper( cTrim )
             hCtrl := UI_TabControlNew( hForm, nL, nT, nW, nH )
             nPos := At( "PROMPTS ", Upper( cTrim ) )

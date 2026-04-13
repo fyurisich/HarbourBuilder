@@ -115,6 +115,14 @@
       <oCtrl> := TMemo():New( <oParent>, <cVar>, <nLeft>, <nTop>, <nWidth>, <nHeight> )
 
 // Browse
+#xcommand @ <nTop>, <nLeft> TREEVIEW <oCtrl> ;
+      [ OF <oParent> ] ;
+      [ SIZE <nWidth>, <nHeight> ] ;
+      [ ITEMS <items,...> ] ;
+   => ;
+      <oCtrl> := TTreeView():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight> ) ;
+      [; <oCtrl>:SetItems( \{ <items> \} ) ]
+
 #xcommand @ <nTop>, <nLeft> FOLDER <oCtrl> ;
       [ OF <oParent> ] ;
       [ SIZE <nWidth>, <nHeight> ] ;

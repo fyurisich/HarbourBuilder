@@ -652,19 +652,24 @@ static HBFontPickerTarget * s_fontTarget = nil;
       [sheet orderOut:nil];
       return;
    }
-   NSString * newText = [[textView string] stringByTrimmingCharactersInSet:
-      [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+   NSString * newText = [textView string];
 
-   /* Convert newlines back to "|" separator */
+   /* Convert newlines back to "|" separator. Preserve leading whitespace
+    * so indentation-based hierarchy (TTreeView items) survives. Trim only
+    * trailing whitespace; drop fully blank lines. */
    NSArray * lines = [newText componentsSeparatedByCharactersInSet:
       [NSCharacterSet newlineCharacterSet]];
    NSMutableArray * nonEmpty = [NSMutableArray array];
+   NSCharacterSet * trailWS = [NSCharacterSet whitespaceCharacterSet];
    for( NSString * line in lines )
    {
-      NSString * trimmed = [line stringByTrimmingCharactersInSet:
-         [NSCharacterSet whitespaceCharacterSet]];
-      if( [trimmed length] > 0 )
-         [nonEmpty addObject:trimmed];
+      /* Trim only trailing whitespace */
+      NSRange r = [line rangeOfCharacterFromSet:[trailWS invertedSet]
+                                        options:NSBackwardsSearch];
+      NSString * rtrimmed = ( r.location == NSNotFound )
+         ? @"" : [line substringToIndex:r.location + 1];
+      if( [rtrimmed length] > 0 )
+         [nonEmpty addObject:rtrimmed];
    }
    NSString * result = [nonEmpty componentsJoinedByString:@"|"];
    const char * szResult = [result UTF8String];

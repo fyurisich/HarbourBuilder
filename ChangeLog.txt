@@ -1,6 +1,42 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-13 (macOS: TTreeView class and hierarchical aItems editor)
+
+  FEATURES
+  - TTreeView class with `aItems` property edited from the inspector via
+    the same multi-line list dialog used for TBrowse/TFolder.
+    - Indentation defines hierarchy: 2 leading spaces = 1 tree level.
+        Root1
+          Child1
+          Child2
+            Grandchild
+        Root2
+    - NSOutlineView gets a hierarchical HBTreeDataSource that parses the
+      pipe-separated FHeaders, respecting indentation, and implements
+      numberOfChildrenOfItem / child:ofItem / isItemExpandable.
+  - New xcommand: `@ T, L TREEVIEW ::oTree OF Self SIZE W, H ITEMS "..."`.
+  - TTreeView:SetItems() builds the backing pipe-separated string.
+  - Palette tooltip fixed: "OutlineView" -> "TTreeView".
+
+  FIXES
+  - Array editor dialog (openArrayEditorForRow) no longer trims leading
+    whitespace when saving, so indentation survives the round-trip
+    designer <-> dialog. Trailing whitespace is still stripped; fully
+    blank lines are dropped.
+  - Codegen for TREEVIEW emits each item with `RTrim(...)` instead of
+    `AllTrim(...)` so the run-time project keeps the hierarchy.
+
+  FILES
+  - source/core/classes.prg: CLASS TTreeView (aItems, New, SetItems).
+  - include/hbbuilder.ch: TREEVIEW xcommand.
+  - source/backends/cocoa/cocoa_core.m: HBTreeDataSource (hierarchical),
+    aItems added to setProp/getProp/getAllProps, TreeView live reload.
+  - source/backends/cocoa/cocoa_inspector.m: preserve leading whitespace
+    in array editor.
+  - source/hbbuilder_macos.prg: TREEVIEW codegen + parser (ITEMS clause),
+    palette tooltip + default name updates.
+
 2026-04-13 (macOS: TFolder + TFolderPage, FiveWin-style FOLDER ... PROMPTS syntax)
 
   REFACTOR

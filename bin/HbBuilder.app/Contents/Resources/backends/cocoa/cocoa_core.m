@@ -662,6 +662,90 @@ static void HBUpdateTabVisibility( HBControl * owner )
 static HBControl * s_pendingFolder = nil;
 static int         s_pendingPage   = 0;
 
+/* NSOutlineView data source: hierarchical items backed by a pipe-separated
+ * string on the owning HBControl. Leading spaces define the level
+ * (2 spaces = 1 indent). Items are wrapped in NSNumber with the flat index;
+ * children are computed by walking the list with level info. */
+@interface HBTreeDataSource : NSObject <NSOutlineViewDataSource>
+{
+@public
+   __weak HBControl * owner;
+   NSMutableArray * items;   /* parsed: array of @{ @"text":..., @"level":... } */
+}
+- (void)rebuild;
+@end
+
+@implementation HBTreeDataSource
+- (void)rebuild
+{
+   items = [NSMutableArray array];
+   HBControl * o = owner;
+   if( !o || !o->FHeaders[0] ) return;
+   NSString * s = [NSString stringWithUTF8String:o->FHeaders];
+   for( NSString * raw in [s componentsSeparatedByString:@"|"] ) {
+      int lvl = 0;
+      NSUInteger i = 0, n = [raw length];
+      while( i + 1 < n && [raw characterAtIndex:i] == ' ' &&
+             [raw characterAtIndex:i+1] == ' ' ) { lvl++; i += 2; }
+      NSString * txt = [raw substringFromIndex:i];
+      if( [txt length] > 0 )
+         [items addObject:@{ @"text": txt, @"level": @(lvl) }];
+   }
+}
+- (NSInteger)indexOfItem:(id)item
+{
+   if( !item ) return -1;
+   return [items indexOfObjectIdenticalTo:item];
+}
+- (NSInteger)outlineView:(NSOutlineView *)ov numberOfChildrenOfItem:(id)item
+{
+   (void)ov;
+   if( !items ) [self rebuild];
+   NSInteger startLvl, startIdx;
+   if( item == nil ) { startLvl = -1; startIdx = -1; }
+   else {
+      startIdx = [self indexOfItem:item];
+      if( startIdx < 0 ) return 0;
+      startLvl = [item[@"level"] integerValue];
+   }
+   NSInteger count = 0;
+   for( NSInteger i = startIdx + 1; i < (NSInteger)[items count]; i++ ) {
+      NSInteger lvl = [items[i][@"level"] integerValue];
+      if( lvl <= startLvl ) break;
+      if( lvl == startLvl + 1 ) count++;
+   }
+   return count;
+}
+- (id)outlineView:(NSOutlineView *)ov child:(NSInteger)index ofItem:(id)item
+{
+   (void)ov;
+   if( !items ) [self rebuild];
+   NSInteger startLvl, startIdx;
+   if( item == nil ) { startLvl = -1; startIdx = -1; }
+   else {
+      startIdx = [self indexOfItem:item];
+      if( startIdx < 0 ) return nil;
+      startLvl = [item[@"level"] integerValue];
+   }
+   NSInteger seen = 0;
+   for( NSInteger i = startIdx + 1; i < (NSInteger)[items count]; i++ ) {
+      NSInteger lvl = [items[i][@"level"] integerValue];
+      if( lvl <= startLvl ) break;
+      if( lvl == startLvl + 1 ) {
+         if( seen == index ) return items[i];
+         seen++;
+      }
+   }
+   return nil;
+}
+- (BOOL)outlineView:(NSOutlineView *)ov isItemExpandable:(id)item
+{
+   return [self outlineView:ov numberOfChildrenOfItem:item] > 0;
+}
+- (id)outlineView:(NSOutlineView *)ov objectValueForTableColumn:(NSTableColumn *)col byItem:(id)item
+{ (void)ov; (void)col; return item[@"text"]; }
+@end
+
 @implementation HBControl
 
 - (instancetype)init
@@ -821,7 +905,15 @@ static int         s_pendingPage   = 0;
          NSTableColumn * col = [[NSTableColumn alloc] initWithIdentifier:@"tree"];
          [col setWidth:FWidth-20]; [ov addTableColumn:col]; [ov setOutlineTableColumn:col];
          [ov setHeaderView:nil]; [sv setDocumentView:ov]; [sv setHasVerticalScroller:YES];
-         [sv setBorderType:NSBezelBorder]; v = sv; break;
+         [sv setBorderType:NSBezelBorder];
+         HBTreeDataSource * ds = [[HBTreeDataSource alloc] init];
+         ds->owner = self;
+         [ov setDataSource:ds];
+         static NSMutableArray * s_treeDS = nil;
+         if( !s_treeDS ) s_treeDS = [NSMutableArray array];
+         [s_treeDS addObject:ds];
+         [ov reloadData];
+         v = sv; break;
       }
       case CT_PROGRESSBAR: {
          NSProgressIndicator * pi = [[NSProgressIndicator alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
@@ -3528,7 +3620,7 @@ HB_FUNC( UI_SETPROP )
       }
    }
    else if( strcasecmp(szProp,"aHeaders")==0 || strcasecmp(szProp,"aColumns")==0 ||
-            strcasecmp(szProp,"aTabs")==0 )
+            strcasecmp(szProp,"aTabs")==0 || strcasecmp(szProp,"aItems")==0 )
    {
       /* Accept string or array */
       if( HB_ISCHAR(3) )
@@ -3589,6 +3681,19 @@ HB_FUNC( UI_SETPROP )
                src = sep ? sep + 1 : NULL;
             }
             [bd->tableView reloadData];
+         }
+      }
+
+      /* For TreeView, reload the NSOutlineView from FHeaders */
+      if( p->FControlType == CT_TREEVIEW && p->FView )
+      {
+         NSScrollView * sv = (NSScrollView *) p->FView;
+         NSOutlineView * ov = (NSOutlineView *) [sv documentView];
+         if( ov ) {
+            id ds = [ov dataSource];
+            if( [ds isKindOfClass:[HBTreeDataSource class]] )
+               [(HBTreeDataSource *)ds rebuild];
+            [ov reloadData];
          }
       }
 
@@ -3877,7 +3982,8 @@ HB_FUNC( UI_GETPROP )
    else if( strcasecmp(szProp,"cFileName")==0 )  hb_retc( p->FFileName );
    else if( strcasecmp(szProp,"cRDD")==0 )      hb_retc( p->FRdd );
    else if( strcasecmp(szProp,"aHeaders")==0 || strcasecmp(szProp,"aColumns")==0 ||
-            strcasecmp(szProp,"aTabs")==0 )  hb_retc( p->FHeaders );
+            strcasecmp(szProp,"aTabs")==0 || strcasecmp(szProp,"aItems")==0 )
+      hb_retc( p->FHeaders );
    else if( strcasecmp(szProp,"aData")==0 )     hb_retc( p->FData );
    else if( strcasecmp(szProp,"cDataSource")==0 ) hb_retc( p->FDataSource );
    else if( strcasecmp(szProp,"lActive")==0 )   hb_retl( p->FActive );
@@ -4116,6 +4222,8 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_N("nInterval",p->FInterval,"Behavior"); break;
       case CT_TABCONTROL2:
          ADD_A("aTabs",p->FHeaders,"Behavior"); break;
+      case CT_TREEVIEW:
+         ADD_A("aItems",p->FHeaders,"Data"); break;
    }
    hb_itemReturnRelease(pArray);
 }
