@@ -10834,3 +10834,19 @@ HB_FUNC( GTK_APPTERMINATE )
       gtk_main_quit();
 }
 
+
+/* -----------------------------------------------------------------------
+ * Stubs for the macOS-only TFolder / TPageControl / TreeView / TPython
+ * backend functions. These exist so the Harbour code compiled from the
+ * shared `hbbuilder_macos.prg` (which references them) can also link on
+ * GTK3 / Linux. They are no-ops here; full implementation lives in the
+ * Cocoa backend.
+ * --------------------------------------------------------------------- */
+
+HB_FUNC( UI_SETCTRLOWNER )     { }
+HB_FUNC( UI_GETCTRLOWNER )     { hb_retnint( 0 ); }
+HB_FUNC( UI_GETCTRLPAGE )      { hb_retni( 0 ); }
+HB_FUNC( UI_ISAUTOPAGE )       { hb_retl( 0 ); }
+HB_FUNC( UI_SETPENDINGPAGEOWNER ) { }
+HB_FUNC( UI_TABCONTROLNEW )    { hb_retnint( 0 ); }
+HB_FUNC( UI_TREEVIEWNEW )      { hb_retnint( 0 ); }
