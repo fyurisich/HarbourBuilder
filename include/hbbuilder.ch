@@ -115,6 +115,14 @@
       <oCtrl> := TMemo():New( <oParent>, <cVar>, <nLeft>, <nTop>, <nWidth>, <nHeight> )
 
 // Browse
+#xcommand @ <nTop>, <nLeft> FOLDER <oCtrl> ;
+      [ OF <oParent> ] ;
+      [ SIZE <nWidth>, <nHeight> ] ;
+      [ PROMPTS <prompts,...> ] ;
+   => ;
+      <oCtrl> := TFolder():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight> ) ;
+      [; <oCtrl>:SetPrompts( \{ <prompts> \} ) ]
+
 #xcommand @ <nTop>, <nLeft> BROWSE <oCtrl> ;
       [ OF <oParent> ] ;
       [ SIZE <nWidth>, <nHeight> ] ;

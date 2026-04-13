@@ -656,6 +656,12 @@ static void HBUpdateTabVisibility( HBControl * owner )
    }
 }
 
+/* Pending page ownership set by TFolderPage:hCpp access; applied to the
+ * next control added to a form. Used so `OF ::oFolder:aPages[n]` reads
+ * naturally while the backend stays flat. */
+static HBControl * s_pendingFolder = nil;
+static int         s_pendingPage   = 0;
+
 @implementation HBControl
 
 - (instancetype)init
@@ -685,6 +691,13 @@ static void HBUpdateTabVisibility( HBControl * owner )
    if( FChildCount < MAX_CHILDREN ) {
       FChildren[FChildCount++] = child;
       child->FCtrlParent = self;
+      /* Apply pending page owner set by TFolderPage:hCpp */
+      if( s_pendingFolder && !child->FOwnerCtrl ) {
+         child->FOwnerCtrl = s_pendingFolder;
+         child->FOwnerPage = s_pendingPage;
+         s_pendingFolder = nil;
+         s_pendingPage = 0;
+      }
    }
 }
 
@@ -1964,7 +1977,7 @@ static HBPaletteTarget * s_palTarget = nil;
                   { CT_SCROLLBOX,  "TScrollBox",      "",           185, 140 },
                   { CT_STATICTEXT, "TStaticText",     "StaticText",  65,  17 },
                   { CT_LABELEDEDIT,"TLabeledEdit",    "",           120,  24 },
-                  { CT_TABCONTROL2,"TTabControl",     "",           200, 150 },
+                  { CT_TABCONTROL2,"TFolder",         "",           200, 150 },
                   { CT_TREEVIEW,   "TTreeView",       "",           150, 200 },
                   { CT_LISTVIEW,   "TListView",       "",           200, 150 },
                   { CT_PROGRESSBAR,"TProgressBar",    "",           150,  20 },
@@ -2927,6 +2940,13 @@ HB_FUNC( UI_ISAUTOPAGE )
 {
    HBControl * c = GetCtrl(1);
    hb_retl( c ? c->FAutoPage : 0 );
+}
+
+HB_FUNC( UI_SETPENDINGPAGEOWNER )
+{
+   HBControl * f = GetCtrl(1);
+   s_pendingFolder = f;
+   s_pendingPage   = hb_parni(2);
 }
 
 /* UI_TabControlNew( hForm, nLeft, nTop, nWidth, nHeight ) --> hCtrl */

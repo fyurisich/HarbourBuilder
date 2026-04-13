@@ -337,7 +337,7 @@ static function CreatePalette()
 
    // Cocoa tab (equivalent to Win32 in C++Builder)
    nTab := oPal:AddTab( "Cocoa" )
-   oPal:AddComp( nTab, "Tab",  "TabView",     33 )
+   oPal:AddComp( nTab, "Tab",  "TFolder",     33 )
    oPal:AddComp( nTab, "TV",   "OutlineView", 20 )
    oPal:AddComp( nTab, "LV",   "TableView",   21 )
    oPal:AddComp( nTab, "PB",   "ProgressBar", 22 )
@@ -607,6 +607,7 @@ static function RegenerateFormCode( cName, hForm )
    local cDatas := "", cCreate := "", cEvents := "", cVal
    local cExistingCode, aEvents, j, cEvName, cEvSuffix, cHandlerName
    local aHdrs, kk, nColCount, aColProps, nColW, nCtrlClr, nInterval
+   local cParent, nOwnerH
 
    // Read existing code to find declared event handlers
    cExistingCode := ""
@@ -657,51 +658,64 @@ static function RegenerateFormCode( cName, hForm )
          nCH := UI_GetProp( hCtrl, "nHeight" )
          cText := UI_GetProp( hCtrl, "cText" )
 
+         // Parent expression: "Self" or "::oFolder:aPages[n]" for owned ctrls
+         cParent := "Self"
+         if UI_GetCtrlOwner( hCtrl ) != 0
+            nOwnerH := UI_GetCtrlOwner( hCtrl )
+            for kk := 1 to UI_GetChildCount( hForm )
+               if UI_GetChild( hForm, kk ) == nOwnerH
+                  cParent := "::o" + UI_GetProp( nOwnerH, "cName" ) + ;
+                     ":aPages[ " + LTrim( Str( UI_GetCtrlPage( hCtrl ) + 1 ) ) + " ]"
+                  exit
+               endif
+            next
+         endif
+
          do case
             case nType == 1  // Label
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' SAY ::o' + cCtrlName + ' PROMPT "' + cText + '" OF Self SIZE ' + ;
+                  ' SAY ::o' + cCtrlName + ' PROMPT "' + cText + '" OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + e
             case nType == 2  // Edit
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' GET ::o' + cCtrlName + ' VAR "' + cText + '" OF Self SIZE ' + ;
+                  ' GET ::o' + cCtrlName + ' VAR "' + cText + '" OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
             case nType == 3  // Button
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' BUTTON ::o' + cCtrlName + ' PROMPT "' + cText + '" OF Self SIZE ' + ;
+                  ' BUTTON ::o' + cCtrlName + ' PROMPT "' + cText + '" OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
             case nType == 4  // CheckBox
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' CHECKBOX ::o' + cCtrlName + ' PROMPT "' + cText + '" OF Self SIZE ' + ;
+                  ' CHECKBOX ::o' + cCtrlName + ' PROMPT "' + cText + '" OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + e
             case nType == 5  // ComboBox
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' COMBOBOX ::o' + cCtrlName + ' OF Self SIZE ' + ;
+                  ' COMBOBOX ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
             case nType == 6  // GroupBox
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' GROUPBOX ::o' + cCtrlName + ' PROMPT "' + cText + '" OF Self SIZE ' + ;
+                  ' GROUPBOX ::o' + cCtrlName + ' PROMPT "' + cText + '" OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
             case nType == 7  // ListBox
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' LISTBOX ::o' + cCtrlName + ' OF Self SIZE ' + ;
+                  ' LISTBOX ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
             case nType == 8  // RadioButton
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' RADIOBUTTON ::o' + cCtrlName + ' PROMPT "' + cText + '" OF Self SIZE ' + ;
+                  ' RADIOBUTTON ::o' + cCtrlName + ' PROMPT "' + cText + '" OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + e
             case nType == 24  // Memo
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' MEMO ::o' + cCtrlName + ' OF Self SIZE ' + ;
+                  ' MEMO ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
-            case nType == 33  // TabControl
+            case nType == 33  // TFolder
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' TABCONTROL ::o' + cCtrlName + ' OF Self SIZE ' + ;
+                  ' FOLDER ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
                cVal := UI_GetProp( hCtrl, "aTabs" )
                if ! Empty( cVal )
                   aHdrs := hb_ATokens( cVal, "|" )
-                  cCreate += ' TABS '
+                  cCreate += ' PROMPTS '
                   for kk := 1 to Len( aHdrs )
                      if kk > 1; cCreate += ', '; endif
                      cCreate += '"' + AllTrim( aHdrs[kk] ) + '"'
@@ -710,7 +724,7 @@ static function RegenerateFormCode( cName, hForm )
                cCreate += e
             case nType == 79  // Browse
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' BROWSE ::o' + cCtrlName + ' OF Self SIZE ' + ;
+                  ' BROWSE ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
                cVal := UI_GetProp( hCtrl, "aColumns" )
                if ! Empty( cVal )
@@ -776,22 +790,6 @@ static function RegenerateFormCode( cName, hForm )
                      LTrim(Str(nCW)) + ',' + LTrim(Str(nCH)) + e
                endif
          endcase
-
-         // Emit TPageControl ownership if present
-         if UI_GetCtrlOwner( hCtrl ) != 0
-            nCtrlClr := UI_GetCtrlOwner( hCtrl )
-            // Find the owner control's name among form children
-            nCount := UI_GetChildCount( hForm )
-            for kk := 1 to nCount
-               if UI_GetChild( hForm, kk ) == nCtrlClr
-                  cCreate += '   ::o' + cCtrlName + ':oOwner := ::o' + ;
-                     UI_GetProp( nCtrlClr, "cName" ) + e
-                  cCreate += '   ::o' + cCtrlName + ':nPage := ' + ;
-                     LTrim( Str( UI_GetCtrlPage( hCtrl ) ) ) + e
-                  exit
-               endif
-            next
-         endif
 
          // Emit nClrPane if non-default (default = 0xFFFFFFFF = 4294967295)
          nCtrlClr := UI_GetProp( hCtrl, "nClrPane" )
@@ -1168,9 +1166,9 @@ static function RestoreFormFromCode( hForm, cCode )
             hCtrl := UI_RadioButtonNew( hForm, cText, nL, nT, nW, nH )
          case " MEMO " $ Upper( cTrim )
             hCtrl := UI_MemoNew( hForm, "", nL, nT, nW, nH )
-         case " TABCONTROL " $ Upper( cTrim )
+         case " FOLDER " $ Upper( cTrim )
             hCtrl := UI_TabControlNew( hForm, nL, nT, nW, nH )
-            nPos := At( "TABS ", Upper( cTrim ) )
+            nPos := At( "PROMPTS ", Upper( cTrim ) )
             if nPos > 0
                cText := SubStr( cTrim, nPos + 5 )
                cVal := ""
@@ -1220,6 +1218,30 @@ static function RestoreFormFromCode( hForm, cCode )
       // Set the control name
       if hCtrl != 0
          UI_SetProp( hCtrl, "cName", cName )
+
+         // Detect OF ::oFolder:aPages[n] clause -> set page ownership
+         nPos := At( ":aPages[", cTrim )
+         if nPos > 0
+            // Find "::o" just before :aPages
+            nPos2 := nPos
+            do while nPos2 > 1 .and. SubStr( cTrim, nPos2, 3 ) != "::o"
+               nPos2--
+            enddo
+            if nPos2 > 0 .and. SubStr( cTrim, nPos2, 3 ) == "::o"
+               cVal := AllTrim( SubStr( cTrim, nPos2 + 3, nPos - nPos2 - 3 ) )
+               // Find owner by name
+               for kk := 1 to UI_GetChildCount( hForm )
+                  if AllTrim( UI_GetProp( UI_GetChild( hForm, kk ), "cName" ) ) == cVal
+                     // Extract page index
+                     nPos2 := At( "[", SubStr( cTrim, nPos ) )
+                     nPos2 := nPos + nPos2
+                     nColCount := Val( AllTrim( SubStr( cTrim, nPos2 ) ) )
+                     UI_SetCtrlOwner( hCtrl, UI_GetChild( hForm, kk ), nColCount - 1 )
+                     exit
+                  endif
+               next
+            endif
+         endif
       endif
    next
 
@@ -1249,20 +1271,7 @@ static function RestoreFormFromCode( hForm, cCode )
       next
       if hCtrl == 0; loop; endif
 
-      if cVal == "oOwner"
-         // cText is "::oTabCtrlName" -> resolve to handle, set owner
-         if Left( cText, 3 ) == "::o"
-            cName := AllTrim( SubStr( cText, 4 ) )
-            for kk := 1 to UI_GetChildCount( hForm )
-               if AllTrim( UI_GetProp( UI_GetChild( hForm, kk ), "cName" ) ) == cName
-                  UI_SetCtrlOwner( hCtrl, UI_GetChild( hForm, kk ), UI_GetCtrlPage( hCtrl ) )
-                  exit
-               endif
-            next
-         endif
-      elseif cVal == "nPage"
-         UI_SetCtrlOwner( hCtrl, UI_GetCtrlOwner( hCtrl ), Val( cText ) )
-      elseif cVal == "nClrPane" .or. cVal == "Color"
+      if cVal == "nClrPane" .or. cVal == "Color"
          UI_SetProp( hCtrl, "nClrPane", Val( cText ) )
       elseif cVal == "oFont"
          if Left( cText, 1 ) == '"'
@@ -1497,7 +1506,7 @@ static function OnComponentDrop( hForm, nType, nL, nT, nW, nH )
       "Image", "Shape", "Bevel", "", "", "", "TreeView", "TableView", ;
       "ProgressBar", "TextView", "Memo", "Panel", "ScrollBar", ;
       "SpeedButton", "MaskEdit", "StringGrid", "ScrollBox", ;
-      "StaticText", "LabeledEdit", "TabView", "Slider", ;
+      "StaticText", "LabeledEdit", "Folder", "Slider", ;
       "Stepper", "DatePicker", "Calendar", "Timer", "PaintBox", ;
       "OpenPanel", "SavePanel", "FontPanel", "ColorPanel", ;
       "FindPanel", "ReplacePanel", ;

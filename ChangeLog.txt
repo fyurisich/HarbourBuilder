@@ -1,6 +1,42 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-13 (macOS: TFolder + TFolderPage, FiveWin-style FOLDER ... PROMPTS syntax)
+
+  REFACTOR
+  - Renamed TTabControl -> TFolder and adopted FiveWin-style syntax:
+      @ T, L FOLDER ::oFolder1 OF Self SIZE W, H PROMPTS "A", "B"
+      @ T, L BUTTON ::oBtn1 PROMPT "..." OF ::oFolder1:aPages[1] SIZE w, h
+  - New TFolderPage class: lightweight container for a tab page. Its
+    `:hCpp` ACCESS signals a pending page-owner to the backend and returns
+    the host form's handle, so controls read naturally as children of the
+    page while the backend stays flat (ownership applied in addChild).
+  - `aPages` array (one TFolderPage per tab) replaces the separate
+    `:oOwner` / `:nPage` metadata in generated code.
+  - Palette entry: TFolder (tooltip + class), default name "Folder1".
+  - hbbuilder.ch: `#xcommand @ T,L FOLDER ... OF ... SIZE ... PROMPTS ...`.
+
+  FEATURES
+  - Added TTabControl HB_FUNC `UI_SetPendingPageOwner(hFolder, nPage)`:
+    queued by TFolderPage:hCpp and consumed by the next addChild so the
+    newly added control inherits the page ownership transparently.
+  - Codegen: emits `FOLDER ... PROMPTS ...` and for owned controls the
+    parent expression becomes `::oFolder:aPages[ n+1 ]`.
+  - Parser: recognizes `FOLDER ... PROMPTS ...` lines and detects
+    `OF ::oFolder:aPages[ n ]` in control creation lines to restore
+    ownership via `UI_SetCtrlOwner`.
+
+  FILES
+  - source/core/classes.prg: TFolderPage, TFolder (aPages, aPrompts,
+    New, SetPrompts); TControl gained `oOwner`/`nPage` ASSIGN helpers.
+  - include/hbbuilder.ch: FOLDER xcommand with PROMPTS.
+  - source/backends/cocoa/cocoa_core.m: UI_SetPendingPageOwner, pending
+    owner applied in addChild, palette entry renamed to TFolder.
+  - source/hbbuilder_macos.prg: codegen emits FOLDER/PROMPTS + parent
+    expression `::oFolder:aPages[n]`; parser recognizes both the new
+    command and the `:aPages[n]` clause; old `oOwner`/`nPage` emission
+    removed; default name generator renamed TabView -> Folder.
+
 2026-04-13 (macOS: TTabControl -> TPageControl with auto-page TPanels and ownership)
 
   FEATURES

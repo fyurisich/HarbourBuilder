@@ -50,6 +50,13 @@ CLASS TControl
    ACCESS nClrPane         INLINE UI_GetProp( ::hCpp, "nClrPane" )
    ASSIGN nClrPane( n )    INLINE UI_SetProp( ::hCpp, "nClrPane", n )
 
+   // TPageControl ownership
+   ASSIGN oOwner( o )      INLINE UI_SetCtrlOwner( ::hCpp, ;
+                                  If( o == nil, 0, o:hCpp ), ;
+                                  UI_GetCtrlPage( ::hCpp ) )
+   ASSIGN nPage( n )       INLINE UI_SetCtrlOwner( ::hCpp, ;
+                                  UI_GetCtrlOwner( ::hCpp ), n )
+
 ENDCLASS
 
 //----------------------------------------------------------------------------//
@@ -423,6 +430,73 @@ return Self
 
 //----------------------------------------------------------------------------//
 // TBrowse - Data grid control
+//----------------------------------------------------------------------------//
+
+// TFolderPage — lightweight container representing one tab page of a TFolder.
+// Its :hCpp ACCESS sets a pending page-owner on the backend and returns the
+// host form's handle, so controls created with `OF ::oFolder:aPages[n]`
+// attach as form children and then automatically inherit page ownership.
+
+CLASS TFolderPage
+
+   DATA oFolder   INIT nil
+   DATA nPage     INIT 0        // 0-based
+
+   METHOD New( oFolder, nPage )
+   ACCESS hCpp
+
+ENDCLASS
+
+METHOD New( oFolder, nPage ) CLASS TFolderPage
+   ::oFolder := oFolder
+   ::nPage   := nPage
+return Self
+
+METHOD hCpp CLASS TFolderPage
+   UI_SetPendingPageOwner( ::oFolder:hCpp, ::nPage )
+return ::oFolder:oParent:hCpp
+
+//----------------------------------------------------------------------------//
+
+CLASS TFolder INHERIT TControl
+
+   DATA aPages   INIT {}
+   DATA aPrompts   INIT {}
+
+   METHOD New( oParent, nLeft, nTop, nWidth, nHeight )
+   METHOD SetPrompts( aLabels )
+
+ENDCLASS
+
+METHOD New( oParent, nLeft, nTop, nWidth, nHeight ) CLASS TFolder
+
+   if nWidth  == nil; nWidth  := 200; endif
+   if nHeight == nil; nHeight := 150; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_TabControlNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight )
+
+return Self
+
+METHOD SetPrompts( aLabels ) CLASS TFolder
+
+   local cVal := "", i
+   if aLabels != nil .and. Len( aLabels ) > 0
+      for i := 1 to Len( aLabels )
+         if i > 1; cVal += "|"; endif
+         cVal += aLabels[i]
+      next
+      ::aPrompts := aLabels
+      UI_SetProp( ::hCpp, "aTabs", cVal )
+      /* Build aPages: one TFolderPage per tab */
+      ::aPages := {}
+      for i := 1 to Len( aLabels )
+         AAdd( ::aPages, TFolderPage():New( Self, i - 1 ) )
+      next
+   endif
+
+return Self
+
 //----------------------------------------------------------------------------//
 
 CLASS TBrowse INHERIT TControl
