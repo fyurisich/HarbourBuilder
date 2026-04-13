@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial: Trabalhando com Formularios - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a class="logo" href="index.html">
+    <span>HB</span> HarbourBuilder Docs
+  </a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Ola Mundo</a>
+    <a href="tutorial-forms.html" class="active">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span> Tutoriais <span>/</span> Trabalhando com Formularios
+</div>
+
+<h1>Tutorial: Trabalhando com Formularios</h1>
+<p>A maioria das aplicacoes do mundo real precisa de mais de uma janela. Neste tutorial voce vai construir
+um projeto multi-formulario com um formulario principal e um dialogo de configuracoes. Voce aprendera a abrir formularios
+modalmente, passar dados entre eles e configurar propriedades comuns de formularios.</p>
+
+<h2>Passo 1: Configurar o Projeto</h2>
+<ol>
+  <li>Crie um novo projeto chamado <code>MultiFormDemo</code> via <strong>Arquivo &rarr; Novo Projeto</strong>.</li>
+  <li>A IDE cria <code>main.prg</code> com um formulario inicial.</li>
+  <li>Vamos adicionar um segundo arquivo fonte para o formulario de configuracoes no proximo passo.</li>
+</ol>
+
+<h2>Passo 2: Projetar o Formulario Principal</h2>
+<ol>
+  <li>Abra <code>main.prg</code> no Designer de Formularios.</li>
+  <li>Defina o titulo do formulario como <code>"Demo Multi-Formulario"</code> e tamanho como <code>700, 500</code>.</li>
+  <li>Adicione um <strong>Rotulo</strong> no topo para exibir o nome do usuario atual &mdash; defina <code>cValue</code> como <code>"Usuario: (nenhum)"</code>.</li>
+  <li>Adicione um <strong>Botao</strong> com <code>cPrompt</code> definido como <code>"Abrir Configuracoes"</code>.</li>
+</ol>
+
+<p>Seu codigo do formulario principal ficara assim:</p>
+
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oForm, oLblUser, oBtnSettings
+
+   <span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Demo Multi-Formulario"</span> ;
+      <span class="cmd">SIZE</span> <span class="nb">700</span>, <span class="nb">500</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+   @ <span class="nb">30</span>, <span class="nb">50</span> <span class="cmd">LABEL</span> oLblUser <span class="cmd">VALUE</span> <span class="st">"Usuario: (nenhum)"</span> ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">300</span>, <span class="nb">24</span>
+
+   @ <span class="nb">80</span>, <span class="nb">50</span> <span class="cmd">BUTTON</span> oBtnSettings <span class="cmd">PROMPT</span> <span class="st">"Abrir Configuracoes"</span> ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">140</span>, <span class="nb">36</span> ;
+      <span class="cmd">ACTION</span> <span class="fn">AbrirConfig</span>( oForm, oLblUser )
+
+   <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Passo 3: Criar o Formulario de Configuracoes</h2>
+<ol>
+  <li>Selecione <strong>Arquivo &rarr; Novo Formulario</strong> para adicionar um segundo formulario ao projeto. Nomeie-o <code>settings.prg</code>.</li>
+  <li>No Designer de Formularios para <code>settings.prg</code>, defina o titulo como <code>"Configuracoes"</code> e tamanho como <code>400, 300</code>.</li>
+  <li>Adicione um <strong>Rotulo</strong> com <code>cValue</code> <code>"Seu nome:"</code> na linha 30, coluna 30.</li>
+  <li>Adicione uma <strong>Caixa de Texto</strong> (<code>TGet</code>) ao lado do rotulo para o usuario digitar o nome.</li>
+  <li>Adicione uma <strong>Caixa de Selecao</strong> abaixo com <code>cPrompt</code> <code>"Ativar modo escuro"</code>.</li>
+  <li>Adicione dois botoes: <strong>"OK"</strong> e <strong>"Cancelar"</strong> na parte inferior.</li>
+</ol>
+
+<h2>Passo 4: Implementar ShowModal e Passagem de Dados</h2>
+<p>A tecnica principal e chamar <code>ShowModal()</code> no formulario de configuracoes. Isso bloqueia o formulario principal
+ate que o usuario feche o dialogo. Apos o formulario modal fechar, voce le de volta os valores que o
+usuario informou.</p>
+
+<pre><span class="kw">static function</span> <span class="fn">AbrirConfig</span>( oMainForm, oLblUser )
+
+   <span class="kw">local</span> oSettings, oGetName, oChkDark, oBtnOK, oBtnCancel
+   <span class="kw">local</span> cName := <span class="st">""</span>, lDark := .F., nResult
+
+   <span class="cmd">DEFINE FORM</span> oSettings <span class="cmd">TITLE</span> <span class="st">"Configuracoes"</span> ;
+      <span class="cmd">SIZE</span> <span class="nb">400</span>, <span class="nb">300</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span> ;
+      <span class="cmd">STYLE</span> <span class="st">"dialog"</span>
+
+   @ <span class="nb">30</span>, <span class="nb">30</span> <span class="cmd">LABEL</span> oLbl <span class="cmd">VALUE</span> <span class="st">"Seu nome:"</span> ;
+      <span class="cmd">OF</span> oSettings <span class="cmd">SIZE</span> <span class="nb">100</span>, <span class="nb">24</span>
+
+   @ <span class="nb">30</span>, <span class="nb">140</span> <span class="cmd">GET</span> oGetName <span class="cmd">VAR</span> cName ;
+      <span class="cmd">OF</span> oSettings <span class="cmd">SIZE</span> <span class="nb">220</span>, <span class="nb">24</span>
+
+   @ <span class="nb">70</span>, <span class="nb">30</span> <span class="cmd">CHECKBOX</span> oChkDark <span class="cmd">VAR</span> lDark ;
+      <span class="cmd">PROMPT</span> <span class="st">"Ativar modo escuro"</span> ;
+      <span class="cmd">OF</span> oSettings <span class="cmd">SIZE</span> <span class="nb">200</span>, <span class="nb">24</span>
+
+   @ <span class="nb">220</span>, <span class="nb">180</span> <span class="cmd">BUTTON</span> oBtnOK <span class="cmd">PROMPT</span> <span class="st">"OK"</span> ;
+      <span class="cmd">OF</span> oSettings <span class="cmd">SIZE</span> <span class="nb">90</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> ( oSettings:<span class="fn">nModalResult</span> := <span class="nb">1</span>, oSettings:<span class="fn">Close</span>() )
+
+   @ <span class="nb">220</span>, <span class="nb">280</span> <span class="cmd">BUTTON</span> oBtnCancel <span class="cmd">PROMPT</span> <span class="st">"Cancelar"</span> ;
+      <span class="cmd">OF</span> oSettings <span class="cmd">SIZE</span> <span class="nb">90</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> ( oSettings:<span class="fn">nModalResult</span> := <span class="nb">0</span>, oSettings:<span class="fn">Close</span>() )
+
+   nResult := oSettings:<span class="fn">ShowModal</span>( oMainForm )
+
+   <span class="kw">if</span> nResult == <span class="nb">1</span>
+      oLblUser:<span class="fn">SetValue</span>( <span class="st">"Usuario: "</span> + cName )
+      <span class="kw">if</span> lDark
+         oMainForm:<span class="fn">SetDarkMode</span>( .T. )
+      <span class="kw">else</span>
+         oMainForm:<span class="fn">SetDarkMode</span>( .F. )
+      <span class="kw">endif</span>
+   <span class="kw">endif</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<div class="info-box tip">
+  <strong>ShowModal vs. Show</strong>
+  <p>Use <code>ShowModal( oParent )</code> quando o usuario deve completar o dialogo antes de retornar ao pai.
+  Use <code>Show()</code> para janelas nao bloqueantes entre as quais o usuario pode alternar livremente.</p>
+</div>
+
+<h2>Passo 5: Referencia de Propriedades do Formulario</h2>
+<p>Aqui estao as propriedades de formulario mais usadas que voce pode definir no Inspetor de Objetos ou no codigo:</p>
+
+<table style="width:100%; border-collapse:collapse; margin:1em 0;">
+  <tr style="border-bottom:1px solid #444;">
+    <th style="text-align:left; padding:8px;">Propriedade</th>
+    <th style="text-align:left; padding:8px;">Tipo</th>
+    <th style="text-align:left; padding:8px;">Descricao</th>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>cTitle</code></td>
+    <td style="padding:8px;">String</td>
+    <td style="padding:8px;">Texto exibido na barra de titulo do formulario.</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>nWidth</code> / <code>nHeight</code></td>
+    <td style="padding:8px;">Numerico</td>
+    <td style="padding:8px;">Dimensoes do formulario em pixels.</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>lMaximize</code></td>
+    <td style="padding:8px;">Logico</td>
+    <td style="padding:8px;">Se o botao de maximizar esta habilitado.</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>lMinimize</code></td>
+    <td style="padding:8px;">Logico</td>
+    <td style="padding:8px;">Se o botao de minimizar esta habilitado.</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>lResizable</code></td>
+    <td style="padding:8px;">Logico</td>
+    <td style="padding:8px;">Se o usuario pode redimensionar o formulario.</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>cStyle</code></td>
+    <td style="padding:8px;">String</td>
+    <td style="padding:8px;"><code>"normal"</code>, <code>"dialog"</code> ou <code>"toolwindow"</code>.</td>
+  </tr>
+  <tr>
+    <td style="padding:8px;"><code>nModalResult</code></td>
+    <td style="padding:8px;">Numerico</td>
+    <td style="padding:8px;">Valor de retorno apos <code>ShowModal()</code>. Defina antes de chamar <code>Close()</code>.</td>
+  </tr>
+</table>
+
+<h2>Passo 6: Compilar e Testar</h2>
+<ol>
+  <li>Pressione <strong>F9</strong> para compilar e executar.</li>
+  <li>Clique em <strong>"Abrir Configuracoes"</strong> no formulario principal &mdash; o dialogo de configuracoes aparece modalmente.</li>
+  <li>Digite um nome, alterne a caixa de selecao e clique em <strong>OK</strong>.</li>
+  <li>O rotulo do formulario principal atualiza para mostrar o nome informado.</li>
+  <li>Abra o dialogo novamente e clique em <strong>Cancelar</strong> &mdash; o formulario principal permanece inalterado.</li>
+</ol>
+
+<!-- Screenshot placeholder: Main form showing "User: Antonio" after the settings dialog was submitted -->
+
+<h2>Fluxo do Ciclo de Vida do Formulario</h2>
+
+<div class="mermaid">
+graph TD
+    A["Formulario Principal<br/>ACTIVATE FORM CENTERED"] --> B["Usuario clica em<br/>Abrir Configuracoes"]
+    B --> C["Formulario de Configuracoes<br/>ShowModal( oMainForm )"]
+    C --> D{"Acao do usuario"}
+    D -->|"OK"| E["nModalResult = 1<br/>Close()"]
+    D -->|"Cancelar"| F["nModalResult = 0<br/>Close()"]
+    E --> G["Formulario principal le<br/>cName e lDark"]
+    F --> H["Formulario principal ignora<br/>valores do dialogo"]
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style C fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style E fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style F fill:#f0883e,stroke:#d18616,color:#0d1117
+</div>
+
+<div class="info-box tip">
+  <strong>Proximo passo</strong>
+  <p>Agora que voce pode trabalhar com multiplos formularios, continue para o tutorial
+  <a href="tutorial-events.html">Tratamento de Eventos</a> para aprender sobre todos os tipos de eventos
+  disponiveis no HarbourBuilder.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

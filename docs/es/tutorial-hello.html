@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial: Hola Mundo - Documentacion de HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a class="logo" href="index.html">
+    <span>HB</span> HarbourBuilder Docs
+  </a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros Pasos</h3>
+    <a href="index.html">Descripcion General</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicionales (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a Datos (9)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de Formularios</a>
+    <a href="object-inspector.html">Inspector de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Herramientas Bidireccionales</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente de IA</a>
+    <a href="build-run.html">Compilar y Ejecutar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriales</h3>
+    <a href="tutorial-hello.html" class="active">Hola Mundo</a>
+    <a href="tutorial-forms.html">Trabajar con Formularios</a>
+    <a href="tutorial-events.html">Manejo de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Base de Datos</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracion de IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propiedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Puente HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planeado</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planeado</span></a>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span> Tutoriales <span>/</span> Hola Mundo
+</div>
+
+<h1>Tutorial: Hola Mundo</h1>
+<p>En este tutorial construira su primera aplicacion HarbourBuilder desde cero &mdash; una ventana simple con un boton que muestra un saludo. Al final, comprendera el flujo de trabajo basico del proyecto: crear, disenar, codificar, compilar y ejecutar.</p>
+
+<h2>Paso 1: Crear un Nuevo Proyecto</h2>
+<ol>
+  <li>Inicie <strong>HarbourBuilder</strong>.</li>
+  <li>Seleccione <strong>Archivo &rarr; Nuevo Proyecto</strong> desde la barra de menu.</li>
+  <li>En el dialogo Nuevo Proyecto, elija una carpeta (ej. <code>C:\Projects\HolaMundo</code>) e ingrese el nombre del proyecto <code>HolaMundo</code>.</li>
+  <li>Haga clic en <strong>Aceptar</strong>. El IDE crea un archivo de proyecto <code>HolaMundo.hbp</code> y un archivo fuente <code>main.prg</code> con una plantilla inicial.</li>
+</ol>
+
+<div class="info-box tip">
+  <strong>Estructura de carpetas del proyecto</strong>
+  <p>HarbourBuilder crea una carpeta limpia con su archivo de proyecto <code>.hbp</code> y un fuente <code>main.prg</code>. Toda la salida compilada va a una subcarpeta <code>build/</code> que puede agregar con seguridad a <code>.gitignore</code>.</p>
+</div>
+
+<h2>Paso 2: Abrir el Disenador de Formularios</h2>
+<ol>
+  <li>En el panel <strong>Gestor de Proyectos</strong>, haga doble clic en <code>main.prg</code>.</li>
+  <li>El <strong>Disenador de Formularios</strong> se abre mostrando un formulario vacio titulado "Mi Primera App".</li>
+  <li>El <strong>Inspector de Objetos</strong> a la izquierda muestra las propiedades del formulario.</li>
+  <li>Cambie la propiedad <code>cTitle</code> a <code>"Hola Mundo"</code> y presione Enter &mdash; la barra de titulo del formulario se actualiza inmediatamente.</li>
+</ol>
+
+<h2>Paso 3: Anadir un Boton</h2>
+<ol>
+  <li>Haga clic en la pestania <strong>Estandar</strong> en la <strong>Paleta de Componentes</strong> en la parte superior del IDE.</li>
+  <li>Haga clic en el icono <strong>Boton</strong> en la paleta.</li>
+  <li>Haga clic en la superficie del formulario cerca del centro &mdash; aparece un boton.</li>
+  <li>En el Inspector de Objetos, establezca la propiedad <code>cPrompt</code> del boton a <code>"Decir Hola"</code>.</li>
+  <li>Opcionalmente ajuste las propiedades <code>nTop</code>, <code>nLeft</code>, <code>nWidth</code> y <code>nHeight</code> para posicionar y dimensionar el boton.</li>
+</ol>
+
+<h2>Paso 4: Anadir una Etiqueta</h2>
+<ol>
+  <li>Desde la pestania <strong>Estandar</strong> de la paleta, haga clic en el icono <strong>Etiqueta</strong>.</li>
+  <li>Haga clic en el formulario encima del boton para colocar la etiqueta.</li>
+  <li>Establezca la propiedad <code>cValue</code> de la etiqueta a <code>"Pulse el boton de abajo!"</code>.</li>
+  <li>Establezca <code>nWidth</code> a <code>300</code> para que el texto quepa comodamente.</li>
+</ol>
+
+<h2>Paso 5: Establecer el Evento OnClick</h2>
+<ol>
+  <li>Seleccione el boton en el formulario (haga clic una vez).</li>
+  <li>En el Inspector de Objetos, cambie a la pestania <strong>Eventos</strong>.</li>
+  <li>Haga doble clic en la fila del evento <code>OnClick</code>. El IDE cambia al Editor de Codigo y crea un esqueleto de manejador.</li>
+  <li>Complete el manejador para que actualice el texto de la etiqueta:</li>
+</ol>
+
+<pre>oBtn:<span class="fn">OnClick</span> := { || oLabel:<span class="fn">SetValue</span>( <span class="st">"Hola desde HarbourBuilder!"</span> ) }</pre>
+
+<div class="info-box tip">
+  <strong>Bloques de codigo vs. llamadas a funciones</strong>
+  <p>Para expresiones simples de una linea, un bloque de codigo en linea <code>{ || ... }</code> es perfecto. Para logica mas compleja, llame a una <code>static function</code> separada desde el bloque. Vea el tutorial de <a href="tutorial-events.html">Manejo de Eventos</a> para mas detalles.</p>
+</div>
+
+<h2>Paso 6: Compilar y Ejecutar</h2>
+<ol>
+  <li>Presione <strong>F9</strong> (o seleccione <strong>Ejecutar &rarr; Compilar y Ejecutar</strong>).</li>
+  <li>Observe el panel <strong>Mensajes</strong> en la parte inferior &mdash; muestra los pasos de preprocesamiento, compilacion, enlazado y lanzamiento.</li>
+  <li>Aparece la ventana de su aplicacion. Haga clic en el boton <strong>"Decir Hola"</strong>.</li>
+  <li>El texto de la etiqueta cambia a <strong>"Hola desde HarbourBuilder!"</strong>.</li>
+</ol>
+
+<h2>Listado Completo del Codigo</h2>
+<p>Aqui esta el <code>main.prg</code> completo para la aplicacion Hola Mundo:</p>
+
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oForm, oBtn, oLabel
+
+   <span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Hola Mundo"</span> ;
+      <span class="cmd">SIZE</span> <span class="nb">640</span>, <span class="nb">480</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+   @ <span class="nb">30</span>, <span class="nb">50</span> <span class="cmd">LABEL</span> oLabel <span class="cmd">VALUE</span> <span class="st">"Pulse el boton de abajo!"</span> ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">300</span>, <span class="nb">24</span>
+
+   @ <span class="nb">70</span>, <span class="nb">50</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"Decir Hola"</span> ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">120</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> oLabel:<span class="fn">SetValue</span>( <span class="st">"Hola desde HarbourBuilder!"</span> )
+
+   <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Que Aprendio</h2>
+<ul>
+  <li>Como crear un nuevo proyecto HarbourBuilder.</li>
+  <li>Como usar el Disenador de Formularios para colocar controles visualmente.</li>
+  <li>Como establecer propiedades mediante el Inspector de Objetos.</li>
+  <li>Como vincular un manejador de evento <code>OnClick</code>.</li>
+  <li>Como compilar y ejecutar su aplicacion con <strong>F9</strong>.</li>
+</ul>
+
+<div class="info-box tip">
+  <strong>Siguiente paso</strong>
+  <p>Listo para mas? Continue al tutorial <a href="tutorial-forms.html">Trabajar con Formularios</a> para aprender como crear aplicaciones con multiples formularios y dialogos modales.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

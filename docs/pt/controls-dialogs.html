@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles de Diálogo - HarbourBuilder Docs</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar na documentação..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/controls-dialogs.html">EN</a>
+    <a class="lang-btn" href="../es/controls-dialogs.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visão Geral</a>
+    <a href="quickstart.html">Início Rápido</a>
+    <a href="installation.html">Instalação</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrão (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html" class="active">Diálogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Thread (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Empresarial (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formulários</a>
+    <a href="code-editor.html">Editor de Código</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Documentação</a> <span>/</span>
+  <a href="controls-standard.html">Paleta de Componentes</a> <span>/</span> Diálogos
+</div>
+
+<h1>Controles de Diálogo</h1>
+<p>A aba Diálogos fornece componentes não visuais que invocam caixas de diálogo padrão do sistema operacional. Coloque-os em um formulário e chame o método <code>Execute()</code> para exibir a diálogo nativa.</p>
+
+<!-- TOpenDialog -->
+<h2 id="opendialog">TOpenDialog <span class="badge new">CT_OPENDIALOG = 40</span></h2>
+<p>Diálogo padrão de abertura de arquivo. Permite ao usuário navegar e selecionar um ou mais arquivos para abrir.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>cFileName</code></td><td>String</td><td>""</td><td>Caminho do arquivo selecionado (após Execute)</td></tr>
+  <tr><td><code>cFilter</code></td><td>String</td><td>"All files (*.*)|*.*"</td><td>Filtro de tipo de arquivo (pares separados por pipe)</td></tr>
+  <tr><td><code>nFilterIndex</code></td><td>Numeric</td><td>1</td><td>Índice do filtro padrão</td></tr>
+  <tr><td><code>cTitle</code></td><td>String</td><td>"Open"</td><td>Texto da barra de título da diálogo</td></tr>
+  <tr><td><code>cInitialDir</code></td><td>String</td><td>""</td><td>Diretório inicial</td></tr>
+  <tr><td><code>cDefaultExt</code></td><td>String</td><td>""</td><td>Extensão de arquivo padrão</td></tr>
+  <tr><td><code>lMultiSelect</code></td><td>Logical</td><td>.F.</td><td>Permitir seleção de múltiplos arquivos</td></tr>
+  <tr><td><code>aFileNames</code></td><td>Array</td><td>{}</td><td>Arquivos selecionados (quando multisseleção)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnClose</code></td><td>Ação</td><td>Diálogo fechada (após o usuário selecionar ou cancelar)</td></tr>
+</table>
+
+<table>
+  <tr><th>Método</th><th>Retorno</th><th>Descrição</th></tr>
+  <tr><td><code>Execute()</code></td><td>Logical</td><td>Exibe a diálogo. Retorna .T. se o usuário selecionou um arquivo, .F. se cancelou.</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Diálogo Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>GetOpenFileName() / IFileOpenDialog</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSOpenPanel</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkFileChooserDialog (GTK_FILE_CHOOSER_ACTION_OPEN)</td></tr>
+</table>
+
+<pre><span class="cm">// Abrir diálogo de arquivo com filtros</span>
+<span class="cmd">DEFINE</span> <span class="cmd">OPENDIALOG</span> oDlg
+oDlg:<span class="fn">cTitle</span> := <span class="st">"Selecionar Imagem"</span>
+oDlg:<span class="fn">cFilter</span> := <span class="st">"Imagens (*.png;*.jpg)|*.png;*.jpg|Todos arquivos (*.*)|*.*"</span>
+oDlg:<span class="fn">cInitialDir</span> := <span class="st">"C:\Pictures"</span>
+<span class="cmd">IF</span> oDlg:<span class="fn">Execute</span>()
+   MsgInfo( <span class="st">"Selecionado: "</span> + oDlg:<span class="fn">cFileName</span> )
+<span class="cmd">ENDIF</span></pre>
+
+<!-- TSaveDialog -->
+<h2 id="savedialog">TSaveDialog <span class="badge new">CT_SAVEDIALOG = 41</span></h2>
+<p>Diálogo padrão de salvamento de arquivo. Solicita ao usuário que escolha um nome de arquivo e local para salvar.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>cFileName</code></td><td>String</td><td>""</td><td>Caminho do arquivo selecionado/inserido</td></tr>
+  <tr><td><code>cFilter</code></td><td>String</td><td>"All files (*.*)|*.*"</td><td>Filtro de tipo de arquivo</td></tr>
+  <tr><td><code>nFilterIndex</code></td><td>Numeric</td><td>1</td><td>Índice do filtro padrão</td></tr>
+  <tr><td><code>cTitle</code></td><td>String</td><td>"Save As"</td><td>Título da diálogo</td></tr>
+  <tr><td><code>cInitialDir</code></td><td>String</td><td>""</td><td>Diretório inicial</td></tr>
+  <tr><td><code>cDefaultExt</code></td><td>String</td><td>""</td><td>Extensão padrão (adicionada se não digitada)</td></tr>
+  <tr><td><code>lOverwritePrompt</code></td><td>Logical</td><td>.T.</td><td>Avisar ao sobrescrever arquivo existente</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnClose</code></td><td>Ação</td><td>Diálogo fechada</td></tr>
+</table>
+
+<table>
+  <tr><th>Método</th><th>Retorno</th><th>Descrição</th></tr>
+  <tr><td><code>Execute()</code></td><td>Logical</td><td>Exibe a diálogo. Retorna .T. se o usuário confirmou, .F. se cancelou.</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Diálogo Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>GetSaveFileName() / IFileSaveDialog</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSSavePanel</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkFileChooserDialog (GTK_FILE_CHOOSER_ACTION_SAVE)</td></tr>
+</table>
+
+<pre><span class="cm">// Salvar documento com extensão padrão</span>
+<span class="cmd">DEFINE</span> <span class="cmd">SAVEDIALOG</span> oDlg
+oDlg:<span class="fn">cTitle</span> := <span class="st">"Salvar Relatório"</span>
+oDlg:<span class="fn">cFilter</span> := <span class="st">"PDF (*.pdf)|*.pdf|HTML (*.html)|*.html"</span>
+oDlg:<span class="fn">cDefaultExt</span> := <span class="st">"pdf"</span>
+<span class="cmd">IF</span> oDlg:<span class="fn">Execute</span>()
+   SaveReport( oDlg:<span class="fn">cFileName</span> )
+<span class="cmd">ENDIF</span></pre>
+
+<!-- TFontDialog -->
+<h2 id="fontdialog">TFontDialog <span class="badge new">CT_FONTDIALOG = 42</span></h2>
+<p>Diálogo padrão de seleção de fonte. Permite ao usuário escolher uma fonte, estilo, tamanho e cor.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>cFontName</code></td><td>String</td><td>""</td><td>Nome da fonte selecionada</td></tr>
+  <tr><td><code>nFontSize</code></td><td>Numeric</td><td>10</td><td>Tamanho da fonte selecionada (pontos)</td></tr>
+  <tr><td><code>lBold</code></td><td>Logical</td><td>.F.</td><td>Estilo negrito selecionado</td></tr>
+  <tr><td><code>lItalic</code></td><td>Logical</td><td>.F.</td><td>Estilo itálico selecionado</td></tr>
+  <tr><td><code>lUnderline</code></td><td>Logical</td><td>.F.</td><td>Estilo sublinhado selecionado</td></tr>
+  <tr><td><code>nColor</code></td><td>Color</td><td>CLR_BLACK</td><td>Cor da fonte selecionada</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnClose</code></td><td>Ação</td><td>Diálogo fechada</td></tr>
+</table>
+
+<table>
+  <tr><th>Método</th><th>Retorno</th><th>Descrição</th></tr>
+  <tr><td><code>Execute()</code></td><td>Logical</td><td>Exibe a diálogo de fonte. Retorna .T. se o usuário selecionou uma fonte.</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Diálogo Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>ChooseFont() (struct CHOOSEFONT)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSFontPanel</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkFontChooserDialog</td></tr>
+</table>
+
+<!-- TColorDialog -->
+<h2 id="colordialog">TColorDialog <span class="badge new">CT_COLORDIALOG = 43</span></h2>
+<p>Diálogo padrão de seleção de cor. Permite ao usuário selecionar uma cor de uma paleta ou definir cores personalizadas.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>nColor</code></td><td>Color</td><td>CLR_BLACK</td><td>Valor da cor selecionada</td></tr>
+  <tr><td><code>aCustomColors</code></td><td>Array</td><td>{}</td><td>Array de valores de cores personalizadas</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnClose</code></td><td>Ação</td><td>Diálogo fechada</td></tr>
+</table>
+
+<table>
+  <tr><th>Método</th><th>Retorno</th><th>Descrição</th></tr>
+  <tr><td><code>Execute()</code></td><td>Logical</td><td>Exibe a diálogo de cor. Retorna .T. se o usuário selecionou uma cor.</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Diálogo Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>ChooseColor() (struct CHOOSECOLOR)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSColorPanel</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkColorChooserDialog</td></tr>
+</table>
+
+<pre><span class="cm">// Escolher uma cor de fundo</span>
+<span class="cmd">DEFINE</span> <span class="cmd">COLORDIALOG</span> oDlg
+<span class="cmd">IF</span> oDlg:<span class="fn">Execute</span>()
+   oForm:<span class="fn">nClrPane</span> := oDlg:<span class="fn">nColor</span>
+   oForm:<span class="fn">Refresh</span>()
+<span class="cmd">ENDIF</span></pre>
+
+<!-- TFindDialog -->
+<h2 id="finddialog">TFindDialog <span class="badge new">CT_FINDDIALOG = 44</span></h2>
+<p>Diálogo de pesquisa sem modo. Fornece uma interface de busca de texto com opções para diferenciar maiúsculas/minúsculas e direção.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>cFindText</code></td><td>String</td><td>""</td><td>Texto a pesquisar</td></tr>
+  <tr><td><code>lMatchCase</code></td><td>Logical</td><td>.F.</td><td>Pesquisa sensível a maiúsculas/minúsculas</td></tr>
+  <tr><td><code>lWholeWord</code></td><td>Logical</td><td>.F.</td><td>Corresponder apenas palavras inteiras</td></tr>
+  <tr><td><code>lSearchDown</code></td><td>Logical</td><td>.T.</td><td>Direção da pesquisa (para baixo = avançar)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnFind</code></td><td>Ação</td><td>Usuário clicou em Localizar Próximo</td></tr>
+  <tr><td><code>OnClose</code></td><td>Ação</td><td>Diálogo fechada</td></tr>
+</table>
+
+<table>
+  <tr><th>Método</th><th>Retorno</th><th>Descrição</th></tr>
+  <tr><td><code>Execute()</code></td><td>Logical</td><td>Exibe a diálogo de pesquisa sem modo.</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Diálogo Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>FindText() (struct FINDREPLACE)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTextFinder (barra de pesquisa)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkSearchBar + diálogo personalizada</td></tr>
+</table>
+
+<!-- TReplaceDialog -->
+<h2 id="replacedialog">TReplaceDialog <span class="badge new">CT_REPLACEDIALOG = 45</span></h2>
+<p>Diálogo sem modo de localizar e substituir. Estende TFindDialog com funcionalidade de substituição.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>cFindText</code></td><td>String</td><td>""</td><td>Texto a pesquisar</td></tr>
+  <tr><td><code>cReplaceText</code></td><td>String</td><td>""</td><td>Texto de substituição</td></tr>
+  <tr><td><code>lMatchCase</code></td><td>Logical</td><td>.F.</td><td>Pesquisa sensível a maiúsculas/minúsculas</td></tr>
+  <tr><td><code>lWholeWord</code></td><td>Logical</td><td>.F.</td><td>Corresponder apenas palavras inteiras</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnFind</code></td><td>Ação</td><td>Usuário clicou em Localizar Próximo</td></tr>
+  <tr><td><code>OnReplace</code></td><td>Ação</td><td>Usuário clicou em Substituir</td></tr>
+  <tr><td><code>OnReplaceAll</code></td><td>Ação</td><td>Usuário clicou em Substituir Tudo</td></tr>
+  <tr><td><code>OnClose</code></td><td>Ação</td><td>Diálogo fechada</td></tr>
+</table>
+
+<table>
+  <tr><th>Método</th><th>Retorno</th><th>Descrição</th></tr>
+  <tr><td><code>Execute()</code></td><td>Logical</td><td>Exibe a diálogo de substituir sem modo.</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Diálogo Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>ReplaceText() (struct FINDREPLACE)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTextFinder (barra de localizar e substituir)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkSearchBar + diálogo de substituição personalizada</td></tr>
+</table>
+
+<pre><span class="cm">// Localizar e Substituir em um RichEdit</span>
+<span class="cmd">DEFINE</span> <span class="cmd">REPLACEDIALOG</span> oDlg
+oDlg:<span class="fn">OnFind</span> := { || FindInEditor( oRichEdit, oDlg:<span class="fn">cFindText</span> ) }
+oDlg:<span class="fn">OnReplace</span> := { || ReplaceInEditor( oRichEdit, oDlg:<span class="fn">cFindText</span>, oDlg:<span class="fn">cReplaceText</span> ) }
+oDlg:<span class="fn">OnReplaceAll</span> := { || ReplaceAllInEditor( oRichEdit, oDlg:<span class="fn">cFindText</span>, oDlg:<span class="fn">cReplaceText</span> ) }
+oDlg:<span class="fn">Execute</span>()</pre>
+
+<div class="info-box info">
+  <strong>6 Controles de Diálogo</strong>
+  <p>Todos os controles de diálogo são componentes não visuais. Coloque-os em um formulário, configure suas propriedades
+  e chame <code>Execute()</code> para exibir a diálogo nativa do sistema operacional. Cada diálogo retorna .T. quando o usuário
+  confirma e .F. quando cancela.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

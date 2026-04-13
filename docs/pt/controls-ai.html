@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles de IA - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html" class="active">IA (9)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Ola, Mundo!</a>
+    <a href="tutorial-forms.html">Formularios e Controles</a>
+    <a href="tutorial-events.html">Eventos e Acoes</a>
+    <a href="tutorial-database.html">Banco de Dados</a>
+    <a href="tutorial-transformer.html">Arquitetura Transformer</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades</a>
+    <a href="ref-methods.html">Metodos</a>
+    <a href="ref-events.html">Eventos</a>
+    <a href="ref-functions.html">Funcoes</a>
+    <a href="ref-commands.html">Comandos</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="controls-ai.html">Paleta de Componentes</a> <span>/</span> IA
+</div>
+
+<h1>Controles de IA <span class="badge new">NOVO</span></h1>
+<p>O HarbourBuilder e o <strong>primeiro IDE xBase com componentes de IA integrados</strong>.
+Arraste componentes de IA para o seu formulario, configure uma chave de API e interaja com os modelos de linguagem mais poderosos do mundo.</p>
+
+<div class="info-box tip">
+  <strong>IA Local com Ollama</strong>
+  <p>O componente TOllama conecta-se a uma instancia local do Ollama -- nenhuma chave de API e necessaria, totalmente privado,
+  funciona offline. Perfeito para desenvolvimento e ambientes corporativos.</p>
+</div>
+
+<h2>Visao Geral dos Componentes de IA</h2>
+
+<table>
+  <tr><th>Componente</th><th>ID CT</th><th>Fornecedor</th><th>Tipo</th></tr>
+  <tr><td><code>TOpenAI</code></td><td>46</td><td>OpenAI</td><td>API na Nuvem</td></tr>
+  <tr><td><code>TGemini</code></td><td>47</td><td>Google</td><td>API na Nuvem</td></tr>
+  <tr><td><code>TClaude</code></td><td>48</td><td>Anthropic</td><td>API na Nuvem</td></tr>
+  <tr><td><code>TDeepSeek</code></td><td>49</td><td>DeepSeek</td><td>API na Nuvem</td></tr>
+  <tr><td><code>TGrok</code></td><td>50</td><td>xAI</td><td>API na Nuvem</td></tr>
+  <tr><td><code>TOllama</code></td><td>51</td><td>Ollama</td><td>Servidor Local</td></tr>
+  <tr><td><code>TTransformer</code></td><td>52</td><td>Local</td><td>Modelo no Dispositivo</td></tr>
+  <tr><td><code>TWhisper</code></td><td>110</td><td>OpenAI/Local</td><td>Fala para Texto</td></tr>
+  <tr><td><code>TEmbeddings</code></td><td>111</td><td>Diversos</td><td>Embeddings Vetoriais</td></tr>
+</table>
+
+<h2>Propriedades Comuns (todos os controles de IA)</h2>
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Descricao</th></tr>
+  <tr><td><code>cApiKey</code></td><td>String</td><td>Chave de autenticacao da API</td></tr>
+  <tr><td><code>cModel</code></td><td>String</td><td>Nome do modelo (ex. "gpt-4o", "claude-sonnet-4-20250514")</td></tr>
+  <tr><td><code>nTemperature</code></td><td>Numerico</td><td>Criatividade (0,0 = deterministico, 2,0 = criativo)</td></tr>
+  <tr><td><code>nMaxTokens</code></td><td>Numerico</td><td>Comprimento maximo da resposta</td></tr>
+  <tr><td><code>cSystemPrompt</code></td><td>String</td><td>Instrucoes do sistema para a IA</td></tr>
+  <tr><td><code>lStream</code></td><td>Logico</td><td>Ativar respostas em streaming (token por token)</td></tr>
+</table>
+
+<h2>Eventos Comuns</h2>
+<table>
+  <tr><th>Evento</th><th>Parametros</th><th>Descricao</th></tr>
+  <tr><td><code>OnResponse</code></td><td><code>cResponse</code></td><td>Resposta completa recebida</td></tr>
+  <tr><td><code>OnStream</code></td><td><code>cToken</code></td><td>Cada token durante streaming</td></tr>
+  <tr><td><code>OnError</code></td><td><code>cError, nCode</code></td><td>Ocorreu erro na API</td></tr>
+  <tr><td><code>OnTokenCount</code></td><td><code>nPrompt, nCompletion</code></td><td>Relatorio de uso de tokens</td></tr>
+</table>
+
+<h2>Metodos Comuns</h2>
+<table>
+  <tr><th>Metodo</th><th>Parametros</th><th>Descricao</th></tr>
+  <tr><td><code>:Chat( cMessage )</code></td><td>String</td><td>Enviar mensagem de chat, dispara OnResponse</td></tr>
+  <tr><td><code>:Complete( cPrompt )</code></td><td>String</td><td>Completacao de texto</td></tr>
+  <tr><td><code>:Embed( cText )</code></td><td>String</td><td>Obter vetor de embedding</td></tr>
+</table>
+
+<!-- Controles individuais -->
+<h2 id="openai">TOpenAI <span class="badge new">CT = 46</span></h2>
+<p>Conectar a API da OpenAI (GPT-4o, GPT-4, GPT-3.5).</p>
+<pre>oAI := TOpenAI():New()
+oAI:cApiKey := <span class="st">"sk-..."</span>
+oAI:cModel  := <span class="st">"gpt-4o"</span>
+oAI:OnResponse := { |cResp| oMemo:Text := cResp }
+oAI:Chat( <span class="st">"Explique as classes do Harbour"</span> )</pre>
+
+<h2 id="gemini">TGemini <span class="badge new">CT = 47</span></h2>
+<p>Conectar a API do Google Gemini.</p>
+<p>Modelo padrao: <code>gemini-2.5-flash</code></p>
+
+<h2 id="claude">TClaude <span class="badge new">CT = 48</span></h2>
+<p>Conectar a API do Anthropic Claude.</p>
+<p>Modelo padrao: <code>claude-sonnet-4-20250514</code></p>
+
+<h2 id="deepseek">TDeepSeek <span class="badge new">CT = 49</span></h2>
+<p>Conectar a API do DeepSeek. Excelente para geracao de codigo.</p>
+<p>Modelo padrao: <code>deepseek-chat</code></p>
+
+<h2 id="grok">TGrok <span class="badge new">CT = 50</span></h2>
+<p>Conectar a API do xAI Grok.</p>
+<p>Modelo padrao: <code>grok-3</code></p>
+
+<h2 id="ollama">TOllama <span class="badge new">CT = 51</span></h2>
+<p>Conectar a instancia local do Ollama. <strong>Nenhuma chave de API necessaria.</strong></p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cHost</code></td><td>String</td><td>"localhost"</td><td>Host do servidor Ollama</td></tr>
+  <tr><td><code>nPort</code></td><td>Numerico</td><td>11434</td><td>Porta do servidor Ollama</td></tr>
+  <tr><td><code>cModel</code></td><td>String</td><td>"llama3"</td><td>Nome do modelo local</td></tr>
+</table>
+
+<pre>oAI := TOllama():New()
+oAI:cModel := <span class="st">"codellama"</span>
+oAI:OnStream := { |cToken| oOutput:Text += cToken }
+oAI:Chat( <span class="st">"Escreva uma funcao Harbour para ordenar um array"</span> )</pre>
+
+<h2 id="transformer">TTransformer <span class="badge new">CT = 52</span></h2>
+<p>Componente de arquitetura transformer completa. Treine, ajuste fino e execute inferencia localmente.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nLayers</code></td><td>Numerico</td><td>6</td><td>Numero de camadas encoder/decoder</td></tr>
+  <tr><td><code>nHeads</code></td><td>Numerico</td><td>8</td><td>Numero de cabecas de atencao</td></tr>
+  <tr><td><code>nEmbedDim</code></td><td>Numerico</td><td>512</td><td>Dimensao do embedding (d_model)</td></tr>
+  <tr><td><code>nFFDim</code></td><td>Numerico</td><td>2048</td><td>Dimensao feed-forward</td></tr>
+  <tr><td><code>nVocabSize</code></td><td>Numerico</td><td>50257</td><td>Tamanho do vocabulario</td></tr>
+  <tr><td><code>nMaxSeqLen</code></td><td>Numerico</td><td>512</td><td>Comprimento maximo da sequencia</td></tr>
+  <tr><td><code>nDropout</code></td><td>Numerico</td><td>0.1</td><td>Taxa de dropout</td></tr>
+  <tr><td><code>cWeightsFile</code></td><td>String</td><td>""</td><td>Caminho dos pesos pre-treinados</td></tr>
+  <tr><td><code>lCausal</code></td><td>Logico</td><td>.T.</td><td>Usar mascara causal (modo decoder)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Descricao</th></tr>
+  <tr><td><code>OnAttention</code></td><td>Acessar pesos de atencao para visualizacao</td></tr>
+  <tr><td><code>OnGenerate</code></td><td>Token gerado durante inferencia</td></tr>
+  <tr><td><code>OnTrainStep</code></td><td>Etapa de treinamento concluida (com perda)</td></tr>
+  <tr><td><code>OnLoss</code></td><td>Valor de perda computado</td></tr>
+</table>
+
+<div class="mermaid">
+graph LR
+    A[Texto de Entrada] --> B[Tokenizer]
+    B --> C[Embedding + PE]
+    C --> D["N x (MHA + FFN)"]
+    D --> E[Linear + Softmax]
+    E --> F[Tokens de Saida]
+    style D fill:#58a6ff,stroke:#388bfd,color:#0d1117
+</div>
+
+<div class="info-box info">
+  <strong>Exemplos Didaticos</strong>
+  <p>Veja a pasta <code>samples/projects/transformer/</code> para 7 exemplos completos:
+  visualizador de atencao, gerador de texto, treinamento do zero, explorador de tokenizer,
+  analisador de sentimentos, tradutor e um guia completo "Attention Is All You Need".</p>
+</div>
+
+<h2 id="whisper">TWhisper <span class="badge new">CT = 110</span></h2>
+<p>Transcricao de fala para texto usando o modelo Whisper da OpenAI ou implementacoes locais do Whisper.
+Converta arquivos de audio e entrada de microfone em tempo real para texto.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cAudioFile</code></td><td>String</td><td>""</td><td>Caminho do arquivo de audio para transcricao</td></tr>
+  <tr><td><code>cLanguage</code></td><td>String</td><td>"en"</td><td>Codigo do idioma (ex. "en", "es", "fr")</td></tr>
+  <tr><td><code>cModel</code></td><td>String</td><td>"whisper-1"</td><td>Tamanho do modelo (tiny, base, small, medium, large)</td></tr>
+  <tr><td><code>lTranslate</code></td><td>Logico</td><td>.F.</td><td>Traduzir para o ingles</td></tr>
+  <tr><td><code>nTask</code></td><td>Numerico</td><td>0</td><td>0=transcrever, 1=traduzir</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Descricao</th></tr>
+  <tr><td><code>OnTranscription</code></td><td>Transcricao completa recebida</td></tr>
+  <tr><td><code>OnSegment</code></td><td>Cada segmento transcrito (com timestamps)</td></tr>
+  <tr><td><code>OnError</code></td><td>Ocorreu erro na transcricao</td></tr>
+</table>
+
+<pre>oWhisper := TWhisper():New()
+oWhisper:cAudioFile := <span class="st">"gravacao.wav"</span>
+oWhisper:cLanguage := <span class="st">"pt"</span>
+oWhisper:OnTranscription := { |cText| oMemo:Text := cText }
+oWhisper:Transcribe()</pre>
+
+<h2 id="embeddings">TEmbeddings <span class="badge new">CT = 111</span></h2>
+<p>Gere embeddings vetoriais para busca por similaridade de texto, busca semantica, agrupamento e recuperacao.
+Suporta diversos fornecedores, incluindo OpenAI, Ollama e modelos locais.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cModel</code></td><td>String</td><td>"text-embedding-ada-002"</td><td>Nome do modelo de embedding</td></tr>
+  <tr><td><code>nDimensions</code></td><td>Numerico</td><td>1536</td><td>Numero de dimensoes do vetor</td></tr>
+  <tr><td><code>cMetric</code></td><td>String</td><td>"cosine"</td><td>Medida de similaridade (cosine, euclidean, dotproduct)</td></tr>
+  <tr><td><code>aVectors</code></td><td>Array</td><td>{}</td><td>Vetores de embedding em cache</td></tr>
+</table>
+
+<table>
+  <tr><th>Metodo</th><th>Parametros</th><th>Descricao</th></tr>
+  <tr><td><code>:Embed( cText )</code></td><td>String</td><td>Gerar embedding para texto, retorna array</td></tr>
+  <tr><td><code>:Similarity( aVec1, aVec2 )</code></td><td>Arrays</td><td>Calcular similaridade entre vetores</td></tr>
+  <tr><td><code>:Index( cText, cId )</code></td><td>Strings</td><td>Adicionar texto ao indice vetorial com ID</td></tr>
+  <tr><td><code>:Search( cQuery, nTop )</code></td><td>String, Numero</td><td>Pesquisar vetores indexados, retorna top N</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Descricao</th></tr>
+  <tr><td><code>OnEmbed</code></td><td>Embedding gerado (com array de vetor)</td></tr>
+  <tr><td><code>OnSearch</code></td><td>Resultados da pesquisa recebidos (com similaridades)</td></tr>
+  <tr><td><code>OnError</code></td><td>Ocorreu erro no embedding</td></tr>
+</table>
+
+<pre>oEmb := TEmbeddings():New()
+oEmb:cModel := <span class="st">"text-embedding-ada-002"</span>
+
+<span class="comment">// Indexar alguns documentos</span>
+oEmb:<span class="fn">Index</span>( <span class="st">"HarbourBuilder e um IDE visual"</span>, <span class="st">"doc1"</span> )
+oEmb:<span class="fn">Index</span>( <span class="st">"Linguagem xBase para apps de banco de dados"</span>, <span class="st">"doc2"</span> )
+
+<span class="comment">// Pesquisar</span>
+oEmb:OnSearch := { |aResults| <span class="fn">ShowResults</span>( aResults ) }
+oEmb:<span class="fn">Search</span>( <span class="st">"ambiente de desenvolvimento visual"</span>, <span class="nb">5</span> )</pre>
+
+<div class="info-box info">
+  <strong>Caso de Uso: Busca Semantica</strong>
+  <p>Use o TEmbeddings para construir um motor de busca semantica: indexe seus documentos,
+  depois pesquise por significado em vez de palavras-chave. Perfeito para bases de conhecimento e FAQs.</p>
+</div>
+
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

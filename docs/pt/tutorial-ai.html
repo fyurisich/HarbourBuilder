@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial: Integracao com IA - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a class="logo" href="index.html">
+    <span>HB</span> HarbourBuilder Docs
+  </a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Ola Mundo</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html" class="active">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span> Tutoriais <span>/</span> Integracao com IA
+</div>
+
+<h1>Tutorial: Integracao com IA</h1>
+<p>O HarbourBuilder fornece dois componentes de IA complementares: <strong>TOllama</strong> para conectar a grandes
+modelos de linguagem locais via o servico Ollama, e <strong>TTransformer</strong> para carregar e executar
+pesos de modelo transformer diretamente no processo. Este tutorial cobre ambas as abordagens com
+exemplos completos e funcionais.</p>
+
+<h2>Parte 1: TOllama &mdash; Chat com um LLM Local</h2>
+
+<h3>Passo 1: Pre-requisitos</h3>
+<ol>
+  <li>Instale o <a href="https://ollama.ai" target="_blank">Ollama</a> na sua maquina.</li>
+  <li>Baixe um modelo: execute <code>ollama pull llama3</code> no seu terminal.</li>
+  <li>Verifique que o Ollama esta em execucao (ele escuta em <code>http://localhost:11434</code> por padrao).</li>
+</ol>
+
+<div class="info-box tip">
+  <strong>Sem necessidade de chaves de API</strong>
+  <p>O TOllama conecta a uma instancia Ollama rodando localmente. Toda inferencia acontece na sua maquina
+  &mdash; sem servicos em nuvem, sem chaves de API, nenhum dado sai do seu computador.</p>
+</div>
+
+<h3>Passo 2: Criar a UI de Chat</h3>
+<p>Construa um formulario com um Memo para o historico de conversacao, uma Caixa de Texto para entrada do usuario e um botao Enviar.</p>
+
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oForm, oMemo, oGetPrompt, oBtnSend, oOllama
+   <span class="kw">local</span> cPrompt := <span class="st">""</span>
+
+   <span class="cm">// --- Conectar ao Ollama ---</span>
+   <span class="cmd">DEFINE OLLAMA</span> oOllama ;
+      <span class="cmd">URL</span> <span class="st">"http://localhost:11434"</span> ;
+      <span class="cmd">MODEL</span> <span class="st">"llama3"</span>
+
+   <span class="cm">// --- Construir a UI ---</span>
+   <span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Chat com IA"</span> ;
+      <span class="cmd">SIZE</span> <span class="nb">700</span>, <span class="nb">550</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+   @ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">MEMO</span> oMemo ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">660</span>, <span class="nb">420</span> ;
+      <span class="cmd">READONLY</span>
+
+   @ <span class="nb">440</span>, <span class="nb">10</span> <span class="cmd">GET</span> oGetPrompt <span class="cmd">VAR</span> cPrompt ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">540</span>, <span class="nb">28</span>
+
+   @ <span class="nb">440</span>, <span class="nb">560</span> <span class="cmd">BUTTON</span> oBtnSend <span class="cmd">PROMPT</span> <span class="st">"Enviar"</span> ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">110</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> <span class="fn">SendMessage</span>( oOllama, oMemo, oGetPrompt )
+
+   <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Passo 3: Enviar uma Mensagem e Obter uma Resposta</h3>
+<p>Use <code>oOllama:Chat()</code> para uma simples requisicao/resposta, ou <code>oOllama:ChatStream()</code>
+para receber a resposta token por token conforme e gerada.</p>
+
+<p><strong>Chat simples (bloqueante):</strong></p>
+<pre><span class="kw">static function</span> <span class="fn">SendMessage</span>( oOllama, oMemo, oGetPrompt )
+
+   <span class="kw">local</span> cPrompt  := oGetPrompt:<span class="fn">GetValue</span>()
+   <span class="kw">local</span> cResponse
+
+   <span class="kw">if</span> Empty( cPrompt )
+      <span class="kw">return</span> <span class="kw">nil</span>
+   <span class="kw">endif</span>
+
+   <span class="cm">// Exibir mensagem do usuario</span>
+   oMemo:<span class="fn">Append</span>( <span class="st">"Voce: "</span> + cPrompt + Chr( <span class="nb">13</span> ) + Chr( <span class="nb">10</span> ) )
+   oGetPrompt:<span class="fn">SetValue</span>( <span class="st">""</span> )
+
+   <span class="cm">// Obter resposta da IA</span>
+   cResponse := oOllama:<span class="fn">Chat</span>( cPrompt )
+
+   oMemo:<span class="fn">Append</span>( <span class="st">"IA: "</span> + cResponse + Chr( <span class="nb">13</span> ) + Chr( <span class="nb">10</span> ) + Chr( <span class="nb">13</span> ) + Chr( <span class="nb">10</span> ) )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Passo 4: Resposta em Streaming para um Memo</h3>
+<p>Para uma melhor experiencia do usuario, faca streaming da resposta para que os tokens aparecam no Memo conforme sao
+gerados &mdash; exatamente como uma interface de chat real.</p>
+
+<pre><span class="kw">static function</span> <span class="fn">SendMessageStream</span>( oOllama, oMemo, oGetPrompt )
+
+   <span class="kw">local</span> cPrompt := oGetPrompt:<span class="fn">GetValue</span>()
+
+   <span class="kw">if</span> Empty( cPrompt )
+      <span class="kw">return</span> <span class="kw">nil</span>
+   <span class="kw">endif</span>
+
+   oMemo:<span class="fn">Append</span>( <span class="st">"Voce: "</span> + cPrompt + Chr( <span class="nb">13</span> ) + Chr( <span class="nb">10</span> ) )
+   oMemo:<span class="fn">Append</span>( <span class="st">"IA: "</span> )
+   oGetPrompt:<span class="fn">SetValue</span>( <span class="st">""</span> )
+
+   <span class="cm">// Stream de tokens um a um no Memo</span>
+   oOllama:<span class="fn">ChatStream</span>( cPrompt, { |cToken| oMemo:<span class="fn">Append</span>( cToken ) } )
+
+   oMemo:<span class="fn">Append</span>( Chr( <span class="nb">13</span> ) + Chr( <span class="nb">10</span> ) + Chr( <span class="nb">13</span> ) + Chr( <span class="nb">10</span> ) )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<div class="info-box tip">
+  <strong>Historico de conversacao</strong>
+  <p>O TOllama mantem um historico de conversacao internamente. Cada chamada a <code>Chat()</code> ou
+  <code>ChatStream()</code> inclui mensagens anteriores como contexto. Chame <code>oOllama:ClearHistory()</code>
+  para iniciar uma nova conversa.</p>
+</div>
+
+<h3>Passo 5: Propriedades e Metodos do TOllama</h3>
+<table style="width:100%; border-collapse:collapse; margin:1em 0;">
+  <tr style="border-bottom:1px solid #444;">
+    <th style="text-align:left; padding:8px;">Membro</th>
+    <th style="text-align:left; padding:8px;">Tipo</th>
+    <th style="text-align:left; padding:8px;">Descricao</th>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>cUrl</code></td>
+    <td style="padding:8px;">Propriedade</td>
+    <td style="padding:8px;">URL do servidor Ollama (padrao <code>"http://localhost:11434"</code>).</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>cModel</code></td>
+    <td style="padding:8px;">Propriedade</td>
+    <td style="padding:8px;">Nome do modelo (ex. <code>"llama3"</code>, <code>"mistral"</code>, <code>"codellama"</code>).</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>nTemperature</code></td>
+    <td style="padding:8px;">Propriedade</td>
+    <td style="padding:8px;">Temperatura de amostragem (0.0 &ndash; 2.0, padrao <code>0.7</code>).</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>Chat( cPrompt )</code></td>
+    <td style="padding:8px;">Metodo</td>
+    <td style="padding:8px;">Enviar um prompt e retornar a resposta completa como string.</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>ChatStream( cPrompt, bCallback )</code></td>
+    <td style="padding:8px;">Metodo</td>
+    <td style="padding:8px;">Fazer stream da resposta, chamando <code>bCallback</code> com cada token.</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>SetSystem( cText )</code></td>
+    <td style="padding:8px;">Metodo</td>
+    <td style="padding:8px;">Definir o prompt de sistema que orienta o comportamento do modelo.</td>
+  </tr>
+  <tr>
+    <td style="padding:8px;"><code>ClearHistory()</code></td>
+    <td style="padding:8px;">Metodo</td>
+    <td style="padding:8px;">Resetar o historico de conversacao.</td>
+  </tr>
+</table>
+
+<hr style="border-color:#333; margin:2em 0;">
+
+<h2>Parte 2: TTransformer &mdash; Inferencia no Processo</h2>
+<p>Para cenarios onde voce precisa executar um modelo sem um servico externo, o HarbourBuilder fornece
+<strong>TTransformer</strong>. Este componente carrega pesos de modelo (formato GGUF) diretamente na memoria da sua aplicacao
+e executa inferencia usando a CPU (ou GPU se disponivel).</p>
+
+<h3>Passo 1: Obter um Arquivo de Modelo</h3>
+<ol>
+  <li>Baixe um arquivo de modelo GGUF (ex. <code>tinyllama-1.1b-chat.Q4_K_M.gguf</code> do Hugging Face).</li>
+  <li>Coloque-o na pasta do seu projeto ou em um caminho conhecido.</li>
+</ol>
+
+<div class="info-box tip">
+  <strong>Tamanho do modelo importa</strong>
+  <p>Modelos quantizados menores (Q4_K_M, Q5_K_M) rodam bem na maioria dos hardwares. Um modelo de 1B&ndash;3B parametros
+  com quantizacao Q4 precisa de apenas 1&ndash;2 GB de RAM. Modelos maiores requerem mais memoria e uma GPU.</p>
+</div>
+
+<h3>Passo 2: Carregar o Modelo</h3>
+
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oForm, oMemo, oGetPrompt, oBtnRun, oTransformer
+
+   <span class="cm">// --- Carregar o modelo transformer ---</span>
+   <span class="cmd">DEFINE TRANSFORMER</span> oTransformer ;
+      <span class="cmd">MODEL</span> <span class="st">"models/tinyllama-1.1b-chat.Q4_K_M.gguf"</span> ;
+      <span class="cmd">CONTEXT</span> <span class="nb">2048</span> ;
+      <span class="cmd">GPU_LAYERS</span> <span class="nb">0</span>  <span class="cm">// Defina > 0 para descarregar camadas na GPU</span>
+
+   <span class="kw">if</span> .not. oTransformer:<span class="fn">lLoaded</span>
+      MsgAlert( <span class="st">"Falha ao carregar modelo: "</span> + oTransformer:<span class="fn">cError</span> )
+      <span class="kw">return</span> <span class="kw">nil</span>
+   <span class="kw">endif</span>
+
+   <span class="cm">// --- Construir a UI ---</span>
+   <span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Demo TTransformer"</span> ;
+      <span class="cmd">SIZE</span> <span class="nb">700</span>, <span class="nb">550</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+   @ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">MEMO</span> oMemo ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">660</span>, <span class="nb">420</span> ;
+      <span class="cmd">READONLY</span>
+
+   @ <span class="nb">440</span>, <span class="nb">10</span> <span class="cmd">GET</span> oGetPrompt <span class="cmd">VAR</span> cPrompt ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">540</span>, <span class="nb">28</span>
+
+   @ <span class="nb">440</span>, <span class="nb">560</span> <span class="cmd">BUTTON</span> oBtnRun <span class="cmd">PROMPT</span> <span class="st">"Executar"</span> ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">110</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> <span class="fn">RunInference</span>( oTransformer, oMemo, oGetPrompt )
+
+   <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Passo 3: Executar Inferencia</h3>
+<p>Use <code>Generate()</code> para uma resposta completa ou <code>GenerateStream()</code> para fazer stream de tokens
+em um controle Memo conforme sao produzidos.</p>
+
+<pre><span class="kw">static function</span> <span class="fn">RunInference</span>( oTransformer, oMemo, oGetPrompt )
+
+   <span class="kw">local</span> cPrompt := oGetPrompt:<span class="fn">GetValue</span>()
+
+   <span class="kw">if</span> Empty( cPrompt )
+      <span class="kw">return</span> <span class="kw">nil</span>
+   <span class="kw">endif</span>
+
+   oMemo:<span class="fn">Append</span>( <span class="st">"Prompt: "</span> + cPrompt + Chr( <span class="nb">13</span> ) + Chr( <span class="nb">10</span> ) )
+   oMemo:<span class="fn">Append</span>( <span class="st">"Resposta: "</span> )
+   oGetPrompt:<span class="fn">SetValue</span>( <span class="st">""</span> )
+
+   <span class="cm">// Stream de saida token por token</span>
+   oTransformer:<span class="fn">GenerateStream</span>( cPrompt, ;
+      { |cToken| oMemo:<span class="fn">Append</span>( cToken ) }, ;  <span class="cm">// a cada token</span>
+      <span class="nb">256</span> )  <span class="cm">// max tokens</span>
+
+   oMemo:<span class="fn">Append</span>( Chr( <span class="nb">13</span> ) + Chr( <span class="nb">10</span> ) + Chr( <span class="nb">13</span> ) + Chr( <span class="nb">10</span> ) )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Passo 4: Propriedades e Metodos do TTransformer</h3>
+<table style="width:100%; border-collapse:collapse; margin:1em 0;">
+  <tr style="border-bottom:1px solid #444;">
+    <th style="text-align:left; padding:8px;">Membro</th>
+    <th style="text-align:left; padding:8px;">Tipo</th>
+    <th style="text-align:left; padding:8px;">Descricao</th>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>cModel</code></td>
+    <td style="padding:8px;">Propriedade</td>
+    <td style="padding:8px;">Caminho para o arquivo de modelo GGUF.</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>nContext</code></td>
+    <td style="padding:8px;">Propriedade</td>
+    <td style="padding:8px;">Tamanho da janela de contexto em tokens (padrao <code>2048</code>).</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>nGpuLayers</code></td>
+    <td style="padding:8px;">Propriedade</td>
+    <td style="padding:8px;">Numero de camadas para descarregar na GPU (0 = somente CPU).</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>lLoaded</code></td>
+    <td style="padding:8px;">Propriedade</td>
+    <td style="padding:8px;"><code>.T.</code> se o modelo foi carregado com sucesso.</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>Generate( cPrompt, nMaxTokens )</code></td>
+    <td style="padding:8px;">Metodo</td>
+    <td style="padding:8px;">Executar inferencia e retornar a saida completa como string.</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>GenerateStream( cPrompt, bCallback, nMaxTokens )</code></td>
+    <td style="padding:8px;">Metodo</td>
+    <td style="padding:8px;">Stream de tokens de saida via callback.</td>
+  </tr>
+  <tr>
+    <td style="padding:8px;"><code>Tokenize( cText )</code></td>
+    <td style="padding:8px;">Metodo</td>
+    <td style="padding:8px;">Retornar um array de IDs de token para o texto informado.</td>
+  </tr>
+</table>
+
+<h2>Quando Usar Cada Um</h2>
+
+<div class="mermaid">
+graph LR
+    A{"Precisa de IA?"} -->|"Chat LLM completo<br/>historico de conversacao"| B["TOllama<br/>Servico Ollama"]
+    A -->|"Inferencia embarcada<br/>sem deps externas"| C["TTransformer<br/>GGUF no processo"]
+    B --> D["Vantagens: config facil<br/>muitos modelos<br/>troca modelos a quente"]
+    C --> E["Vantagens: sem servidor<br/>executavel unico<br/>funciona offline"]
+    style A fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style B fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style C fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style D fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style E fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<div class="info-box tip">
+  <strong>Combine ambas as abordagens</strong>
+  <p>Voce pode usar o TOllama para tarefas pesadas de chat e o TTransformer para tarefas leves e rapidas
+  de classificacao ou incorporacao &mdash; ambos na mesma aplicacao.</p>
+</div>
+
+<div class="info-box tip">
+  <strong>Explore mais</strong>
+  <p>Veja a referencia da <a href="controls-ai.html">Paleta de Componentes de IA</a> para a lista completa de
+  componentes de IA incluindo TEmbedding, TRAGEngine e TSpeechToText.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

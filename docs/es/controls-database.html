@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles de Acceso a Datos - HarbourBuilder Docs</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros Pasos</h3>
+    <a href="index.html">Descripcion General</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicionales (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html" class="active">Acceso a Datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de Datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de Formularios</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente de IA</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="controls-standard.html">Paleta de Componentes</a> <span>/</span> Acceso a Datos
+</div>
+
+<h1>Controles de Acceso a Datos</h1>
+<p>La pestania Acceso a Datos proporciona 9 componentes de base de datos para conectarse a bases de datos locales y remotas. Todos los componentes comparten una interfaz comun para gestion de conexiones y ejecucion de consultas.</p>
+
+<!-- Common Properties -->
+<h2 id="common-properties">Propiedades Comunes</h2>
+<p>Todos los componentes de base de datos (excepto TDBFTable) comparten estas propiedades de conexion:</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cHost</code></td><td>String</td><td>"localhost"</td><td>Nombre de host o direccion IP del servidor de base de datos</td></tr>
+  <tr><td><code>nPort</code></td><td>Numerico</td><td>varia</td><td>Puerto del servidor (predeterminado especifico del controlador)</td></tr>
+  <tr><td><code>cDatabase</code></td><td>String</td><td>""</td><td>Nombre de la base de datos</td></tr>
+  <tr><td><code>cUser</code></td><td>String</td><td>""</td><td>Nombre de usuario de autenticacion</td></tr>
+  <tr><td><code>cPassword</code></td><td>String</td><td>""</td><td>Contrasena de autenticacion</td></tr>
+  <tr><td><code>lConnected</code></td><td>Logico</td><td>.F.</td><td>Estado actual de la conexion (solo lectura)</td></tr>
+  <tr><td><code>lAutoConnect</code></td><td>Logico</td><td>.F.</td><td>Conectar automaticamente cuando se activa el formulario</td></tr>
+  <tr><td><code>cCharset</code></td><td>String</td><td>"UTF8"</td><td>Juego de caracteres para la conexion</td></tr>
+</table>
+
+<!-- Common Events -->
+<h2 id="common-events">Eventos Comunes</h2>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnConnect</code></td><td>Conexion</td><td>Conectado exitosamente a la base de datos</td></tr>
+  <tr><td><code>OnDisconnect</code></td><td>Conexion</td><td>Desconectado de la base de datos</td></tr>
+  <tr><td><code>OnError</code></td><td>Error</td><td>Error de conexion o consulta. Parametros: nCode, cMessage</td></tr>
+  <tr><td><code>OnBeforeQuery</code></td><td>Consulta</td><td>Se dispara antes de ejecutar una consulta. Parametros: cSQL. Devuelva .F. para cancelar</td></tr>
+  <tr><td><code>OnAfterQuery</code></td><td>Consulta</td><td>Se dispara despues de que una consulta se completa. Parametros: oResultSet, nRows</td></tr>
+</table>
+
+<!-- Common Methods -->
+<h2 id="common-methods">Metodos Comunes</h2>
+
+<table>
+  <tr><th>Metodo</th><th>Descripcion</th></tr>
+  <tr><td><code>Connect()</code></td><td>Abrir una conexion al servidor de base de datos</td></tr>
+  <tr><td><code>Disconnect()</code></td><td>Cerrar la conexion</td></tr>
+  <tr><td><code>Execute( cSQL )</code></td><td>Ejecutar una sentencia SQL (INSERT, UPDATE, DELETE). Devuelve nAffectedRows</td></tr>
+  <tr><td><code>Query( cSQL )</code></td><td>Ejecutar una consulta SELECT. Devuelve un objeto oResultSet</td></tr>
+  <tr><td><code>BeginTrans()</code></td><td>Iniciar una transaccion</td></tr>
+  <tr><td><code>Commit()</code></td><td>Confirmar la transaccion actual</td></tr>
+  <tr><td><code>Rollback()</code></td><td>Revertir la transaccion actual</td></tr>
+</table>
+
+<hr>
+
+<!-- TDBFTable -->
+<h2 id="dbftable">TDBFTable <span class="badge new">CT_DBFTABLE = 53</span></h2>
+<p>Acceso nativo a tablas xBase DBF. Proporciona acceso directo a archivos DBF/NTX/CDX sin servidor. El formato de datos clasico de Harbour/Clipper.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cFile</code></td><td>String</td><td>""</td><td>Ruta al archivo .dbf</td></tr>
+  <tr><td><code>cAlias</code></td><td>String</td><td>""</td><td>Nombre del alias del area de trabajo</td></tr>
+  <tr><td><code>lShared</code></td><td>Logico</td><td>.T.</td><td>Abrir en modo compartido (multiusuario)</td></tr>
+  <tr><td><code>lReadOnly</code></td><td>Logico</td><td>.F.</td><td>Abrir como solo lectura</td></tr>
+  <tr><td><code>cDriver</code></td><td>String</td><td>"DBFCDX"</td><td>Controlador RDD (DBFCDX, DBFNTX, DBFNSX)</td></tr>
+</table>
+
+<!-- TSQLite -->
+<h2 id="sqlite">TSQLite <span class="badge new">CT_SQLITE = 54</span></h2>
+<p>Base de datos embebida SQLite. Motor de base de datos sin configuracion, sin servidor, de archivo unico.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cFile</code></td><td>String</td><td>""</td><td>Ruta al archivo .db o .sqlite</td></tr>
+  <tr><td><code>lInMemory</code></td><td>Logico</td><td>.F.</td><td>Usar una base de datos en memoria (sin archivo)</td></tr>
+  <tr><td><code>lWAL</code></td><td>Logico</td><td>.T.</td><td>Habilitar Write-Ahead Logging para mejor concurrencia</td></tr>
+  <tr><td><code>lForeignKeys</code></td><td>Logico</td><td>.T.</td><td>Habilitar aplicacion de restricciones de claves foraneas</td></tr>
+</table>
+
+<!-- TMySQL -->
+<h2 id="mysql">TMySQL <span class="badge new">CT_MYSQL = 55</span></h2>
+<p>Conector cliente MySQL / MariaDB. Puerto predeterminado: 3306.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nPort</code></td><td>Numerico</td><td>3306</td><td>Puerto del servidor</td></tr>
+  <tr><td><code>lSSL</code></td><td>Logico</td><td>.F.</td><td>Usar conexion SSL/TLS</td></tr>
+  <tr><td><code>lCompress</code></td><td>Logico</td><td>.F.</td><td>Habilitar compresion de protocolo</td></tr>
+</table>
+
+<!-- TPostgreSQL -->
+<h2 id="postgresql">TPostgreSQL <span class="badge new">CT_POSTGRESQL = 56</span></h2>
+<p>Conector cliente PostgreSQL. Puerto predeterminado: 5432.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nPort</code></td><td>Numerico</td><td>5432</td><td>Puerto del servidor</td></tr>
+  <tr><td><code>cSchema</code></td><td>String</td><td>"public"</td><td>Esquema predeterminado</td></tr>
+  <tr><td><code>lSSL</code></td><td>Logico</td><td>.F.</td><td>Usar conexion SSL/TLS</td></tr>
+</table>
+
+<!-- TFirebird -->
+<h2 id="firebird">TFirebird <span class="badge new">CT_FIREBIRD = 57</span></h2>
+<p>Conector cliente Firebird SQL. Puerto predeterminado: 3050.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nPort</code></td><td>Numerico</td><td>3050</td><td>Puerto del servidor</td></tr>
+  <tr><td><code>cRole</code></td><td>String</td><td>""</td><td>Nombre del rol SQL</td></tr>
+  <tr><td><code>nDialect</code></td><td>Numerico</td><td>3</td><td>Dialecto SQL (1 o 3)</td></tr>
+</table>
+
+<!-- TSQLServer -->
+<h2 id="sqlserver">TSQLServer <span class="badge new">CT_SQLSERVER = 58</span></h2>
+<p>Conector cliente Microsoft SQL Server. Puerto predeterminado: 1433.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nPort</code></td><td>Numerico</td><td>1433</td><td>Puerto del servidor</td></tr>
+  <tr><td><code>lTrustedAuth</code></td><td>Logico</td><td>.F.</td><td>Usar autenticacion integrada de Windows</td></tr>
+  <tr><td><code>cAppName</code></td><td>String</td><td>""</td><td>Nombre de la aplicacion para monitoreo del servidor</td></tr>
+</table>
+
+<!-- TOracle -->
+<h2 id="oracle">TOracle <span class="badge new">CT_ORACLE = 59</span></h2>
+<p>Conector cliente Oracle Database. Puerto predeterminado: 1521.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nPort</code></td><td>Numerico</td><td>1521</td><td>Puerto del servidor</td></tr>
+  <tr><td><code>cServiceName</code></td><td>String</td><td>""</td><td>Nombre del servicio Oracle (alternativa a cDatabase)</td></tr>
+  <tr><td><code>cSchema</code></td><td>String</td><td>""</td><td>Esquema predeterminado</td></tr>
+</table>
+
+<!-- TMariaDB -->
+<h2 id="mariadb">TMariaDB <span class="badge new">CT_MARIADB = 60</span></h2>
+<p>Conector cliente MariaDB. Puerto predeterminado: 3306.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nPort</code></td><td>Numerico</td><td>3306</td><td>Puerto del servidor</td></tr>
+  <tr><td><code>lSSL</code></td><td>Logico</td><td>.F.</td><td>Usar conexion SSL/TLS</td></tr>
+</table>
+
+<!-- TMongoDB -->
+<h2 id="mongodb">TMongoDB <span class="badge new">CT_MONGODB = 61</span></h2>
+<p>Conector cliente MongoDB. Base de datos NoSQL orientada a documentos. Puerto predeterminado: 27017.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nPort</code></td><td>Numerico</td><td>27017</td><td>Puerto del servidor</td></tr>
+  <tr><td><code>cCollection</code></td><td>String</td><td>""</td><td>Coleccion predeterminada</td></tr>
+</table>
+
+<!-- Code Example -->
+<h2 id="example">Ejemplo de Codigo: Base de Datos SQLite</h2>
+<pre><span class="cm">// Conectar a una base de datos SQLite y consultar datos</span>
+
+<span class="cmd">FUNCTION</span> Main()
+
+   <span class="cmd">LOCAL</span> oDB, oRS
+
+   <span class="cm">// Crear y configurar la conexion SQLite</span>
+   oDB := TSQLite():New()
+   oDB:<span class="fn">cFile</span> := <span class="st">"miapp.db"</span>
+   oDB:<span class="fn">lWAL</span>  := .T.
+
+   oDB:<span class="fn">OnError</span> := { |n, c| QOut( <span class="st">"Error BD: "</span> + c ) }
+
+   <span class="cm">// Conectar y crear una tabla</span>
+   oDB:<span class="fn">Connect</span>()
+
+   oDB:<span class="fn">Execute</span>( <span class="st">"CREATE TABLE IF NOT EXISTS clientes ("</span> + ;
+               <span class="st">"  id INTEGER PRIMARY KEY AUTOINCREMENT,"</span>  + ;
+               <span class="st">"  name TEXT NOT NULL,"</span>                    + ;
+               <span class="st">"  email TEXT,"</span>                             + ;
+               <span class="st">"  city TEXT )"</span> )
+
+   <span class="cm">// Insertar registros</span>
+   oDB:<span class="fn">Execute</span>( <span class="st">"INSERT INTO clientes (name, email, city) VALUES ('John', 'john@test.com', 'NYC')"</span> )
+   oDB:<span class="fn">Execute</span>( <span class="st">"INSERT INTO clientes (name, email, city) VALUES ('Maria', 'maria@test.com', 'Madrid')"</span> )
+
+   <span class="cm">// Consultar datos</span>
+   oRS := oDB:<span class="fn">Query</span>( <span class="st">"SELECT * FROM clientes ORDER BY name"</span> )
+
+   <span class="cmd">DO WHILE</span> ! oRS:<span class="fn">Eof</span>()
+      QOut( oRS:<span class="fn">FieldGet</span>( <span class="st">"name"</span> ), oRS:<span class="fn">FieldGet</span>( <span class="st">"email"</span> ) )
+      oRS:<span class="fn">MoveNext</span>()
+   <span class="cmd">ENDDO</span>
+
+   oRS:<span class="fn">Close</span>()
+   oDB:<span class="fn">Disconnect</span>()
+
+<span class="cmd">RETURN</span> <span class="cmd">NIL</span></pre>
+
+<div class="info-box info">
+  <strong>9 Controles de Acceso a Datos</strong>
+  <p>Todos los componentes basados en SQL comparten la misma interfaz Query/Execute. Cambie de base de datos simplemente cambiando la clase del componente; el codigo de su aplicacion permanece igual. TDBFTable usa el modelo de navegacion xBase clasico.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles de Hilos - HarbourBuilder Docs</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros Pasos</h3>
+    <a href="index.html">Descripcion General</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicionales (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a Datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de Datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html" class="active">Hilos (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de Formularios</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente de IA</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="controls-standard.html">Paleta de Componentes</a> <span>/</span> Hilos
+</div>
+
+<h1>Controles de Hilos</h1>
+<p>La pestania Hilos proporciona 8 controles para programacion concurrente: hilos, primitivas de sincronizacion, grupos de hilos y canales de comunicacion entre hilos. Todos los controles son multiplataforma y utilizan las instalaciones de hilos nativas del sistema operativo.</p>
+
+<!-- TThread -->
+<h2 id="thread">TThread <span class="badge new">CT_THREAD = 63</span></h2>
+<p>Ejecuta codigo en un hilo separado del sistema operativo. El bloque fundamental para operaciones concurrentes.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nPriority</code></td><td>Numerico</td><td>0</td><td>Prioridad del hilo (-2 mas baja a +2 mas alta)</td></tr>
+  <tr><td><code>lFreeOnTerminate</code></td><td>Logico</td><td>.F.</td><td>Destruir automaticamente el objeto cuando el hilo termina</td></tr>
+  <tr><td><code>lRunning</code></td><td>Logico</td><td>.F.</td><td>El hilo se esta ejecutando actualmente (solo lectura)</td></tr>
+  <tr><td><code>lFinished</code></td><td>Logico</td><td>.F.</td><td>El hilo ha completado (solo lectura)</td></tr>
+  <tr><td><code>nThreadId</code></td><td>Numerico</td><td>0</td><td>Identificador de hilo del sistema operativo (solo lectura)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnExecute</code></td><td>Ciclo de vida</td><td>Codigo a ejecutar en el hilo (requerido)</td></tr>
+  <tr><td><code>OnTerminate</code></td><td>Ciclo de vida</td><td>Hilo termino su ejecucion (llamado en el hilo principal)</td></tr>
+</table>
+
+<table>
+  <tr><th>Metodo</th><th>Descripcion</th></tr>
+  <tr><td><code>Start()</code></td><td>Iniciar la ejecucion del hilo</td></tr>
+  <tr><td><code>Wait( nTimeout )</code></td><td>Esperar a que el hilo termine. Tiempo de espera opcional en ms</td></tr>
+  <tr><td><code>Cancel()</code></td><td>Solicitar cancelacion cooperativa</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Implementacion Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>CreateThread / _beginthreadex</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>pthread_create</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>pthread_create</td></tr>
+</table>
+
+<!-- TMutex -->
+<h2 id="mutex">TMutex <span class="badge new">CT_MUTEX = 64</span></h2>
+<p>Bloqueo de exclusion mutua. Asegura que solo un hilo acceda a un recurso compartido a la vez.</p>
+
+<table>
+  <tr><th>Metodo</th><th>Descripcion</th></tr>
+  <tr><td><code>Lock()</code></td><td>Adquirir el mutex. Se bloquea si otro hilo ya lo tiene</td></tr>
+  <tr><td><code>Unlock()</code></td><td>Liberar el mutex</td></tr>
+  <tr><td><code>TryLock()</code></td><td>Intentar adquirir sin bloqueo. Devuelve .T. si se adquirio</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Implementacion Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>CRITICAL_SECTION</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>pthread_mutex_t</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>pthread_mutex_t</td></tr>
+</table>
+
+<!-- TSemaphore -->
+<h2 id="semaphore">TSemaphore <span class="badge new">CT_SEMAPHORE = 65</span></h2>
+<p>Semaforo de conteo. Controla el acceso a un grupo de recursos compartidos con un conteo limitado.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nInitialCount</code></td><td>Numerico</td><td>0</td><td>Conteo inicial del semaforo</td></tr>
+  <tr><td><code>nMaxCount</code></td><td>Numerico</td><td>1</td><td>Conteo maximo del semaforo</td></tr>
+</table>
+
+<table>
+  <tr><th>Metodo</th><th>Descripcion</th></tr>
+  <tr><td><code>Wait( nTimeout )</code></td><td>Decrementar conteo. Se bloquea si el conteo es cero. Tiempo de espera opcional en ms</td></tr>
+  <tr><td><code>Signal()</code></td><td>Incrementar conteo. Despierta un hilo en espera</td></tr>
+</table>
+
+<!-- TCriticalSection -->
+<h2 id="criticalsection">TCriticalSection <span class="badge new">CT_CRITICALSECTION = 66</span></h2>
+<p>Primitiva de sincronizacion ligera. Mas rapida que TMutex para proteger secciones de codigo cortas dentro del mismo proceso.</p>
+
+<table>
+  <tr><th>Metodo</th><th>Descripcion</th></tr>
+  <tr><td><code>Enter()</code></td><td>Entrar en la seccion critica. Se bloquea si otro hilo esta dentro</td></tr>
+  <tr><td><code>Leave()</code></td><td>Salir de la seccion critica</td></tr>
+  <tr><td><code>TryEnter()</code></td><td>Intentar entrar sin bloqueo. Devuelve .T. si entro</td></tr>
+</table>
+
+<!-- TThreadPool -->
+<h2 id="threadpool">TThreadPool <span class="badge new">CT_THREADPOOL = 67</span></h2>
+<p>Gestiona un grupo de hilos de trabajo reutilizables. Envie tareas al grupo en lugar de crear hilos individuales.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nMinThreads</code></td><td>Numerico</td><td>2</td><td>Numero minimo de hilos de trabajo</td></tr>
+  <tr><td><code>nMaxThreads</code></td><td>Numerico</td><td>8</td><td>Numero maximo de hilos de trabajo</td></tr>
+  <tr><td><code>nQueueSize</code></td><td>Numerico</td><td>256</td><td>Tamano maximo de la cola de tareas pendientes</td></tr>
+  <tr><td><code>nActiveThreads</code></td><td>Numerico</td><td>0</td><td>Hilos de trabajo activos actualmente (solo lectura)</td></tr>
+  <tr><td><code>nPendingTasks</code></td><td>Numerico</td><td>0</td><td>Tareas en espera en la cola (solo lectura)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnTaskComplete</code></td><td>Ciclo de vida</td><td>Una tarea termino su ejecucion. Parametros: xResult, nTaskId</td></tr>
+  <tr><td><code>OnError</code></td><td>Error</td><td>Una tarea genero un error. Parametros: oError, nTaskId</td></tr>
+</table>
+
+<table>
+  <tr><th>Metodo</th><th>Descripcion</th></tr>
+  <tr><td><code>Submit( bTask )</code></td><td>Anadir una tarea (bloque de codigo) a la cola. Devuelve nTaskId</td></tr>
+  <tr><td><code>WaitAll( nTimeout )</code></td><td>Esperar a que todas las tareas pendientes se completen</td></tr>
+  <tr><td><code>Shutdown()</code></td><td>Detener todos los hilos despues de completar tareas pendientes</td></tr>
+</table>
+
+<!-- TAtomicInt -->
+<h2 id="atomicint">TAtomicInt <span class="badge new">CT_ATOMICINT = 68</span></h2>
+<p>Entero atomico sin bloqueo. Proporciona operaciones de contador seguras para hilos sin bloqueo explicito.</p>
+
+<table>
+  <tr><th>Metodo</th><th>Descripcion</th></tr>
+  <tr><td><code>Inc()</code></td><td>Incrementar atomicamente en 1. Devuelve nuevo valor</td></tr>
+  <tr><td><code>Dec()</code></td><td>Decrementar atomicamente en 1. Devuelve nuevo valor</td></tr>
+  <tr><td><code>Get()</code></td><td>Leer valor actual</td></tr>
+  <tr><td><code>Set( nValue )</code></td><td>Establecer atomicamente a nValue</td></tr>
+  <tr><td><code>CompareExchange( nExpected, nNew )</code></td><td>Si actual == nExpected, establecer a nNew. Devuelve .T. si se intercambio</td></tr>
+  <tr><td><code>Add( nValue )</code></td><td>Sumar atomicamente nValue. Devuelve nuevo valor</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Implementacion Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>InterlockedIncrement / InterlockedCompareExchange</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>__atomic builtins (GCC/Clang)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>__atomic builtins (GCC/Clang)</td></tr>
+</table>
+
+<!-- TCondVar -->
+<h2 id="condvar">TCondVar <span class="badge new">CT_CONDVAR = 69</span></h2>
+<p>Variable de condicion. Permite a los hilos esperar hasta que otra hilo senalice una condicion particular.</p>
+
+<table>
+  <tr><th>Metodo</th><th>Descripcion</th></tr>
+  <tr><td><code>Wait( oMutex, nTimeout )</code></td><td>Liberar mutex y esperar senal. Readquiere mutex al despertar. Tiempo de espera opcional en ms</td></tr>
+  <tr><td><code>Signal()</code></td><td>Despertar un hilo en espera</td></tr>
+  <tr><td><code>Broadcast()</code></td><td>Despertar todos los hilos en espera</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Implementacion Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>CONDITION_VARIABLE</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>pthread_cond_t</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>pthread_cond_t</td></tr>
+</table>
+
+<!-- TChannel -->
+<h2 id="channel">TChannel <span class="badge new">CT_CHANNEL = 70</span></h2>
+<p>Canal de mensajes seguro para hilos para comunicacion entre hilos. Inspirado en los canales de Go y la concurrencia CSP.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nBufferSize</code></td><td>Numerico</td><td>0</td><td>Capacidad del buffer (0 = sin buffer/sincrono)</td></tr>
+  <tr><td><code>lClosed</code></td><td>Logico</td><td>.F.</td><td>El canal ha sido cerrado (solo lectura)</td></tr>
+</table>
+
+<table>
+  <tr><th>Metodo</th><th>Descripcion</th></tr>
+  <tr><td><code>Send( xValue )</code></td><td>Enviar un valor al canal. Se bloquea si el buffer esta lleno</td></tr>
+  <tr><td><code>Receive()</code></td><td>Recibir un valor del canal. Se bloquea si esta vacio</td></tr>
+  <tr><td><code>TryReceive( @xValue )</code></td><td>Recepcion sin bloqueo. Devuelve .T. si habia un valor disponible</td></tr>
+  <tr><td><code>Close()</code></td><td>Cerrar el canal. No se pueden enviar mas valores</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnReceive</code></td><td>Datos</td><td>Valor recibido (alternativa a sondeo). Parametros: xValue</td></tr>
+</table>
+
+<!-- Code Example -->
+<h2 id="example">Ejemplo de Codigo: Patron Productor-Consumidor</h2>
+<pre><span class="cm">// Patron productor-consumidor usando TChannel y TThread</span>
+
+<span class="cmd">FUNCTION</span> Main()
+
+   <span class="cmd">LOCAL</span> oChannel, oProducer, oConsumer
+
+   <span class="cm">// Crear un canal con buffer de capacidad 10</span>
+   oChannel := TChannel():New()
+   oChannel:<span class="fn">nBufferSize</span> := <span class="nb">10</span>
+
+   <span class="cm">// Hilo productor: genera elementos de trabajo</span>
+   oProducer := TThread():New()
+   oProducer:<span class="fn">lFreeOnTerminate</span> := .T.
+   oProducer:<span class="fn">OnExecute</span> := { || ProduceItems( oChannel ) }
+
+   <span class="cm">// Hilo consumidor: procesa elementos de trabajo</span>
+   oConsumer := TThread():New()
+   oConsumer:<span class="fn">lFreeOnTerminate</span> := .T.
+   oConsumer:<span class="fn">OnExecute</span> := { || ConsumeItems( oChannel ) }
+
+   <span class="cm">// Iniciar ambos hilos</span>
+   oProducer:<span class="fn">Start</span>()
+   oConsumer:<span class="fn">Start</span>()
+
+   <span class="cm">// Esperar a que el productor termine, luego cerrar canal</span>
+   oProducer:<span class="fn">Wait</span>()
+   oChannel:<span class="fn">Close</span>()
+
+   <span class="cm">// Esperar a que el consumidor procese elementos restantes</span>
+   oConsumer:<span class="fn">Wait</span>()
+
+   QOut( <span class="st">"Todo listo!"</span> )
+
+<span class="cmd">RETURN</span> <span class="cmd">NIL</span>
+
+<span class="cmd">FUNCTION</span> ProduceItems( oChannel )
+
+   <span class="cmd">LOCAL</span> n
+
+   <span class="cmd">FOR</span> n := <span class="nb">1</span> <span class="cmd">TO</span> <span class="nb">100</span>
+      oChannel:<span class="fn">Send</span>( <span class="st">"Tarea #"</span> + Str( n ) )
+      QOut( <span class="st">"Producido: Tarea #"</span> + Str( n ) )
+   <span class="cmd">NEXT</span>
+
+<span class="cmd">RETURN</span> <span class="cmd">NIL</span>
+
+<span class="cmd">FUNCTION</span> ConsumeItems( oChannel )
+
+   <span class="cmd">LOCAL</span> xItem
+
+   <span class="cmd">DO WHILE</span> ! oChannel:<span class="fn">lClosed</span> .OR. oChannel:<span class="fn">TryReceive</span>( @xItem )
+      xItem := oChannel:<span class="fn">Receive</span>()
+      <span class="cmd">IF</span> xItem != <span class="cmd">NIL</span>
+         QOut( <span class="st">"Consumido: "</span> + xItem )
+      <span class="cmd">ENDIF</span>
+   <span class="cmd">ENDDO</span>
+
+<span class="cmd">RETURN</span> <span class="cmd">NIL</span></pre>
+
+<div class="info-box info">
+  <strong>8 Controles de Hilos</strong>
+  <p>Todas las primitivas de hilos se asignan directamente a las instalaciones nativas del sistema operativo para maximo rendimiento. Use TChannel para comunicacion segura entre hilos en lugar de variables compartidas con bloqueos.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

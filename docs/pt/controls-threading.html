@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles de Threading - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html" class="active">Threading (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="controls-standard.html">Paleta de Componentes</a> <span>/</span> Threading
+</div>
+
+<h1>Controles de Threading</h1>
+<p>A aba Threading fornece 8 controles para programacao concorrente: threads, primitivas de sincronizacao, pools de threads e canais de comunicacao inter-threads. Todos os controles sao multiplataforma e usam mecanismos nativos de threading do SO.</p>
+
+<!-- TThread -->
+<h2 id="thread">TThread <span class="badge new">CT_THREAD = 63</span></h2>
+<p>Executa codigo em uma thread separada do SO. O principal bloco de construcao para operacoes concorrentes.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nPriority</code></td><td>Numerico</td><td>0</td><td>Prioridade da thread (-2 mais baixa a +2 mais alta)</td></tr>
+  <tr><td><code>lFreeOnTerminate</code></td><td>Logico</td><td>.F.</td><td>Destruir objeto automaticamente quando a thread termina</td></tr>
+  <tr><td><code>lRunning</code></td><td>Logico</td><td>.F.</td><td>Thread esta executando atualmente (somente leitura)</td></tr>
+  <tr><td><code>lFinished</code></td><td>Logico</td><td>.F.</td><td>Thread foi concluida (somente leitura)</td></tr>
+  <tr><td><code>nThreadId</code></td><td>Numerico</td><td>0</td><td>Identificador da thread no SO (somente leitura)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnExecute</code></td><td>Ciclo de vida</td><td>Codigo para executar na thread (obrigatorio)</td></tr>
+  <tr><td><code>OnTerminate</code></td><td>Ciclo de vida</td><td>Thread concluiu execucao (chamado na thread principal)</td></tr>
+</table>
+
+<table>
+  <tr><th>Metodo</th><th>Descricao</th></tr>
+  <tr><td><code>Start()</code></td><td>Iniciar execucao da thread</td></tr>
+  <tr><td><code>Wait( nTimeout )</code></td><td>Aguardar thread terminar. Tempo limite opcional em ms</td></tr>
+  <tr><td><code>Cancel()</code></td><td>Solicitar cancelamento cooperativo</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Implementacao Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>CreateThread / _beginthreadex</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>pthread_create</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>pthread_create</td></tr>
+</table>
+
+<!-- TMutex -->
+<h2 id="mutex">TMutex <span class="badge new">CT_MUTEX = 64</span></h2>
+<p>Bloqueio de exclusao mutua. Garante que apenas uma thread acesse um recurso compartilhado por vez.</p>
+
+<table>
+  <tr><th>Metodo</th><th>Descricao</th></tr>
+  <tr><td><code>Lock()</code></td><td>Adquirir o mutex. Bloqueia se ja estiver bloqueado por outra thread</td></tr>
+  <tr><td><code>Unlock()</code></td><td>Liberar o mutex</td></tr>
+  <tr><td><code>TryLock()</code></td><td>Tentar adquirir sem bloquear. Retorna .T. se adquiriu</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Implementacao Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>CRITICAL_SECTION</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>pthread_mutex_t</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>pthread_mutex_t</td></tr>
+</table>
+
+<!-- TSemaphore -->
+<h2 id="semaphore">TSemaphore <span class="badge new">CT_SEMAPHORE = 65</span></h2>
+<p>Semaforo de contagem. Controla o acesso a um pool de recursos compartilhados com contagem limitada.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nInitialCount</code></td><td>Numerico</td><td>0</td><td>Contagem inicial do semaforo</td></tr>
+  <tr><td><code>nMaxCount</code></td><td>Numerico</td><td>1</td><td>Contagem maxima do semaforo</td></tr>
+</table>
+
+<table>
+  <tr><th>Metodo</th><th>Descricao</th></tr>
+  <tr><td><code>Wait( nTimeout )</code></td><td>Decrementar contagem. Bloqueia se contagem e zero. Tempo limite opcional em ms</td></tr>
+  <tr><td><code>Signal()</code></td><td>Incrementar contagem. Acorda uma thread esperando</td></tr>
+</table>
+
+<!-- TCriticalSection -->
+<h2 id="criticalsection">TCriticalSection <span class="badge new">CT_CRITICALSECTION = 66</span></h2>
+<p>Primitiva de sincronizacao leve. Mais rapida que TMutex para proteger trechos curtos de codigo dentro do mesmo processo.</p>
+
+<table>
+  <tr><th>Metodo</th><th>Descricao</th></tr>
+  <tr><td><code>Enter()</code></td><td>Entrar na secao critica. Bloqueia se outra thread estiver dentro</td></tr>
+  <tr><td><code>Leave()</code></td><td>Sair da secao critica</td></tr>
+  <tr><td><code>TryEnter()</code></td><td>Tentar entrar sem bloquear. Retorna .T. se entrou</td></tr>
+</table>
+
+<!-- TThreadPool -->
+<h2 id="threadpool">TThreadPool <span class="badge new">CT_THREADPOOL = 67</span></h2>
+<p>Gerencia um pool de threads de trabalho reutilizaveis. Envie tarefas ao pool em vez de criar threads individuais.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nMinThreads</code></td><td>Numerico</td><td>2</td><td>Numero minimo de threads de trabalho</td></tr>
+  <tr><td><code>nMaxThreads</code></td><td>Numerico</td><td>8</td><td>Numero maximo de threads de trabalho</td></tr>
+  <tr><td><code>nQueueSize</code></td><td>Numerico</td><td>256</td><td>Tamanho maximo da fila de tarefas pendentes</td></tr>
+  <tr><td><code>nActiveThreads</code></td><td>Numerico</td><td>0</td><td>Threads de trabalho ativas atualmente (somente leitura)</td></tr>
+  <tr><td><code>nPendingTasks</code></td><td>Numerico</td><td>0</td><td>Tarefas aguardando na fila (somente leitura)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnTaskComplete</code></td><td>Ciclo de vida</td><td>Uma tarefa concluiu execucao. Parametros: xResult, nTaskId</td></tr>
+  <tr><td><code>OnError</code></td><td>Erro</td><td>Uma tarefa gerou um erro. Parametros: oError, nTaskId</td></tr>
+</table>
+
+<table>
+  <tr><th>Metodo</th><th>Descricao</th></tr>
+  <tr><td><code>Submit( bTask )</code></td><td>Adicionar uma tarefa (bloco de codigo) a fila. Retorna nTaskId</td></tr>
+  <tr><td><code>WaitAll( nTimeout )</code></td><td>Aguardar todas as tarefas pendentes concluirem</td></tr>
+  <tr><td><code>Shutdown()</code></td><td>Parar todas as threads apos concluir tarefas pendentes</td></tr>
+</table>
+
+<!-- TAtomicInt -->
+<h2 id="atomicint">TAtomicInt <span class="badge new">CT_ATOMICINT = 68</span></h2>
+<p>Inteiro atomico sem bloqueio. Fornece operacoes de contador thread-safe sem bloqueio explicito.</p>
+
+<table>
+  <tr><th>Metodo</th><th>Descricao</th></tr>
+  <tr><td><code>Inc()</code></td><td>Incrementar atomicamente em 1. Retorna novo valor</td></tr>
+  <tr><td><code>Dec()</code></td><td>Decrementar atomicamente em 1. Retorna novo valor</td></tr>
+  <tr><td><code>Get()</code></td><td>Ler valor atual</td></tr>
+  <tr><td><code>Set( nValue )</code></td><td>Definir atomicamente como nValue</td></tr>
+  <tr><td><code>CompareExchange( nExpected, nNew )</code></td><td>Se atual == nExpected, definir como nNew. Retorna .T. se trocou</td></tr>
+  <tr><td><code>Add( nValue )</code></td><td>Somar atomicamente nValue. Retorna novo valor</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Implementacao Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>InterlockedIncrement / InterlockedCompareExchange</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>__atomic builtins (GCC/Clang)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>__atomic builtins (GCC/Clang)</td></tr>
+</table>
+
+<!-- TCondVar -->
+<h2 id="condvar">TCondVar <span class="badge new">CT_CONDVAR = 69</span></h2>
+<p>Variavel de condicao. Permite que threads aguardem ate que uma condicao especifica seja sinalizada por outra thread.</p>
+
+<table>
+  <tr><th>Metodo</th><th>Descricao</th></tr>
+  <tr><td><code>Wait( oMutex, nTimeout )</code></td><td>Liberar mutex e aguardar sinal. Re-adquire mutex ao acordar. Tempo limite opcional em ms</td></tr>
+  <tr><td><code>Signal()</code></td><td>Acordar uma thread aguardando</td></tr>
+  <tr><td><code>Broadcast()</code></td><td>Acordar todas as threads aguardando</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Implementacao Nativa</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>CONDITION_VARIABLE</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>pthread_cond_t</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>pthread_cond_t</td></tr>
+</table>
+
+<!-- TChannel -->
+<h2 id="channel">TChannel <span class="badge new">CT_CHANNEL = 70</span></h2>
+<p>Canal de mensagens thread-safe para comunicacao inter-threads. Inspirado nos canais do Go e concorrencia CSP.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nBufferSize</code></td><td>Numerico</td><td>0</td><td>Capacidade do buffer (0 = sem buffer/sincrono)</td></tr>
+  <tr><td><code>lClosed</code></td><td>Logico</td><td>.F.</td><td>Canal foi fechado (somente leitura)</td></tr>
+</table>
+
+<table>
+  <tr><th>Metodo</th><th>Descricao</th></tr>
+  <tr><td><code>Send( xValue )</code></td><td>Enviar um valor ao canal. Bloqueia se buffer estiver cheio</td></tr>
+  <tr><td><code>Receive()</code></td><td>Receber um valor do canal. Bloqueia se vazio</td></tr>
+  <tr><td><code>TryReceive( @xValue )</code></td><td>Recebimento sem bloqueio. Retorna .T. se um valor estava disponivel</td></tr>
+  <tr><td><code>Close()</code></td><td>Fechar o canal. Nenhum valor pode mais ser enviado</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnReceive</code></td><td>Dados</td><td>Valor recebido (alternativa a sondagem). Parametros: xValue</td></tr>
+</table>
+
+<!-- Code Example -->
+<h2 id="example">Exemplo de Codigo: Padrao Produtor-Consumidor</h2>
+<pre><span class="cm">// Padrao produtor-consumidor usando TChannel e TThread</span>
+
+<span class="cmd">FUNCTION</span> Main()
+
+   <span class="cmd">LOCAL</span> oChannel, oProducer, oConsumer
+
+   <span class="cm">// Criar um canal com buffer de capacidade 10</span>
+   oChannel := TChannel():New()
+   oChannel:<span class="fn">nBufferSize</span> := <span class="nb">10</span>
+
+   <span class="cm">// Thread produtora: gera itens de trabalho</span>
+   oProducer := TThread():New()
+   oProducer:<span class="fn">lFreeOnTerminate</span> := .T.
+   oProducer:<span class="fn">OnExecute</span> := { || ProduzirItens( oChannel ) }
+
+   <span class="cm">// Thread consumidora: processa itens de trabalho</span>
+   oConsumer := TThread():New()
+   oConsumer:<span class="fn">lFreeOnTerminate</span> := .T.
+   oConsumer:<span class="fn">OnExecute</span> := { || ConsumirItens( oChannel ) }
+
+   <span class="cm">// Iniciar ambas as threads</span>
+   oProducer:<span class="fn">Start</span>()
+   oConsumer:<span class="fn">Start</span>()
+
+   <span class="cm">// Aguardar produtor terminar, entao fechar canal</span>
+   oProducer:<span class="fn">Wait</span>()
+   oChannel:<span class="fn">Close</span>()
+
+   <span class="cm">// Aguardar consumidora drenar itens restantes</span>
+   oConsumer:<span class="fn">Wait</span>()
+
+   QOut( <span class="st">"Tudo concluido!"</span> )
+
+<span class="cmd">RETURN</span> <span class="cmd">NIL</span>
+
+<span class="cmd">FUNCTION</span> ProduzirItens( oChannel )
+
+   <span class="cmd">LOCAL</span> n
+
+   <span class="cmd">FOR</span> n := <span class="nb">1</span> <span class="cmd">TO</span> <span class="nb">100</span>
+      oChannel:<span class="fn">Send</span>( <span class="st">"Tarefa #"</span> + Str( n ) )
+      QOut( <span class="st">"Produzido: Tarefa #"</span> + Str( n ) )
+   <span class="cmd">NEXT</span>
+
+<span class="cmd">RETURN</span> <span class="cmd">NIL</span>
+
+<span class="cmd">FUNCTION</span> ConsumirItens( oChannel )
+
+   <span class="cmd">LOCAL</span> xItem
+
+   <span class="cmd">DO WHILE</span> ! oChannel:<span class="fn">lClosed</span> .OR. oChannel:<span class="fn">TryReceive</span>( @xItem )
+      xItem := oChannel:<span class="fn">Receive</span>()
+      <span class="cmd">IF</span> xItem != <span class="cmd">NIL</span>
+         QOut( <span class="st">"Consumido: "</span> + xItem )
+      <span class="cmd">ENDIF</span>
+   <span class="cmd">ENDDO</span>
+
+<span class="cmd">RETURN</span> <span class="cmd">NIL</span></pre>
+
+<div class="info-box info">
+  <strong>8 Controles de Threading</strong>
+  <p>Todas as primitivas de threading mapeiam diretamente para mecanismos nativos do SO para maximo desempenho.
+  Use TChannel para comunicacao segura entre threads em vez de variaveis compartilhadas com bloqueios.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

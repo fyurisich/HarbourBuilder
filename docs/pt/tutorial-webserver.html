@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial: Construindo um App Web - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a class="logo" href="index.html">
+    <span>HB</span> HarbourBuilder Docs
+  </a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Ola Mundo</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html" class="active">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span> Tutoriais <span>/</span> Servidor Web
+</div>
+
+<h1>Tutorial: Construindo um App Web</h1>
+<p>O HarbourBuilder inclui um componente <strong>TWebServer</strong> integrado que permite servir paginas web e
+APIs JSON diretamente da sua aplicacao. Neste tutorial voce vai construir um app web de Tarefas simples
+com uma GUI desktop e uma interface via navegador rodando lado a lado.</p>
+
+<h2>Passo 1: Criar o Projeto</h2>
+<ol>
+  <li>Crie um novo projeto chamado <code>TodoWebApp</code> via <strong>Arquivo &rarr; Novo Projeto</strong>.</li>
+  <li>Abra <code>main.prg</code> no Editor de Codigo.</li>
+  <li>Vamos construir um formulario desktop para gerenciar tarefas e um servidor web que expoe os mesmos dados.</li>
+</ol>
+
+<h2>Passo 2: Configurar o Servidor Web</h2>
+<p>Arraste um <strong>TWebServer</strong> da aba de paleta <strong>Internet</strong> para o formulario, ou crie no codigo.
+Defina a porta e defina suas rotas.</p>
+
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">static</span> aTodos := {}  <span class="cm">// Lista de tarefas compartilhada</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oForm, oServer, oBrw, oGet, oBtnAdd
+   <span class="kw">local</span> cTask := <span class="st">""</span>
+
+   <span class="cm">// --- Config do servidor web ---</span>
+   <span class="cmd">DEFINE WEBSERVER</span> oServer <span class="cmd">PORT</span> <span class="nb">8080</span>
+
+   oServer:<span class="fn">Route</span>( <span class="st">"GET"</span>,  <span class="st">"/"</span>,          { |oReq, oRes| <span class="fn">ServeHomePage</span>( oReq, oRes ) } )
+   oServer:<span class="fn">Route</span>( <span class="st">"GET"</span>,  <span class="st">"/api/todos"</span>,  { |oReq, oRes| <span class="fn">GetTodosJSON</span>( oReq, oRes ) } )
+   oServer:<span class="fn">Route</span>( <span class="st">"POST"</span>, <span class="st">"/api/todos"</span>,  { |oReq, oRes| <span class="fn">AddTodoJSON</span>( oReq, oRes ) } )
+   oServer:<span class="fn">Route</span>( <span class="st">"DELETE"</span>, <span class="st">"/api/todos/:id"</span>, { |oReq, oRes| <span class="fn">DeleteTodoJSON</span>( oReq, oRes ) } )
+
+   oServer:<span class="fn">Start</span>()
+
+   <span class="cm">// --- UI Desktop ---</span>
+   <span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"App de Tarefas (Desktop + Web na porta 8080)"</span> ;
+      <span class="cmd">SIZE</span> <span class="nb">600</span>, <span class="nb">500</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+   @ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">BROWSE</span> oBrw ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">560</span>, <span class="nb">350</span> ;
+      <span class="cmd">HEADERS</span> { <span class="st">"#"</span>, <span class="st">"Tarefa"</span>, <span class="st">"Status"</span> } ;
+      <span class="cmd">WIDTHS</span>  { <span class="nb">40</span>, <span class="nb">350</span>, <span class="nb">100</span> }
+
+   @ <span class="nb">380</span>, <span class="nb">10</span> <span class="cmd">GET</span> oGet <span class="cmd">VAR</span> cTask <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">400</span>, <span class="nb">24</span>
+
+   @ <span class="nb">380</span>, <span class="nb">420</span> <span class="cmd">BUTTON</span> oBtnAdd <span class="cmd">PROMPT</span> <span class="st">"Adicionar"</span> ;
+      <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">100</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> ( AAdd( aTodos, { oGet:<span class="fn">GetValue</span>(), <span class="st">"pendente"</span> } ), ;
+              <span class="fn">RefreshGrid</span>( oBrw ), oGet:<span class="fn">SetValue</span>( <span class="st">""</span> ) )
+
+   <span class="fn">RefreshGrid</span>( oBrw )
+
+   oForm:<span class="fn">OnClose</span> := { || oServer:<span class="fn">Stop</span>(), .T. }
+
+   <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<div class="info-box tip">
+  <strong>Desktop + Web em um unico executavel</strong>
+  <p>O TWebServer roda em uma thread em segundo plano, entao seu formulario desktop permanece totalmente interativo.
+  Tanto a GUI quanto o navegador veem o mesmo array <code>aTodos</code>. Alteracoes de qualquer lado
+  sao imediatamente visiveis ao outro.</p>
+</div>
+
+<h2>Passo 3: Servir uma Pagina HTML</h2>
+<p>A rota raiz <code>/</code> serve uma pagina HTML completa. Use <code>oRes:SendHTML()</code> para retornar conteudo HTML.</p>
+
+<pre><span class="kw">static function</span> <span class="fn">ServeHomePage</span>( oReq, oRes )
+
+   <span class="kw">local</span> cHTML := <span class="st">'&lt;!DOCTYPE html&gt;'</span> + ;
+      <span class="st">'&lt;html&gt;&lt;head&gt;&lt;title&gt;App de Tarefas&lt;/title&gt;'</span> + ;
+      <span class="st">'&lt;style&gt;body{font-family:sans-serif;max-width:600px;margin:2em auto}'</span> + ;
+      <span class="st">'input{padding:8px;width:70%} button{padding:8px 16px}'</span> + ;
+      <span class="st">'li{padding:4px 0}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;'</span> + ;
+      <span class="st">'&lt;h1&gt;Lista de Tarefas&lt;/h1&gt;'</span> + ;
+      <span class="st">'&lt;input id="task" placeholder="Nova tarefa..."&gt;'</span> + ;
+      <span class="st">'&lt;button onclick="addTask()"&gt;Adicionar&lt;/button&gt;'</span> + ;
+      <span class="st">'&lt;ul id="list"&gt;&lt;/ul&gt;'</span> + ;
+      <span class="st">'&lt;script&gt;'</span> + ;
+      <span class="st">'async function load(){let r=await fetch("/api/todos");'</span> + ;
+      <span class="st">'let d=await r.json();let h="";'</span> + ;
+      <span class="st">'d.forEach((t,i)=&gt;h+="&lt;li&gt;"+t[0]+" ["+t[1]+"] "</span> + ;
+      <span class="st">'+"&lt;a href=# onclick=del("+i+")&gt;x&lt;/a&gt;&lt;/li&gt;");'</span> + ;
+      <span class="st">'document.getElementById("list").innerHTML=h}'</span> + ;
+      <span class="st">'async function addTask(){let v=document.getElementById("task").value;'</span> + ;
+      <span class="st">'await fetch("/api/todos",{method:"POST",'</span> + ;
+      <span class="st">'headers:{"Content-Type":"application/json"},'</span> + ;
+      <span class="st">'body:JSON.stringify({task:v})});load()}'</span> + ;
+      <span class="st">'async function del(i){await fetch("/api/todos/"+i,'</span> + ;
+      <span class="st">'{method:"DELETE"});load()}'</span> + ;
+      <span class="st">'load();&lt;/script&gt;&lt;/body&gt;&lt;/html&gt;'</span>
+
+   oRes:<span class="fn">SendHTML</span>( cHTML )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Passo 4: Retornar JSON para a API</h2>
+<p>As rotas de API usam <code>oRes:SendJSON()</code> para retornar dados estruturados que o JavaScript do navegador
+(ou qualquer cliente HTTP) pode consumir.</p>
+
+<pre><span class="kw">static function</span> <span class="fn">GetTodosJSON</span>( oReq, oRes )
+
+   oRes:<span class="fn">SendJSON</span>( hb_jsonEncode( aTodos ) )
+
+<span class="kw">return</span> <span class="kw">nil</span>
+
+<span class="kw">static function</span> <span class="fn">AddTodoJSON</span>( oReq, oRes )
+
+   <span class="kw">local</span> hBody := hb_jsonDecode( oReq:<span class="fn">cBody</span> )
+
+   AAdd( aTodos, { hBody[ <span class="st">"task"</span> ], <span class="st">"pendente"</span> } )
+   oRes:<span class="fn">SendJSON</span>( <span class="st">'{"status":"ok"}'</span> )
+
+<span class="kw">return</span> <span class="kw">nil</span>
+
+<span class="kw">static function</span> <span class="fn">DeleteTodoJSON</span>( oReq, oRes )
+
+   <span class="kw">local</span> nId := Val( oReq:<span class="fn">Param</span>( <span class="st">"id"</span> ) ) + <span class="nb">1</span>
+
+   <span class="kw">if</span> nId &gt;= <span class="nb">1</span> .and. nId &lt;= Len( aTodos )
+      ADel( aTodos, nId )
+      ASize( aTodos, Len( aTodos ) - <span class="nb">1</span> )
+   <span class="kw">endif</span>
+
+   oRes:<span class="fn">SendJSON</span>( <span class="st">'{"status":"ok"}'</span> )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Passo 5: Atualizar a Grade Desktop</h2>
+
+<pre><span class="kw">static function</span> <span class="fn">RefreshGrid</span>( oBrw )
+
+   <span class="kw">local</span> aData := {}, n
+
+   <span class="kw">for</span> n := <span class="nb">1</span> <span class="kw">to</span> Len( aTodos )
+      AAdd( aData, { n, aTodos[ n ][ <span class="nb">1</span> ], aTodos[ n ][ <span class="nb">2</span> ] } )
+   <span class="kw">next</span>
+
+   oBrw:<span class="fn">SetArray</span>( aData )
+   oBrw:<span class="fn">Refresh</span>()
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Passo 6: Compilar e Testar</h2>
+<ol>
+  <li>Pressione <strong>F9</strong> para compilar e executar.</li>
+  <li>O formulario desktop aparece com uma lista de tarefas vazia. Adicione algumas tarefas usando a GUI.</li>
+  <li>Abra um navegador e navegue para <code>http://localhost:8080</code>.</li>
+  <li>Voce ve as mesmas tarefas renderizadas como HTML. Adicione ou exclua tarefas do navegador.</li>
+  <li>Volte para o desktop &mdash; os dados sao compartilhados em tempo real.</li>
+</ol>
+
+<!-- Screenshot placeholder: Split view showing the desktop TODO form and a browser window at localhost:8080 side by side -->
+
+<h2>Visao Geral da Arquitetura</h2>
+
+<div class="mermaid">
+graph TB
+    subgraph "Unico Executavel HarbourBuilder"
+        A["UI Desktop<br/>TForm + TBrowse"] --- C["Dados Compartilhados<br/>Array aTodos"]
+        B["TWebServer<br/>Porta 8080"] --- C
+    end
+    D["Navegador<br/>http://localhost:8080"] -->|"HTTP GET/POST/DELETE"| B
+    A -->|"Acesso direto ao array"| C
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style C fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style D fill:#f0883e,stroke:#d18616,color:#0d1117
+</div>
+
+<div class="info-box tip">
+  <strong>Servindo arquivos estaticos</strong>
+  <p>Para aplicacoes web maiores, use <code>oServer:Static( "/assets", "./www" )</code> para servir CSS, JavaScript,
+  e arquivos de imagem de uma pasta local em vez de incorporar HTML em strings.</p>
+</div>
+
+<div class="info-box tip">
+  <strong>Proximo passo</strong>
+  <p>Pronto para adicionar inteligencia ao seu app? Continue para o tutorial
+  <a href="tutorial-ai.html">Integracao com IA</a> para conectar a LLMs locais
+  e executar inferencia diretamente da sua aplicacao.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

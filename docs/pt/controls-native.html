@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles Nativos - HarbourBuilder Docs</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicionais (10)</a>
+    <a href="controls-native.html" class="active">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threads (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="controls-standard.html">Paleta de Componentes</a> <span>/</span> Win32 / Cocoa / GTK3
+</div>
+
+<h1>Controles Nativos de Plataforma</h1>
+<p>A aba Win32 / Cocoa / GTK3 fornece controles complexos que mapeiam diretamente para os widgets avancados nativos de cada plataforma. Estes controles oferecem funcionalidade rica com integracao completa ao sistema operacional.</p>
+
+<!-- TTabControl -->
+<h2 id="tabcontrol">TTabControl <span class="badge new">CT_TABCONTROL = 33</span></h2>
+<p>Conteiner de paginas com abas. Cada aba hospeda um painel de controles, permitindo interfaces multipagina.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nTabIndex</code></td><td>Numerico</td><td>0</td><td>Aba ativa atualmente (base 0)</td></tr>
+  <tr><td><code>nTabCount</code></td><td>Numerico</td><td>0</td><td>Numero de abas (somente leitura)</td></tr>
+  <tr><td><code>nTabPosition</code></td><td>Numerico</td><td>0</td><td>0=Topo, 1=Inferior, 2=Esquerda, 3=Direita</td></tr>
+  <tr><td><code>lHotTrack</code></td><td>Logico</td><td>.F.</td><td>Destacar abas ao passar o mouse</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnChange</code></td><td>Acao</td><td>Aba ativa alterada</td></tr>
+  <tr><td><code>OnChanging</code></td><td>Acao</td><td>Aba esta prestes a ser alterada (pode cancelar)</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>WC_TABCONTROL (SysTabControl32)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTabView</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkNotebook</td></tr>
+</table>
+
+<pre><span class="cm">// Criar um formulario com abas</span>
+@ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">TABCONTROL</span> oAbas <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">400</span>, <span class="nb">300</span>
+oAbas:<span class="fn">AddTab</span>( <span class="st">"Geral"</span> )
+oAbas:<span class="fn">AddTab</span>( <span class="st">"Detalhes"</span> )
+oAbas:<span class="fn">AddTab</span>( <span class="st">"Observacoes"</span> )</pre>
+
+<!-- TTreeView -->
+<h2 id="treeview">TTreeView <span class="badge new">CT_TREEVIEW = 20</span></h2>
+<p>Exibicao hierarquica em arvore com nos expansiveis/recoliveis. Ideal para navegadores de arquivos, arvores de categorias e organogramas.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>lShowLines</code></td><td>Logico</td><td>.T.</td><td>Exibir linhas de conexao entre nos</td></tr>
+  <tr><td><code>lShowButtons</code></td><td>Logico</td><td>.T.</td><td>Exibir botoes de expansao/recolhimento</td></tr>
+  <tr><td><code>lCheckBoxes</code></td><td>Logico</td><td>.F.</td><td>Exibir caixas de selecao ao lado dos itens</td></tr>
+  <tr><td><code>lSorted</code></td><td>Logico</td><td>.F.</td><td>Ordenar nos automaticamente em ordem alfabetica</td></tr>
+  <tr><td><code>oSelected</code></td><td>TreeNode</td><td>NIL</td><td>No atualmente selecionado</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnChange</code></td><td>Acao</td><td>No selecionado alterado</td></tr>
+  <tr><td><code>OnExpanding</code></td><td>Acao</td><td>No esta prestes a ser expandido</td></tr>
+  <tr><td><code>OnCollapsing</code></td><td>Acao</td><td>No esta prestes a ser recolhido</td></tr>
+  <tr><td><code>OnDblClick</code></td><td>Acao</td><td>No clicado duas vezes</td></tr>
+  <tr><td><code>OnEdited</code></td><td>Acao</td><td>Rotulo do no editado</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>WC_TREEVIEW (SysTreeView32)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSOutlineView</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkTreeView (modelo de arvore)</td></tr>
+</table>
+
+<pre><span class="cm">// Construir uma arvore de categorias</span>
+@ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">TREEVIEW</span> oArvore <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">200</span>, <span class="nb">300</span>
+oRaiz := oArvore:<span class="fn">AddItem</span>( <span class="st">"Produtos"</span> )
+oRaiz:<span class="fn">AddChild</span>( <span class="st">"Eletronicos"</span> )
+oRaiz:<span class="fn">AddChild</span>( <span class="st">"Roupas"</span> )
+oRaiz:<span class="fn">Expand</span>()</pre>
+
+<!-- TListView -->
+<h2 id="listview">TListView <span class="badge new">CT_LISTVIEW = 21</span></h2>
+<p>Lista multi-coluna com icones. Suporta modos de exibicao icone, icone pequeno, lista e detalhe/relatorio.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nViewStyle</code></td><td>Numerico</td><td>3</td><td>0=Icone, 1=IconePequeno, 2=Lista, 3=Relatorio</td></tr>
+  <tr><td><code>lGridLines</code></td><td>Logico</td><td>.F.</td><td>Exibir linhas de grade na visao de relatorio</td></tr>
+  <tr><td><code>lCheckBoxes</code></td><td>Logico</td><td>.F.</td><td>Exibir caixas de selecao</td></tr>
+  <tr><td><code>lMultiSelect</code></td><td>Logico</td><td>.F.</td><td>Permitir selecao multipla</td></tr>
+  <tr><td><code>nSortColumn</code></td><td>Numerico</td><td>-1</td><td>Coluna para ordenacao (-1 = nenhuma)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnSelectItem</code></td><td>Acao</td><td>Item selecionado</td></tr>
+  <tr><td><code>OnDblClick</code></td><td>Acao</td><td>Item clicado duas vezes</td></tr>
+  <tr><td><code>OnColumnClick</code></td><td>Acao</td><td>Cabecalho de coluna clicado (para ordenacao)</td></tr>
+  <tr><td><code>OnEdited</code></td><td>Acao</td><td>Rotulo do item editado</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>WC_LISTVIEW (SysListView32)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTableView (multi-coluna)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkTreeView + GtkListStore</td></tr>
+</table>
+
+<!-- TProgressBar -->
+<h2 id="progressbar">TProgressBar <span class="badge new">CT_PROGRESSBAR = 22</span></h2>
+<p>Indicador visual de progresso de operacao. Suporta modos deterministico (percentual) e indeterminado (marquee).</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nMin</code></td><td>Numerico</td><td>0</td><td>Valor minimo</td></tr>
+  <tr><td><code>nMax</code></td><td>Numerico</td><td>100</td><td>Valor maximo</td></tr>
+  <tr><td><code>nPosition</code></td><td>Numerico</td><td>0</td><td>Valor de progresso atual</td></tr>
+  <tr><td><code>lMarquee</code></td><td>Logico</td><td>.F.</td><td>Modo indeterminado (animado)</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>PROGRESS_CLASS (msctls_progress32)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSProgressIndicator</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkProgressBar</td></tr>
+</table>
+
+<pre><span class="cm">// Barra de progresso para processamento de arquivo</span>
+@ <span class="nb">200</span>, <span class="nb">20</span> <span class="cmd">PROGRESSBAR</span> oProgresso <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">300</span>, <span class="nb">20</span> <span class="cmd">RANGE</span> <span class="nb">0</span>, <span class="nb">100</span>
+oProgresso:<span class="fn">nPosition</span> := <span class="nb">45</span></pre>
+
+<!-- TRichEdit -->
+<h2 id="richedit">TRichEdit <span class="badge new">CT_RICHEDIT = 23</span></h2>
+<p>Editor de texto rico que suporta negrito, italico, sublinhado, cores, fontes e formatacao de paragrafos (RTF).</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>""</td><td>Conteudo do texto simples</td></tr>
+  <tr><td><code>cRTFText</code></td><td>String</td><td>""</td><td>Conteudo de texto rico (RTF)</td></tr>
+  <tr><td><code>lReadOnly</code></td><td>Logico</td><td>.F.</td><td>Impede edicao</td></tr>
+  <tr><td><code>lWordWrap</code></td><td>Logico</td><td>.T.</td><td>Quebra linhas longas</td></tr>
+  <tr><td><code>nSelStart</code></td><td>Numerico</td><td>0</td><td>Posicao inicial da selecao</td></tr>
+  <tr><td><code>nSelLength</code></td><td>Numerico</td><td>0</td><td>Comprimento da selecao</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnChange</code></td><td>Acao</td><td>Conteudo alterado</td></tr>
+  <tr><td><code>OnSelChange</code></td><td>Acao</td><td>Selecao alterada</td></tr>
+  <tr><td><code>OnKeyDown</code></td><td>Teclado</td><td>Tecla pressionada</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>RICHEDIT_CLASS (RichEdit20W)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTextView (RTF ativado)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkTextView (com marcacao Pango)</td></tr>
+</table>
+
+<!-- TTrackBar -->
+<h2 id="trackbar">TTrackBar <span class="badge new">CT_TRACKBAR = 34</span></h2>
+<p>Controle deslizante para selecao de valor numerico dentro de um intervalo. Usado para volume, zoom e ajustes similares.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nMin</code></td><td>Numerico</td><td>0</td><td>Valor minimo</td></tr>
+  <tr><td><code>nMax</code></td><td>Numerico</td><td>100</td><td>Valor maximo</td></tr>
+  <tr><td><code>nPosition</code></td><td>Numerico</td><td>0</td><td>Posicao atual do controle deslizante</td></tr>
+  <tr><td><code>nTickFreq</code></td><td>Numerico</td><td>1</td><td>Frequencia das marcas</td></tr>
+  <tr><td><code>lHorizontal</code></td><td>Logico</td><td>.T.</td><td>Orientacao horizontal</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnChange</code></td><td>Acao</td><td>Posicao do controle deslizante alterada</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>TRACKBAR_CLASS (msctls_trackbar32)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSSlider</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkScale</td></tr>
+</table>
+
+<!-- TUpDown -->
+<h2 id="updown">TUpDown <span class="badge new">CT_UPDOWN = 35</span></h2>
+<p>Botao de incremento (setas para cima/baixo), normalmente pareado com um controle de edicao para entrada numerica.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nMin</code></td><td>Numerico</td><td>0</td><td>Valor minimo</td></tr>
+  <tr><td><code>nMax</code></td><td>Numerico</td><td>100</td><td>Valor maximo</td></tr>
+  <tr><td><code>nPosition</code></td><td>Numerico</td><td>0</td><td>Valor atual</td></tr>
+  <tr><td><code>nIncrement</code></td><td>Numerico</td><td>1</td><td>Incremento de passo</td></tr>
+  <tr><td><code>oBuddy</code></td><td>Controle</td><td>NIL</td><td>Controle de edicao associado</td></tr>
+  <tr><td><code>lWrap</code></td><td>Logico</td><td>.F.</td><td>Retornar do maximo ao minimo</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnChange</code></td><td>Acao</td><td>Valor alterado (clicado para cima/baixo)</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>UPDOWN_CLASS (msctls_updown32)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSStepper</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkSpinButton</td></tr>
+</table>
+
+<!-- TDateTimePicker -->
+<h2 id="datetimepicker">TDateTimePicker <span class="badge new">CT_DATETIMEPICKER = 36</span></h2>
+<p>Seletor de data e/ou hora com calendario suspenso. Fornece formatacao com suporte a localizacao.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>dValue</code></td><td>Data</td><td>Date()</td><td>Data/hora selecionada</td></tr>
+  <tr><td><code>dMinDate</code></td><td>Data</td><td>NIL</td><td>Data minima selecionavel</td></tr>
+  <tr><td><code>dMaxDate</code></td><td>Data</td><td>NIL</td><td>Data maxima selecionavel</td></tr>
+  <tr><td><code>cFormat</code></td><td>String</td><td>""</td><td>Formato de exibicao personalizado (ex. "yyyy-MM-dd")</td></tr>
+  <tr><td><code>nKind</code></td><td>Numerico</td><td>0</td><td>0=Data, 1=Hora, 2=DataHora</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnChange</code></td><td>Acao</td><td>Data/hora selecionada alterada</td></tr>
+  <tr><td><code>OnDropDown</code></td><td>Acao</td><td>Calendario suspenso aberto</td></tr>
+  <tr><td><code>OnCloseUp</code></td><td>Acao</td><td>Calendario suspenso fechado</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>DATETIMEPICK_CLASS (SysDateTimePick32)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSDatePicker</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkCalendar + GtkPopover</td></tr>
+</table>
+
+<pre><span class="cm">// Seletor de data para data da fatura</span>
+@ <span class="nb">80</span>, <span class="nb">120</span> <span class="cmd">DATETIMEPICKER</span> oDtp <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">150</span>, <span class="nb">24</span>
+oDtp:<span class="fn">cFormat</span> := <span class="st">"dd/MM/yyyy"</span></pre>
+
+<!-- TMonthCalendar -->
+<h2 id="monthcalendar">TMonthCalendar <span class="badge new">CT_MONTHCALENDAR = 37</span></h2>
+<p>Controle de calendario mensal embutido. Exibe uma grade completa do mes para selecao de data.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>dValue</code></td><td>Data</td><td>Date()</td><td>Data selecionada</td></tr>
+  <tr><td><code>dMinDate</code></td><td>Data</td><td>NIL</td><td>Data minima selecionavel</td></tr>
+  <tr><td><code>dMaxDate</code></td><td>Data</td><td>NIL</td><td>Data maxima selecionavel</td></tr>
+  <tr><td><code>lMultiSelect</code></td><td>Logico</td><td>.F.</td><td>Permitir selecao de intervalo de datas</td></tr>
+  <tr><td><code>lShowToday</code></td><td>Logico</td><td>.T.</td><td>Destacar data de hoje</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnSelect</code></td><td>Acao</td><td>Data selecionada</td></tr>
+  <tr><td><code>OnSelChange</code></td><td>Acao</td><td>Intervalo de selecao alterado</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>MONTHCAL_CLASS (SysMonthCal32)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSDatePicker (NSClockAndCalendarDatePickerStyle)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkCalendar</td></tr>
+</table>
+
+<div class="info-box info">
+  <strong>9 Controles Nativos de Plataforma</strong>
+  <p>Estes controles usam widgets avancados especificos do sistema operacional para maxima aparencia nativa.
+  HarbourBuilder mapeia automaticamente cada controle para o widget correto no Windows (Win32), macOS (Cocoa) e Linux (GTK3).</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

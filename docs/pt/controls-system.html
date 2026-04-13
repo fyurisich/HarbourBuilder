@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles de Sistema - HarbourBuilder Docs</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicionais (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html" class="active">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threads (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="controls-standard.html">Paleta de Componentes</a> <span>/</span> Sistema
+</div>
+
+<h1>Controles de Sistema</h1>
+<p>A aba Sistema contem controles nao visuais e de baixo nivel que fornecem funcionalidade de temporizacao e superficies de desenho personalizado.</p>
+
+<!-- TTimer -->
+<h2 id="timer">TTimer <span class="badge new">CT_TIMER = 38</span></h2>
+<p>Componente nao visual que dispara um evento em intervalos regulares. Usado para tarefas periodicas como sondagem, animacoes, salvamento automatico e atualizacoes de status. Nao aparece no formulario em tempo de execucao.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nInterval</code></td><td>Numerico</td><td>1000</td><td>Intervalo do temporizador em milissegundos</td></tr>
+  <tr><td><code>lEnabled</code></td><td>Logico</td><td>.T.</td><td>Se o temporizador esta ativo</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnTimer</code></td><td>Acao</td><td>Disparado a cada intervalo decorrido</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Implementacao</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>SetTimer() / WM_TIMER</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTimer (scheduledTimerWithTimeInterval:)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>g_timeout_add()</td></tr>
+</table>
+
+<pre><span class="cm">// Salvamento automatico a cada 30 segundos</span>
+<span class="cmd">TIMER</span> oTimer <span class="cmd">OF</span> oForm <span class="cmd">INTERVAL</span> <span class="nb">30000</span>
+oTimer:<span class="fn">OnTimer</span> := { || SalvarAutomatico() }
+
+<span class="cm">// Desativar temporizador temporariamente</span>
+oTimer:<span class="fn">lEnabled</span> := <span class="nb">.F.</span>
+
+<span class="cm">// Reativar com intervalo mais rapido</span>
+oTimer:<span class="fn">nInterval</span> := <span class="nb">5000</span>
+oTimer:<span class="fn">lEnabled</span> := <span class="nb">.T.</span></pre>
+
+<!-- TPaintBox -->
+<h2 id="paintbox">TPaintBox <span class="badge new">CT_PAINTBOX = 39</span></h2>
+<p>Superficie de desenho personalizado. Fornece um objeto Canvas para pintura livre com linhas, retangulos, elipses, texto e imagens. O evento OnPaint e chamado sempre que o controle precisa ser redesenhado.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>oCanvas</code></td><td>Canvas</td><td>(auto)</td><td>Objeto de superficie de desenho com caneta, pincel e fonte</td></tr>
+  <tr><td><code>nWidth, nHeight</code></td><td>Numerico</td><td>200, 200</td><td>Tamanho da area de desenho</td></tr>
+  <tr><td><code>nClrPane</code></td><td>Cor</td><td>CLR_WHITE</td><td>Cor de fundo</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnPaint</code></td><td>Desenho</td><td>Controle precisa ser repintado (recebe oCanvas)</td></tr>
+  <tr><td><code>OnClick</code></td><td>Acao</td><td>Superficie clicada</td></tr>
+  <tr><td><code>OnMouseDown</code></td><td>Mouse</td><td>Botao do mouse pressionado (nRow, nCol, nFlags)</td></tr>
+  <tr><td><code>OnMouseMove</code></td><td>Mouse</td><td>Mouse movido sobre a superficie</td></tr>
+  <tr><td><code>OnMouseUp</code></td><td>Mouse</td><td>Botao do mouse solto</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Implementacao</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>STATIC com desenho proprio (WM_PAINT + GDI/GDI+)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSView (drawRect: + Core Graphics)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkDrawingArea (sinal draw + Cairo)</td></tr>
+</table>
+
+<pre><span class="cm">// Desenho personalizado em um PaintBox</span>
+@ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">PAINTBOX</span> oPaint <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">300</span>, <span class="nb">200</span>
+oPaint:<span class="fn">OnPaint</span> := { |oCanvas|
+   oCanvas:<span class="fn">FillRect</span>( <span class="nb">0</span>, <span class="nb">0</span>, <span class="nb">300</span>, <span class="nb">200</span>, <span class="nb">CLR_WHITE</span> )
+   oCanvas:<span class="fn">SetPen</span>( <span class="nb">CLR_BLUE</span>, <span class="nb">2</span> )
+   oCanvas:<span class="fn">DrawRect</span>( <span class="nb">20</span>, <span class="nb">20</span>, <span class="nb">280</span>, <span class="nb">180</span> )
+   oCanvas:<span class="fn">DrawEllipse</span>( <span class="nb">50</span>, <span class="nb">50</span>, <span class="nb">250</span>, <span class="nb">150</span> )
+   oCanvas:<span class="fn">DrawText</span>( <span class="nb">110</span>, <span class="nb">90</span>, <span class="st">"Ola Canvas!"</span> )
+}</pre>
+
+<div class="info-box info">
+  <strong>2 Controles de Sistema</strong>
+  <p>Temporizador fornece disparo periodico de eventos para tarefas em segundo plano, enquanto PaintBox oferece uma
+  superficie de desenho livre. Ambos sao essenciais para construir aplicacoes interativas e dinamicas.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles Adicionais - HarbourBuilder Docs</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html" class="active">Adicionais (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threads (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="controls-standard.html">Paleta de Componentes</a> <span>/</span> Adicionais
+</div>
+
+<h1>Controles Adicionais</h1>
+<p>A aba Adicionais fornece controles visuais e de entrada avancados que estendem o conjunto padrao com graficos, grades e editores especializados.</p>
+
+<!-- TBitBtn -->
+<h2 id="bitbtn">TBitBtn <span class="badge new">CT_BITBTN = 12</span></h2>
+<p>Um botao que exibe uma legenda e um glifo (imagem bitmap). Ideal para barras de ferramentas e botoes de acao.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>"BitBtn"</td><td>Legenda do botao</td></tr>
+  <tr><td><code>cGlyph</code></td><td>String</td><td>""</td><td>Caminho para imagem bitmap do glifo</td></tr>
+  <tr><td><code>nGlyphAlign</code></td><td>Numerico</td><td>0</td><td>Posicao do glifo: 0=Esquerda, 1=Direita, 2=Topo, 3=Inferior</td></tr>
+  <tr><td><code>nSpacing</code></td><td>Numerico</td><td>4</td><td>Espacamento entre glifo e texto (pixels)</td></tr>
+  <tr><td><code>nWidth, nHeight</code></td><td>Numerico</td><td>100, 30</td><td>Tamanho</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnClick</code></td><td>Acao</td><td>Botao clicado</td></tr>
+  <tr><td><code>OnEnter</code></td><td>Foco</td><td>Controle recebeu foco</td></tr>
+  <tr><td><code>OnExit</code></td><td>Foco</td><td>Controle perdeu foco</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>BUTTON (BS_BITMAP | BS_PUSHBUTTON)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSButton (NSBezelStyleTexturedSquare + imagem)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkButton + GtkImage</td></tr>
+</table>
+
+<pre><span class="cm">// BitBtn com glifo</span>
+@ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">BITBTN</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"Salvar"</span> <span class="cmd">OF</span> oForm <span class="cmd">GLYPH</span> <span class="st">"save.bmp"</span> <span class="cmd">SIZE</span> <span class="nb">100</span>, <span class="nb">30</span>
+oBtn:<span class="fn">OnClick</span> := { || SalvarRegistro() }</pre>
+
+<!-- TSpeedButton -->
+<h2 id="speedbutton">TSpeedButton <span class="badge new">CT_SPEEDBTN = 27</span></h2>
+<p>Botao plano projetado para barras de ferramentas. Pode atuar como alternancia e nao recebe foco.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cGlyph</code></td><td>String</td><td>""</td><td>Caminho para bitmap do glifo</td></tr>
+  <tr><td><code>lFlat</code></td><td>Logico</td><td>.T.</td><td>Aparencia plana (sem borda ate passar o mouse)</td></tr>
+  <tr><td><code>lDown</code></td><td>Logico</td><td>.F.</td><td>Estado pressionado/alternancia</td></tr>
+  <tr><td><code>nGroupIndex</code></td><td>Numerico</td><td>0</td><td>Grupo para exclusao mutua (0 = nenhum)</td></tr>
+  <tr><td><code>lAllowAllUp</code></td><td>Logico</td><td>.F.</td><td>Permitir que todos os botoes do grupo fiquem despressionados</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnClick</code></td><td>Acao</td><td>Botao clicado</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>BUTTON (BS_OWNERDRAW, renderizacao plana)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSButton (NSBezelStyleRoundRect, sem borda)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkToggleButton (alivio plano)</td></tr>
+</table>
+
+<pre><span class="cm">// Botoes de velocidade com exclusao mutua na barra</span>
+@ <span class="nb">2</span>, <span class="nb">2</span> <span class="cmd">SPEEDBTN</span> oNegrito <span class="cmd">GLYPH</span> <span class="st">"bold.bmp"</span> <span class="cmd">OF</span> oToolbar <span class="cmd">GROUP</span> <span class="nb">1</span> <span class="cmd">SIZE</span> <span class="nb">24</span>, <span class="nb">24</span>
+@ <span class="nb">2</span>, <span class="nb">28</span> <span class="cmd">SPEEDBTN</span> oItalico <span class="cmd">GLYPH</span> <span class="st">"italic.bmp"</span> <span class="cmd">OF</span> oToolbar <span class="cmd">GROUP</span> <span class="nb">1</span> <span class="cmd">SIZE</span> <span class="nb">24</span>, <span class="nb">24</span></pre>
+
+<!-- TImage -->
+<h2 id="image">TImage <span class="badge new">CT_IMAGE = 14</span></h2>
+<p>Exibe uma imagem bitmap, JPEG, PNG ou GIF em um formulario.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cFileName</code></td><td>String</td><td>""</td><td>Caminho para arquivo de imagem</td></tr>
+  <tr><td><code>lStretch</code></td><td>Logico</td><td>.F.</td><td>Esticar imagem para caber no controle</td></tr>
+  <tr><td><code>lProportional</code></td><td>Logico</td><td>.F.</td><td>Manter proporcao ao esticar</td></tr>
+  <tr><td><code>lCenter</code></td><td>Logico</td><td>.F.</td><td>Centralizar imagem no controle</td></tr>
+  <tr><td><code>nWidth, nHeight</code></td><td>Numerico</td><td>100, 100</td><td>Tamanho</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnClick</code></td><td>Acao</td><td>Imagem clicada</td></tr>
+  <tr><td><code>OnDblClick</code></td><td>Acao</td><td>Imagem clicada duas vezes</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>STATIC (SS_BITMAP | SS_REALSIZECONTROL)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSImageView</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkImage</td></tr>
+</table>
+
+<pre><span class="cm">// Exibir um logotipo</span>
+@ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">IMAGE</span> oLogo <span class="cmd">FILENAME</span> <span class="st">"logo.png"</span> <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">200</span>, <span class="nb">80</span> <span class="cmd">STRETCH</span></pre>
+
+<!-- TShape -->
+<h2 id="shape">TShape <span class="badge new">CT_SHAPE = 15</span></h2>
+<p>Desenha formas geometricas (retangulo, circulo, elipse, retangulo arredondado) em um formulario.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nShape</code></td><td>Numerico</td><td>0</td><td>0=Retangulo, 1=Circulo, 2=Elipse, 3=RetanguloArred</td></tr>
+  <tr><td><code>nPenColor</code></td><td>Cor</td><td>CLR_BLACK</td><td>Cor da borda</td></tr>
+  <tr><td><code>nPenWidth</code></td><td>Numerico</td><td>1</td><td>Espessura da borda</td></tr>
+  <tr><td><code>nBrushColor</code></td><td>Cor</td><td>CLR_WHITE</td><td>Cor de preenchimento</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>STATIC com desenhoproprio (desenho GDI)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSView (Core Graphics drawRect:)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkDrawingArea (Cairo)</td></tr>
+</table>
+
+<!-- TBevel -->
+<h2 id="bevel">TBevel <span class="badge new">CT_BEVEL = 16</span></h2>
+<p>Controle decorativo nao interativo que desenha linhas e caixas com relevo elevado ou rebaixado.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nStyle</code></td><td>Numerico</td><td>0</td><td>0=Rebaixado, 1=Elevado</td></tr>
+  <tr><td><code>nBevelShape</code></td><td>Numerico</td><td>0</td><td>0=Caixa, 1=LinhaSuperior, 2=LinhaInferior, 3=LinhaEsquerda, 4=LinhaDireita</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>STATIC (SS_ETCHEDHORZ / SS_ETCHEDFRAME)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSBox (NSBoxSeparator)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkSeparator / GtkFrame</td></tr>
+</table>
+
+<!-- TMaskEdit -->
+<h2 id="maskedit">TMaskEdit <span class="badge new">CT_MASKEDIT = 28</span></h2>
+<p>Entrada de texto com mascara de entrada que restringe o formato (datas, telefones, CPF, etc.).</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>""</td><td>Conteudo do texto atual (com literais)</td></tr>
+  <tr><td><code>cMask</code></td><td>String</td><td>""</td><td>Mascara de entrada (ex. "999-999-9999")</td></tr>
+  <tr><td><code>lSaveLiterals</code></td><td>Logico</td><td>.T.</td><td>Incluir literais da mascara no valor</td></tr>
+  <tr><td><code>cPlaceholder</code></td><td>String</td><td>"_"</td><td>Caractere de espaco reservado</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnChange</code></td><td>Acao</td><td>Conteudo do texto alterado</td></tr>
+  <tr><td><code>OnValidate</code></td><td>Acao</td><td>Validacao da mascara concluida</td></tr>
+  <tr><td><code>OnEnter</code></td><td>Foco</td><td>Controle recebeu foco</td></tr>
+  <tr><td><code>OnExit</code></td><td>Foco</td><td>Controle perdeu foco</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>EDIT (ES_AUTOHSCROLL + logica de mascara)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTextField + NSFormatter</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkEntry + filtragem de entrada</td></tr>
+</table>
+
+<pre><span class="cm">// Mascara de telefone</span>
+@ <span class="nb">50</span>, <span class="nb">120</span> <span class="cmd">MASKEDIT</span> oTelefone <span class="cmd">MASK</span> <span class="st">"(99) 99999-9999"</span> <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">160</span>, <span class="nb">24</span></pre>
+
+<!-- TStringGrid -->
+<h2 id="stringgrid">TStringGrid <span class="badge new">CT_STRINGGRID = 29</span></h2>
+<p>Grade editavel de celulas organizadas em linhas e colunas. Adequada para entrada de dados tabulares.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nColCount</code></td><td>Numerico</td><td>5</td><td>Numero de colunas</td></tr>
+  <tr><td><code>nRowCount</code></td><td>Numerico</td><td>5</td><td>Numero de linhas</td></tr>
+  <tr><td><code>nFixedCols</code></td><td>Numerico</td><td>1</td><td>Numero de colunas fixas (cabecalho)</td></tr>
+  <tr><td><code>nFixedRows</code></td><td>Numerico</td><td>1</td><td>Numero de linhas fixas (cabecalho)</td></tr>
+  <tr><td><code>nDefaultColWidth</code></td><td>Numerico</td><td>64</td><td>Largura padrao da coluna</td></tr>
+  <tr><td><code>nDefaultRowHeight</code></td><td>Numerico</td><td>24</td><td>Altura padrao da linha</td></tr>
+  <tr><td><code>lEditing</code></td><td>Logico</td><td>.T.</td><td>Permitir edicao de celulas</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnSelectCell</code></td><td>Acao</td><td>Celula selecionada</td></tr>
+  <tr><td><code>OnSetEditText</code></td><td>Acao</td><td>Texto da celula alterado</td></tr>
+  <tr><td><code>OnDrawCell</code></td><td>Desenho</td><td>Pintura personalizada da celula</td></tr>
+  <tr><td><code>OnKeyDown</code></td><td>Teclado</td><td>Tecla pressionada na grade</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>Grade customizada com desenho proprio (baseada em WC_LISTVIEW)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTableView (multi-coluna editavel)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkTreeView + GtkListStore (editavel)</td></tr>
+</table>
+
+<pre><span class="cm">// Criar uma grade estilo planilha de 3 colunas</span>
+@ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">STRINGGRID</span> oGrade <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">400</span>, <span class="nb">200</span> <span class="cmd">COLS</span> <span class="nb">3</span> <span class="cmd">ROWS</span> <span class="nb">10</span>
+oGrade:<span class="fn">SetCell</span>( <span class="nb">0</span>, <span class="nb">0</span>, <span class="st">"Produto"</span> )
+oGrade:<span class="fn">SetCell</span>( <span class="nb">0</span>, <span class="nb">1</span>, <span class="st">"Qtd"</span> )
+oGrade:<span class="fn">SetCell</span>( <span class="nb">0</span>, <span class="nb">2</span>, <span class="st">"Preco"</span> )</pre>
+
+<!-- TScrollBox -->
+<h2 id="scrollbox">TScrollBox <span class="badge new">CT_SCROLLBOX = 30</span></h2>
+<p>Painel conteiner com rolagem. Controles colocados dentro recebem barras de rolagem automaticamente quando excedem a area visivel.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>lAutoScroll</code></td><td>Logico</td><td>.T.</td><td>Exibir barras de rolagem automaticamente</td></tr>
+  <tr><td><code>nHorzPos</code></td><td>Numerico</td><td>0</td><td>Posicao da rolagem horizontal</td></tr>
+  <tr><td><code>nVertPos</code></td><td>Numerico</td><td>0</td><td>Posicao da rolagem vertical</td></tr>
+  <tr><td><code>nWidth, nHeight</code></td><td>Numerico</td><td>200, 200</td><td>Tamanho da area visivel</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnScroll</code></td><td>Acao</td><td>Posicao da rolagem alterada</td></tr>
+  <tr><td><code>OnResize</code></td><td>Layout</td><td>Conteiner redimensionado</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>Window (WS_HSCROLL | WS_VSCROLL)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSScrollView + NSView</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkScrolledWindow + GtkViewport</td></tr>
+</table>
+
+<!-- TStaticText -->
+<h2 id="statictext">TStaticText <span class="badge new">CT_STATICTEXT = 31</span></h2>
+<p>Rotulo com borda visivel. Similar ao TLabel mas com estilo de borda rebaixada, elevada ou simples.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>""</td><td>Texto de exibicao</td></tr>
+  <tr><td><code>nBorderStyle</code></td><td>Numerico</td><td>0</td><td>0=Nenhuma, 1=Simples, 2=Rebaixada</td></tr>
+  <tr><td><code>nAlignment</code></td><td>Numerico</td><td>0</td><td>0=Esquerda, 1=Centro, 2=Direita</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>STATIC (SS_SUNKEN | SS_LEFT)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTextField (com borda, nao editavel)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkLabel + GtkFrame</td></tr>
+</table>
+
+<!-- TLabeledEdit -->
+<h2 id="labelededit">TLabeledEdit <span class="badge new">CT_LABELEDEDIT = 32</span></h2>
+<p>Controle composto que combina um TLabel e um TEdit em um unico componente. Simplifica o layout de formularios.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>""</td><td>Conteudo do texto de edicao</td></tr>
+  <tr><td><code>cLabelText</code></td><td>String</td><td>"Label"</td><td>Legenda para a parte do rotulo</td></tr>
+  <tr><td><code>nLabelPosition</code></td><td>Numerico</td><td>0</td><td>0=Esquerda, 1=Topo, 2=Direita, 3=Inferior</td></tr>
+  <tr><td><code>nLabelSpacing</code></td><td>Numerico</td><td>3</td><td>Espacamento entre rotulo e edicao (pixels)</td></tr>
+  <tr><td><code>lReadOnly</code></td><td>Logico</td><td>.F.</td><td>Impede edicao</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnChange</code></td><td>Acao</td><td>Texto de edicao alterado</td></tr>
+  <tr><td><code>OnEnter</code></td><td>Foco</td><td>Edicao recebeu foco</td></tr>
+  <tr><td><code>OnExit</code></td><td>Foco</td><td>Edicao perdeu foco</td></tr>
+</table>
+
+<pre><span class="cm">// Edicoes rotuladas para formulario rapido de entrada</span>
+@ <span class="nb">20</span>, <span class="nb">20</span> <span class="cmd">LABELEDEDIT</span> oNome <span class="cmd">LABEL</span> <span class="st">"Nome Completo:"</span> <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">200</span>, <span class="nb">24</span>
+@ <span class="nb">50</span>, <span class="nb">20</span> <span class="cmd">LABELEDEDIT</span> oEmail <span class="cmd">LABEL</span> <span class="st">"E-mail:"</span> <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">200</span>, <span class="nb">24</span></pre>
+
+<div class="info-box info">
+  <strong>10 Controles Adicionais</strong>
+  <p>Estes controles avancados fornecem elementos graficos, entrada com mascara, edicao em grade e widgets compostos. Disponiveis em todas as plataformas usando renderizacao nativa ou com desenho proprio.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

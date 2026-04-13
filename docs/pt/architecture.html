@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arquitetura - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a class="logo" href="index.html">
+    <span>HB</span> HarbourBuilder Docs
+  </a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/architecture.html">EN</a>
+    <a class="lang-btn" href="../es/architecture.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html" class="active">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span> <a href="index.html">Primeiros Passos</a> <span>/</span> Arquitetura
+</div>
+
+<h1>Arquitetura</h1>
+<p>O HarbourBuilder usa uma arquitetura em camadas que separa de forma limpa a logica do aplicativo do codigo
+nativo especifico da plataforma. Este design permite que uma unica base de codigo <code>.prg</code> produza aplicacoes nativas em
+<span class="badge win">Windows</span>
+<span class="badge mac">macOS</span>
+<span class="badge linux">Linux</span>.</p>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Arquitetura de 5 Camadas</h2>
+<p>Cada aplicativo HarbourBuilder flui por cinco camadas, da sintaxe xBase de alto nivel ate
+chamadas de API nativas da plataforma:</p>
+
+<div class="mermaid">
+graph TB
+    A["1. Codigo do Aplicativo<br/>arquivos fonte .prg"] --> B["2. Comandos xBase<br/>#xcommand / #translate (tempo de compilacao)"]
+    B --> C["3. Camada OOP Harbour<br/>TForm, TControl, TToolBar, ..."]
+    C --> D["4. Bridge HB_FUNC<br/>UI_FormNew, UI_SetProp, UI_OnEvent"]
+    D --> E1["5a. API Win32<br/>C++ &middot; CreateWindowEx"]
+    D --> E2["5b. Cocoa / AppKit<br/>Objective-C &middot; NSView"]
+    D --> E3["5c. GTK3<br/>C &middot; GtkWidget"]
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style E1 fill:#0078d4,stroke:#005a9e,color:#fff
+    style E2 fill:#555,stroke:#333,color:#fff
+    style E3 fill:#e95420,stroke:#c34113,color:#fff
+</div>
+
+<div class="info-box tip">
+  <strong>Por que cinco camadas?</strong>
+  A camada de comandos xBase permite que os desenvolvedores escrevam sintaxe familiar no estilo Clipper. A camada OOP fornece
+  um modelo de objetos consistente. A bridge HB_FUNC e o ponto unico onde o Harbour encontra C/C++/Obj-C,
+  tornando simples adicionar novos backends sem tocar no codigo do aplicativo.
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Backends de Plataforma</h2>
+<p>Cada camada e mapeada para uma tecnologia nativa diferente dependendo da plataforma alvo:</p>
+
+<table>
+  <tr>
+    <th>Camada</th>
+    <th><span class="badge win">Windows</span></th>
+    <th><span class="badge mac">macOS</span></th>
+    <th><span class="badge linux">Linux</span></th>
+  </tr>
+  <tr>
+    <td><strong>Codigo do Aplicativo</strong></td>
+    <td>Harbour .prg</td>
+    <td>Harbour .prg</td>
+    <td>Harbour .prg</td>
+  </tr>
+  <tr>
+    <td><strong>Comandos xBase</strong></td>
+    <td>hbbuilder.ch</td>
+    <td>hbbuilder.ch</td>
+    <td>hbbuilder.ch</td>
+  </tr>
+  <tr>
+    <td><strong>Camada OOP</strong></td>
+    <td>TForm, TControl</td>
+    <td>TForm, TControl</td>
+    <td>TForm, TControl</td>
+  </tr>
+  <tr>
+    <td><strong>Bridge HB_FUNC</strong></td>
+    <td>C++ (MSVC/MinGW)</td>
+    <td>Objective-C (Clang)</td>
+    <td>C (GCC)</td>
+  </tr>
+  <tr>
+    <td><strong>Backend Nativo</strong></td>
+    <td>API Win32 / GDI+</td>
+    <td>Cocoa / AppKit</td>
+    <td>GTK3 / Cairo</td>
+  </tr>
+  <tr>
+    <td><strong>Criacao de Janela</strong></td>
+    <td>CreateWindowEx()</td>
+    <td>[NSWindow alloc]</td>
+    <td>gtk_window_new()</td>
+  </tr>
+  <tr>
+    <td><strong>Loop de Eventos</strong></td>
+    <td>GetMessage / WndProc</td>
+    <td>[NSApp run]</td>
+    <td>gtk_main()</td>
+  </tr>
+  <tr>
+    <td><strong>Desenho</strong></td>
+    <td>GDI / GDI+</td>
+    <td>Core Graphics</td>
+    <td>Cairo / Pango</td>
+  </tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Sistema de Tipos de Controle</h2>
+<p>Cada componente visual no HarbourBuilder e identificado por uma constante numerica <code>CT_</code> definida em
+<code>hbide.h</code>. Essas constantes (variando de 0 a 86) determinam como o IDE serializa controles,
+como o designer os renderiza e qual widget nativo o backend cria em tempo de execucao.</p>
+
+<div class="info-box info">
+  <strong>Por que IDs numericos?</strong>
+  Um tipo inteiro simples torna rapido o despacho de criacao de controles atraves da bridge C e mantem
+  o formato binario do formulario compacto. Os mesmos IDs sao usados pelo designer, pelo gerador de codigo e
+  pelo runtime.
+</div>
+
+<table>
+  <tr><th>Aba da Paleta</th><th>Intervalo CT_</th><th>Controles</th></tr>
+  <tr>
+    <td><strong>Padrao</strong></td>
+    <td>0 &ndash; 11</td>
+    <td>CT_FORM (0), CT_LABEL (1), CT_EDIT (2), CT_BUTTON (3), CT_CHECKBOX (4), CT_COMBOBOX (5), CT_GROUPBOX (6), CT_LISTBOX (7), CT_RADIO (8), CT_TOOLBAR (9), CT_TABCONTROL (10), CT_STATUSBAR (11)</td>
+  </tr>
+  <tr>
+    <td><strong>Adicional</strong></td>
+    <td>12 &ndash; 32</td>
+    <td>CT_BITBTN (12), CT_SPEEDBTN (13), CT_IMAGE (14), CT_SHAPE (15), CT_BEVEL (16), CT_SCROLLBOX (17), CT_MASKEDIT (18), CT_STRINGGRID (19), CT_MEMO (24), CT_PANEL (25), CT_SCROLLBAR (26), CT_STATICTEXT (31), CT_LABELEDEDIT (32)</td>
+  </tr>
+  <tr>
+    <td><strong>Nativo</strong></td>
+    <td>20 &ndash; 37</td>
+    <td>CT_TREEVIEW (20), CT_LISTVIEW (21), CT_PROGRESSBAR (22), CT_RICHEDIT (23), CT_TRACKBAR (34), CT_UPDOWN (35), CT_DATETIMEPICKER (36), CT_MONTHCALENDAR (37)</td>
+  </tr>
+  <tr>
+    <td><strong>Sistema</strong></td>
+    <td>38 &ndash; 39</td>
+    <td>CT_TIMER (38), CT_PAINTBOX (39)</td>
+  </tr>
+  <tr>
+    <td><strong>Dialogos</strong></td>
+    <td>40 &ndash; 45</td>
+    <td>CT_OPENDIALOG (40), CT_SAVEDIALOG (41), CT_FONTDIALOG (42), CT_COLORDIALOG (43), CT_FINDDIALOG (44), CT_REPLACEDIALOG (45)</td>
+  </tr>
+  <tr>
+    <td><strong>IA</strong></td>
+    <td>46 &ndash; 52</td>
+    <td>CT_OPENAI (46), CT_GEMINI (47), CT_CLAUDE (48), CT_DEEPSEEK (49), CT_GROK (50), CT_OLLAMA (51), CT_TRANSFORMER (52)</td>
+  </tr>
+  <tr>
+    <td><strong>Acesso a Dados</strong></td>
+    <td>53 &ndash; 61</td>
+    <td>CT_DBFTABLE (53), CT_MYSQL (54), CT_MARIADB (55), CT_POSTGRESQL (56), CT_SQLITE (57), CT_FIREBIRD (58), CT_SQLSERVER (59), CT_ORACLE (60), CT_MONGODB (61)</td>
+  </tr>
+  <tr>
+    <td><strong>Internet</strong></td>
+    <td>62, 71 &ndash; 78</td>
+    <td>CT_WEBVIEW (62), CT_WEBSERVER (71), CT_WEBSOCKET (72), CT_HTTPCLIENT (73), CT_FTPCLIENT (74), CT_SMTPCLIENT (75), CT_TCPSERVER (76), CT_TCPCLIENT (77), CT_UDPSOCKET (78)</td>
+  </tr>
+  <tr>
+    <td><strong>Threading</strong></td>
+    <td>63 &ndash; 70</td>
+    <td>CT_THREAD (63), CT_MUTEX (64), CT_SEMAPHORE (65), CT_CRITICALSECTION (66), CT_THREADPOOL (67), CT_ATOMICINT (68), CT_CONDVAR (69), CT_CHANNEL (70)</td>
+  </tr>
+  <tr>
+    <td><strong>Consciente de Dados</strong></td>
+    <td>79 &ndash; 86</td>
+    <td>CT_BROWSE (79), CT_DBGRID (80), CT_DBNAVIGATOR (81), CT_DBTEXT (82), CT_DBEDIT (83), CT_DBCOMBOBOX (84), CT_DBCHECKBOX (85), CT_DBIMAGE (86)</td>
+  </tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Estrutura de Arquivos</h2>
+<p>O projeto HarbourBuilder e organizado em diretorios claramente separados:</p>
+
+<pre>HarbourBuilder/
+├── backends/
+│   ├── cocoa/          <span class="cm">// Backend Objective-C do macOS</span>
+│   ├── gtk3/           <span class="cm">// Backend GTK3/C do Linux</span>
+│   ├── win32/          <span class="cm">// Backend C++ do Windows</span>
+│   ├── console/        <span class="cm">// Backend TUI console</span>
+│   └── web/            <span class="cm">// Backend Web/HTML</span>
+├── core/               <span class="cm">// Classes Harbour OOP (TForm, TControl, ...)</span>
+├── cpp/
+│   ├── include/        <span class="cm">// Headers C/C++ (hbide.h com definicoes CT_)</span>
+│   └── src/            <span class="cm">// Fonte C++ do IDE (designer, inspetor, editor)</span>
+├── docs/
+│   ├── assets/         <span class="cm">// CSS, JS, imagens para documentacao</span>
+│   ├── en/             <span class="cm">// Documentacao em ingles</span>
+│   ├── es/             <span class="cm">// Documentacao em espanhol</span>
+│   └── pt/             <span class="cm">// Documentacao em portugues</span>
+├── harbour/            <span class="cm">// Compilador Harbour e runtime</span>
+├── images/             <span class="cm">// Icones e bitmaps do IDE</span>
+├── include/            <span class="cm">// Headers Harbour (hbide.ch)</span>
+├── resources/
+│   └── icons/          <span class="cm">// Icones da Paleta de Componentes</span>
+└── samples/
+    └── projects/       <span class="cm">// Projetos de exemplo</span></pre>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Sistema de Eventos</h2>
+<p>O HarbourBuilder roteia eventos nativos do sistema operacional atraves de um pipeline unificado que termina em
+blocos de codigo definidos pelo usuario. O mesmo fluxo de eventos se aplica em todas as plataformas &mdash; apenas o ponto de entrada difere
+(WndProc no Windows, NSResponder no macOS, g_signal no GTK3).</p>
+
+<div class="mermaid">
+sequenceDiagram
+    participant User
+    participant OS as SO Nativo
+    participant WndProc as WndProc / NSResponder / g_signal
+    participant Fire as FireEvent()
+    participant Block as Bloco de Codigo Harbour
+    participant Code as Codigo do Usuario
+
+    User->>OS: Clica no botao
+    OS->>WndProc: WM_COMMAND / action / clicked
+    WndProc->>Fire: FireEvent( hWnd, nMsg, CT_BUTTON )
+    Fire->>Block: Eval( oBtn:OnClick )
+    Block->>Code: { || MsgInfo("Ola!") }
+    Code-->>User: Caixa de mensagem exibida
+</div>
+
+<div class="info-box tip">
+  <strong>Vinculacao de eventos</strong>
+  Os eventos sao vinculados atribuindo um bloco de codigo a uma propriedade de controle:
+  <code>oBtn:OnClick := { || DoSomething() }</code>. O gerador de codigo escreve essas atribuicoes
+  automaticamente quando voce clica duas vezes em um controle no designer de formularios.
+</div>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Ferramentas Bidirecionais</h2>
+<p>O HarbourBuilder mantem sincronizacao perfeita entre o designer visual e o codigo-fonte.
+Alteracoes em qualquer direcao sao refletidas instantaneamente, e implementacoes de METHOD escritas pelo usuario
+nunca sao sobrescritas durante a regeneracao de codigo.</p>
+
+<div class="mermaid">
+flowchart LR
+    A["Designer de Formularios<br/>(visual)"] -- "solta controle /<br/>move / redimensiona" --> B["Gerador de Codigo"]
+    B -- "escreve .prg" --> C["Codigo-Fonte<br/>(arquivo .prg)"]
+    C -- "analisa alteracoes" --> D["Analisador de Codigo"]
+    D -- "atualiza objetos" --> A
+
+    B -. "preserva implementacoes<br/>de METHOD" .-> C
+    D -. "detecta novos controles<br/>e propriedades" .-> A
+
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style C fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style B fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D fill:#f59e0b,stroke:#d97706,color:#0d1117
+</div>
+
+<table>
+  <tr><th>Direcao</th><th>Gatilho</th><th>Acao</th></tr>
+  <tr>
+    <td><strong>Designer &rarr; Codigo</strong></td>
+    <td>Soltar, mover, redimensionar ou alterar uma propriedade no inspetor</td>
+    <td>O gerador de codigo reescreve comandos DEFINE FORM / @, preservando todos os blocos METHOD</td>
+  </tr>
+  <tr>
+    <td><strong>Codigo &rarr; Designer</strong></td>
+    <td>Editar o fonte .prg no editor de codigo e salvar</td>
+    <td>O analisador de codigo detecta controles novos/alterados e atualiza o canvas do designer em tempo real</td>
+  </tr>
+</table>
+
+<!-- ──────────────────────────────────────────── -->
+<h2>Pipeline de Compilacao</h2>
+<p>O processo de compilacao transforma o codigo-fonte Harbour em executaveis nativos atraves de um pipeline multi-estagio:</p>
+
+<div class="mermaid">
+graph LR
+    A[".prg<br/>fonte Harbour"] --> B["Compilador Harbour<br/>(harbour.exe)"]
+    B --> C[".c<br/>codigo C gerado"]
+    C --> D["Compilador C<br/>(MSVC / Clang / GCC)"]
+    D --> E[".obj / .o<br/>arquivos objeto"]
+    E --> F["Linker<br/>(link / ld)"]
+    G["Backend Nativo<br/>(Win32 / Cocoa / GTK3)"] --> F
+    H["Runtime Harbour<br/>(libharbour)"] --> F
+    F --> I[".exe / app / ELF<br/>binario nativo"]
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style E fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style F fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style G fill:#e95420,stroke:#c34113,color:#fff
+    style H fill:#555,stroke:#333,color:#fff
+    style I fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<table>
+  <tr><th>Estagio</th><th><span class="badge win">Windows</span></th><th><span class="badge mac">macOS</span></th><th><span class="badge linux">Linux</span></th></tr>
+  <tr>
+    <td><strong>Compilador Harbour</strong></td>
+    <td>harbour.exe</td>
+    <td>harbour</td>
+    <td>harbour</td>
+  </tr>
+  <tr>
+    <td><strong>Compilador C</strong></td>
+    <td>cl.exe (MSVC) / gcc (MinGW)</td>
+    <td>clang (Xcode)</td>
+    <td>gcc / g++</td>
+  </tr>
+  <tr>
+    <td><strong>Linker</strong></td>
+    <td>link.exe / ld</td>
+    <td>ld (via clang)</td>
+    <td>ld (via gcc)</td>
+  </tr>
+  <tr>
+    <td><strong>Saida</strong></td>
+    <td>.exe</td>
+    <td>pacote .app</td>
+    <td>binario ELF</td>
+  </tr>
+</table>
+
+<div class="info-box info">
+  <strong>Compilacao com um clique</strong>
+  Pressione <strong>F9</strong> no IDE para compilar, linkar e executar seu projeto. O HarbourBuilder detecta
+  a plataforma atual e seleciona a toolchain de compilador apropriada automaticamente.
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

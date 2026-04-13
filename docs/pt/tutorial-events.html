@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial: Tratamento de Eventos - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a class="logo" href="index.html">
+    <span>HB</span> HarbourBuilder Docs
+  </a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Ola Mundo</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html" class="active">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span> Tutoriais <span>/</span> Tratamento de Eventos
+</div>
+
+<h1>Tutorial: Tratamento de Eventos</h1>
+<p>Eventos sao a espinha dorsal de aplicacoes interativas. Toda vez que um usuario clica em um botao, digita
+uma tecla, redimensiona uma janela ou fecha um formulario, o HarbourBuilder dispara um evento que seu codigo pode
+tratar. Este tutorial cobre todos os principais tipos de evento e as diferentes formas de responder a eles.</p>
+
+<h2>Passo 1: Entendendo Eventos no HarbourBuilder</h2>
+<p>Cada controle do HarbourBuilder expoe um conjunto de propriedades de evento (ex. <code>OnClick</code>, <code>OnChange</code>).
+Voce atribui um <strong>bloco de codigo</strong> ou uma <strong>referencia de metodo</strong> a essas propriedades. Quando o evento
+dispara, o HarbourBuilder executa seu manipulador.</p>
+
+<div class="mermaid">
+graph LR
+    A["Acao do Usuario<br/>(clique, tecla, redimensionar)"] --> B["Mensagem do SO<br/>WM_COMMAND etc."]
+    B --> C["Dispatcher de Eventos<br/>HarbourBuilder"]
+    C --> D["Seu Manipulador<br/>Bloco de Codigo / Metodo"]
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style C fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style D fill:#f0883e,stroke:#d18616,color:#0d1117
+</div>
+
+<h2>Passo 2: Gerando Manipuladores de Eventos pelo Inspetor de Objetos</h2>
+<ol>
+  <li>Selecione um controle no formulario (ex. um Botao).</li>
+  <li>No Inspetor de Objetos, alterne para a aba <strong>Eventos</strong>.</li>
+  <li><strong>Clique duas vezes</strong> no nome do evento (ex. <code>OnClick</code>).</li>
+  <li>A IDE automaticamente:
+    <ul>
+      <li>Cria um stub de <code>static function</code> no seu arquivo fonte.</li>
+      <li>Atribui o bloco de codigo para chamar essa funcao.</li>
+      <li>Posiciona o cursor no corpo da nova funcao para voce comecar a codificar.</li>
+    </ul>
+  </li>
+</ol>
+
+<div class="info-box tip">
+  <strong>Clique duplo e o caminho mais rapido</strong>
+  <p>Clicar duas vezes em um evento no Inspetor de Objetos e o fluxo de trabalho recomendado. Ele gera
+  manipuladores com nomes adequados (ex. <code>OnBtnSaveClick</code>) e conecta o bloco de codigo automaticamente.</p>
+</div>
+
+<h2>Passo 3: OnClick &mdash; Cliques em Botao e Controle</h2>
+<p>O evento mais comum. Dispara quando o usuario clica em um botao, rotulo, imagem ou qualquer controle clicavel.</p>
+
+<p><strong>Bloco de codigo inline (logica simples):</strong></p>
+<pre>oBtn:<span class="fn">OnClick</span> := { || MsgInfo( <span class="st">"Botao foi clicado!"</span> ) }</pre>
+
+<p><strong>Chamando uma funcao separada (logica complexa):</strong></p>
+<pre>oBtn:<span class="fn">OnClick</span> := { || <span class="fn">OnBtnSaveClick</span>( oForm, oGet ) }
+
+<span class="kw">static function</span> <span class="fn">OnBtnSaveClick</span>( oForm, oGet )
+
+   <span class="kw">local</span> cValue := oGet:<span class="fn">GetValue</span>()
+
+   <span class="kw">if</span> Empty( cValue )
+      MsgAlert( <span class="st">"Por favor, informe um valor."</span> )
+      <span class="kw">return</span> <span class="kw">nil</span>
+   <span class="kw">endif</span>
+
+   MsgInfo( <span class="st">"Salvo: "</span> + cValue )
+   oForm:<span class="fn">SetTitle</span>( <span class="st">"Salvo!"</span> )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Passo 4: OnChange &mdash; Alteracoes de Valor</h2>
+<p>Dispara sempre que o valor de um controle de entrada muda. Util para TextBox (<code>TGet</code>), ComboBox,
+CheckBox e controles Spinner.</p>
+
+<pre>oGetSearch:<span class="fn">OnChange</span> := { || <span class="fn">OnSearchChange</span>( oGetSearch, oListBox ) }
+
+<span class="kw">static function</span> <span class="fn">OnSearchChange</span>( oGet, oList )
+
+   <span class="kw">local</span> cFilter := oGet:<span class="fn">GetValue</span>()
+
+   oList:<span class="fn">Filter</span>( { |cItem| Upper( cFilter ) $ Upper( cItem ) } )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<div class="info-box tip">
+  <strong>OnChange dispara a cada tecla</strong>
+  <p>Para controles TextBox, <code>OnChange</code> dispara apos cada caractere digitado. Se voce estiver fazendo operacoes custosas
+  (como consultas a banco de dados), considere usar um <code>TTimer</code> para suavizar a entrada.</p>
+</div>
+
+<h2>Passo 5: OnKeyDown &mdash; Entrada de Teclado</h2>
+<p>Dispara quando uma tecla e pressionada enquanto o controle tem foco. O manipulador recebe o codigo da tecla
+e flags de modificadores como parametros.</p>
+
+<pre>oGet:<span class="fn">OnKeyDown</span> := { |nKey, nFlags| <span class="fn">OnGetKeyDown</span>( nKey, nFlags, oGet ) }
+
+<span class="kw">static function</span> <span class="fn">OnGetKeyDown</span>( nKey, nFlags, oGet )
+
+   <span class="kw">do case</span>
+   <span class="kw">case</span> nKey == VK_RETURN
+      MsgInfo( <span class="st">"Enter pressionado! Valor: "</span> + oGet:<span class="fn">GetValue</span>() )
+
+   <span class="kw">case</span> nKey == VK_ESCAPE
+      oGet:<span class="fn">SetValue</span>( <span class="st">""</span> )
+
+   <span class="kw">case</span> nKey == VK_F1
+      MsgInfo( <span class="st">"Ajuda: digite um valor e pressione Enter."</span> )
+
+   <span class="kw">endcase</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<p>Constantes de teclas comuns: <code>VK_RETURN</code>, <code>VK_ESCAPE</code>, <code>VK_TAB</code>, <code>VK_DELETE</code>,
+<code>VK_F1</code> ate <code>VK_F12</code>, <code>VK_UP</code>, <code>VK_DOWN</code>, <code>VK_LEFT</code>, <code>VK_RIGHT</code>.</p>
+
+<h2>Passo 6: OnResize &mdash; Redimensionamento de Formulario e Controle</h2>
+<p>Dispara quando o usuario redimensiona o formulario. Use isso para reposicionar ou redimensionar controles dinamicamente
+para um layout responsivo.</p>
+
+<pre>oForm:<span class="fn">OnResize</span> := { || <span class="fn">OnFormResize</span>( oForm, oMemo, oStatusBar ) }
+
+<span class="kw">static function</span> <span class="fn">OnFormResize</span>( oForm, oMemo, oStatusBar )
+
+   <span class="kw">local</span> nW := oForm:<span class="fn">nWidth</span>
+   <span class="kw">local</span> nH := oForm:<span class="fn">nHeight</span>
+
+   <span class="cm">// Fazer o memo preencher o formulario com margem de 10 pixels</span>
+   oMemo:<span class="fn">SetSize</span>( nW - <span class="nb">20</span>, nH - <span class="nb">80</span> )
+
+   <span class="cm">// Manter barra de status na parte inferior</span>
+   oStatusBar:<span class="fn">SetPos</span>( nH - <span class="nb">30</span>, <span class="nb">0</span> )
+   oStatusBar:<span class="fn">SetSize</span>( nW, <span class="nb">30</span> )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Passo 7: OnClose &mdash; Fechamento de Formulario</h2>
+<p>Dispara quando o usuario tenta fechar o formulario (clicando no botao X, pressionando Alt+F4 ou chamando
+<code>Close()</code>). Retorne <code>.F.</code> do manipulador para <strong>impedir</strong> o fechamento do formulario &mdash; util para
+prompts de alteracoes nao salvas.</p>
+
+<pre>oForm:<span class="fn">OnClose</span> := { || <span class="fn">OnFormClose</span>( oForm ) }
+
+<span class="kw">static function</span> <span class="fn">OnFormClose</span>( oForm )
+
+   <span class="kw">local</span> nAnswer
+
+   <span class="kw">if</span> lDataModified
+      nAnswer := MsgYesNoCancel( <span class="st">"Salvar alteracoes antes de fechar?"</span> )
+
+      <span class="kw">do case</span>
+      <span class="kw">case</span> nAnswer == <span class="nb">1</span>   <span class="cm">// Sim</span>
+         <span class="fn">SaveData</span>()
+         <span class="kw">return</span> .T.
+
+      <span class="kw">case</span> nAnswer == <span class="nb">2</span>   <span class="cm">// Nao</span>
+         <span class="kw">return</span> .T.
+
+      <span class="kw">case</span> nAnswer == <span class="nb">3</span>   <span class="cm">// Cancelar</span>
+         <span class="kw">return</span> .F.         <span class="cm">// Impedir fechamento</span>
+
+      <span class="kw">endcase</span>
+   <span class="kw">endif</span>
+
+<span class="kw">return</span> .T.</pre>
+
+<div class="info-box tip">
+  <strong>Retornar .F. impede o fechamento</strong>
+  <p>Este e um padrao poderoso para formularios de entrada de dados. Sempre de ao usuario uma forma de forc
+  ar o fechamento
+  (ex. a opcao Cancelar) para que nunca fique preso em um formulario que nao consegue sair.</p>
+</div>
+
+<h2>Resumo de Parametros de Eventos</h2>
+<table style="width:100%; border-collapse:collapse; margin:1em 0;">
+  <tr style="border-bottom:1px solid #444;">
+    <th style="text-align:left; padding:8px;">Evento</th>
+    <th style="text-align:left; padding:8px;">Parametros</th>
+    <th style="text-align:left; padding:8px;">Retorno</th>
+    <th style="text-align:left; padding:8px;">Controles</th>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>OnClick</code></td>
+    <td style="padding:8px;">(nenhum)</td>
+    <td style="padding:8px;">ignorado</td>
+    <td style="padding:8px;">Button, Label, Image, Panel</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>OnChange</code></td>
+    <td style="padding:8px;">(nenhum)</td>
+    <td style="padding:8px;">ignorado</td>
+    <td style="padding:8px;">TGet, ComboBox, CheckBox, Spinner</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>OnKeyDown</code></td>
+    <td style="padding:8px;"><code>nKey</code>, <code>nFlags</code></td>
+    <td style="padding:8px;">ignorado</td>
+    <td style="padding:8px;">Todos os controles com foco</td>
+  </tr>
+  <tr style="border-bottom:1px solid #333;">
+    <td style="padding:8px;"><code>OnResize</code></td>
+    <td style="padding:8px;">(nenhum)</td>
+    <td style="padding:8px;">ignorado</td>
+    <td style="padding:8px;">TForm</td>
+  </tr>
+  <tr>
+    <td style="padding:8px;"><code>OnClose</code></td>
+    <td style="padding:8px;">(nenhum)</td>
+    <td style="padding:8px;"><code>.T.</code> permitir, <code>.F.</code> impedir</td>
+    <td style="padding:8px;">TForm</td>
+  </tr>
+</table>
+
+<h2>Bloco de Codigo vs. Manipulador de Metodo</h2>
+<p>O HarbourBuilder suporta dois estilos para manipuladores de eventos:</p>
+
+<p><strong>Bloco de codigo</strong> &mdash; ideal para logicas inline curtas:</p>
+<pre>oBtn:<span class="fn">OnClick</span> := { || oLabel:<span class="fn">SetValue</span>( Time() ) }</pre>
+
+<p><strong>Manipulador de metodo</strong> &mdash; ideal para logicas complexas que precisam de sua propria funcao:</p>
+<pre>oBtn:<span class="fn">OnClick</span> := { || <span class="fn">OnBtnClick</span>( oForm ) }
+
+<span class="kw">static function</span> <span class="fn">OnBtnClick</span>( oForm )
+   <span class="cm">// Logica complexa aqui: chamadas de banco, validacao, etc.</span>
+   ...
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<div class="info-box tip">
+  <strong>Regra pratica</strong>
+  <p>Se o manipulador tem mais de uma expressao, use uma funcao separada. Isso mantem a definicao
+  do formulario limpa e facilita a depuracao e teste da logica.</p>
+</div>
+
+<div class="info-box tip">
+  <strong>Proximo passo</strong>
+  <p>Agora que voce entende eventos, continue para o tutorial
+  <a href="tutorial-database.html">CRUD de Banco de Dados</a> para construir uma aplicacao
+  orientada a dados com SQLite.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

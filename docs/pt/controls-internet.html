@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles de Internet - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html" class="active">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividade (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Ola Mundo</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Manipulacao de Eventos</a>
+    <a href="tutorial-database.html">Banco de Dados CRUD</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Ponte HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Paleta de Componentes</a> <span>/</span> Internet
+</div>
+
+<h1>Controles de Internet</h1>
+<p>A aba Internet fornece 9 controles para navegacao web, rede HTTP/FTP, email, comunicacao WebSocket e programacao de sockets TCP/UDP. Todos os controles sao multiplataforma e usam I/O nao-bloqueante internamente.</p>
+
+<!-- TWebView -->
+<h2 id="webview">TWebView <span class="badge new">CT_WEBVIEW = 62</span></h2>
+<p>Incorpora um navegador web completo dentro de um formulario. Renderiza conteudo HTML ou navega para URLs usando o motor web nativo da plataforma.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cURL</code></td><td>String</td><td>""</td><td>URL para navegar</td></tr>
+  <tr><td><code>cHTML</code></td><td>String</td><td>""</td><td>Conteudo HTML bruto para renderizar</td></tr>
+  <tr><td><code>lCanGoBack</code></td><td>Logico</td><td>.F.</td><td>Se o historico de navegacao permite voltar (somente leitura)</td></tr>
+  <tr><td><code>lCanGoForward</code></td><td>Logico</td><td>.F.</td><td>Se o historico de navegacao permite avancar (somente leitura)</td></tr>
+  <tr><td><code>cTitle</code></td><td>String</td><td>""</td><td>Titulo da pagina (somente leitura)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnNavigate</code></td><td>Navegacao</td><td>Disparado antes de navegar para uma nova URL. Retorne .F. para cancelar</td></tr>
+  <tr><td><code>OnLoad</code></td><td>Navegacao</td><td>Pagina terminou de carregar</td></tr>
+  <tr><td><code>OnError</code></td><td>Erro</td><td>Erro de navegacao ou renderizacao ocorreu</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>WebView2 (Chromium-based Edge)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>WKWebView (WebKit)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>WebKitGTK (WebKit2)</td></tr>
+</table>
+
+<!-- TWebServer -->
+<h2 id="webserver">TWebServer <span class="badge new">CT_WEBSERVER = 71</span></h2>
+<p>Servidor HTTP/HTTPS incorporado. Permite que sua aplicacao sirva paginas web, APIs REST, ou atue como endpoint de servico local.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nPort</code></td><td>Numero</td><td>8080</td><td>Numero da porta de escuta</td></tr>
+  <tr><td><code>cHost</code></td><td>String</td><td>"0.0.0.0"</td><td>Endereco de vinculacao</td></tr>
+  <tr><td><code>cDocumentRoot</code></td><td>String</td><td>""</td><td>Diretorio raiz para arquivos estaticos</td></tr>
+  <tr><td><code>lSSL</code></td><td>Logico</td><td>.F.</td><td>Habilitar HTTPS</td></tr>
+  <tr><td><code>cCertFile</code></td><td>String</td><td>""</td><td>Caminho para o arquivo de certificado SSL</td></tr>
+  <tr><td><code>cKeyFile</code></td><td>String</td><td>""</td><td>Caminho para o arquivo de chave privada SSL</td></tr>
+  <tr><td><code>nMaxConnections</code></td><td>Numero</td><td>256</td><td>Numero maximo de conexoes simultaneas</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnRequest</code></td><td>Acao</td><td>Requisicao HTTP recebada. Params: oRequest, oResponse</td></tr>
+  <tr><td><code>OnConnect</code></td><td>Conexao</td><td>Novo cliente conectado</td></tr>
+  <tr><td><code>OnDisconnect</code></td><td>Conexao</td><td>Cliente desconectado</td></tr>
+  <tr><td><code>OnStart</code></td><td>Ciclo de Vida</td><td>Servidor comecou a escutar</td></tr>
+  <tr><td><code>OnStop</code></td><td>Ciclo de Vida</td><td>Servidor parado</td></tr>
+  <tr><td><code>OnError</code></td><td>Erro</td><td>Erro do servidor ocorreu</td></tr>
+</table>
+
+<!-- TWebSocket -->
+<h2 id="websocket">TWebSocket <span class="badge new">CT_WEBSOCKET = 72</span></h2>
+<p>Cliente WebSocket para comunicacao bidirecional em tempo real com um servidor.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cURL</code></td><td>String</td><td>""</td><td>URL do servidor WebSocket (ws:// ou wss://)</td></tr>
+  <tr><td><code>cProtocol</code></td><td>String</td><td>""</td><td>Sub-protocolo para negociar</td></tr>
+  <tr><td><code>lAutoReconnect</code></td><td>Logico</td><td>.F.</td><td>Reconectar automaticamente na desconexao</td></tr>
+  <tr><td><code>nReconnectDelay</code></td><td>Numero</td><td>3000</td><td>Atraso em ms antes da tentativa de reconexao</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnOpen</code></td><td>Conexao</td><td>Conexao estabelecida</td></tr>
+  <tr><td><code>OnMessage</code></td><td>Dados</td><td>Mensagem recebida do servidor</td></tr>
+  <tr><td><code>OnClose</code></td><td>Conexao</td><td>Conexao fechada</td></tr>
+  <tr><td><code>OnError</code></td><td>Erro</td><td>Erro de conexao ou protocolo</td></tr>
+</table>
+
+<!-- THttpClient -->
+<h2 id="httpclient">THttpClient <span class="badge new">CT_HTTPCLIENT = 73</span></h2>
+<p>Cliente HTTP para fazer chamadas de API REST, baixar arquivos e comunicacao HTTP geral.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cURL</code></td><td>String</td><td>""</td><td>URL da requisicao</td></tr>
+  <tr><td><code>cMethod</code></td><td>String</td><td>"GET"</td><td>Metodo HTTP (GET, POST, PUT, DELETE, PATCH)</td></tr>
+  <tr><td><code>aHeaders</code></td><td>Array</td><td>{}</td><td>Headers da requisicao como pares chave-valor</td></tr>
+  <tr><td><code>cBody</code></td><td>String</td><td>""</td><td>Conteudo do corpo da requisicao</td></tr>
+  <tr><td><code>nTimeout</code></td><td>Numero</td><td>30000</td><td>Timeout da requisicao em milissegundos</td></tr>
+  <tr><td><code>nStatusCode</code></td><td>Numero</td><td>0</td><td>Codigo de status da resposta (somente leitura)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnResponse</code></td><td>Dados</td><td>Resposta recebida. Params: nStatus, cBody, aHeaders</td></tr>
+  <tr><td><code>OnProgress</code></td><td>Dados</td><td>Progresso de download/upload. Params: nCurrent, nTotal</td></tr>
+  <tr><td><code>OnError</code></td><td>Erro</td><td>Requisicao falhou</td></tr>
+</table>
+
+<!-- TFtpClient -->
+<h2 id="ftpclient">TFtpClient <span class="badge new">CT_FTPCLIENT = 74</span></h2>
+<p>Cliente FTP/FTPS para operacoes de transferencia de arquivos.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cHost</code></td><td>String</td><td>""</td><td>Hostname do servidor FTP</td></tr>
+  <tr><td><code>nPort</code></td><td>Numero</td><td>21</td><td>Porta do servidor</td></tr>
+  <tr><td><code>cUser</code></td><td>String</td><td>""</td><td>Nome de usuario de login</td></tr>
+  <tr><td><code>cPassword</code></td><td>String</td><td>""</td><td>Senha de login</td></tr>
+  <tr><td><code>lPassiveMode</code></td><td>Logico</td><td>.T.</td><td>Usar modo passivo para transferencias de dados</td></tr>
+  <tr><td><code>lSSL</code></td><td>Logico</td><td>.F.</td><td>Usar FTPS (FTP sobre TLS)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnConnect</code></td><td>Conexao</td><td>Conectado com sucesso ao servidor</td></tr>
+  <tr><td><code>OnTransfer</code></td><td>Dados</td><td>Progresso da transferencia de arquivo. Params: cFile, nBytes, nTotal</td></tr>
+  <tr><td><code>OnError</code></td><td>Erro</td><td>Erro de conexao ou transferencia</td></tr>
+</table>
+
+<!-- TSmtpClient -->
+<h2 id="smtpclient">TSmtpClient <span class="badge new">CT_SMTPCLIENT = 75</span></h2>
+<p>Cliente SMTP para enviar mensagens de email com anexos.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cHost</code></td><td>String</td><td>""</td><td>Hostname do servidor SMTP</td></tr>
+  <tr><td><code>nPort</code></td><td>Numero</td><td>587</td><td>Porta do servidor (25, 465 ou 587)</td></tr>
+  <tr><td><code>lSSL</code></td><td>Logico</td><td>.T.</td><td>Usar criptografia TLS/SSL</td></tr>
+  <tr><td><code>cUser</code></td><td>String</td><td>""</td><td>Nome de usuario de autenticacao</td></tr>
+  <tr><td><code>cPassword</code></td><td>String</td><td>""</td><td>Senha de autenticacao</td></tr>
+  <tr><td><code>cFrom</code></td><td>String</td><td>""</td><td>Endereco de email do remetente</td></tr>
+  <tr><td><code>cTo</code></td><td>String</td><td>""</td><td>Endereco(s) de email do destinatario, separados por virgula</td></tr>
+  <tr><td><code>cSubject</code></td><td>String</td><td>""</td><td>Linha de assunto do email</td></tr>
+  <tr><td><code>cBody</code></td><td>String</td><td>""</td><td>Conteudo do corpo do email</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnSend</code></td><td>Acao</td><td>Email enviado com sucesso</td></tr>
+  <tr><td><code>OnError</code></td><td>Erro</td><td>Erro de envio ou conexao</td></tr>
+</table>
+
+<!-- TTcpServer -->
+<h2 id="tcpserver">TTcpServer <span class="badge new">CT_TCPSERVER = 76</span></h2>
+<p>Servidor socket TCP. Escuta por conexoes de entrada e gerencia multiplos clientes.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nPort</code></td><td>Numero</td><td>0</td><td>Porta de escuta</td></tr>
+  <tr><td><code>cHost</code></td><td>String</td><td>"0.0.0.0"</td><td>Endereco de vinculacao</td></tr>
+  <tr><td><code>nMaxConnections</code></td><td>Numero</td><td>128</td><td>Numero maximo de conexoes simultaneas</td></tr>
+  <tr><td><code>lActive</code></td><td>Logico</td><td>.F.</td><td>Servidor esta escutando no momento (somente leitura)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnAccept</code></td><td>Conexao</td><td>Nova conexao de cliente aceita. Params: oClient</td></tr>
+  <tr><td><code>OnReceive</code></td><td>Dados</td><td>Dados recebidos do cliente. Params: oClient, cData</td></tr>
+  <tr><td><code>OnDisconnect</code></td><td>Conexao</td><td>Cliente desconectado. Params: oClient</td></tr>
+</table>
+
+<!-- TTcpClient -->
+<h2 id="tcpclient">TTcpClient <span class="badge new">CT_TCPCLIENT = 77</span></h2>
+<p>Cliente socket TCP. Conecta a um servidor remoto para comunicacao baseada em stream.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cHost</code></td><td>String</td><td>""</td><td>Hostname ou IP do servidor remoto</td></tr>
+  <tr><td><code>nPort</code></td><td>Numero</td><td>0</td><td>Porta do servidor remoto</td></tr>
+  <tr><td><code>nTimeout</code></td><td>Numero</td><td>10000</td><td>Timeout de conexao em milissegundos</td></tr>
+  <tr><td><code>lConnected</code></td><td>Logico</td><td>.F.</td><td>Status da conexao (somente leitura)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnConnect</code></td><td>Conexao</td><td>Conectado com sucesso ao servidor</td></tr>
+  <tr><td><code>OnReceive</code></td><td>Dados</td><td>Dados recebidos do servidor. Params: cData</td></tr>
+  <tr><td><code>OnDisconnect</code></td><td>Conexao</td><td>Desconectado do servidor</td></tr>
+</table>
+
+<!-- TUdpSocket -->
+<h2 id="udpsocket">TUdpSocket <span class="badge new">CT_UDPSOCKET = 78</span></h2>
+<p>Socket UDP datagram para comunicacao sem conexao, de baixa latencia.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nPort</code></td><td>Numero</td><td>0</td><td>Porta local para vincular</td></tr>
+  <tr><td><code>lBroadcast</code></td><td>Logico</td><td>.F.</td><td>Habilitar modo broadcast</td></tr>
+  <tr><td><code>cHost</code></td><td>String</td><td>"0.0.0.0"</td><td>Endereco de vinculacao</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnReceive</code></td><td>Dados</td><td>Datagrama recebido. Params: cData, cSenderIP, nSenderPort</td></tr>
+</table>
+
+<!-- Code Example -->
+<h2 id="example">Exemplo de Codigo: Servidor Web Simples</h2>
+<pre><span class="cm">// Um servidor web simples que responde a requisicoes HTTP</span>
+
+<span class="cmd">FUNCTION</span> Main()
+
+   <span class="cmd">LOCAL</span> oServer
+
+   oServer := TWebServer():New()
+   oServer:<span class="fn">nPort</span> := <span class="nb">8080</span>
+   oServer:<span class="fn">cDocumentRoot</span> := <span class="st">"./public"</span>
+
+   oServer:<span class="fn">OnRequest</span> := { |oReq, oRes| HandleRequest( oReq, oRes ) }
+   oServer:<span class="fn">OnStart</span>   := { || QOut( <span class="st">"Servidor rodando na porta 8080"</span> ) }
+   oServer:<span class="fn">OnError</span>   := { |e| QOut( <span class="st">"Erro: "</span> + e:Description ) }
+
+   oServer:<span class="fn">Start</span>()
+
+   <span class="cm">// Manter a aplicacao rodando</span>
+   <span class="cmd">WAIT</span> <span class="st">"Pressione qualquer tecla para parar..."</span>
+
+   oServer:<span class="fn">Stop</span>()
+
+<span class="cmd">RETURN</span> <span class="cmd">NIL</span>
+
+<span class="cmd">FUNCTION</span> HandleRequest( oReq, oRes )
+
+   <span class="cmd">DO CASE</span>
+      <span class="cmd">CASE</span> oReq:<span class="fn">cPath</span> == <span class="st">"/api/hello"</span>
+         oRes:<span class="fn">cContentType</span> := <span class="st">"application/json"</span>
+         oRes:<span class="fn">cBody</span> := <span class="st">'{"message": "Ola do HarbourBuilder!"}'</span>
+
+      <span class="cmd">CASE</span> oReq:<span class="fn">cPath</span> == <span class="st">"/api/time"</span>
+         oRes:<span class="fn">cContentType</span> := <span class="st">"application/json"</span>
+         oRes:<span class="fn">cBody</span> := <span class="st">'{"time": "'</span> + Time() + <span class="st">'"}'</span>
+
+      <span class="cmd">OTHERWISE</span>
+         oRes:<span class="fn">nStatus</span> := <span class="nb">404</span>
+         oRes:<span class="fn">cBody</span> := <span class="st">"Nao Encontrado"</span>
+   <span class="cmd">ENDCASE</span>
+
+<span class="cmd">RETURN</span> <span class="cmd">NIL</span></pre>
+
+<div class="info-box info">
+  <strong>9 Controles de Internet</strong>
+  <p>Todos os controles de Internet usam I/O assincrono e orientado a eventos. Operacoes de rede nunca bloqueiam a thread da UI.
+  TLS/SSL e suportado em todas as plataformas usando o repositorio de certificados nativo do sistema.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inicio Rapido - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <a class="logo" href="index.html">
+    <span>HB</span> HarbourBuilder Docs
+  </a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/quickstart.html">EN</a>
+    <a class="lang-btn" href="../es/quickstart.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html" class="active">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<!-- Content -->
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span> Primeiros Passos <span>/</span> Inicio Rapido
+</div>
+
+<h1>Guia de Inicio Rapido</h1>
+<p>Comece a usar o HarbourBuilder em cinco minutos. Este guia orienta voce na criacao
+do seu primeiro aplicativo, de um projeto vazio a um programa nativo em execucao.</p>
+
+<h2>1. Crie Seu Primeiro Projeto</h2>
+<p>Inicie o HarbourBuilder e selecione <strong>Arquivo &rarr; Novo Projeto</strong>. Escolha uma pasta e um nome para o projeto.
+O IDE cria um arquivo <code>.prg</code> principal com uma definicao de formulario inicial:</p>
+
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oForm
+
+   <span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Meu Primeiro App"</span> ;
+      <span class="cmd">SIZE</span> <span class="nb">640</span>, <span class="nb">480</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+   <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<p>Isso lhe da uma janela vazia, com tamanho de 640&times;480, centralizada na tela. O comando
+<code>DEFINE FORM</code> e uma macro do pre-processador xBase que cria um objeto <code>TForm</code> nativo nos bastidores.</p>
+
+<h2>2. Adicione Controles</h2>
+<p>Abra o <strong>Designer de Formularios</strong> (clique duas vezes no formulario no Gerenciador de Projetos) e use a
+<strong>Paleta de Componentes</strong> na parte superior do IDE para soltar controles no formulario:</p>
+
+<ol>
+  <li>Clique na aba <strong>Padrao</strong> na paleta.</li>
+  <li>Clique no icone <strong>Botao</strong> e, em seguida, clique na superficie do formulario onde deseja coloca-lo.</li>
+  <li>O Inspetor de Objetos a esquerda mostra as propriedades do botao &mdash; defina <code>cPrompt</code> como <code>"Diga Ola"</code>.</li>
+  <li>Arraste um <strong>Rotulo</strong> da paleta e coloque-o acima do botao.</li>
+</ol>
+
+<p>Cada controle que voce solta gera o codigo xBase correspondente automaticamente:</p>
+
+<pre><span class="kw">local</span> oForm, oBtn, oLabel
+
+<span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Meu Primeiro App"</span> ;
+   <span class="cmd">SIZE</span> <span class="nb">640</span>, <span class="nb">480</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+@ <span class="nb">30</span>, <span class="nb">50</span> <span class="cmd">LABEL</span> oLabel <span class="cmd">VALUE</span> <span class="st">"Bem-vindo ao HarbourBuilder"</span> ;
+   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">250</span>, <span class="nb">24</span>
+
+@ <span class="nb">70</span>, <span class="nb">50</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"Diga Ola"</span> ;
+   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">120</span>, <span class="nb">32</span></pre>
+
+<h2>3. Trate Eventos</h2>
+<p>Selecione o botao no designer, mude para a aba <strong>Eventos</strong> no Inspetor de Objetos
+e clique duas vezes em <code>OnClick</code>. O IDE salta para o editor de codigo com um stub de metodo pronto para voce.
+Voce tambem pode atribuir eventos diretamente no codigo:</p>
+
+<pre>oBtn:<span class="fn">OnClick</span> := { || MsgInfo( <span class="st">"Ola do HarbourBuilder!"</span> ) }</pre>
+
+<p>Para logica mais complexa, use um bloco de codigo que chama uma funcao:</p>
+
+<pre>oBtn:<span class="fn">OnClick</span> := { || <span class="fn">OnBtnClick</span>( oForm, oLabel ) }
+
+<span class="kw">static function</span> <span class="fn">OnBtnClick</span>( oForm, oLabel )
+
+   oLabel:<span class="fn">SetValue</span>( <span class="st">"Botao clicado as "</span> + Time() )
+   oForm:<span class="fn">SetTitle</span>( <span class="st">"Clicado!"</span> )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>4. Compile &amp; Execute</h2>
+<p>Pressione <strong>F9</strong> (ou selecione <strong>Executar &rarr; Compilar &amp; Executar</strong>) para compilar e iniciar seu aplicativo.
+O HarbourBuilder executa estas etapas automaticamente:</p>
+
+<ol>
+  <li><strong>Pre-processamento</strong> &mdash; expande as macros <code>#xcommand</code> (<code>DEFINE FORM</code>, <code>BUTTON</code>, etc.) em chamadas OOP do Harbour.</li>
+  <li><strong>Compilacao</strong> &mdash; o compilador Harbour produz codigo C e, em seguida, o compilador C/C++ da plataforma gera o binario nativo.</li>
+  <li><strong>Linkagem</strong> &mdash; vincula ao backend da plataforma (API Win32, Cocoa ou GTK3).</li>
+  <li><strong>Execucao</strong> &mdash; inicia o executavel nativo resultante.</li>
+</ol>
+
+<p>A saida da compilacao aparece no painel <strong>Mensagens</strong> na parte inferior. Quaisquer erros sao mostrados com
+referencias clicaveis de arquivo/linha que saltam diretamente para o codigo-fonte.</p>
+
+<h2>5. Salve Seu Projeto</h2>
+<p>Use <strong>Arquivo &rarr; Salvar Projeto</strong> (<strong>Ctrl+S</strong>) para salvar seu trabalho. O HarbourBuilder armazena
+metadados do projeto em um arquivo <code>.hbp</code>, que rastreia:</p>
+
+<ul>
+  <li>Todos os arquivos de codigo-fonte (<code>.prg</code>) do projeto.</li>
+  <li>Dados de design do formulario (posicoes de controles, propriedades, eventos).</li>
+  <li>Configuracao de compilacao (flags do compilador, plataforma alvo, caminho de saida).</li>
+  <li>Referencias a bibliotecas de terceiros.</li>
+</ul>
+
+<p>O arquivo <code>.hbp</code> e um formato de texto simples que funciona bem com sistemas de controle de versao como o Git.</p>
+
+<div class="info-box tip">
+  <strong>As Ferramentas Bidirecionais mantem tudo sincronizado</strong>
+  <p>As ferramentas bidirecionais do HarbourBuilder garantem que as alteracoes feitas no Designer de Formularios sejam instantaneamente
+  refletidas no Editor de Codigo e vice-versa. Edite uma propriedade no inspetor e veja o codigo
+  atualizar em tempo real. Modifique um comando <code>DEFINE FORM</code> no editor e observe o designer
+  ser redesenhado. Suas implementacoes de <code>METHOD</code> sao sempre preservadas durante a regeneracao de codigo &mdash;
+  voce nunca perde logica escrita a mao.</p>
+</div>
+
+<h2>Fluxo de Trabalho de Desenvolvimento</h2>
+<p>O ciclo tipico de desenvolvimento do HarbourBuilder segue quatro estagios:</p>
+
+<div class="mermaid">
+graph LR
+    A["Design<br/>Designer de Formularios +<br/>Inspetor de Objetos"] --> B["Codigo<br/>Editor de Codigo +<br/>Sync Bidirecional"]
+    B --> C["Compilacao<br/>Compilador Harbour +<br/>Backend C/C++"]
+    C --> D["Execucao<br/>Executavel Nativo<br/>em Qualquer Plataforma"]
+    D -->|"Iterar"| A
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style C fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style D fill:#f0883e,stroke:#d18616,color:#0d1117
+</div>
+
+<p>Pressione <strong>F9</strong> a qualquer momento para ir do design a um aplicativo em execucao em segundos. Bom trabalho!</p>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

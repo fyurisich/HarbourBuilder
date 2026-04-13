@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles Padrao - HarbourBuilder Docs</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <a class="lang-btn" href="../es/index.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html" class="active">Padrao (11)</a>
+    <a href="controls-additional.html">Adicionais (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threads (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="controls-standard.html">Paleta de Componentes</a> <span>/</span> Padrao
+</div>
+
+<h1>Controles Padrao</h1>
+<p>A aba Padrao contem os controles mais comumente utilizados. Estes sao os blocos de construcao de cada formulario.</p>
+
+<!-- TLabel -->
+<h2 id="label">TLabel <span class="badge new">CT_LABEL = 1</span></h2>
+<p>Exibe texto estatico em um formulario. Nao editavel, usado para legendas, descricoes e rotulos.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>""</td><td>Texto de exibicao</td></tr>
+  <tr><td><code>nLeft, nTop</code></td><td>Numerico</td><td>0</td><td>Posicao (pixels)</td></tr>
+  <tr><td><code>nWidth</code></td><td>Numerico</td><td>80</td><td>Largura em pixels</td></tr>
+  <tr><td><code>oFont</code></td><td>Fonte</td><td>herdado</td><td>Fonte e tamanho</td></tr>
+  <tr><td><code>nClrPane</code></td><td>Cor</td><td>transparente</td><td>Cor de fundo</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnClick</code></td><td>Acao</td><td>Usuario clicou no rotulo</td></tr>
+  <tr><td><code>OnDblClick</code></td><td>Acao</td><td>Usuario clicou duas vezes</td></tr>
+  <tr><td><code>OnMouseDown</code></td><td>Mouse</td><td>Botao do mouse pressionado</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>STATIC (SS_LEFT)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTextField (nao editavel)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkLabel</td></tr>
+</table>
+
+<pre><span class="cm">// sintaxe de comando xBase</span>
+@ <span class="nb">10</span>, <span class="nb">20</span> <span class="cmd">SAY</span> oLabel <span class="cmd">PROMPT</span> <span class="st">"Nome:"</span> <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">80</span></pre>
+
+<!-- TEdit -->
+<h2 id="edit">TEdit <span class="badge new">CT_EDIT = 2</span></h2>
+<p>Campo de entrada de texto de linha unica. O principal controle de formularios de entrada de dados.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>""</td><td>Conteudo do texto atual</td></tr>
+  <tr><td><code>lReadOnly</code></td><td>Logico</td><td>.F.</td><td>Impede edicao do usuario</td></tr>
+  <tr><td><code>lPassword</code></td><td>Logico</td><td>.F.</td><td>Mascara entrada com pontos</td></tr>
+  <tr><td><code>nWidth, nHeight</code></td><td>Numerico</td><td>120, 24</td><td>Tamanho</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnChange</code></td><td>Acao</td><td>Conteudo do texto alterado</td></tr>
+  <tr><td><code>OnClick</code></td><td>Acao</td><td>Controle clicado</td></tr>
+  <tr><td><code>OnEnter</code></td><td>Foco</td><td>Controle recebeu foco</td></tr>
+  <tr><td><code>OnExit</code></td><td>Foco</td><td>Controle perdeu foco</td></tr>
+  <tr><td><code>OnKeyDown</code></td><td>Teclado</td><td>Tecla pressionada</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>EDIT (ES_AUTOHSCROLL)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTextField</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkEntry</td></tr>
+</table>
+
+<pre><span class="cm">// sintaxe de comando xBase</span>
+@ <span class="nb">10</span>, <span class="nb">100</span> <span class="cmd">GET</span> oEdit <span class="cmd">VAR</span> <span class="st">"John Doe"</span> <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">200</span>, <span class="nb">24</span></pre>
+
+<!-- TMemo -->
+<h2 id="memo">TMemo <span class="badge new">CT_MEMO = 24</span></h2>
+<p>Editor de texto multi-linha. Suporta quebra de linha e barras de rolagem.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>""</td><td>Conteudo de texto multi-linha</td></tr>
+  <tr><td><code>lReadOnly</code></td><td>Logico</td><td>.F.</td><td>Impede edicao</td></tr>
+  <tr><td><code>lWordWrap</code></td><td>Logico</td><td>.T.</td><td>Quebra linhas longas</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>EDIT (ES_MULTILINE | WS_VSCROLL)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSScrollView + NSTextView</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkScrolledWindow + GtkTextView</td></tr>
+</table>
+
+<!-- TButton -->
+<h2 id="button">TButton <span class="badge new">CT_BUTTON = 3</span></h2>
+<p>Botao de acao padrao. O controle interativo mais fundamental.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>"Button"</td><td>Legenda do botao</td></tr>
+  <tr><td><code>lDefault</code></td><td>Logico</td><td>.F.</td><td>Botao padrao (Enter ativa)</td></tr>
+  <tr><td><code>lCancel</code></td><td>Logico</td><td>.F.</td><td>Botao cancelar (Escape ativa)</td></tr>
+  <tr><td><code>nWidth, nHeight</code></td><td>Numerico</td><td>88, 26</td><td>Tamanho</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
+  <tr><td><code>OnClick</code></td><td>Acao</td><td>Botao clicado</td></tr>
+  <tr><td><code>OnEnter</code></td><td>Foco</td><td>Botao recebeu foco</td></tr>
+  <tr><td><code>OnKeyDown</code></td><td>Teclado</td><td>Tecla pressionada enquanto focado</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>BUTTON (BS_PUSHBUTTON)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSButton (NSRoundedBezelStyle)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkButton</td></tr>
+</table>
+
+<pre><span class="cm">// sintaxe de comando xBase</span>
+@ <span class="nb">240</span>, <span class="nb">120</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"&amp;OK"</span> <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">88</span>, <span class="nb">26</span>
+oBtn:<span class="fn">OnClick</span> := { || MsgInfo( <span class="st">"Clicado!"</span> ) }</pre>
+
+<!-- TCheckBox -->
+<h2 id="checkbox">TCheckBox <span class="badge new">CT_CHECKBOX = 4</span></h2>
+<p>Controle de alternancia. Pode estar marcado ou desmarcado.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>"CheckBox"</td><td>Texto do rotulo</td></tr>
+  <tr><td><code>lChecked</code></td><td>Logico</td><td>.F.</td><td>Estado atual da marcacao</td></tr>
+</table>
+
+<pre><span class="cm">// sintaxe de comando xBase</span>
+@ <span class="nb">50</span>, <span class="nb">20</span> <span class="cmd">CHECKBOX</span> oChk <span class="cmd">PROMPT</span> <span class="st">"Ativo"</span> <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">120</span> <span class="cmd">CHECKED</span></pre>
+
+<!-- TRadioButton -->
+<h2 id="radiobutton">TRadioButton <span class="badge new">CT_RADIO = 8</span></h2>
+<p>Seletor de exclusao mutua. Apenas um botao de radio em um grupo pode estar selecionado.</p>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>BUTTON (BS_AUTORADIOBUTTON)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSButton (NSRadioButton)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkRadioButton</td></tr>
+</table>
+
+<!-- TListBox -->
+<h2 id="listbox">TListBox <span class="badge new">CT_LISTBOX = 7</span></h2>
+<p>Lista rolavel de itens selecionaveis.</p>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>LISTBOX (WS_VSCROLL | LBS_NOTIFY)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSScrollView + NSTableView</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkScrolledWindow + GtkTreeView</td></tr>
+</table>
+
+<!-- TComboBox -->
+<h2 id="combobox">TComboBox <span class="badge new">CT_COMBOBOX = 5</span></h2>
+<p>Seletor suspenso com opcao de entrada de texto.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nItemIndex</code></td><td>Numerico</td><td>-1</td><td>Indice do item selecionado (base 0)</td></tr>
+  <tr><td><code>nItemCount</code></td><td>Numerico</td><td>0</td><td>Numero de itens (somente leitura)</td></tr>
+</table>
+
+<pre><span class="cm">// sintaxe de comando xBase</span>
+@ <span class="nb">50</span>, <span class="nb">20</span> <span class="cmd">COMBOBOX</span> oCbx <span class="cmd">OF</span> oForm <span class="cmd">ITEMS</span> { <span class="st">"Usuario"</span>, <span class="st">"Administrador"</span> } <span class="cmd">SIZE</span> <span class="nb">150</span></pre>
+
+<!-- TGroupBox -->
+<h2 id="groupbox">TGroupBox <span class="badge new">CT_GROUPBOX = 6</span></h2>
+<p>Conteiner visual que agrupa controles relacionados com uma moldura rotulada.</p>
+
+<pre><span class="cm">// sintaxe de comando xBase</span>
+@ <span class="nb">10</span>, <span class="nb">10</span> <span class="cmd">GROUPBOX</span> <span class="st">"Opcoes"</span> <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">300</span>, <span class="nb">100</span></pre>
+
+<!-- TPanel -->
+<h2 id="panel">TPanel <span class="badge new">CT_PANEL = 25</span></h2>
+<p>Painel conteiner plano. Use como fundo ou para agrupar controles sem uma borda visivel.</p>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>STATIC (SS_SUNKEN)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSBox (NSBoxPrimary)</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkFrame</td></tr>
+</table>
+
+<!-- TScrollBar -->
+<h2 id="scrollbar">TScrollBar <span class="badge new">CT_SCROLLBAR = 26</span></h2>
+<p>Controle de barra de rolagem horizontal ou vertical.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nMin</code></td><td>Numerico</td><td>0</td><td>Valor minimo</td></tr>
+  <tr><td><code>nMax</code></td><td>Numerico</td><td>100</td><td>Valor maximo</td></tr>
+  <tr><td><code>nPosition</code></td><td>Numerico</td><td>0</td><td>Posicao atual</td></tr>
+  <tr><td><code>lHorizontal</code></td><td>Logico</td><td>.T.</td><td>Horizontal (ou vertical)</td></tr>
+</table>
+
+<div class="info-box info">
+  <strong>11 Controles Padrao</strong>
+  <p>Estes controles estao disponiveis em todas as plataformas (Windows, macOS, Linux) e usam widgets nativos para
+  maxima performance e integracao com o sistema operacional.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

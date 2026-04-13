@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles de Dados - HarbourBuilder Docs</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar na documentação..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/controls-datacontrols.html">EN</a>
+    <a class="lang-btn" href="../es/controls-datacontrols.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visão Geral</a>
+    <a href="quickstart.html">Início Rápido</a>
+    <a href="installation.html">Instalação</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrão (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Diálogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html" class="active">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Thread (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html">ERP / Empresarial (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos da IDE</h3>
+    <a href="form-designer.html">Designer de Formulários</a>
+    <a href="code-editor.html">Editor de Código</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Documentação</a> <span>/</span>
+  <a href="controls-standard.html">Paleta de Componentes</a> <span>/</span> Controles de Dados
+</div>
+
+<h1>Controles de Dados</h1>
+<p>A aba Controles de Dados fornece 8 controles sensíveis a dados que se vinculam diretamente a campos de banco de dados e conjuntos de resultados. Esses controles exibem, navegam e editam dados de banco de dados automaticamente sem código de sincronização manual.</p>
+
+<!-- TBrowse -->
+<h2 id="browse">TBrowse <span class="badge new">CT_BROWSE = 79</span></h2>
+<p>Grade de dados de alto desempenho para navegar e editar dados tabulares. Suporta modos vinculado a banco de dados e virtual (blocos de código). O controle de exibição de dados mais poderoso do HarbourBuilder.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>oDataSource</code></td><td>Object</td><td>NIL</td><td>Componente de Acesso a Dados (TDBFTable, TSQLite, etc.)</td></tr>
+  <tr><td><code>aCols</code></td><td>Array</td><td>{}</td><td>Array de objetos TBrowseColumn</td></tr>
+  <tr><td><code>nRowCount</code></td><td>Numeric</td><td>0</td><td>Número de linhas visíveis (somente leitura)</td></tr>
+  <tr><td><code>nColCount</code></td><td>Numeric</td><td>0</td><td>Número de colunas (somente leitura)</td></tr>
+  <tr><td><code>nRowPos</code></td><td>Numeric</td><td>1</td><td>Posição atual da linha na área visível</td></tr>
+  <tr><td><code>nColPos</code></td><td>Numeric</td><td>1</td><td>Posição atual da coluna</td></tr>
+  <tr><td><code>lEditable</code></td><td>Logical</td><td>.F.</td><td>Permitir edição de célula no local</td></tr>
+  <tr><td><code>lVirtual</code></td><td>Logical</td><td>.F.</td><td>Usar modo virtual (dados fornecidos via blocos de código)</td></tr>
+  <tr><td><code>nVirtualRows</code></td><td>Numeric</td><td>0</td><td>Contagem total de linhas no modo virtual</td></tr>
+  <tr><td><code>lShowHeaders</code></td><td>Logical</td><td>.T.</td><td>Exibir linha de cabeçalho das colunas</td></tr>
+  <tr><td><code>lShowGrid</code></td><td>Logical</td><td>.T.</td><td>Exibir linhas da grade</td></tr>
+  <tr><td><code>lAlternateColors</code></td><td>Logical</td><td>.F.</td><td>Alternar cores de fundo das linhas</td></tr>
+  <tr><td><code>nClrRowOdd</code></td><td>Color</td><td>herdada</td><td>Cor de fundo de linhas ímpares</td></tr>
+  <tr><td><code>nClrRowEven</code></td><td>Color</td><td>herdada</td><td>Cor de fundo de linhas pares</td></tr>
+  <tr><td><code>nClrSelected</code></td><td>Color</td><td>sistema</td><td>Cor de destaque da linha selecionada</td></tr>
+</table>
+
+<h3>Propriedades de TBrowseColumn</h3>
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>cHeading</code></td><td>String</td><td>""</td><td>Texto do cabeçalho da coluna</td></tr>
+  <tr><td><code>cField</code></td><td>String</td><td>""</td><td>Nome do campo de banco de dados para vincular</td></tr>
+  <tr><td><code>bBlock</code></td><td>Block</td><td>NIL</td><td>Bloco de código que retorna o valor da célula (modo virtual)</td></tr>
+  <tr><td><code>nWidth</code></td><td>Numeric</td><td>100</td><td>Largura da coluna em pixels</td></tr>
+  <tr><td><code>nAlign</code></td><td>Numeric</td><td>0</td><td>Alinhamento (0=esquerda, 1=centro, 2=direita)</td></tr>
+  <tr><td><code>cPicture</code></td><td>String</td><td>""</td><td>Cláusula de formato de exibição (picture)</td></tr>
+  <tr><td><code>lEditable</code></td><td>Logical</td><td>.T.</td><td>Permitir edição nesta coluna</td></tr>
+</table>
+
+<h3>Eventos do TBrowse</h3>
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnClick</code></td><td>Ação</td><td>Usuário clicou em uma célula. Params: nRow, nCol</td></tr>
+  <tr><td><code>OnDblClick</code></td><td>Ação</td><td>Usuário deu clique duplo em uma célula. Params: nRow, nCol</td></tr>
+  <tr><td><code>OnRowChange</code></td><td>Navegação</td><td>Linha atual alterada. Params: nOldRow, nNewRow</td></tr>
+  <tr><td><code>OnColChange</code></td><td>Navegação</td><td>Coluna atual alterada. Params: nOldCol, nNewCol</td></tr>
+  <tr><td><code>OnHeaderClick</code></td><td>Ação</td><td>Cabeçalho da coluna clicado (para ordenação). Params: nCol</td></tr>
+  <tr><td><code>OnBeforeEdit</code></td><td>Edição</td><td>Antes do início da edição da célula. Retorne .F. para cancelar. Params: nRow, nCol</td></tr>
+  <tr><td><code>OnAfterEdit</code></td><td>Edição</td><td>Após confirmação da edição da célula. Params: nRow, nCol, xOldValue, xNewValue</td></tr>
+  <tr><td><code>OnKeyDown</code></td><td>Teclado</td><td>Tecla pressionada enquanto o browse tem foco. Params: nKey</td></tr>
+  <tr><td><code>OnPaint</code></td><td>Exibição</td><td>Pintura personalizada da célula. Params: nRow, nCol, oCanvas</td></tr>
+  <tr><td><code>OnVirtualData</code></td><td>Dados</td><td>Solicitação de dados para uma linha virtual. Params: nRow, nCol. Deve retornar o valor da célula</td></tr>
+</table>
+
+<table>
+  <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>ListView owner-drawn personalizado (WC_LISTVIEW)</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSScrollView + NSTableView</td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>GtkScrolledWindow + GtkTreeView</td></tr>
+</table>
+
+<!-- TDBGrid -->
+<h2 id="dbgrid">TDBGrid <span class="badge new">CT_DBGRID = 80</span></h2>
+<p>Grade de dados simplificada que gera colunas automaticamente a partir dos campos da fonte de dados. Mais fácil de usar que TBrowse quando personalização completa não é necessária.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>oDataSource</code></td><td>Object</td><td>NIL</td><td>Componente de Acesso a Dados para vincular</td></tr>
+  <tr><td><code>lAutoColumns</code></td><td>Logical</td><td>.T.</td><td>Criar colunas automaticamente a partir dos campos</td></tr>
+  <tr><td><code>lEditable</code></td><td>Logical</td><td>.F.</td><td>Permitir edição no local</td></tr>
+  <tr><td><code>lSortable</code></td><td>Logical</td><td>.T.</td><td>Permitir ordenação clicando nos cabeçalhos</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnClick</code></td><td>Ação</td><td>Célula clicada</td></tr>
+  <tr><td><code>OnDblClick</code></td><td>Ação</td><td>Célula com clique duplo</td></tr>
+  <tr><td><code>OnRowChange</code></td><td>Navegação</td><td>Linha atual alterada</td></tr>
+  <tr><td><code>OnAfterEdit</code></td><td>Edição</td><td>Edição da célula confirmada</td></tr>
+</table>
+
+<!-- TDBNavigator -->
+<h2 id="dbnavigator">TDBNavigator <span class="badge new">CT_DBNAVIGATOR = 81</span></h2>
+<p>Barra de navegação com botões para primeiro, anterior, próximo, último, inserir, excluir, editar, salvar e cancelar operações em uma fonte de dados.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>oDataSource</code></td><td>Object</td><td>NIL</td><td>Componente de Acesso a Dados para navegar</td></tr>
+  <tr><td><code>lShowInsert</code></td><td>Logical</td><td>.T.</td><td>Exibir botão Inserir</td></tr>
+  <tr><td><code>lShowDelete</code></td><td>Logical</td><td>.T.</td><td>Exibir botão Excluir</td></tr>
+  <tr><td><code>lShowEdit</code></td><td>Logical</td><td>.T.</td><td>Exibir botão Editar</td></tr>
+  <tr><td><code>lConfirmDelete</code></td><td>Logical</td><td>.T.</td><td>Solicitar confirmação antes de excluir um registro</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnBeforeAction</code></td><td>Ação</td><td>Antes de uma ação do navegador. Retorne .F. para cancelar. Params: nAction</td></tr>
+  <tr><td><code>OnAfterAction</code></td><td>Ação</td><td>Após conclusão de uma ação do navegador. Params: nAction</td></tr>
+</table>
+
+<!-- TDBText -->
+<h2 id="dbtext">TDBText <span class="badge new">CT_DBTEXT = 82</span></h2>
+<p>Rótulo sensível a dados. Exibe automaticamente o valor de um campo vinculado de banco de dados como texto somente leitura.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>oDataSource</code></td><td>Object</td><td>NIL</td><td>Componente de Acesso a Dados</td></tr>
+  <tr><td><code>cField</code></td><td>String</td><td>""</td><td>Nome do campo a exibir</td></tr>
+  <tr><td><code>cPicture</code></td><td>String</td><td>""</td><td>Cláusula de formato de exibição (picture)</td></tr>
+</table>
+
+<!-- TDBEdit -->
+<h2 id="dbedit">TDBEdit <span class="badge new">CT_DBEDIT = 83</span></h2>
+<p>Campo de entrada de texto sensível a dados. Vincula um controle TEdit a um campo de banco de dados para visualização e edição.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>oDataSource</code></td><td>Object</td><td>NIL</td><td>Componente de Acesso a Dados</td></tr>
+  <tr><td><code>cField</code></td><td>String</td><td>""</td><td>Nome do campo para vincular</td></tr>
+  <tr><td><code>cPicture</code></td><td>String</td><td>""</td><td>Cláusula de formato de entrada/exibição (picture)</td></tr>
+  <tr><td><code>lReadOnly</code></td><td>Logical</td><td>.F.</td><td>Impedir edição</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnChange</code></td><td>Ação</td><td>Valor do campo alterado pelo usuário</td></tr>
+  <tr><td><code>OnValidate</code></td><td>Validação</td><td>Validar antes de salvar. Retorne .F. para rejeitar. Params: xValue</td></tr>
+</table>
+
+<!-- TDBComboBox -->
+<h2 id="dbcombobox">TDBComboBox <span class="badge new">CT_DBCOMBOBOX = 84</span></h2>
+<p>Caixa de combinação sensível a dados. Exibe uma lista suspensa vinculada a um campo de banco de dados. Útil para campos de pesquisa.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>oDataSource</code></td><td>Object</td><td>NIL</td><td>Componente de Acesso a Dados</td></tr>
+  <tr><td><code>cField</code></td><td>String</td><td>""</td><td>Nome do campo para vincular</td></tr>
+  <tr><td><code>aItems</code></td><td>Array</td><td>{}</td><td>Lista de itens selecionáveis</td></tr>
+  <tr><td><code>oLookupSource</code></td><td>Object</td><td>NIL</td><td>Fonte de dados de pesquisa opcional para itens</td></tr>
+  <tr><td><code>cLookupField</code></td><td>String</td><td>""</td><td>Campo da fonte de pesquisa para exibir</td></tr>
+  <tr><td><code>cLookupKey</code></td><td>String</td><td>""</td><td>Campo chave da fonte de pesquisa</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnChange</code></td><td>Ação</td><td>Seleção alterada</td></tr>
+</table>
+
+<!-- TDBCheckBox -->
+<h2 id="dbcheckbox">TDBCheckBox <span class="badge new">CT_DBCHECKBOX = 85</span></h2>
+<p>Caixa de seleção sensível a dados. Vincula um campo lógico (booleano) de banco de dados a um controle de caixa de seleção.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>oDataSource</code></td><td>Object</td><td>NIL</td><td>Componente de Acesso a Dados</td></tr>
+  <tr><td><code>cField</code></td><td>String</td><td>""</td><td>Nome do campo lógico para vincular</td></tr>
+  <tr><td><code>cText</code></td><td>String</td><td>""</td><td>Texto do rótulo ao lado da caixa de seleção</td></tr>
+  <tr><td><code>xValueOn</code></td><td>Any</td><td>.T.</td><td>Valor representando o estado selecionado</td></tr>
+  <tr><td><code>xValueOff</code></td><td>Any</td><td>.F.</td><td>Valor representando o estado não selecionado</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descrição</th></tr>
+  <tr><td><code>OnChange</code></td><td>Ação</td><td>Estado da caixa de seleção alterado</td></tr>
+</table>
+
+<!-- TDBImage -->
+<h2 id="dbimage">TDBImage <span class="badge new">CT_DBIMAGE = 86</span></h2>
+<p>Exibição de imagem sensível a dados. Mostra uma imagem armazenada em um campo BLOB de banco de dados ou referenciada por um caminho de arquivo.</p>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrão</th><th>Descrição</th></tr>
+  <tr><td><code>oDataSource</code></td><td>Object</td><td>NIL</td><td>Componente de Acesso a Dados</td></tr>
+  <tr><td><code>cField</code></td><td>String</td><td>""</td><td>Nome do campo BLOB ou caminho de arquivo</td></tr>
+  <tr><td><code>lStretch</code></td><td>Logical</td><td>.F.</td><td>Esticar a imagem para preencher o controle</td></tr>
+  <tr><td><code>lProportional</code></td><td>Logical</td><td>.T.</td><td>Manter a proporção ao esticar</td></tr>
+  <tr><td><code>lIsPath</code></td><td>Logical</td><td>.F.</td><td>Campo contém um caminho de arquivo (não dados binários)</td></tr>
+</table>
+
+<!-- Code Example -->
+<h2 id="example">Exemplo de Código: TBrowse com Banco de Dados</h2>
+<pre><span class="cm">// Um formulário de navegação de dados com TBrowse, navegador e controles sensíveis a dados</span>
+
+<span class="cmd">FUNCTION</span> Main()
+
+   <span class="cmd">LOCAL</span> oForm, oDB, oBrw, oNav
+
+   <span class="cm">// Criar formulário</span>
+   oForm := TForm():New()
+   oForm:<span class="fn">cTitle</span> := <span class="st">"Navegador de Clientes"</span>
+   oForm:<span class="fn">nWidth</span> := <span class="nb">800</span>
+   oForm:<span class="fn">nHeight</span> := <span class="nb">500</span>
+
+   <span class="cm">// Conectar ao banco de dados</span>
+   oDB := TSQLite():New()
+   oDB:<span class="fn">cFile</span> := <span class="st">"customers.db"</span>
+   oDB:<span class="fn">lAutoConnect</span> := .T.
+
+   <span class="cm">// Criar o controle de navegação</span>
+   oBrw := TBrowse():New( oForm )
+   oBrw:<span class="fn">nLeft</span>   := <span class="nb">10</span>
+   oBrw:<span class="fn">nTop</span>    := <span class="nb">10</span>
+   oBrw:<span class="fn">nWidth</span>  := <span class="nb">780</span>
+   oBrw:<span class="fn">nHeight</span> := <span class="nb">350</span>
+   oBrw:<span class="fn">oDataSource</span> := oDB
+   oBrw:<span class="fn">lAlternateColors</span> := .T.
+
+   <span class="cm">// Definir colunas</span>
+   oBrw:<span class="fn">AddColumn</span>( <span class="st">"Id"</span>,    <span class="st">"id"</span>,    <span class="nb">60</span>,  <span class="nb">2</span> )  <span class="cm">// alinhado à direita</span>
+   oBrw:<span class="fn">AddColumn</span>( <span class="st">"Name"</span>,  <span class="st">"name"</span>,  <span class="nb">200</span>, <span class="nb">0</span> )  <span class="cm">// alinhado à esquerda</span>
+   oBrw:<span class="fn">AddColumn</span>( <span class="st">"Email"</span>, <span class="st">"email"</span>, <span class="nb">250</span>, <span class="nb">0</span> )
+   oBrw:<span class="fn">AddColumn</span>( <span class="st">"City"</span>,  <span class="st">"city"</span>,  <span class="nb">150</span>, <span class="nb">0</span> )
+
+   <span class="cm">// Eventos</span>
+   oBrw:<span class="fn">OnDblClick</span>    := { |r,c| EditRecord( oDB, r ) }
+   oBrw:<span class="fn">OnHeaderClick</span> := { |c| SortByColumn( oDB, oBrw, c ) }
+   oBrw:<span class="fn">OnRowChange</span>   := { |o,n| UpdateStatus( n ) }
+
+   <span class="cm">// Adicionar barra de navegação</span>
+   oNav := TDBNavigator():New( oForm )
+   oNav:<span class="fn">nLeft</span> := <span class="nb">10</span>
+   oNav:<span class="fn">nTop</span>  := <span class="nb">370</span>
+   oNav:<span class="fn">oDataSource</span> := oDB
+   oNav:<span class="fn">lConfirmDelete</span> := .T.
+
+   <span class="cm">// Carregar dados e ativar</span>
+   oDB:<span class="fn">Query</span>( <span class="st">"SELECT * FROM customers ORDER BY name"</span> )
+   oForm:<span class="fn">Activate</span>()
+
+<span class="cmd">RETURN</span> <span class="cmd">NIL</span></pre>
+
+<div class="info-box info">
+  <strong>8 Controles de Dados</strong>
+  <p>Os controles de dados sincronizam automaticamente com sua fonte de dados. Quando o usuário navega para um
+  registro diferente, todos os controles vinculados são atualizados instantaneamente. As alterações são gravadas
+  de volta no banco de dados ao salvar.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

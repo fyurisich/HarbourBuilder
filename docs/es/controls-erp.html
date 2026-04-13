@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles ERP / Negocios - HarbourBuilder Docs</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros Pasos</h3>
+    <a href="index.html">Descripcion General</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicionales (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a Datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de Datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (7)</a>
+    <a href="controls-erp.html" class="active">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de Formularios</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente de IA</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="controls-standard.html">Paleta de Componentes</a> <span>/</span> ERP / Negocios
+</div>
+
+<h1>Controles ERP / Negocios <span class="badge new">NUEVO</span></h1>
+<p>La pestania ERP / Negocios proporciona componentes de nivel empresarial para construir aplicaciones de contabilidad, facturacion, informes y automatizacion de negocios. Estos componentes no visuales manejan generacion de documentos, procesamiento de datos, auditoria y programacion.</p>
+
+<!-- TPreprocessor -->
+<h2 id="preprocessor">TPreprocessor <span class="badge new">CT_PREPROCESSOR = 90</span></h2>
+<p>Motor preprocesador de codigo fuente. Procesa directivas #define, #include, #ifdef y reglas de traduccion personalizadas antes de la compilacion.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cSource</code></td><td>String</td><td>""</td><td>Codigo fuente a preprocesar</td></tr>
+  <tr><td><code>cOutput</code></td><td>String</td><td>""</td><td>Salida preprocesada (solo lectura)</td></tr>
+  <tr><td><code>aDefines</code></td><td>Array</td><td>{}</td><td>Simbolos #define activos</td></tr>
+  <tr><td><code>aIncludePaths</code></td><td>Array</td><td>{}</td><td>Rutas de busqueda para archivos #include</td></tr>
+  <tr><td><code>lStrictMode</code></td><td>Logico</td><td>.F.</td><td>Error en simbolos no definidos</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnProcess</code></td><td>Accion</td><td>Preprocesamiento completado</td></tr>
+  <tr><td><code>OnError</code></td><td>Error</td><td>Error de preprocesamiento encontrado</td></tr>
+  <tr><td><code>OnInclude</code></td><td>Accion</td><td>Archivo include resuelto</td></tr>
+</table>
+
+<!-- TScriptEngine -->
+<h2 id="scriptengine">TScriptEngine <span class="badge new">CT_SCRIPTENGINE = 91</span></h2>
+<p>Interprete de scripts en tiempo de ejecucion. Ejecuta codigo Harbour/xBase en tiempo de ejecucion para reglas de negocio dinamicas, formulas y calculos definidos por el usuario.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cScript</code></td><td>String</td><td>""</td><td>Codigo fuente del script</td></tr>
+  <tr><td><code>xResult</code></td><td>Any</td><td>NIL</td><td>Ultimo resultado de ejecucion</td></tr>
+  <tr><td><code>lSandboxed</code></td><td>Logico</td><td>.T.</td><td>Restringir acceso a archivos/red</td></tr>
+  <tr><td><code>nTimeout</code></td><td>Numerico</td><td>5000</td><td>Tiempo maximo de ejecucion (ms)</td></tr>
+  <tr><td><code>hVariables</code></td><td>Hash</td><td>{=>}</td><td>Variables disponibles para el script</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnExecute</code></td><td>Accion</td><td>Ejecucion del script completada</td></tr>
+  <tr><td><code>OnError</code></td><td>Error</td><td>Error en tiempo de ejecucion del script</td></tr>
+  <tr><td><code>OnOutput</code></td><td>Accion</td><td>Salida producida por el script (ej. comando ?)</td></tr>
+</table>
+
+<!-- TReportDesigner -->
+<h2 id="reportdesigner">TReportDesigner <span class="badge new">CT_REPORTDESIGNER = 92</span></h2>
+<p>Motor de diseno de informes visual. Define bandas (encabezado, detalle, pie, grupo), campos, etiquetas e imagenes para informes imprimibles.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cReportFile</code></td><td>String</td><td>""</td><td>Ruta al archivo de definicion de informe (.hbr)</td></tr>
+  <tr><td><code>cTitle</code></td><td>String</td><td>""</td><td>Titulo del informe</td></tr>
+  <tr><td><code>nPageWidth</code></td><td>Numerico</td><td>210</td><td>Ancho de pagina en mm (predeterminado A4)</td></tr>
+  <tr><td><code>nPageHeight</code></td><td>Numerico</td><td>297</td><td>Alto de pagina en mm</td></tr>
+  <tr><td><code>nOrientation</code></td><td>Numerico</td><td>0</td><td>0=Vertical, 1=Horizontal</td></tr>
+  <tr><td><code>oDataSource</code></td><td>Object</td><td>NIL</td><td>Fuente de datos (tabla, consulta, arreglo)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnBeforePrint</code></td><td>Accion</td><td>Antes de que comience la generacion del informe</td></tr>
+  <tr><td><code>OnAfterPrint</code></td><td>Accion</td><td>Despues de que se completa la generacion del informe</td></tr>
+  <tr><td><code>OnNewPage</code></td><td>Accion</td><td>Nueva pagina iniciada</td></tr>
+  <tr><td><code>OnGroupChange</code></td><td>Accion</td><td>Ruptura de grupo ocurrida</td></tr>
+</table>
+
+<!-- TBarcode -->
+<h2 id="barcode">TBarcode <span class="badge new">CT_BARCODE = 93</span></h2>
+<p>Generador de codigos de barras que soporta formatos 1D y 2D. Renderiza codigos de barras como imagenes para visualizacion, impresion o exportacion.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cData</code></td><td>String</td><td>""</td><td>Datos a codificar</td></tr>
+  <tr><td><code>nFormat</code></td><td>Numerico</td><td>0</td><td>0=Code128, 1=Code39, 2=EAN13, 3=QRCode, 4=DataMatrix, 5=PDF417</td></tr>
+  <tr><td><code>nWidth</code></td><td>Numerico</td><td>200</td><td>Ancho de salida en pixeles</td></tr>
+  <tr><td><code>nHeight</code></td><td>Numerico</td><td>80</td><td>Alto de salida en pixeles</td></tr>
+  <tr><td><code>lShowText</code></td><td>Logico</td><td>.T.</td><td>Mostrar texto legible debajo del codigo de barras</td></tr>
+  <tr><td><code>nErrorLevel</code></td><td>Numerico</td><td>2</td><td>Nivel de correccion de errores QR (0=L, 1=M, 2=Q, 3=H)</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnGenerate</code></td><td>Accion</td><td>Imagen de codigo de barras generada</td></tr>
+  <tr><td><code>OnError</code></td><td>Error</td><td>Datos invalidos para el formato elegido</td></tr>
+</table>
+
+<!-- TPDFGenerator -->
+<h2 id="pdfgenerator">TPDFGenerator <span class="badge new">CT_PDFGENERATOR = 94</span></h2>
+<p>Generador de documentos PDF. Crea archivos PDF de multiples paginas con texto, imagenes, tablas, codigos de barras y graficos vectoriales.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cFileName</code></td><td>String</td><td>""</td><td>Ruta del archivo PDF de salida</td></tr>
+  <tr><td><code>cTitle</code></td><td>String</td><td>""</td><td>Titulo del documento (metadatos)</td></tr>
+  <tr><td><code>cAuthor</code></td><td>String</td><td>""</td><td>Autor del documento (metadatos)</td></tr>
+  <tr><td><code>nPageWidth</code></td><td>Numerico</td><td>595</td><td>Ancho de pagina en puntos (A4)</td></tr>
+  <tr><td><code>nPageHeight</code></td><td>Numerico</td><td>842</td><td>Alto de pagina en puntos (A4)</td></tr>
+  <tr><td><code>nMargin</code></td><td>Numerico</td><td>36</td><td>Margenes de pagina en puntos</td></tr>
+  <tr><td><code>lCompressed</code></td><td>Logico</td><td>.T.</td><td>Habilitar compresion de flujos</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnNewPage</code></td><td>Accion</td><td>Nueva pagina creada</td></tr>
+  <tr><td><code>OnComplete</code></td><td>Accion</td><td>Generacion de PDF completada</td></tr>
+  <tr><td><code>OnError</code></td><td>Error</td><td>Error durante la generacion de PDF</td></tr>
+</table>
+
+<!-- TExcelExport -->
+<h2 id="excelexport">TExcelExport <span class="badge new">CT_EXCELEXPORT = 95</span></h2>
+<p>Exportador de hojas de calculo Excel. Genera archivos .xlsx con formato, formulas y multiples hojas.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cFileName</code></td><td>String</td><td>""</td><td>Ruta del archivo .xlsx de salida</td></tr>
+  <tr><td><code>cSheetName</code></td><td>String</td><td>"Hoja1"</td><td>Nombre de la hoja activa</td></tr>
+  <tr><td><code>nSheetCount</code></td><td>Numerico</td><td>1</td><td>Numero de hojas (solo lectura)</td></tr>
+  <tr><td><code>lAutoFit</code></td><td>Logico</td><td>.T.</td><td>Ajuste automatico del ancho de columnas</td></tr>
+  <tr><td><code>lHeaderBold</code></td><td>Logico</td><td>.T.</td><td>Formato de encabezado en negrita</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnExport</code></td><td>Accion</td><td>Exportacion completada</td></tr>
+  <tr><td><code>OnProgress</code></td><td>Accion</td><td>Actualizacion de progreso de exportacion (nRow, nTotal)</td></tr>
+  <tr><td><code>OnError</code></td><td>Error</td><td>Error durante la exportacion</td></tr>
+</table>
+
+<!-- TAuditLog -->
+<h2 id="auditlog">TAuditLog <span class="badge new">CT_AUDITLOG = 96</span></h2>
+<p>Componente de pista de auditoria. Registra automaticamente acciones de usuario, cambios de datos y eventos del sistema con marcas de tiempo.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cLogTable</code></td><td>String</td><td>"audit_log"</td><td>Tabla de base de datos para almacenar registros</td></tr>
+  <tr><td><code>cUserField</code></td><td>String</td><td>"user_id"</td><td>Nombre del campo para el usuario actual</td></tr>
+  <tr><td><code>lLogReads</code></td><td>Logico</td><td>.F.</td><td>Registrar operaciones de lectura (no solo escrituras)</td></tr>
+  <tr><td><code>lLogTimestamp</code></td><td>Logico</td><td>.T.</td><td>Incluir marca de tiempo en las entradas de registro</td></tr>
+  <tr><td><code>aTrackedTables</code></td><td>Array</td><td>{}</td><td>Tablas a monitorear para cambios</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnLogEntry</code></td><td>Accion</td><td>Nueva entrada de auditoria registrada</td></tr>
+  <tr><td><code>OnAlert</code></td><td>Accion</td><td>Actividad sospechosa detectada</td></tr>
+</table>
+
+<!-- TPermissions -->
+<h2 id="permissions">TPermissions <span class="badge new">CT_PERMISSIONS = 97</span></h2>
+<p>Gestor de control de acceso basado en roles. Define usuarios, roles y permisos para funciones y datos de la aplicacion.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cCurrentUser</code></td><td>String</td><td>""</td><td>Usuario autenticado actualmente</td></tr>
+  <tr><td><code>cCurrentRole</code></td><td>String</td><td>""</td><td>Rol del usuario actual</td></tr>
+  <tr><td><code>aRoles</code></td><td>Array</td><td>{}</td><td>Roles definidos</td></tr>
+  <tr><td><code>hPermissions</code></td><td>Hash</td><td>{=>}</td><td>Mapeo de rol a permisos</td></tr>
+  <tr><td><code>cPermTable</code></td><td>String</td><td>"permissions"</td><td>Tabla de base de datos de permisos</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnLogin</code></td><td>Accion</td><td>Usuario autenticado</td></tr>
+  <tr><td><code>OnDenied</code></td><td>Accion</td><td>Permiso denegado para accion</td></tr>
+  <tr><td><code>OnRoleChange</code></td><td>Accion</td><td>Rol del usuario cambiado</td></tr>
+</table>
+
+<!-- TCurrency -->
+<h2 id="currency">TCurrency <span class="badge new">CT_CURRENCY = 98</span></h2>
+<p>Gestor de multiples monedas. Administra tipos de cambio, conversion de monedas y formateo consciente de la configuracion regional.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>cBaseCurrency</code></td><td>String</td><td>"USD"</td><td>Codigo de moneda base (ISO 4217)</td></tr>
+  <tr><td><code>nAmount</code></td><td>Numerico</td><td>0.00</td><td>Monto actual en moneda base</td></tr>
+  <tr><td><code>hRates</code></td><td>Hash</td><td>{=>}</td><td>Hash de tipos de cambio (codigo => tasa)</td></tr>
+  <tr><td><code>nDecimals</code></td><td>Numerico</td><td>2</td><td>Precision decimal</td></tr>
+  <tr><td><code>lAutoUpdate</code></td><td>Logico</td><td>.F.</td><td>Obtener tasas automaticamente desde API en linea</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnConvert</code></td><td>Accion</td><td>Conversion de moneda realizada</td></tr>
+  <tr><td><code>OnRatesUpdated</code></td><td>Accion</td><td>Tipos de cambio actualizados</td></tr>
+</table>
+
+<!-- TTaxEngine -->
+<h2 id="taxengine">TTaxEngine <span class="badge new">CT_TAXENGINE = 99</span></h2>
+<p>Motor de calculo de impuestos. Maneja IVA, impuesto sobre ventas, retenciones y reglas fiscales de multiples jurisdicciones.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nBaseAmount</code></td><td>Numerico</td><td>0.00</td><td>Monto antes de impuestos</td></tr>
+  <tr><td><code>nTaxRate</code></td><td>Numerico</td><td>0.00</td><td>Tasa impositiva (porcentaje)</td></tr>
+  <tr><td><code>nTaxAmount</code></td><td>Numerico</td><td>0.00</td><td>Impuesto calculado (solo lectura)</td></tr>
+  <tr><td><code>nTotalAmount</code></td><td>Numerico</td><td>0.00</td><td>Monto + impuesto (solo lectura)</td></tr>
+  <tr><td><code>cJurisdiction</code></td><td>String</td><td>""</td><td>Codigo de jurisdiccion fiscal</td></tr>
+  <tr><td><code>lInclusive</code></td><td>Logico</td><td>.F.</td><td>Precios con impuestos incluidos</td></tr>
+  <tr><td><code>aTaxRules</code></td><td>Array</td><td>{}</td><td>Reglas fiscales personalizadas por categoria</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnCalculate</code></td><td>Accion</td><td>Calculo de impuestos completado</td></tr>
+  <tr><td><code>OnRuleApplied</code></td><td>Accion</td><td>Regla fiscal especifica aplicada</td></tr>
+</table>
+
+<!-- TDashboard -->
+<h2 id="dashboard">TDashboard <span class="badge new">CT_DASHBOARD = 100</span></h2>
+<p>Contenedor de panel de control empresarial. Aloja widgets (graficos, KPIs, indicadores, tablas) en un diseno de cuadricula configurable para vistas ejecutivas.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>nColumns</code></td><td>Numerico</td><td>3</td><td>Cantidad de columnas de la cuadricula</td></tr>
+  <tr><td><code>nRows</code></td><td>Numerico</td><td>2</td><td>Cantidad de filas de la cuadricula</td></tr>
+  <tr><td><code>nRefreshInterval</code></td><td>Numerico</td><td>60000</td><td>Intervalo de actualizacion automatica (ms)</td></tr>
+  <tr><td><code>lAutoRefresh</code></td><td>Logico</td><td>.T.</td><td>Habilitar actualizacion automatica de datos</td></tr>
+  <tr><td><code>cTheme</code></td><td>String</td><td>"dark"</td><td>Tema visual (oscuro, claro, corporativo)</td></tr>
+  <tr><td><code>aWidgets</code></td><td>Array</td><td>{}</td><td>Definiciones de widgets del panel</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnRefresh</code></td><td>Accion</td><td>Datos del panel actualizados</td></tr>
+  <tr><td><code>OnWidgetClick</code></td><td>Accion</td><td>Usuario hizo clic en un widget del panel</td></tr>
+  <tr><td><code>OnDrillDown</code></td><td>Accion</td><td>Usuario profundizo en el detalle del widget</td></tr>
+</table>
+
+<!-- TScheduler -->
+<h2 id="scheduler">TScheduler <span class="badge new">CT_SCHEDULER = 101</span></h2>
+<p>Programador de tareas para gestion de trabajos en segundo plano. Soporta programacion tipo cron, tareas unicas y trabajos recurrentes.</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Valor predet.</th><th>Descripcion</th></tr>
+  <tr><td><code>aJobs</code></td><td>Array</td><td>{}</td><td>Trabajos programados registrados</td></tr>
+  <tr><td><code>lRunning</code></td><td>Logico</td><td>.F.</td><td>El programador esta activo (solo lectura)</td></tr>
+  <tr><td><code>nMaxConcurrent</code></td><td>Numerico</td><td>4</td><td>Maximo de trabajos concurrentes</td></tr>
+  <tr><td><code>cLogFile</code></td><td>String</td><td>""</td><td>Archivo de registro de ejecucion de trabajos</td></tr>
+  <tr><td><code>lPersistent</code></td><td>Logico</td><td>.T.</td><td>Persistir programacion entre reinicios</td></tr>
+</table>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Descripcion</th></tr>
+  <tr><td><code>OnJobStart</code></td><td>Accion</td><td>Trabajo programado iniciado</td></tr>
+  <tr><td><code>OnJobComplete</code></td><td>Accion</td><td>Trabajo completado exitosamente</td></tr>
+  <tr><td><code>OnJobError</code></td><td>Error</td><td>Trabajo fallo con error</td></tr>
+  <tr><td><code>OnScheduleChange</code></td><td>Accion</td><td>Programacion modificada</td></tr>
+</table>
+
+<h2 id="example">Ejemplo de Codigo: Codigo de Barras + Exportacion PDF</h2>
+<p>Este ejemplo demuestra la generacion de codigos de barras de productos y su exportacion a un catalogo PDF.</p>
+
+<pre><span class="cm">// Generar codigos de barras y exportar a PDF</span>
+<span class="cmd">FUNCTION</span> ExportProductCatalog()
+   <span class="cmd">LOCAL</span> oBarcode, oPdf, cFile, nRow
+
+   <span class="cm">// Crear generador de codigos de barras</span>
+   oBarcode := TBarcode():New()
+   oBarcode:<span class="fn">nFormat</span> := <span class="nb">0</span>  <span class="cm">// Code128</span>
+   oBarcode:<span class="fn">nWidth</span>  := <span class="nb">250</span>
+   oBarcode:<span class="fn">nHeight</span> := <span class="nb">60</span>
+   oBarcode:<span class="fn">lShowText</span> := <span class="nb">.T.</span>
+
+   <span class="cm">// Crear documento PDF</span>
+   oPdf := TPDFGenerator():New()
+   oPdf:<span class="fn">cFileName</span> := <span class="st">"catalogo.pdf"</span>
+   oPdf:<span class="fn">cTitle</span>    := <span class="st">"Catalogo de Productos"</span>
+   oPdf:<span class="fn">cAuthor</span>   := <span class="st">"HarbourBuilder ERP"</span>
+   oPdf:<span class="fn">NewPage</span>()
+
+   <span class="cm">// Encabezado</span>
+   oPdf:<span class="fn">SetFont</span>( <span class="st">"Helvetica"</span>, <span class="nb">18</span>, <span class="nb">.T.</span> )
+   oPdf:<span class="fn">DrawText</span>( <span class="nb">36</span>, <span class="nb">780</span>, <span class="st">"Catalogo de Codigos de Barras"</span> )
+   oPdf:<span class="fn">DrawLine</span>( <span class="nb">36</span>, <span class="nb">775</span>, <span class="nb">559</span>, <span class="nb">775</span> )
+
+   <span class="cm">// Generar codigos de barras para cada producto</span>
+   nRow := <span class="nb">720</span>
+   Products-><span class="fn">GoTop</span>()
+   <span class="cmd">DO WHILE</span> ! Products-><span class="fn">Eof</span>()
+      <span class="cm">// Generar imagen de codigo de barras</span>
+      oBarcode:<span class="fn">cData</span> := Products->SKU
+      cFile := oBarcode:<span class="fn">Generate</span>()
+
+      <span class="cm">// Dibujar info del producto + codigo de barras en PDF</span>
+      oPdf:<span class="fn">SetFont</span>( <span class="st">"Helvetica"</span>, <span class="nb">12</span>, <span class="nb">.F.</span> )
+      oPdf:<span class="fn">DrawText</span>( <span class="nb">36</span>, nRow, Products->Name )
+      oPdf:<span class="fn">DrawText</span>( <span class="nb">36</span>, nRow - <span class="nb">15</span>, <span class="st">"SKU: "</span> + Products->SKU )
+      oPdf:<span class="fn">DrawImage</span>( <span class="nb">300</span>, nRow - <span class="nb">50</span>, <span class="nb">250</span>, <span class="nb">60</span>, cFile )
+
+      nRow -= <span class="nb">90</span>
+      <span class="cmd">IF</span> nRow < <span class="nb">100</span>
+         oPdf:<span class="fn">NewPage</span>()
+         nRow := <span class="nb">780</span>
+      <span class="cmd">ENDIF</span>
+
+      Products-><span class="fn">Skip</span>()
+   <span class="cmd">ENDDO</span>
+
+   oPdf:<span class="fn">Save</span>()
+   MsgInfo( <span class="st">"Catalogo exportado a catalogo.pdf"</span> )
+<span class="cmd">RETURN</span> <span class="nb">NIL</span></pre>
+
+<div class="info-box info">
+  <strong>12 Controles ERP / Negocios</strong>
+  <p>Estos componentes empresariales aceleran el desarrollo de aplicaciones de negocios. Desde generacion de codigos de barras y exportacion PDF hasta registro de auditoria y permisos basados en roles, proporcionan los bloques de construccion para sistemas ERP, contabilidad y gestion empresarial completos.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>
