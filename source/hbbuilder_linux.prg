@@ -317,8 +317,8 @@ static function CreatePalette()
    nTab := oPal:AddTab( "Standard" )
    oPal:AddComp( nTab, "A",    "Label",       1 )
    oPal:AddComp( nTab, "ab",   "Edit",        2 )
-   oPal:AddComp( nTab, "Mem",  "Memo",       24 )
    oPal:AddComp( nTab, "Btn",  "Button",      3 )
+   oPal:AddComp( nTab, "Mem",  "Memo",       24 )
    oPal:AddComp( nTab, "Chk",  "CheckBox",    4 )
    oPal:AddComp( nTab, "Rad",  "RadioButton", 8 )
    oPal:AddComp( nTab, "Lst",  "ListBox",     7 )
@@ -1234,6 +1234,13 @@ static function OnEditorTextChange( hEd, nTab )
       return nil
    endif
 
+   // Skip rebuild if the text hasn't actually changed since last sync.
+   // Otherwise debounced notifications from programmatic SCI_SETTEXT (load,
+   // tab switch) destroy live HBControls and invalidate inspector combo map.
+   if cCode == aForms[ nFormIdx ][ 3 ]
+      return nil
+   endif
+
    hForm := aForms[ nFormIdx ][ 2 ]:hCpp
    if hForm == 0
       return nil
@@ -1684,6 +1691,11 @@ static function TBOpen()
 
    aLines := HB_ATokens( cContent, Chr(10) )
 
+   // Suppress editor→designer sync while we populate tabs; we restore from the
+   // source on disk directly, and the change callback would otherwise tear down
+   // and rebuild each form's widgets (losing runtime state).
+   lSyncingFromCode := .t.
+
    cFormCode := MemoRead( cDir + "Project1.prg" )
    if ! Empty( cFormCode )
       CodeEditorSetTabText( hCodeEditor, 1, cFormCode )
@@ -1714,6 +1726,8 @@ static function TBOpen()
       UI_FormOnComponentDrop( oDesignForm:hCpp, ;
          { |hForm, nType, nL, nT, nW, nH| OnComponentDrop( hForm, nType, nL, nT, nW, nH ) } )
    next
+
+   lSyncingFromCode := .f.
 
    if Len( aForms ) > 0
       nActiveForm := 1

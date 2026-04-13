@@ -1,6 +1,62 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-13 (Linux: form loading, runtime control creation, label auto-size,
+            multi-select rubber-band, palette icons)
+
+  FIXES
+  - Loading a project's form from disk showed the form empty (no colour,
+    no controls). Root causes:
+      * UI_*New() on GTK3 only stored the HBControl; the real GTK widgets
+        were created later inside HBForm_Show. After Show, runtime-added
+        children (sync from editor, palette drop) had no widget. Now
+        HBControl_AddChild auto-calls HBControl_CreateWidget when the
+        parent form is already shown (FFixed exists).
+      * HBForm_CreateControlOfType no longer creates the widget a second
+        time — AddChild handles it; it only calls gtk_widget_show_all.
+      * CodeEditor's CE_SwitchTab (hit by CodeEditorSelectTab at the end
+        of TBOpen) called SCI_SETTEXT without setting bSettingText, so
+        Scintilla queued a debounced SCN_MODIFIED. 500 ms later the
+        editor→designer sync fired, ran UI_FormClearChildren and a
+        second RestoreFormFromCode, invalidating the inspector combo
+        map pointers. CE_SwitchTab now wraps the text update with
+        bSettingText=1.
+      * OnEditorTextChange additionally short-circuits when the editor
+        text hasn't actually changed (compared against aForms[i][3]),
+        so any stray debounced notification can't destroy live
+        HBControls.
+  - Clicking a control on a loaded form selected it on mouse-down but
+    lost the selection on mouse-up. The combo-change handler
+    (OnComboSelect → UI_FormSelectCtrl) re-entered HBForm_SelectControl
+    which cleared and re-added the control, unnecessarily, and on the
+    release path the stale combo map was triggering extra selection
+    resets. UI_FormSelectCtrl now short-circuits when the target is
+    already selected, which also lets multi-selection survive combo
+    echoes.
+  - TLabel auto-grows to fit its text when the stored SIZE is too
+    narrow for the current font (typical when a macOS font falls back
+    on Linux). HBControl_ApplyFont measures the text with Pango for
+    CT_LABEL and expands FWidth/FHeight before set_size_request.
+  - Palette icons in the Standard tab were keyed by nControlType, but
+    resources/palette.bmp is laid out sequentially following the
+    AddComp() order across tabs (the same convention macOS already
+    used). UI_PaletteLoadImages on GTK3 now uses imgBase+btnIdx,
+    and Standard tab reorders Memo/Button to match. The non-visual
+    control-type icon cache is populated from the correct slice.
+  - Form background colour, applied via a per-form GtkCssProvider,
+    could be overridden by the global dark-mode provider (same
+    selector, priority APPLICATION+1). Forms whose FClrPane was set
+    explicitly (via UI_SetProp / project load / Inspector) now install
+    their CSS with PRIORITY_USER and skip the install for default/IDE
+    forms, so dark mode still paints those.
+
+  FEATURES
+  - Rubber-band multi-selection on the designer. Pressing on empty
+    form area starts a dotted selection rectangle (on_overlay_draw
+    already drew it when FRubberBand was set, but it was only used
+    for palette drops). Release selects every control intersecting
+    the rectangle.
+
 2026-04-12 (macOS: runtime form position matches design, test sample)
 
   FIXES

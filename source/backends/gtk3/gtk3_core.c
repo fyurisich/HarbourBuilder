@@ -251,6 +251,7 @@ struct _HBForm
    char         FHint[256];
    int          FAutoScroll;
    int          FDoubleBuffered;
+   int          FClrPaneExplicit; /* 1 once user set nClrPane — CSS uses USER priority to beat dark-mode */
    /* Component drop (palette) */
    int          FPendingControlType;
    PHB_ITEM     FOnComponentDrop;
@@ -449,12 +450,23 @@ static void HBControl_Init( HBControl * p )
    memset( p->FChildren, 0, sizeof(p->FChildren) );
 }
 
+static void HBControl_CreateWidget( HBControl * child, GtkWidget * fixed, const char * fontDesc );
+
 static void HBControl_AddChild( HBControl * parent, HBControl * child )
 {
    if( parent->FChildCount < MAX_CHILDREN )
    {
       parent->FChildren[parent->FChildCount++] = child;
       child->FCtrlParent = parent;
+
+      /* If parent form is already shown (FFixed exists) and child has no widget yet,
+         auto-create the GTK widget so runtime-added controls are visible. */
+      if( parent->FControlType == CT_FORM && !child->FWidget )
+      {
+         HBForm * form = (HBForm *) parent;
+         if( form->FFixed )
+            HBControl_CreateWidget( child, form->FFixed, form->FFormFontDesc );
+      }
    }
 }
 
@@ -578,6 +590,24 @@ static void HBControl_ApplyFont( HBControl * p )
       gtk_style_context_add_provider( ctx, GTK_STYLE_PROVIDER(provider),
          GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
       g_object_unref( provider );
+
+      /* TLabel auto-grow on font change: measure text with Pango since
+         CSS-driven preferred sizes don't settle until the next layout pass. */
+      if( p->FControlType == CT_LABEL )
+      {
+         PangoLayout * layout = gtk_widget_create_pango_layout( p->FWidget, p->FText );
+         char desc[128];
+         snprintf( desc, sizeof(desc), "%s %dpt", family, size );
+         PangoFontDescription * fd = pango_font_description_from_string( desc );
+         pango_layout_set_font_description( layout, fd );
+         int tw = 0, th = 0;
+         pango_layout_get_pixel_size( layout, &tw, &th );
+         pango_font_description_free( fd );
+         g_object_unref( layout );
+         if( tw > p->FWidth )  p->FWidth  = tw + 4;
+         if( th > p->FHeight ) p->FHeight = th + 2;
+         gtk_widget_set_size_request( p->FWidget, p->FWidth, p->FHeight );
+      }
    }
 }
 
@@ -612,6 +642,7 @@ static void HBLabel_CreateWidget( HBLabel * p, GtkWidget * container )
    gtk_fixed_put( GTK_FIXED(container), label, p->base.FLeft, p->base.FTop );
    gtk_widget_set_size_request( label, p->base.FWidth, p->base.FHeight );
    p->base.FWidget = label;
+   /* ApplyFont handles auto-grow for CT_LABEL after measuring with Pango */
    HBControl_ApplyFont( &p->base );
    gtk_widget_show( label );
 }
@@ -956,7 +987,13 @@ static gboolean on_overlay_button_press( GtkWidget * widget, GdkEventButton * ev
       }
    }
    else
+   {
+      /* Empty area: start rubber-band for multi-select */
       HBForm_ClearSelection( form );
+      form->FRubberBand = 1;
+      form->FRubberX1 = mx; form->FRubberY1 = my;
+      form->FRubberX2 = mx; form->FRubberY2 = my;
+   }
 
    return TRUE;
 }
@@ -1765,14 +1802,11 @@ static HBControl * HBForm_CreateControlOfType( HBForm * form, int ctrlType,
       /* Timer: default interval = 1000 ms */
       if( newCtrl->FControlType == CT_TIMER )
          ((HBTimer *)newCtrl)->FInterval = 1000;
+      /* HBControl_AddChild auto-creates the GTK widget when the form
+         is already shown (FFixed exists). */
       HBControl_AddChild( &form->base, newCtrl );
-
-      /* Create GTK widget and add to the form's GtkFixed */
       if( form->FFixed )
-      {
-         HBControl_CreateWidget( newCtrl, form->FFixed, form->FFormFontDesc );
          gtk_widget_show_all( form->FFixed );
-      }
 
       /* Select the new control */
       HBForm_SelectControl( form, newCtrl, 0 );
@@ -1832,6 +1866,20 @@ static gboolean on_overlay_button_release( GtkWidget * widget, GdkEventButton * 
          /* Keep focus on overlay so keyboard shortcuts (arrows, Delete) work */
          if( form->FOverlay )
             gtk_widget_grab_focus( form->FOverlay );
+      }
+      else
+      {
+         /* Multi-select: pick controls whose bounding box intersects the band */
+         form->FSelCount = 0;
+         memset( form->FSelected, 0, sizeof(form->FSelected) );
+         for( int i = 0; i < form->base.FChildCount && form->FSelCount < MAX_CHILDREN; i++ )
+         {
+            HBControl * c = form->base.FChildren[i];
+            int cl = c->FLeft, ct = c->FTop, cr = cl + c->FWidth, cb = ct + c->FHeight;
+            if( cl < rx2 && cr > rx1 && ct < ry2 && cb > ry1 )
+               form->FSelected[form->FSelCount++] = c;
+         }
+         HBForm_NotifySelChange( form );
       }
 
       gtk_widget_queue_draw( form->FOverlay );
@@ -2053,7 +2101,9 @@ static void HBForm_Run( HBForm * form )
    g_signal_connect( form->FWindow, "destroy", G_CALLBACK(on_window_destroy), form );
    g_signal_connect( form->FWindow, "configure-event", G_CALLBACK(on_window_configure), form );
 
-   /* Set background color via CSS */
+   /* Set background color via CSS — only when user explicitly set FClrPane,
+      so IDE/default forms keep dark-mode global CSS. */
+   if( form->FClrPaneExplicit )
    {
       unsigned int clr = form->base.FClrPane;
       int r = clr & 0xFF, g = (clr >> 8) & 0xFF, b = (clr >> 16) & 0xFF;
@@ -2063,7 +2113,7 @@ static void HBForm_Run( HBForm * form )
       gtk_css_provider_load_from_data( provider, css, -1, NULL );
       GtkStyleContext * ctx = gtk_widget_get_style_context( form->FWindow );
       gtk_style_context_add_provider( ctx, GTK_STYLE_PROVIDER(provider),
-         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+         GTK_STYLE_PROVIDER_PRIORITY_USER );
       g_object_unref( provider );
    }
 
@@ -2244,7 +2294,8 @@ static void HBForm_Show( HBForm * form )
    g_signal_connect( form->FWindow, "destroy", G_CALLBACK(on_window_destroy), form );
    g_signal_connect( form->FWindow, "configure-event", G_CALLBACK(on_window_configure), form );
 
-   /* Background color */
+   /* Background color — only when user explicitly set FClrPane */
+   if( form->FClrPaneExplicit )
    {
       unsigned int clr = form->base.FClrPane;
       int r = clr & 0xFF, g = (clr >> 8) & 0xFF, b = (clr >> 16) & 0xFF;
@@ -2254,7 +2305,7 @@ static void HBForm_Show( HBForm * form )
       gtk_css_provider_load_from_data( provider, css, -1, NULL );
       GtkStyleContext * ctx = gtk_widget_get_style_context( form->FWindow );
       gtk_style_context_add_provider( ctx, GTK_STYLE_PROVIDER(provider),
-         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+         GTK_STYLE_PROVIDER_PRIORITY_USER );
       g_object_unref( provider );
    }
 
@@ -2336,7 +2387,8 @@ static int HBForm_ShowModal( HBForm * form )
    g_signal_connect( form->FWindow, "destroy", G_CALLBACK(on_window_destroy), form );
    g_signal_connect( form->FWindow, "configure-event", G_CALLBACK(on_window_configure), form );
 
-   /* Background color */
+   /* Background color — only when user explicitly set FClrPane */
+   if( form->FClrPaneExplicit )
    {
       unsigned int clr = form->base.FClrPane;
       int r = clr & 0xFF, g = (clr >> 8) & 0xFF, b = (clr >> 16) & 0xFF;
@@ -2346,7 +2398,7 @@ static int HBForm_ShowModal( HBForm * form )
       gtk_css_provider_load_from_data( provider, css, -1, NULL );
       GtkStyleContext * ctx = gtk_widget_get_style_context( form->FWindow );
       gtk_style_context_add_provider( ctx, GTK_STYLE_PROVIDER(provider),
-         GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+         GTK_STYLE_PROVIDER_PRIORITY_USER );
       g_object_unref( provider );
    }
 
@@ -3101,6 +3153,7 @@ HB_FUNC( UI_SETPROP )
       if( p->FControlType == CT_FORM )
       {
          HBForm * pF = (HBForm *)p;
+         pF->FClrPaneExplicit = 1;
          if( pF->FWindow )
          {
             int r = p->FClrPane & 0xFF, g = (p->FClrPane >> 8) & 0xFF, b = (p->FClrPane >> 16) & 0xFF;
@@ -3110,7 +3163,7 @@ HB_FUNC( UI_SETPROP )
             gtk_css_provider_load_from_data( provider, css, -1, NULL );
             GtkStyleContext * ctx = gtk_widget_get_style_context( pF->FWindow );
             gtk_style_context_add_provider( ctx, GTK_STYLE_PROVIDER(provider),
-               GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+               GTK_STYLE_PROVIDER_PRIORITY_USER );
             g_object_unref( provider );
          }
       }
@@ -4132,7 +4185,12 @@ HB_FUNC( UI_FORMSELECTCTRL )
    if( pForm && pForm->FDesignMode )
    {
       if( pCtrl && pCtrl != (HBControl *)pForm )
+      {
+         /* Preserve existing multi-selection if the target is already selected */
+         if( HBForm_IsSelected( pForm, pCtrl ) )
+            return;
          HBForm_SelectControl( pForm, pCtrl, 0 );
+      }
       else
          HBForm_ClearSelection( pForm );
    }
@@ -5398,11 +5456,13 @@ static void CE_SwitchTab( CODEEDITOR * ed, int nNewTab )
    SaveCurrentTabText( ed );
 
    ed->nActiveTab = nNewTab;
+   ed->bSettingText = 1;
    SciMsg( ed->sciWidget, SCI_SETTEXT, 0,
       (intptr_t)( ed->tabTexts[nNewTab] ? ed->tabTexts[nNewTab] : "" ) );
 
    SciMsg( ed->sciWidget, SCI_EMPTYUNDOBUFFER, 0, 0 );
    UpdateHarbourFolding( ed->sciWidget );
+   ed->bSettingText = 0;
 }
 
 /* Update status bar: Ln X, Col Y | INS/OVR | lines | chars */
@@ -6367,11 +6427,15 @@ HB_FUNC( UI_PALETTELOADIMAGES )
    GdkPixbuf ** icons = SliceBmpStrip( szPath, &nIcons );
    if( !icons || nIcons == 0 ) return;
 
-   /* Apply icons to palette buttons across all tabs */
+   /* Apply icons to palette buttons. Icons in palette.bmp are laid out
+      sequentially following AddComp() order across tabs (not keyed by
+      nControlType), matching the macOS layout. */
+   int imgBase = 0;
    for( int t = 0; t < pd->nTabCount; t++ )
    {
       GtkWidget * box = pd->tabBoxes[t];
-      if( !box ) continue;
+      PaletteTab * pt = &pd->tabs[t];
+      if( !box ) { imgBase += pt->nBtnCount; continue; }
 
       GList * children = gtk_container_get_children( GTK_CONTAINER(box) );
       int btnIdx = 0;
@@ -6379,36 +6443,38 @@ HB_FUNC( UI_PALETTELOADIMAGES )
       {
          GtkWidget * btn = GTK_WIDGET( l->data );
          if( !GTK_IS_BUTTON(btn) ) continue;
-
-         PaletteTab * pt = &pd->tabs[t];
          if( btnIdx >= pt->nBtnCount ) break;
 
+         int imgIdx = imgBase + btnIdx;
          int nCtrlType = pt->btns[btnIdx].nControlType;
-         if( nCtrlType > 0 && nCtrlType <= nIcons )
+         if( imgIdx >= 0 && imgIdx < nIcons && icons[imgIdx] )
          {
-            GdkPixbuf * scaled = gdk_pixbuf_scale_simple( icons[nCtrlType - 1], 28, 28, GDK_INTERP_BILINEAR );
+            GdkPixbuf * scaled = gdk_pixbuf_scale_simple( icons[imgIdx], 28, 28, GDK_INTERP_BILINEAR );
             GtkWidget * img = gtk_image_new_from_pixbuf( scaled );
             g_object_unref( scaled );
 
-            /* Remove text label, set image */
             gtk_button_set_label( GTK_BUTTON(btn), NULL );
             gtk_button_set_image( GTK_BUTTON(btn), img );
             gtk_button_set_always_show_image( GTK_BUTTON(btn), TRUE );
          }
+
+         /* Cache icon by control type for non-visual component markers */
+         if( nCtrlType > 0 && nCtrlType < MAX_ICON_CACHE &&
+             imgIdx >= 0 && imgIdx < nIcons && icons[imgIdx] )
+         {
+            if( s_paletteIcons[nCtrlType] )
+               g_object_unref( s_paletteIcons[nCtrlType] );
+            s_paletteIcons[nCtrlType] = g_object_ref( icons[imgIdx] );
+         }
          btnIdx++;
       }
       g_list_free( children );
+      imgBase += pt->nBtnCount;
    }
 
-   /* Cache icon pixbufs (indexed by control type, 1-based) for non-visual component icons */
-   for( int i = 0; i < nIcons && i < MAX_ICON_CACHE; i++ )
-   {
-      if( icons[i] )
-      {
-         if( s_paletteIcons[i + 1] ) g_object_unref( s_paletteIcons[i + 1] );
-         s_paletteIcons[i + 1] = icons[i];  /* keep ref, don't unref */
-      }
-   }
+   /* Release slice array (cache took its own refs above) */
+   for( int i = 0; i < nIcons; i++ )
+      if( icons[i] ) g_object_unref( icons[i] );
    free( icons );
 }
 
