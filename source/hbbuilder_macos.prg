@@ -696,8 +696,17 @@ static function RegenerateFormCode( cName, hForm )
                   LTrim(Str(nCW)) + e
             case nType == 5  // ComboBox
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
-                  ' COMBOBOX ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
-                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
+                  ' COMBOBOX ::o' + cCtrlName + ' OF ' + cParent
+               nColCount := UI_ComboGetCount( hCtrl )
+               if nColCount > 0
+                  cCreate += ' ITEMS { '
+                  for kk := 1 to nColCount
+                     if kk > 1; cCreate += ', '; endif
+                     cCreate += '"' + UI_ComboGetItem( hCtrl, kk ) + '"'
+                  next
+                  cCreate += ' }'
+               endif
+               cCreate += ' SIZE ' + LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
             case nType == 6  // GroupBox
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' GROUPBOX ::o' + cCtrlName + ' PROMPT "' + cText + '" OF ' + cParent + ' SIZE ' + ;
@@ -714,6 +723,11 @@ static function RegenerateFormCode( cName, hForm )
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' MEMO ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
+               if ! Empty( cText )
+                  cCreate += '   ::o' + cCtrlName + ':Text := "' + ;
+                     StrTran( StrTran( cText, '"', '""' ), Chr(10), '" + Chr(10) + "' ) + ;
+                     '"' + e
+               endif
             case nType == 20  // TreeView
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' TREEVIEW ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
@@ -826,6 +840,35 @@ static function RegenerateFormCode( cName, hForm )
             cCreate += '   ::o' + cCtrlName + ':oFont := "' + cVal + '"' + e
          endif
 
+         // Preserve any user-written ::oCtrl:xxx := ... line from CreateForm
+         // that codegen didn't already emit (TPython cRuntimePath, OnReady,
+         // OnOutput, aModules, custom OnClick codeblocks, ...).
+         if ! Empty( cExistingCode )
+            // Restrict scan to METHOD CreateForm() ... return nil body
+            nPos := At( "METHOD CreateForm()", cExistingCode )
+            if nPos > 0
+               cText := SubStr( cExistingCode, nPos )
+               nPos2 := At( "return nil", cText )
+               if nPos2 > 0; cText := Left( cText, nPos2 ); endif
+
+               cEvName := "::o" + cCtrlName + ":"
+               nPos := 1
+               do while ( nPos2 := At( cEvName, SubStr( cText, nPos ) ) ) > 0
+                  nPos := nPos + nPos2 - 1
+                  cLine := SubStr( cText, nPos )
+                  j := At( Chr(10), cLine )
+                  if j > 0; cLine := Left( cLine, j - 1 ); endif
+                  cLine := AllTrim( StrTran( cLine, Chr(13), "" ) )
+                  // Only preserve lines not already emitted
+                  if ! ( cLine $ cCreate ) .and. ! ( cLine $ cEvents ) .and. ;
+                     ":=" $ cLine
+                     cEvents += "   " + cLine + e
+                  endif
+                  nPos += Len( cEvName )
+               enddo
+            endif
+         endif
+
          // Scan for event handlers matching this control
          aEvents := { "OnClick", "OnChange", "OnDblClick", "OnCreate", ;
                        "OnClose", "OnResize", "OnKeyDown", "OnKeyUp", ;
@@ -835,10 +878,18 @@ static function RegenerateFormCode( cName, hForm )
             cEvName := aEvents[j]
             cEvSuffix := SubStr( cEvName, 3 )
             cHandlerName := cCtrlName + cEvSuffix
-            if cHandlerName $ cExistingCode
+            // First: preserve any user-written `::oCtrl:OnXxx := ...` line
+            cVal := "::o" + cCtrlName + ":" + cEvName
+            nPos := At( cVal, cExistingCode )
+            if nPos > 0
+               // Copy the whole line up to the newline
+               cLine := SubStr( cExistingCode, nPos )
+               nPos2 := At( Chr(10), cLine )
+               if nPos2 > 0; cLine := Left( cLine, nPos2 - 1 ); endif
+               cEvents += "   " + AllTrim( StrTran( cLine, Chr(13), "" ) ) + e
+            elseif cHandlerName $ cExistingCode
                cEvents += "   ::o" + cCtrlName + ":" + cEvName + ;
                   " := { || " + cHandlerName + "( Self ) }" + e
-
             endif
          next
       next
@@ -877,6 +928,26 @@ static function RegenerateFormCode( cName, hForm )
    cCode += "   // Event handlers" + e
    cCode += e
    cCode += "   METHOD CreateForm()" + e
+
+   // Preserve user-added METHOD declarations from the existing CLASS block
+   if ! Empty( cExistingCode )
+      nPos := At( "CLASS " + cClass + " FROM", cExistingCode )
+      if nPos > 0
+         nPos2 := At( "ENDCLASS", SubStr( cExistingCode, nPos ) )
+         if nPos2 > 0
+            cVal := SubStr( cExistingCode, nPos, nPos2 )
+            for kk := 1 to Len( HB_ATokens( cVal, Chr(10) ) )
+               cText := AllTrim( HB_ATokens( cVal, Chr(10) )[ kk ] )
+               cText := StrTran( cText, Chr(13), "" )
+               if Left( cText, 7 ) == "METHOD " .and. ;
+                  ! Left( cText, 19 ) == "METHOD CreateForm()"
+                  cCode += "   " + cText + e
+               endif
+            next
+         endif
+      endif
+   endif
+
    cCode += e
    cCode += "ENDCLASS" + e
    cCode += cSep
@@ -890,6 +961,10 @@ static function RegenerateFormCode( cName, hForm )
    cCode += "   ::Height := " + LTrim(Str(nH)) + e
    if nClr != 15790320  // non-default color
       cCode += "   ::Color  := " + LTrim(Str(nClr)) + e
+   endif
+   nInterval := UI_GetProp( hForm, "nPosition" )
+   if ValType( nInterval ) == "N" .and. nInterval > 0
+      cCode += "   ::Position := " + LTrim(Str(nInterval)) + e
    endif
    if ! Empty( cAppTitle )
       cCode += '   ::AppTitle := "' + cAppTitle + '"' + e
@@ -912,13 +987,25 @@ return cCode
 // Restore visual controls on a design form by parsing the form .prg code
 static function RestoreFormFromCode( hForm, cCode )
 
-   local aLines, cLine, cTrim, i, j, nType, nCount
+   local aLines, cLine, cTrim, i, j, nType, nCount, lInCreateForm
    local nT, nL, nW, nH, cText, cName, hCtrl
    local nPos, nPos2, cTitle, cVal, cPropName, kk
 
    if Empty( cCode ) .or. hForm == 0
       return nil
    endif
+
+   // Join Harbour line-continuations (`;` at end of line) so clauses
+   // spanning multiple lines (e.g. COMBOBOX ... ; ITEMS ...) parse as one.
+   do while " ;" + Chr(13) + Chr(10) $ cCode
+      cCode := StrTran( cCode, " ;" + Chr(13) + Chr(10), " " )
+   enddo
+   do while " ;" + Chr(10) $ cCode
+      cCode := StrTran( cCode, " ;" + Chr(10), " " )
+   enddo
+   do while " ;" + Chr(10) + " " $ cCode
+      cCode := StrTran( cCode, " ;" + Chr(10) + " ", " " )
+   enddo
 
    aLines := HB_ATokens( cCode, Chr(10) )
 
@@ -954,6 +1041,10 @@ static function RestoreFormFromCode( hForm, cCode )
       endif
       if '::Color' $ cTrim .and. ':=' $ cTrim .and. ! "::o" $ cTrim
          UI_SetProp( hForm, "nClrPane", Val( AllTrim( SubStr( cTrim, At( ":=", cTrim ) + 2 ) ) ) )
+         loop
+      endif
+      if '::Position' $ cTrim .and. ':=' $ cTrim .and. ! "::o" $ cTrim
+         UI_SetProp( hForm, "nPosition", Val( AllTrim( SubStr( cTrim, At( ":=", cTrim ) + 2 ) ) ) )
          loop
       endif
       if '::AppTitle' $ cTrim .and. ':=' $ cTrim
@@ -1195,6 +1286,22 @@ static function RestoreFormFromCode( hForm, cCode )
             hCtrl := UI_CheckBoxNew( hForm, cText, nL, nT, nW, nH )
          case " COMBOBOX " $ Upper( cTrim )
             hCtrl := UI_ComboBoxNew( hForm, nL, nT, nW, nH )
+            // Parse ITEMS { "A", "B", ... }
+            nPos := At( "ITEMS", Upper( cTrim ) )
+            if nPos > 0 .and. hCtrl != 0
+               cText := SubStr( cTrim, nPos + 5 )
+               nPos2 := At( "SIZE", Upper( cText ) )
+               if nPos2 > 0; cText := Left( cText, nPos2 - 1 ); endif
+               do while ! Empty( cText )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  cText := SubStr( cText, nPos2 + 1 )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  UI_ComboAddItem( hCtrl, Left( cText, nPos2 - 1 ) )
+                  cText := SubStr( cText, nPos2 + 1 )
+               enddo
+            endif
          case " GROUPBOX " $ Upper( cTrim )
             hCtrl := UI_GroupBoxNew( hForm, cText, nL, nT, nW, nH )
          case " LISTBOX " $ Upper( cTrim )
@@ -1303,8 +1410,20 @@ static function RestoreFormFromCode( hForm, cCode )
    next
 
    // Second pass: apply property assignments like ::oCtrlName:prop := value
+   // Only within the CreateForm() method body (first pass of the form scope)
+   // so we don't pick up ::oX:prop lines from user-defined methods below.
+   lInCreateForm := .F.
    for i := 1 to Len( aLines )
       cTrim := StrTran( AllTrim( aLines[i] ), Chr(13), "" )
+      if "METHOD CREATEFORM" $ Upper( cTrim )
+         lInCreateForm := .T.
+         loop
+      endif
+      if lInCreateForm .and. Upper( cTrim ) == "RETURN NIL"
+         lInCreateForm := .F.
+         loop
+      endif
+      if ! lInCreateForm; loop; endif
       if Left( cTrim, 2 ) == "//"; loop; endif
       if ! ( Left( cTrim, 3 ) == "::o" ) .or. ! ( ":=" $ cTrim ); loop; endif
       // Must have a second ":" for the property (::oName:prop := value)
@@ -1340,6 +1459,9 @@ static function RestoreFormFromCode( hForm, cCode )
             cText := SubStr( cText, 2, Len( cText ) - 2 )
          endif
          UI_SetProp( hCtrl, "cDataSource", cText )
+      elseif cVal == "Text" .or. cVal == "cText"
+         cText := RebuildStringExpr( cText )
+         UI_SetProp( hCtrl, "cText", cText )
       endif
    next
 
@@ -1552,6 +1674,33 @@ static function OnEventDblClick( hCtrl, cEvent )
 return cHandler
 
 // === Component drop from palette ===
+
+// Rebuild a Harbour string expression like `"line1" + Chr(10) + "line2"`
+// into the plain literal value. Minimal: handles "..." quoted chunks and
+// Chr(N) between them; unrecognized tokens are skipped.
+static function RebuildStringExpr( cExpr )
+   local cResult := "", cCur, nPos
+   cExpr := AllTrim( cExpr )
+   do while ! Empty( cExpr )
+      if Left( cExpr, 1 ) == '"'
+         cCur := SubStr( cExpr, 2 )
+         nPos := At( '"', cCur )
+         if nPos == 0; exit; endif
+         cResult += Left( cCur, nPos - 1 )
+         cExpr := AllTrim( SubStr( cCur, nPos + 1 ) )
+      elseif Left( Upper( cExpr ), 4 ) == "CHR("
+         nPos := At( ")", cExpr )
+         if nPos == 0; exit; endif
+         cResult += Chr( Val( SubStr( cExpr, 5, nPos - 5 ) ) )
+         cExpr := AllTrim( SubStr( cExpr, nPos + 1 ) )
+      elseif Left( cExpr, 1 ) == "+"
+         cExpr := AllTrim( SubStr( cExpr, 2 ) )
+      else
+         // Skip one char and try again
+         cExpr := AllTrim( SubStr( cExpr, 2 ) )
+      endif
+   enddo
+return cResult
 
 static function Var2Char( x )
    local t := ValType( x )

@@ -800,6 +800,7 @@ static int         s_pendingPage   = 0;
          NSScrollView * sv = [[NSScrollView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
          NSTextView * tv = [[NSTextView alloc] initWithFrame:NSMakeRect(0,0,FWidth,FHeight)];
          [tv setEditable:YES]; [tv setRichText:NO];
+         if( FText[0] ) [tv setString:[NSString stringWithUTF8String:FText]];
          [sv setDocumentView:tv]; [sv setHasVerticalScroller:YES];
          [sv setBorderType:NSBezelBorder]; v = sv; break;
       }
@@ -2656,7 +2657,15 @@ static HBPaletteTarget * s_palTarget = nil;
    [FWindow close];
 }
 
-- (void)center { if( FWindow ) [FWindow center]; }
+- (void)center
+{
+   if( !FWindow ) return;
+   NSRect scr = [[NSScreen mainScreen] visibleFrame];
+   NSRect win = [FWindow frame];
+   CGFloat x = scr.origin.x + ( scr.size.width  - win.size.width  ) / 2;
+   CGFloat y = scr.origin.y + ( scr.size.height - win.size.height ) / 2;
+   [FWindow setFrameOrigin:NSMakePoint( x, y )];
+}
 
 - (void)createAllChildren
 {
@@ -3671,6 +3680,15 @@ HB_FUNC( UI_SETPROP )
       [p setText:hb_parc(3)];
       if( p->FControlType == CT_FORM && ((HBForm *)p)->FWindow )
          [((HBForm *)p)->FWindow setTitle:[NSString stringWithUTF8String:p->FText]];
+      else if( p->FControlType == CT_MEMO && p->FView ) {
+         NSView * v = p->FView;
+         NSTextView * tv = nil;
+         if( [v isKindOfClass:[NSScrollView class]] )
+            tv = (NSTextView *)[(NSScrollView *)v documentView];
+         else if( [v isKindOfClass:[NSTextView class]] )
+            tv = (NSTextView *)v;
+         if( tv ) [tv setString:[NSString stringWithUTF8String:p->FText]];
+      }
       else if( p->FView && [p->FView respondsToSelector:@selector(setStringValue:)] )
          [(id)p->FView setStringValue:[NSString stringWithUTF8String:p->FText]];
       else if( p->FView && [p->FView respondsToSelector:@selector(setTitle:)] )
@@ -4271,7 +4289,7 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_D("nBorderStyle",f->FBorderStyle,"bsNone|bsSingle|bsSizeable|bsDialog|bsToolWindow|bsSizeToolWin","Appearance");
          ADD_N("nBorderIcons",f->FBorderIcons,"Appearance");
          ADD_N("nBorderWidth",f->FBorderWidth,"Appearance");
-         ADD_D("nPosition",f->FPosition,"poDesigned|poScreenCenter|poDesktopCenter|poMainFormCenter","Position");
+         ADD_D("nPosition",f->FPosition,"poDesigned|poDefault|poScreenCenter|poDesktopCenter|poMainFormCenter","Position");
          ADD_D("nWindowState",f->FWindowState,"wsNormal|wsMinimized|wsMaximized","Appearance");
          ADD_D("nFormStyle",f->FFormStyle,"fsNormal|fsStayOnTop","Appearance");
          ADD_L("lSizable",f->FSizable,"Behavior");

@@ -331,8 +331,18 @@ CLASS TComboBox INHERIT TControl
 
    METHOD New( oParent, nLeft, nTop, nWidth, nHeight )
    METHOD AddItem( cItem ) INLINE UI_ComboAddItem( ::hCpp, cItem )
+   METHOD FillItems( aItems )
 
 ENDCLASS
+
+METHOD FillItems( aItems ) CLASS TComboBox
+   local i
+   if ValType( aItems ) == "A"
+      for i := 1 to Len( aItems )
+         UI_ComboAddItem( ::hCpp, aItems[i] )
+      next
+   endif
+return Self
 
 METHOD New( oParent, nLeft, nTop, nWidth, nHeight ) CLASS TComboBox
 
@@ -2558,10 +2568,7 @@ return .T.
 // Shared by TPython, TSwift, TGo, TNode, TRust, TJava, TDotNet, TLua, TRuby
 //----------------------------------------------------------------------------//
 
-CLASS TInteropRuntime
-
-   DATA hCpp         INIT 0
-   DATA oParent      INIT nil
+CLASS TInteropRuntime INHERIT TControl
 
    // Common configuration
    DATA cRuntimePath INIT ""         // path to interpreter/compiler binary (auto if empty)
@@ -2606,7 +2613,57 @@ return Self
 //----------------------------------------------------------------------------//
 
 CLASS TPython INHERIT TInteropRuntime
+   METHOD Start()
+   METHOD Stop()
+   METHOD Exec( cCode )
+   METHOD Eval( cExpr )
+   METHOD SetVar( cName, xValue )
+   METHOD GetVar( cName )
 ENDCLASS
+
+METHOD Start() CLASS TPython
+   if PY_Start( ::cRuntimePath )
+      ::lRunning   := .T.
+      ::cLastError := ""
+      if ValType( ::bOnReady ) == "B"; Eval( ::bOnReady, Self ); endif
+   else
+      ::cLastError := PY_LastError()
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+   endif
+return Self
+
+METHOD Stop() CLASS TPython
+   PY_Stop()
+   ::lRunning := .F.
+return Self
+
+METHOD Exec( cCode ) CLASS TPython
+   local lOk, cOut
+   if ! ::lRunning; ::Start(); endif
+   lOk := PY_Exec( cCode )
+   cOut := PY_GetOutput()
+   ::cLastResult := cOut
+   if ! lOk
+      ::cLastError := PY_LastError()
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+   endif
+   if ! Empty( cOut ) .and. ValType( ::bOnOutput ) == "B"
+      Eval( ::bOnOutput, Self, cOut )
+   endif
+return lOk
+
+METHOD Eval( cExpr ) CLASS TPython
+   if ! ::lRunning; ::Start(); endif
+   ::cLastResult := PY_Eval( cExpr )
+return ::cLastResult
+
+METHOD SetVar( cName, xValue ) CLASS TPython
+   if ! ::lRunning; ::Start(); endif
+return PY_SetVar( cName, xValue )
+
+METHOD GetVar( cName ) CLASS TPython
+   if ! ::lRunning; ::Start(); endif
+return PY_GetVar( cName )
 
 CLASS TNode INHERIT TInteropRuntime
 ENDCLASS
@@ -2694,3 +2751,266 @@ function HB_CreateComponent( nType, oParent )
    endcase
 return nil
 
+
+//----------------------------------------------------------------------------//
+// Python backend (runtime dlopen of libpython) — used by TPython
+// HB_FUNCs: PY_START, PY_EXEC, PY_EVAL, PY_SETVAR, PY_GETVAR, PY_STOP,
+//           PY_GETOUTPUT, PY_LASTERROR
+// The IDE and user binaries do NOT link libpython; it is loaded lazily
+// at the first PY_START() call. If loading fails, PY_LASTERROR() returns
+// a descriptive message and every method is a no-op.
+//----------------------------------------------------------------------------//
+
+#pragma BEGINDUMP
+#include <hbapi.h>
+#include <hbapiitm.h>
+#include <dlfcn.h>
+#include <string.h>
+#include <stdio.h>
+
+/* Opaque forward-declared Python types. We never dereference them. */
+typedef struct _object PyObject;
+
+typedef void        (*p_Py_Initialize)(void);
+typedef void        (*p_Py_Finalize)(void);
+typedef int         (*p_PyRun_SimpleString)(const char *);
+typedef PyObject *  (*p_PyImport_AddModule)(const char *);
+typedef PyObject *  (*p_PyModule_GetDict)(PyObject *);
+typedef PyObject *  (*p_PyDict_GetItemString)(PyObject *, const char *);
+typedef int         (*p_PyDict_SetItemString)(PyObject *, const char *, PyObject *);
+typedef PyObject *  (*p_PyRun_StringFlags)(const char *, int, PyObject *, PyObject *, void *);
+typedef PyObject *  (*p_PyUnicode_AsUTF8String)(PyObject *);
+typedef char *      (*p_PyBytes_AsString)(PyObject *);
+typedef PyObject *  (*p_PyObject_Str)(PyObject *);
+typedef PyObject *  (*p_PyUnicode_FromString)(const char *);
+typedef PyObject *  (*p_PyLong_FromLong)(long);
+typedef long        (*p_PyLong_AsLong)(PyObject *);
+typedef PyObject *  (*p_PyFloat_FromDouble)(double);
+typedef double      (*p_PyFloat_AsDouble)(PyObject *);
+typedef void        (*p_Py_IncRef)(PyObject *);
+typedef void        (*p_Py_DecRef)(PyObject *);
+typedef int         (*p_PyErr_Occurred_int)(void); /* returns non-nil ptr */
+typedef PyObject *  (*p_PyErr_Occurred)(void);
+typedef void        (*p_PyErr_Clear)(void);
+
+#define PY_FILE_INPUT 257
+#define PY_EVAL_INPUT 258
+
+static void *                   g_dl          = NULL;
+static char                     g_lastErr[512] = "";
+static int                      g_started     = 0;
+
+static p_Py_Initialize          f_Py_Initialize;
+static p_Py_Finalize            f_Py_Finalize;
+static p_PyRun_SimpleString     f_PyRun_SimpleString;
+static p_PyImport_AddModule     f_PyImport_AddModule;
+static p_PyModule_GetDict       f_PyModule_GetDict;
+static p_PyDict_GetItemString   f_PyDict_GetItemString;
+static p_PyDict_SetItemString   f_PyDict_SetItemString;
+static p_PyRun_StringFlags      f_PyRun_StringFlags;
+static p_PyUnicode_AsUTF8String f_PyUnicode_AsUTF8String;
+static p_PyBytes_AsString       f_PyBytes_AsString;
+static p_PyObject_Str           f_PyObject_Str;
+static p_PyUnicode_FromString   f_PyUnicode_FromString;
+static p_PyLong_FromLong        f_PyLong_FromLong;
+static p_PyFloat_FromDouble     f_PyFloat_FromDouble;
+static p_Py_DecRef              f_Py_DecRef;
+static p_PyErr_Occurred         f_PyErr_Occurred;
+static p_PyErr_Clear            f_PyErr_Clear;
+
+static const char * s_candidates[] = {
+   NULL,  /* replaced at runtime with user-supplied path */
+   "/opt/homebrew/Frameworks/Python.framework/Versions/Current/Python",
+   "/usr/local/Frameworks/Python.framework/Versions/Current/Python",
+   "/Library/Frameworks/Python.framework/Versions/Current/Python",
+   "/opt/homebrew/lib/libpython3.13.dylib",
+   "/opt/homebrew/lib/libpython3.12.dylib",
+   "/opt/homebrew/lib/libpython3.11.dylib",
+   "/usr/local/lib/libpython3.13.dylib",
+   "/usr/local/lib/libpython3.12.dylib",
+   "/usr/lib/libpython3.dylib",
+   "libpython3.13.dylib",
+   "libpython3.12.dylib",
+   "libpython3.11.dylib",
+   "libpython3.dylib",
+   NULL
+};
+
+static int py_load_lib( const char * szUserPath )
+{
+   if( g_dl ) return 1;
+   s_candidates[0] = ( szUserPath && *szUserPath ) ? szUserPath : NULL;
+   for( int i = 0; s_candidates[i] != NULL || i == 0; i++ ) {
+      const char * path = s_candidates[i];
+      if( !path ) continue;
+      g_dl = dlopen( path, RTLD_LAZY | RTLD_GLOBAL );
+      if( g_dl ) break;
+      if( !s_candidates[i+1] && i >= 1 ) break;
+   }
+   if( !g_dl ) {
+      snprintf( g_lastErr, sizeof(g_lastErr),
+                "Could not dlopen libpython: %s", dlerror() );
+      return 0;
+   }
+   #define RESOLVE(fn,sym) do { \
+      f_##fn = (p_##fn) dlsym( g_dl, sym ); \
+      if( !f_##fn ) { \
+         snprintf( g_lastErr, sizeof(g_lastErr), "missing symbol: %s", sym ); \
+         dlclose( g_dl ); g_dl = NULL; return 0; } } while(0)
+   RESOLVE( Py_Initialize,          "Py_Initialize" );
+   RESOLVE( Py_Finalize,            "Py_Finalize" );
+   RESOLVE( PyRun_SimpleString,     "PyRun_SimpleString" );
+   RESOLVE( PyImport_AddModule,     "PyImport_AddModule" );
+   RESOLVE( PyModule_GetDict,       "PyModule_GetDict" );
+   RESOLVE( PyDict_GetItemString,   "PyDict_GetItemString" );
+   RESOLVE( PyDict_SetItemString,   "PyDict_SetItemString" );
+   RESOLVE( PyRun_StringFlags,      "PyRun_StringFlags" );
+   RESOLVE( PyUnicode_AsUTF8String, "PyUnicode_AsUTF8String" );
+   RESOLVE( PyBytes_AsString,       "PyBytes_AsString" );
+   RESOLVE( PyObject_Str,           "PyObject_Str" );
+   RESOLVE( PyUnicode_FromString,   "PyUnicode_FromString" );
+   RESOLVE( PyLong_FromLong,        "PyLong_FromLong" );
+   RESOLVE( PyFloat_FromDouble,     "PyFloat_FromDouble" );
+   RESOLVE( Py_DecRef,              "Py_DecRef" );
+   RESOLVE( PyErr_Occurred,         "PyErr_Occurred" );
+   RESOLVE( PyErr_Clear,            "PyErr_Clear" );
+   #undef RESOLVE
+   return 1;
+}
+
+static PyObject * py_main_dict( void )
+{
+   PyObject * m = f_PyImport_AddModule( "__main__" );
+   return m ? f_PyModule_GetDict( m ) : NULL;
+}
+
+static char * py_object_as_cstr( PyObject * o, char * buf, int bufLen )
+{
+   buf[0] = 0;
+   if( !o ) return buf;
+   PyObject * s = f_PyObject_Str( o );
+   if( !s ) return buf;
+   PyObject * b = f_PyUnicode_AsUTF8String( s );
+   if( b ) {
+      const char * c = f_PyBytes_AsString( b );
+      if( c ) { strncpy( buf, c, bufLen - 1 ); buf[bufLen-1] = 0; }
+      f_Py_DecRef( b );
+   }
+   f_Py_DecRef( s );
+   return buf;
+}
+
+/* Install an in-Python buffer that collects anything printed to stdout
+ * and stderr. Cleared at each PY_GETOUTPUT() call. */
+static const char * s_stdoutCapture =
+   "import sys, io\n"
+   "class _HBCollector(io.StringIO):\n"
+   "    pass\n"
+   "_hb_out = _HBCollector()\n"
+   "sys.stdout = _hb_out\n"
+   "sys.stderr = _hb_out\n";
+
+HB_FUNC( PY_START )
+{
+   const char * userPath = hb_parc(1);
+   if( !py_load_lib( userPath ) ) { hb_retl( 0 ); return; }
+   if( !g_started ) {
+      f_Py_Initialize();
+      f_PyRun_SimpleString( s_stdoutCapture );
+      g_started = 1;
+   }
+   g_lastErr[0] = 0;
+   hb_retl( 1 );
+}
+
+HB_FUNC( PY_STOP )
+{
+   if( g_started && f_Py_Finalize ) {
+      f_Py_Finalize();
+      g_started = 0;
+   }
+   hb_retl( 1 );
+}
+
+HB_FUNC( PY_EXEC )
+{
+   const char * code = hb_parc(1);
+   if( !g_started || !code ) { hb_retl( 0 ); return; }
+   int rc = f_PyRun_SimpleString( code );
+   if( f_PyErr_Occurred() ) {
+      strcpy( g_lastErr, "Python error (see output)" );
+      f_PyErr_Clear();
+   }
+   hb_retl( rc == 0 );
+}
+
+HB_FUNC( PY_EVAL )
+{
+   char buf[4096];
+   const char * expr = hb_parc(1);
+   if( !g_started || !expr ) { hb_retc( "" ); return; }
+   PyObject * globals = py_main_dict();
+   PyObject * r = f_PyRun_StringFlags( expr, PY_EVAL_INPUT, globals, globals, NULL );
+   if( !r ) {
+      strcpy( g_lastErr, "Eval error" );
+      f_PyErr_Clear();
+      hb_retc( "" );
+      return;
+   }
+   py_object_as_cstr( r, buf, sizeof(buf) );
+   f_Py_DecRef( r );
+   hb_retc( buf );
+}
+
+HB_FUNC( PY_SETVAR )
+{
+   const char * name = hb_parc(1);
+   if( !g_started || !name ) { hb_retl( 0 ); return; }
+   PyObject * v = NULL;
+   if( HB_ISCHAR(2) )      v = f_PyUnicode_FromString( hb_parc(2) );
+   else if( HB_ISNUM(2) )  v = f_PyFloat_FromDouble( hb_parnd(2) );
+   else                    v = f_PyUnicode_FromString( "" );
+   PyObject * globals = py_main_dict();
+   int rc = f_PyDict_SetItemString( globals, name, v );
+   f_Py_DecRef( v );
+   hb_retl( rc == 0 );
+}
+
+HB_FUNC( PY_GETVAR )
+{
+   char buf[4096];
+   const char * name = hb_parc(1);
+   if( !g_started || !name ) { hb_retc( "" ); return; }
+   PyObject * globals = py_main_dict();
+   PyObject * v = f_PyDict_GetItemString( globals, name );
+   py_object_as_cstr( v, buf, sizeof(buf) );
+   hb_retc( buf );
+}
+
+/* Returns the captured stdout/stderr buffer and clears it. */
+HB_FUNC( PY_GETOUTPUT )
+{
+   char buf[8192];
+   if( !g_started ) { hb_retc( "" ); return; }
+   PyObject * globals = py_main_dict();
+   PyObject * v = f_PyDict_GetItemString( globals, "_hb_out" );
+   if( !v ) { hb_retc( "" ); return; }
+   /* value = _hb_out.getvalue(); _hb_out.seek(0); _hb_out.truncate(0) */
+   f_PyRun_SimpleString( "_hb_tmp = _hb_out.getvalue()\n"
+                         "_hb_out.seek(0); _hb_out.truncate(0)\n" );
+   PyObject * t = f_PyDict_GetItemString( globals, "_hb_tmp" );
+   py_object_as_cstr( t, buf, sizeof(buf) );
+   hb_retc( buf );
+}
+
+HB_FUNC( PY_LASTERROR )
+{
+   hb_retc( g_lastErr );
+}
+
+HB_FUNC( PY_ISAVAILABLE )
+{
+   hb_retl( py_load_lib( hb_parc(1) ) );
+}
+
+#pragma ENDDUMP

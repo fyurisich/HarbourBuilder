@@ -160,7 +160,7 @@
       [ SIZE <nWidth> [, <nHeight>] ] ;
    => ;
       <oCtrl> := TComboBox():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight> ) ;
-      [; AEval( <aItems>, { |x| <oCtrl>:AddItem( x ) } ) ]
+      [; <oCtrl>:FillItems( <aItems> ) ]
 
 // RadioButton
 #xcommand @ <nTop>, <nLeft> RADIOBUTTON <oCtrl> ;

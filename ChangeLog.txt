@@ -1,6 +1,70 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-13 (macOS: real in-process Python via dlopen, Python sample, codegen fixes)
+
+  FEATURES
+  - TPython now executes code IN-PROCESS via a dlopen'd libpython.
+    Neither the IDE nor compiled apps link libpython statically: the
+    first TPython:Start() tries common paths (Homebrew, system
+    frameworks, libpython3.X.dylib); if none is found, cLastError
+    explains why and the program keeps running. Implemented in a
+    `#pragma BEGINDUMP` block inside classes.prg — HB_FUNCs:
+    PY_Start / PY_Stop / PY_Exec / PY_Eval / PY_SetVar / PY_GetVar /
+    PY_GetOutput / PY_LastError / PY_IsAvailable.
+  - sys.stdout and sys.stderr are redirected to an in-memory StringIO
+    that PY_GetOutput reads after each call and feeds back to the
+    form via the OnOutput event.
+  - TPython overrides Start/Stop/Exec/Eval/SetVar/GetVar to call the
+    backend and fire OnReady / OnError / OnOutput.
+  - TInteropRuntime now inherits from TControl so runtime components
+    get :oFont, :Left, :Top, :Color, etc. (runtime assignments are
+    no-ops; design-time goes through the real HBControl handle).
+  - samples/projects/python rewritten as a real beginner demo: a
+    sample chooser ComboBox, an editable script Memo, Run / Eval /
+    Clear buttons, and an output Memo.
+
+  FIXES
+  - COMBOBOX xcommand now delegates to a TComboBox:FillItems() method
+    that guards against nil aItems (avoids the "ValType() with 0 args"
+    expansion error when the ITEMS clause is absent).
+  - ComboBox items survive IDE save: codegen reads them via
+    UI_ComboGetCount / UI_ComboGetItem and emits ITEMS { "a","b" };
+    parser picks them up and calls UI_ComboAddItem.
+  - Multi-line Harbour statements (with `;` line continuations) are
+    joined before tokenizing in RestoreFormFromCode so clauses
+    spanning lines parse correctly.
+  - Memo text round-trip: CT_MEMO createViewInParent applies FText to
+    the new NSTextView, UI_SetProp("cText") updates the NSTextView
+    when FView exists, codegen emits `::oMemo:Text := "..."` and the
+    parser rebuilds the literal from `"..." + Chr(N) + "..."` chains.
+  - Second-pass property parser is restricted to the CreateForm body
+    so assignments inside user methods (e.g. `::oMemo:Text := cCode`
+    inside LoadSample) no longer overwrite design-time values.
+  - Codegen preserves any user-added METHOD declaration in the CLASS
+    block and any `::oCtrl:xxx := ...` line from the CreateForm body
+    that the built-in emitter doesn't already produce (OnClick
+    codeblocks, TPython :cRuntimePath / :OnReady / :OnOutput, etc.).
+  - Form :Position round-trips: codegen emits `::Position := N`;
+    parser detects `::Position := N`; inspector dropdown gained the
+    missing `poDefault` entry so indices align with hbbuilder.ch.
+  - Form centering computed from [[NSScreen mainScreen] visibleFrame]
+    instead of [NSWindow center] so the window sits exactly in the
+    middle of the usable screen area.
+
+  FILES
+  - source/core/classes.prg: Python BEGINDUMP backend, TPython method
+    overrides, TInteropRuntime inherits TControl, TComboBox:FillItems.
+  - source/backends/cocoa/cocoa_core.m: geometric center helper, Memo
+    applies FText on view creation + live update on setProp, nPosition
+    enum has poDefault.
+  - source/hbbuilder_macos.prg: codegen for ComboBox ITEMS and Memo
+    Text and ::Position, parser for ::Text / ::Position / ComboBox
+    ITEMS, line-continuation join, CreateForm-scoped property pass,
+    preserved METHOD declarations and user-written assignments.
+  - include/hbbuilder.ch: COMBOBOX xcommand uses :FillItems().
+  - samples/projects/python: real beginner sample.
+
 2026-04-13 (macOS: Connectivity components — TPython and 8 siblings via TInteropRuntime)
 
   FEATURES

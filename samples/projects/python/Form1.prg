@@ -5,86 +5,117 @@ CLASS TForm1 FROM TForm
 
    // IDE-managed Components
    DATA oPython   // TPython
+   DATA oLblSample   // TLabel
+   DATA oCboSamples   // TComboBox
+   DATA oLblScript   // TLabel
    DATA oScriptEdit   // TMemo
-   DATA oBtnStart   // TButton
    DATA oBtnRun   // TButton
    DATA oBtnEval   // TButton
-   DATA oBtnVar   // TButton
-   DATA oBtnStop   // TButton
+   DATA oBtnClear   // TButton
+   DATA oLblOutput   // TLabel
    DATA oOutput   // TMemo
 
    // Event handlers
 
    METHOD CreateForm()
+   METHOD DoRun()
+   METHOD DoEval()
+   METHOD DoClear()
+   METHOD LoadSample( nIdx )
+   METHOD Log( cMsg )
 
 ENDCLASS
 //--------------------------------------------------------------------
 
 METHOD CreateForm() CLASS TForm1
 
-   ::Title  := "TPython — TInteropRuntime demo"
-   ::Left   := 922
-   ::Top    := 265
-   ::Width  := 600
-   ::Height := 460
+   ::Title  := "TPython — Getting started"
+   ::Left   := 939
+   ::Top    := 270
+   ::Width  := 620
+   ::Height := 500
+   ::Position := 2
 
-   COMPONENT ::oPython TYPE CT_PYTHON OF Self  // TPython @ 16,212
+   COMPONENT ::oPython TYPE CT_PYTHON OF Self  // TPython @ 560,8
    ::oPython:oFont := ".AppleSystemUIFont,12"
-   @ 36, 16 MEMO ::oScriptEdit OF Self SIZE 568, 140
+   ::oPython:cRuntimePath := ""
+   ::oPython:OnError  := { |o, cErr| ::Log( "[error] " + cErr ) }
+   ::oPython:OnOutput := { |o, cOut| ::Log( cOut ) }
+   @ 16, 16 SAY ::oLblSample PROMPT "Sample:" OF Self SIZE 60
+   ::oLblSample:oFont := ".AppleSystemUIFont,12"
+   @ 14, 80 COMBOBOX ::oCboSamples OF Self ITEMS { "Hello, world", "Square root", "Sum 1..100", "Python version", "Fibonacci (10)" } SIZE 300, 26
+   ::oCboSamples:oFont := ".AppleSystemUIFont,12"
+   @ 48, 16 SAY ::oLblScript PROMPT "Script (editable):" OF Self SIZE 200
+   ::oLblScript:oFont := ".AppleSystemUIFont,12"
+   @ 68, 16 MEMO ::oScriptEdit OF Self SIZE 588, 160
+   ::oScriptEdit:Text := "# Classic greeting" + Chr(10) + "print( 'Hello, world from Python!' )" + Chr(10) + ""
    ::oScriptEdit:oFont := ".AppleSystemUIFont,12"
-   @ 186, 16 BUTTON ::oBtnStart PROMPT "Start" OF Self SIZE 100, 28
-   ::oBtnStart:oFont := ".AppleSystemUIFont,12"
-   @ 186, 124 BUTTON ::oBtnRun PROMPT "Exec" OF Self SIZE 100, 28
+   @ 236, 16 BUTTON ::oBtnRun PROMPT "Run" OF Self SIZE 100, 28
    ::oBtnRun:oFont := ".AppleSystemUIFont,12"
-   @ 186, 232 BUTTON ::oBtnEval PROMPT "Eval" OF Self SIZE 100, 28
+   ::oBtnRun:OnClick := { || ::DoRun() }
+   @ 236, 124 BUTTON ::oBtnEval PROMPT "Eval" OF Self SIZE 100, 28
    ::oBtnEval:oFont := ".AppleSystemUIFont,12"
-   @ 186, 340 BUTTON ::oBtnVar PROMPT "Set/Get" OF Self SIZE 100, 28
-   ::oBtnVar:oFont := ".AppleSystemUIFont,12"
-   @ 186, 448 BUTTON ::oBtnStop PROMPT "Stop" OF Self SIZE 100, 28
-   ::oBtnStop:oFont := ".AppleSystemUIFont,12"
-   @ 252, 16 MEMO ::oOutput OF Self SIZE 568, 180
+   ::oBtnEval:OnClick := { || ::DoEval() }
+   @ 236, 504 BUTTON ::oBtnClear PROMPT "Clear" OF Self SIZE 100, 28
+   ::oBtnClear:oFont := ".AppleSystemUIFont,12"
+   ::oBtnClear:OnClick := { || ::DoClear() }
+   ::oCboSamples:OnChange := { || ::LoadSample( ::oCboSamples:Value + 1 ) }
+   @ 282, 16 SAY ::oLblOutput PROMPT "Output:" OF Self SIZE 200
+   ::oLblOutput:oFont := ".AppleSystemUIFont,12"
+   @ 302, 16 MEMO ::oOutput OF Self SIZE 588, 170
    ::oOutput:oFont := ".AppleSystemUIFont,12"
 
 return nil
 //--------------------------------------------------------------------
 
+METHOD LoadSample( nIdx ) CLASS TForm1
+   local cCode := ""
+   local e     := Chr(10)
+   do case
+   case nIdx == 1
+      cCode := "# Classic greeting" + e + "print( 'Hello, world from Python!' )" + e
+   case nIdx == 2
+      cCode := "import math" + e + "x = 144" + e + ;
+               "print( 'sqrt(' + str(x) + ') =', math.sqrt(x) )" + e
+   case nIdx == 3
+      cCode := "total = sum( range(1, 101) )" + e + ;
+               "print( 'sum(1..100) =', total )" + e
+   case nIdx == 4
+      cCode := "import sys" + e + "print( 'Python', sys.version )" + e
+   case nIdx == 5
+      cCode := "a, b = 0, 1" + e + "for i in range(10):" + e + ;
+               "    print( i, a )" + e + "    a, b = b, a + b" + e
+   endcase
+   ::oScriptEdit:Text := cCode
+return nil
+
+//--------------------------------------------------------------------
 METHOD DoRun() CLASS TForm1
-   local cCode := ::oScriptEdit:Text
-   ::Log( "-> Exec( ... " + LTrim( Str( Len( cCode ) ) ) + " chars )" )
-   ::oPython:Exec( cCode )
-   if ! Empty( ::oPython:cLastResult )
-      ::Log( "   result: " + ::oPython:cLastResult )
-   endif
+   ::Log( "=== Run ===" )
+   ::oPython:Exec( ::oScriptEdit:Text )
 return nil
 
 //--------------------------------------------------------------------
 METHOD DoEval() CLASS TForm1
-   local cExpr := "2 + 3 * 4"
-   ::Log( "-> Eval( " + cExpr + " )" )
-   ::oPython:Eval( cExpr )
-   ::Log( "   result: " + ::oPython:cLastResult )
+   local cExpr := AllTrim( ::oScriptEdit:Text )
+   local cValue
+   if Empty( cExpr )
+      ::Log( "(nothing to evaluate)" )
+      return nil
+   endif
+   cValue := ::oPython:Eval( cExpr )
+   ::Log( "=== Eval: " + cExpr + " ===" )
+   ::Log( cValue )
 return nil
 
 //--------------------------------------------------------------------
-METHOD DoVar() CLASS TForm1
-   ::Log( "-> SetVar( name, 'HarbourBuilder' )" )
-   ::oPython:SetVar( "name", "HarbourBuilder" )
-   ::Log( "-> GetVar( name ) = " + Var2Char( ::oPython:GetVar( "name" ) ) )
-return nil
-
-//--------------------------------------------------------------------
-METHOD DoStop() CLASS TForm1
-   ::oPython:Stop()
-   ::Log( "-> Stop()  running=" + If( ::oPython:lRunning, ".T.", ".F." ) )
+METHOD DoClear() CLASS TForm1
+   ::oOutput:Text := ""
 return nil
 
 //--------------------------------------------------------------------
 METHOD Log( cMsg ) CLASS TForm1
    ::oOutput:Text := ::oOutput:Text + cMsg + Chr(10)
 return nil
-
-//--------------------------------------------------------------------
-static function Var2Char( x )
-return If( x == nil, "nil", If( ValType( x ) == "C", x, "?" ) )
 //--------------------------------------------------------------------
 
