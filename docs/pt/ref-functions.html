@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Referencia de Funcoes HB_FUNC - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/ref-functions.html">EN</a>
+    <a class="lang-btn" href="../es/ref-functions.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividade (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html" class="active">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Referencia</a> <span>/</span> Bridge HB_FUNC
+</div>
+
+<h1>Referencia da Bridge HB_FUNC</h1>
+<p>A bridge HB_FUNC e a camada critica que conecta o runtime OOP do Harbour as APIs nativas da plataforma.
+Cada operacao de controle do HarbourBuilder — criar uma janela, definir uma propriedade, tratar um evento —
+passa por esta bridge. Esta pagina documenta as funcoes HB_FUNC principais e explica como a arquitetura funciona.</p>
+
+<div class="info-box info">
+  <strong>O que e um HB_FUNC?</strong>
+  <p><code>HB_FUNC</code> e uma macro da API C do Harbour usada para definir funcoes C/C++ que podem ser chamadas a partir
+  do codigo Harbour. Cada HB_FUNC recebe parametros da pilha Harbour via funcoes <code>hb_par*</code>
+  e retorna valores via funcoes <code>hb_ret*</code>. O HarbourBuilder usa aproximadamente 130–160
+  funcoes HB_FUNC dependendo do backend da plataforma.</p>
+</div>
+
+<h2>Arquitetura da Bridge</h2>
+<p>A bridge fica entre a camada OOP do Harbour e a API nativa da plataforma. Quando voce chama
+<code>oForm:Create()</code> em Harbour, o metodo OOP internamente chama <code>UI_FormNew()</code>, que
+e um HB_FUNC que invoca a API nativa de criacao de janelas da plataforma:</p>
+
+<div class="mermaid">
+graph TB
+    A["Codigo Harbour OOP<br/>oForm:Create()"] --> B["Metodo da Classe Harbour<br/>TForm:Create()"]
+    B --> C["Chamada HB_FUNC<br/>UI_FormNew( cTitle, nW, nH )"]
+    C --> D1["Backend Win32<br/>CreateWindowEx()"]
+    C --> D2["Backend Cocoa<br/>[NSWindow alloc]"]
+    C --> D3["Backend GTK3<br/>gtk_window_new()"]
+    D1 --> E["Janela Nativa"]
+    D2 --> E
+    D3 --> E
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D1 fill:#0078d4,stroke:#005a9e,color:#fff
+    style D2 fill:#555,stroke:#333,color:#fff
+    style D3 fill:#e95420,stroke:#c34113,color:#fff
+    style E fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<div class="info-box tip">
+  <strong>Uma bridge, tres backends</strong>
+  <p>O codigo Harbour OOP e os nomes HB_FUNC sao <em>identicos</em> em todas as plataformas. Apenas a
+  implementacao C/C++/Obj-C por tras de cada HB_FUNC muda. Isso significa que seu codigo .prg e 100% portavel —
+  ele nao precisa saber se esta rodando no Windows, macOS ou Linux.</p>
+</div>
+
+<h2>Funcoes HB_FUNC Principais</h2>
+
+<h3>Gerenciamento de Formularios</h3>
+<table>
+  <tr><th>Funcao</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Backend</th></tr>
+  <tr>
+    <td><code>UI_FormNew</code></td>
+    <td><code>cTitle, nWidth, nHeight</code></td>
+    <td><code>nFormHandle</code></td>
+    <td>Cria uma nova janela de nivel superior com o titulo e dimensoes especificados. Retorna um handle numerico que identifica o formulario em todas as chamadas subsequentes.</td>
+    <td>Win32: <code>CreateWindowEx()</code><br>Cocoa: <code>[[NSWindow alloc] init]</code><br>GTK3: <code>gtk_window_new()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_FormShow</code></td>
+    <td><code>nFormHandle</code></td>
+    <td>void</td>
+    <td>Torna o formulario visivel na tela. No Windows, chama ShowWindow(hWnd, SW_SHOW). No macOS, torna o NSWindow key e order front. No GTK3, chama gtk_widget_show_all().</td>
+    <td>Win32: <code>ShowWindow()</code><br>Cocoa: <code>[win orderFront:]</code><br>GTK3: <code>gtk_widget_show_all()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_FormClose</code></td>
+    <td><code>nFormHandle</code></td>
+    <td>void</td>
+    <td>Fecha e destroi o formulario. Aciona limpeza de todos os controles filhos e recursos nativos.</td>
+    <td>Win32: <code>DestroyWindow()</code><br>Cocoa: <code>[win close]</code><br>GTK3: <code>gtk_widget_destroy()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_FormCenter</code></td>
+    <td><code>nFormHandle</code></td>
+    <td>void</td>
+    <td>Centraliza o formulario na tela. Calcula as dimensoes da tela e posiciona a janela conforme necessario.</td>
+    <td>Win32: <code>SetWindowPos()</code><br>Cocoa: <code>[win cascadeTopLeft:]</code><br>GTK3: <code>gtk_window_set_position()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetTitle</code></td>
+    <td><code>nHandle, cTitle</code></td>
+    <td>void</td>
+    <td>Define o texto da barra de titulo de um formulario.</td>
+    <td>Win32: <code>SetWindowText()</code><br>Cocoa: <code>[win setTitle:]</code><br>GTK3: <code>gtk_window_set_title()</code></td>
+  </tr>
+</table>
+
+<h3>Criacao de Controles</h3>
+<table>
+  <tr><th>Funcao</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Backend</th></tr>
+  <tr>
+    <td><code>UI_ControlCreate</code></td>
+    <td><code>nType, nParentHandle, nLeft, nTop, nWidth, nHeight</code></td>
+    <td><code>nControlHandle</code></td>
+    <td>Cria um widget nativo do tipo especificado (CT_BUTTON, CT_EDIT, etc.) dentro de um container pai. A constante de tipo determina qual widget nativo e instanciado. Retorna um handle para chamadas subsequentes de propriedade e evento.</td>
+    <td>Win32: <code>CreateWindowEx()</code><br>Cocoa: <code>[[NSButton alloc] init]</code><br>GTK3: <code>gtk_button_new()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_ButtonCreate</code></td>
+    <td><code>nParentHandle, nLeft, nTop, nWidth, nHeight, cCaption</code></td>
+    <td><code>nHandle</code></td>
+    <td>Funcao de conveniencia que cria um botao com legenda em uma chamada.</td>
+    <td>Win32: <code>CreateWindowEx("BUTTON")</code><br>Cocoa: <code>NSButton</code><br>GTK3: <code>gtk_button_new_with_label()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_EditCreate</code></td>
+    <td><code>nParentHandle, nLeft, nTop, nWidth, nHeight</code></td>
+    <td><code>nHandle</code></td>
+    <td>Cria um campo de entrada de texto de linha unica.</td>
+    <td>Win32: <code>CreateWindowEx("EDIT")</code><br>Cocoa: <code>NSTextField</code><br>GTK3: <code>gtk_entry_new()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_LabelCreate</code></td>
+    <td><code>nParentHandle, nLeft, nTop, nWidth, nHeight, cText</code></td>
+    <td><code>nHandle</code></td>
+    <td>Cria um rotulo de texto estatico.</td>
+    <td>Win32: <code>CreateWindowEx("STATIC")</code><br>Cocoa: <code>NSTextField</code><br>GTK3: <code>gtk_label_new()</code></td>
+  </tr>
+</table>
+
+<h3>Gerenciamento de Propriedades</h3>
+<table>
+  <tr><th>Funcao</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Backend</th></tr>
+  <tr>
+    <td><code>UI_SetProp</code></td>
+    <td><code>nHandle, nPropId, xValue</code></td>
+    <td>void</td>
+    <td>Setter generico de propriedades. <code>nPropId</code> e uma constante que identifica qual propriedade definir (ex: PROP_TEXT, PROP_VISIBLE, PROP_COLOR). O tipo de valor depende da propriedade. Esta e a principal forma de modificar propriedades de controles em tempo de execucao.</td>
+    <td>Win32: chamadas API variadas<br>Cocoa: setters de propriedade<br>GTK3: g_object_set()</td>
+  </tr>
+  <tr>
+    <td><code>UI_GetProp</code></td>
+    <td><code>nHandle, nPropId</code></td>
+    <td><code>xValue</code></td>
+    <td>Getter generico de propriedades. Retorna o valor atual da propriedade especificada. O tipo de retorno depende da propriedade consultada.</td>
+    <td>Win32: GetWindowText etc.<br>Cocoa: getters de propriedade<br>GTK3: g_object_get()</td>
+  </tr>
+  <tr>
+    <td><code>UI_SetText</code></td>
+    <td><code>nHandle, cText</code></td>
+    <td>void</td>
+    <td>Define o conteudo de texto de um controle. Wrapper de conveniencia em torno de UI_SetProp(PROP_TEXT, cText).</td>
+    <td>Win32: <code>SetWindowText()</code><br>Cocoa: <code>[ctrl setStringValue:]</code><br>GTK3: <code>gtk_label_set_text()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_GetText</code></td>
+    <td><code>nHandle</code></td>
+    <td><code>cText</code></td>
+    <td>Obtem o conteudo de texto de um controle. Wrapper de conveniencia em torno de UI_GetProp(PROP_TEXT).</td>
+    <td>Win32: <code>GetWindowText()</code><br>Cocoa: <code>[ctrl stringValue]</code><br>GTK3: <code>gtk_label_get_text()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetColor</code></td>
+    <td><code>nHandle, nForeColor, nBackColor</code></td>
+    <td>void</td>
+    <td>Define as cores de primeiro plano e fundo de um controle.</td>
+    <td>Win32: <code>SetTextColor()</code>/<code>SetBkColor()</code><br>Cocoa: <code>NSColor</code><br>GTK3: CSS/GDK RGBA</td>
+  </tr>
+  <tr>
+    <td><code>UI_SetFont</code></td>
+    <td><code>nHandle, cFontName, nSize, lBold, lItalic</code></td>
+    <td>void</td>
+    <td>Define a fonte de um controle com especificacao completa de estilo.</td>
+    <td>Win32: <code>CreateFont()</code><br>Cocoa: <code>NSFont</code><br>GTK3: <code>PangoFontDescription</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetBounds</code></td>
+    <td><code>nHandle, nLeft, nTop, nWidth, nHeight</code></td>
+    <td>void</td>
+    <td>Define posicao e tamanho em uma unica chamada para eficiencia.</td>
+    <td>Win32: <code>MoveWindow()</code><br>Cocoa: <code>[view setFrame:]</code><br>GTK3: <code>gtk_widget_set_size_request()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetVisible</code></td>
+    <td><code>nHandle, lVisible</code></td>
+    <td>void</td>
+    <td>Exibe ou oculta um controle.</td>
+    <td>Win32: <code>ShowWindow()</code><br>Cocoa: <code>[view setHidden:]</code><br>GTK3: <code>gtk_widget_show/hide()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetEnabled</code></td>
+    <td><code>nHandle, lEnabled</code></td>
+    <td>void</td>
+    <td>Habilita ou desabilita um controle (acinzentado quando desabilitado).</td>
+    <td>Win32: <code>EnableWindow()</code><br>Cocoa: <code>[ctrl setEnabled:]</code><br>GTK3: <code>gtk_widget_set_sensitive()</code></td>
+  </tr>
+</table>
+
+<h3>Gerenciamento de Eventos</h3>
+<table>
+  <tr><th>Funcao</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Backend</th></tr>
+  <tr>
+    <td><code>UI_OnEvent</code></td>
+    <td><code>nHandle, nEventId, bCodeBlock</code></td>
+    <td>void</td>
+    <td>Registra um bloco de codigo Harbour para ser executado quando o evento especificado e acionado no controle. O bloco de codigo e armazenado em uma tabela de eventos do lado Harbour, chaveada por handle e ID de evento. Quando o evento nativo e acionado, o backend chama <code>FireEvent()</code> para avaliar o bloco.</td>
+    <td>Armazena bloco na tabela<br>de eventos Harbour (cross-platform)</td>
+  </tr>
+  <tr>
+    <td><code>FireEvent</code></td>
+    <td><code>nHandle, nEventId, [params...]</code></td>
+    <td>Resultado do bloco de codigo</td>
+    <td>Funcao interna chamada pelo manipulador de eventos nativo do backend (WndProc, action target ou callback g_signal). Busca o bloco de codigo registrado e o avalia com <code>hb_xcompEval()</code> ou <code>Eval()</code>.</td>
+    <td>Chamado do manipulador<br>de eventos nativo</td>
+  </tr>
+  <tr>
+    <td><code>UI_RemoveEvent</code></td>
+    <td><code>nHandle, nEventId</code></td>
+    <td>void</td>
+    <td>Remove um manipulador de eventos registrado anteriormente.</td>
+    <td>Remove da tabela<br>de eventos Harbour</td>
+  </tr>
+</table>
+
+<h3>Ciclo de Vida e Utilitarios</h3>
+<table>
+  <tr><th>Funcao</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Backend</th></tr>
+  <tr>
+    <td><code>UI_Destroy</code></td>
+    <td><code>nHandle</code></td>
+    <td>void</td>
+    <td>Destroi um controle e libera todos os recursos nativos associados. Remove o controle da tabela de objetos do lado Harbour e chama a funcao nativa de destruicao da plataforma.</td>
+    <td>Win32: <code>DestroyWindow()</code><br>Cocoa: <code>[view removeFromSuperview]</code><br>GTK3: <code>gtk_widget_destroy()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_Refresh</code></td>
+    <td><code>nHandle</code></td>
+    <td>void</td>
+    <td>Forca um redesenho imediato do controle. Invalida a area de exibicao e aciona um ciclo de pintura.</td>
+    <td>Win32: <code>InvalidateRect()</code><br>Cocoa: <code>[view setNeedsDisplay:]</code><br>GTK3: <code>gtk_widget_queue_draw()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_SetFocus</code></td>
+    <td><code>nHandle</code></td>
+    <td>void</td>
+    <td>Da foco de entrada ao controle especificado.</td>
+    <td>Win32: <code>SetFocus()</code><br>Cocoa: <code>[win makeFirstResponder:]</code><br>GTK3: <code>gtk_widget_grab_focus()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_AppInit</code></td>
+    <td><code>cAppName</code></td>
+    <td>void</td>
+    <td>Inicializa os recursos de nivel de aplicacao. Chamado uma vez na inicializacao. Configura a tabela de eventos, inicializa os subsistemas do backend e prepara o loop de mensagens.</td>
+    <td>Win32: <code>CoInitialize()</code><br>Cocoa: <code>[NSApplication sharedApplication]</code><br>GTK3: <code>gtk_init()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_MsgLoop</code></td>
+    <td>nenhum</td>
+    <td>void (bloqueia)</td>
+    <td>Entra no loop de eventos da plataforma. Esta funcao bloqueia ate a aplicacao sair. Ela despacha eventos nativos do SO para os blocos de codigo Harbour apropriados.</td>
+    <td>Win32: <code>GetMessage/DispatchMessage</code><br>Cocoa: <code>[NSApp run]</code><br>GTK3: <code>gtk_main()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_Quit</code></td>
+    <td>nenhum</td>
+    <td>void</td>
+    <td>Sai do loop de eventos e encerra a aplicacao.</td>
+    <td>Win32: <code>PostQuitMessage()</code><br>Cocoa: <code>[NSApp terminate:]</code><br>GTK3: <code>gtk_main_quit()</code></td>
+  </tr>
+  <tr>
+    <td><code>UI_MsgInfo</code></td>
+    <td><code>cMessage, [cTitle]</code></td>
+    <td>void</td>
+    <td>Exibe uma caixa de mensagem de informacao simples.</td>
+    <td>Win32: <code>MessageBox()</code><br>Cocoa: <code>NSAlert</code><br>GTK3: <code>GtkMessageDialog</code></td>
+  </tr>
+</table>
+
+<h2>Como a Bridge Funciona: Um Exemplo Completo</h2>
+
+<p>Aqui esta a jornada completa do codigo fonte Harbour ate a chamada de API nativa:</p>
+
+<pre><span class="cm">=== Passo 1: Seu codigo fonte Harbour ===</span>
+<span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Ola"</span> <span class="cmd">SIZE</span> <span class="nb">400</span>, <span class="nb">300</span>
+<span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+
+<span class="cm">=== Passo 2: Expansao do preprocessador (hbbuilder.ch) ===</span>
+oForm := TForm():<span class="fn">New</span>( <span class="kw">nil</span> )
+oForm:<span class="nb">cTitle</span>  := <span class="st">"Ola"</span>
+oForm:<span class="nb">nWidth</span>  := <span class="nb">400</span>
+oForm:<span class="nb">nHeight</span> := <span class="nb">300</span>
+oForm:<span class="nb">lCentered</span> := <span class="nb">.T.</span>
+oForm:<span class="fn">Activate</span>()
+
+<span class="cm">=== Passo 3: Camada OOP Harbour (classe TForm) ===</span>
+<span class="kw">METHOD</span> <span class="fn">Activate</span> <span class="kw">CLASS</span> TForm
+   <span class="kw">local</span> nHandle
+   nHandle := <span class="fn">UI_FormNew</span>( ::<span class="nb">cTitle</span>, ::<span class="nb">nWidth</span>, ::<span class="nb">nHeight</span> )
+   ::<span class="nb">nHandle</span> := nHandle
+   <span class="kw">if</span> ::<span class="nb">lCentered</span>
+      <span class="fn">UI_FormCenter</span>( nHandle )
+   <span class="kw">endif</span>
+   <span class="fn">UI_FormShow</span>( nHandle )
+   <span class="fn">UI_MsgLoop</span>()
+<span class="kw">RETURN</span> <span class="kw">nil</span>
+
+<span class="cm">=== Passo 4: Bridge HB_FUNC (backend C/C++) ===</span>
+<span class="cm">// No Windows (win32_backend.cpp):</span>
+HB_FUNC( UI_FORMNEW )
+{
+   const char * cTitle = hb_parc( 1 );
+   int nWidth  = hb_parni( 2 );
+   int nHeight = hb_parni( 3 );
+
+   HWND hWnd = CreateWindowEx(
+      0,                              <span class="cm">// dwExStyle</span>
+      <span class="st">"HBBUILDER_FORM"</span>,               <span class="cm">// lpClassName</span>
+      cTitle,                          <span class="cm">// lpWindowName</span>
+      WS_OVERLAPPEDWINDOW,             <span class="cm">// dwStyle</span>
+      CW_USEDEFAULT, CW_USEDEFAULT,    <span class="cm">// x, y</span>
+      nWidth, nHeight,                 <span class="cm">// width, height</span>
+      <span class="kw">NULL</span>, <span class="kw">NULL</span>,                      <span class="cm">// parent, menu</span>
+      hInstance,                       <span class="cm">// hInstance</span>
+      <span class="kw">NULL</span>                             <span class="cm">// lpParam</span>
+   );
+
+   hb_retni( ( int ) ( intptr_t ) hWnd );
+}</pre>
+
+<h2>Contagem de Funcoes por Plataforma</h2>
+
+<table>
+  <tr><th>Backend</th><th>Linguagem</th><th>Contagem HB_FUNC</th><th>Linhas de codigo</th></tr>
+  <tr>
+    <td><span class="badge win">Windows</span> Win32</td>
+    <td>C++</td>
+    <td>~135</td>
+    <td>~7.100</td>
+  </tr>
+  <tr>
+    <td><span class="badge mac">macOS</span> Cocoa</td>
+    <td>Objective-C++</td>
+    <td>~158</td>
+    <td>~3.800</td>
+  </tr>
+  <tr>
+    <td><span class="badge linux">Linux</span> GTK3</td>
+    <td>C</td>
+    <td>~132</td>
+    <td>~7.300</td>
+  </tr>
+</table>
+
+<div class="info-box info">
+  <strong>Por que contagens diferentes?</strong>
+  <p>Cada plataforma tem capacidades ligeiramente diferentes. O backend macOS Cocoa tem mais funcoes HB_FUNC
+  porque o estilo de mensageria do Objective-C as vezes requer funcoes de bridge separadas para operacoes
+  que outras plataformas podem combinar. O backend GTK3 tem mais linhas porque C requer mais
+  codigo boilerplate para funcionalidade equivalente.</p>
+</div>
+
+<h2>Adicionando um Novo HB_FUNC</h2>
+<p>Para estender o HarbourBuilder com um novo recurso nativo, voce precisa:</p>
+
+<ol>
+  <li><strong>Definir o HB_FUNC</strong> no arquivo fonte backend de cada plataforma:
+    <pre><span class="cm">// Em win32_backend.cpp:</span>
+HB_FUNC( UI_NEWWIDGET )
+{
+   <span class="cm">// ... Implementacao Win32 ...</span>
+   hb_retni( nResult );
+}</pre>
+  </li>
+  <li><strong>Registrar a funcao</strong> na tabela de funcoes do Harbour (geralmente automatico com a macro <code>HB_FUNC</code>).</li>
+  <li><strong>Adicionar o wrapper do lado Harbour</strong> na classe OOP:
+    <pre><span class="kw">METHOD</span> <span class="fn">CreateNewWidget</span>( nType ) <span class="kw">CLASS</span> TControl
+   <span class="kw">local</span> nHandle := <span class="fn">UI_NewWidget</span>( nType, ::<span class="nb">nParent</span> )
+   ::<span class="nb">nHandle</span> := nHandle
+   <span class="kw">return</span> <span class="kw">self</span></pre>
+  </li>
+  <li><strong>Adicionar o comando xBase</strong> (opcional) em <code>hbbuilder.ch</code>:
+    <pre><span class="cm">#xcommand DEFINE WIDGET &lt;o&gt; TYPE &lt;nType&gt; OF &lt;oParent&gt; ;
+   =&gt; &lt;o&gt; := TControl():New( &lt;oParent&gt; );
+      &lt;o&gt;:CreateNewWidget( &lt;nType&gt; )</pre>
+  </li>
+</ol>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

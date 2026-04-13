@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles de Git - Documentacion de HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar en la documentacion..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros pasos</h3>
+    <a href="index.html">Vision general</a>
+    <a href="quickstart.html">Inicio rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividad (9)</a>
+    <a href="controls-git.html" class="active">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de formularios</a>
+    <a href="object-inspector.html">Inspector de objetos</a>
+    <a href="code-editor.html">Editor de codigo</a>
+    <a href="two-way-tools.html">Herramientas bidireccionales</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente IA</a>
+    <a href="build-run.html">Compilar y ejecutar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriales</h3>
+    <a href="tutorial-hello.html">Hola Mundo</a>
+    <a href="tutorial-forms.html">Trabajar con formularios</a>
+    <a href="tutorial-events.html">Manejo de eventos</a>
+    <a href="tutorial-database.html">CRUD de base de datos</a>
+    <a href="tutorial-webserver.html">Servidor web</a>
+    <a href="tutorial-ai.html">Integracion con IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propiedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Puente HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+<div class="content">
+<div class="breadcrumbs"><a href="index.html">Docs</a> <span>/</span> <a href="index.html">Paleta de componentes</a> <span>/</span> Git</div>
+<h1>Controles de Integracion Git <span class="badge new">NUEVO</span></h1>
+<p>HarbourBuilder incluye integracion completa con Git — 10 componentes y soporte integral del IDE para control de versiones.
+Sin herramientas externas necesarias; gestiona tus repositorios directamente desde el IDE.</p>
+
+<div class="info-box tip">
+  <strong>Control de Versiones Integrado</strong>
+  <p>HarbourBuilder envuelve la CLI de <code>git</code> mediante <code>CreateProcess</code> con captura de stdout,
+  proporcionando una experiencia de Control de Fuente estilo VS Code dentro del IDE.</p>
+</div>
+
+<h2>Componentes Git</h2>
+
+<table>
+  <tr><th>Componente</th><th>ID CT</th><th>Descripcion</th></tr>
+  <tr><td><code>TGitRepo</code></td><td>121</td><td>Inicializacion de repositorio, clonacion y estado</td></tr>
+  <tr><td><code>TGitCommit</code></td><td>122</td><td>Confirmar cambios con mensajes y seleccion de archivos</td></tr>
+  <tr><td><code>TGitBranch</code></td><td>123</td><td>Creacion de ramas, cambio y listado</td></tr>
+  <tr><td><code>TGitLog</code></td><td>124</td><td>Ver historial de confirmaciones con autor, fecha y mensaje</td></tr>
+  <tr><td><code>TGitDiff</code></td><td>125</td><td>Ver diferencias y cambios entre archivos</td></tr>
+  <tr><td><code>TGitRemote</code></td><td>126</td><td>Gestionar repositorios remotos (agregar, eliminar, listar)</td></tr>
+  <tr><td><code>TGitStash</code></td><td>127</td><td>Guardar y recuperar cambios del directorio de trabajo</td></tr>
+  <tr><td><code>TGitTag</code></td><td>128</td><td>Crear, listar y eliminar etiquetas</td></tr>
+  <tr><td><code>TGitBlame</code></td><td>129</td><td>Informacion de autor linea por linea (anotar)</td></tr>
+  <tr><td><code>TGitMerge</code></td><td>130</td><td>Fusionar ramas y resolver conflictos</td></tr>
+</table>
+
+<h2>Integracion Git del IDE</h2>
+
+<h3>Panel de Control de Fuente</h3>
+<p>Accede mediante el elemento de menu <strong>Git &gt; Estado</strong>. El panel muestra:</p>
+<ul>
+  <li><strong>Etiqueta de rama</strong> — Nombre de la rama actual</li>
+  <li><strong>ListView de cambios</strong> — Cambios preparados y no preparados</li>
+  <li><strong>Editor de mensaje de confirmacion</strong> — Entrada de texto multi-linea</li>
+  <li><strong>Botones de accion</strong> — Actualizar, Confirmar, Enviar, Extraer, Guardar</li>
+</ul>
+
+<h3>Menu Git (17 Elementos)</h3>
+
+<table>
+  <tr><th>Elemento de Menu</th><th>Accion</th></tr>
+  <tr><td><strong>Init</strong></td><td>Inicializar un nuevo repositorio Git</td></tr>
+  <tr><td><strong>Clone</strong></td><td>Clonar un repositorio remoto existente</td></tr>
+  <tr><td><strong>Estado</strong></td><td>Abrir panel de Control de Fuente</td></tr>
+  <tr><td><strong>Commit</strong></td><td>Confirmar cambios preparados</td></tr>
+  <tr><td><strong>Push</strong></td><td>Enviar confirmaciones al remoto</td></tr>
+  <tr><td><strong>Pull</strong></td><td>Extraer actualizaciones del remoto</td></tr>
+  <tr><td><strong>Rama &gt; Crear</strong></td><td>Crear una nueva rama</td></tr>
+  <tr><td><strong>Rama &gt; Cambiar</strong></td><td>Cambiar a otra rama (con dialogo de lista)</td></tr>
+  <tr><td><strong>Rama &gt; Fusionar</strong></td><td>Fusionar una rama en la actual</td></tr>
+  <tr><td><strong>Stash &gt; Guardar</strong></td><td>Guardar cambios del directorio de trabajo</td></tr>
+  <tr><td><strong>Stash &gt; Recuperar</strong></td><td>Restaurar cambios guardados</td></tr>
+  <tr><td><strong>Log</strong></td><td>Ver historial de confirmaciones</td></tr>
+  <tr><td><strong>Diff</strong></td><td>Ver diferencias entre archivos</td></tr>
+  <tr><td><strong>Blame</strong></td><td>Ver autoria linea por linea</td></tr>
+</table>
+
+<h2>Funciones del Backend</h2>
+
+<p>11 funciones del backend envuelven la CLI de <code>git.exe</code> mediante <code>CreateProcess</code> con captura de stdout:</p>
+
+<table>
+  <tr><th>Funcion</th><th>Comando Git</th><th>Formato de Retorno</th></tr>
+  <tr><td><code>GIT_Status()</code></td><td><code>git status --porcelain</code></td><td><code>{ { cStatus, cFile }, ... }</code></td></tr>
+  <tr><td><code>GIT_Log()</code></td><td><code>git log --format=...</code></td><td><code>{ { cHash, cAuthor, cDate, cMsg }, ... }</code></td></tr>
+  <tr><td><code>GIT_Diff()</code></td><td><code>git diff</code></td><td>Cadena diff unificada</td></tr>
+  <tr><td><code>GIT_Blame()</code></td><td><code>git blame</code></td><td><code>{ { nLine, cHash, cAuthor, cText }, ... }</code></td></tr>
+  <tr><td><code>GIT_CurrentBranch()</code></td><td><code>git branch --show-current</code></td><td>Cadena nombre de rama</td></tr>
+  <tr><td><code>GIT_BranchList()</code></td><td><code>git branch</code></td><td><code>{ { cName, lCurrent }, ... }</code></td></tr>
+  <tr><td><code>GIT_Exec()</code></td><td>Cualquier comando git</td><td>Cadena stdout capturada</td></tr>
+  <tr><td><code>GIT_IsRepo()</code></td><td><code>git rev-parse</code></td><td>Logico (.T./.F.)</td></tr>
+</table>
+
+<h2>Ejemplos de Codigo</h2>
+
+<h3>Inicializar un Repositorio</h3>
+<pre><span class="kw">local</span> oRepo
+
+oRepo := <span class="fn">TGitRepo</span>:New()
+<span class="kw">if</span> ! <span class="fn">GIT_IsRepo</span>( <span class="st">"C:\MiProyecto"</span> )
+   <span class="fn">GIT_Exec</span>( <span class="st">"git init C:\MiProyecto"</span> )
+   <span class="fn">MsgInfo</span>( <span class="st">"Repositorio inicializado"</span> )
+<span class="kw">endif</span></pre>
+
+<h3>Ver Estado y Confirmar</h3>
+<pre><span class="kw">local</span> aEstado, cMsg
+
+aEstado := <span class="fn">GIT_Status</span>()
+<span class="kw">for each</span> aArchivo <span class="kw">in</span> aEstado
+   ? aArchivo[<span class="nb">1</span>], aArchivo[<span class="nb">2</span>]  <span class="comment">// Codigo de estado y nombre de archivo</span>
+<span class="kw">next</span>
+
+<span class="fn">GIT_Exec</span>( <span class="st">"git add ."</span> )
+<span class="fn">GIT_Exec</span>( <span class="st">"git commit -m "Confirmacion inicial""</span> )</pre>
+
+<h3>Operaciones de Rama</h3>
+<pre><span class="kw">local</span> aRamas
+
+<span class="comment">// Listar todas las ramas</span>
+aRamas := <span class="fn">GIT_BranchList</span>()
+<span class="kw">for each</span> aRama <span class="kw">in</span> aRamas
+   ? aRama[<span class="nb">1</span>], <span class="kw">if</span>( aRama[<span class="nb">2</span>], <span class="st">"* actual"</span>, <span class="st">""</span> )
+<span class="kw">next</span>
+
+<span class="comment">// Crear y cambiar a nueva rama</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git checkout -b feature/nueva-funcionalidad"</span> )</pre>
+
+<h3>Ver Registro de Confirmaciones</h3>
+<pre><span class="kw">local</span> aLog
+
+aLog := <span class="fn">GIT_Log</span>( <span class="nb">20</span> )  <span class="comment">// Ultimas 20 confirmaciones</span>
+<span class="kw">for each</span> aConf <span class="kw">in</span> aLog
+   ? aConf[<span class="nb">1</span>]  <span class="comment">// Hash</span>
+   ? aConf[<span class="nb">2</span>]  <span class="comment">// Autor</span>
+   ? aConf[<span class="nb">3</span>]  <span class="comment">// Fecha</span>
+   ? aConf[<span class="nb">4</span>]  <span class="comment">// Mensaje</span>
+<span class="kw">next</span></pre>
+
+<h2>Flujos de Trabajo Git Comunes</h2>
+
+<h3>Configuracion Inicial</h3>
+<pre><span class="comment">// 1. Inicializar repositorio</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git init"</span> )
+
+<span class="comment">// 2. Agregar remoto</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git remote add origin https://github.com/usuario/repo.git"</span> )
+
+<span class="comment">// 3. Agregar todos los archivos</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git add ."</span> )
+
+<span class="comment">// 4. Confirmar</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git commit -m "Confirmacion inicial""</span> )
+
+<span class="comment">// 5. Enviar al remoto</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git push -u origin master"</span> )</pre>
+
+<h3>Flujo de Trabajo Diario</h3>
+<pre><span class="comment">// 1. Extraer ultimos cambios</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git pull"</span> )
+
+<span class="comment">// 2. Hacer cambios en el IDE...</span>
+
+<span class="comment">// 3. Verificar estado</span>
+aEstado := <span class="fn">GIT_Status</span>()
+
+<span class="comment">// 4. Preparar y confirmar</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git add ."</span> )
+<span class="fn">GIT_Exec</span>( <span class="st">"git commit -m "Agregar funcionalidad X""</span> )
+
+<span class="comment">// 5. Enviar al remoto</span>
+<span class="fn">GIT_Exec</span>( <span class="st">"git push"</span> )</pre>
+
+<div class="info-box info">
+  <strong>Dependencia de la CLI de Git</strong>
+  <p>La integracion Git de HarbourBuilder requiere que <code>git</code> este instalado y en el PATH de tu sistema.
+  Descarga desde <a href="https://git-scm.com/">git-scm.com</a>.</p>
+</div>
+</div>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

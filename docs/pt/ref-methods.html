@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Referencia de Metodos A-Z - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/ref-methods.html">EN</a>
+    <a class="lang-btn" href="../es/ref-methods.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividade (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html" class="active">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Referencia</a> <span>/</span> Metodos A-Z
+</div>
+
+<h1>Referencia de Metodos A-Z</h1>
+<p>Esta pagina documenta os metodos mais comumente usados nos controles do HarbourBuilder. Metodos sao
+funcoes chamadas em objetos de controle para executar acoes, consultar estado ou acionar comportamento. Eles
+complementam atribuicoes de propriedade e manipuladores de eventos no modelo de programacao HarbourBuilder.</p>
+
+<div class="info-box info">
+  <strong>Metodos vs. Propriedades</strong>
+  <p>Use <strong>propriedades</strong> para ler ou definir o estado de um controle (ex: <code>oBtn:nWidth := 200</code>).
+  Use <strong>metodos</strong> para acionar acoes (ex: <code>oBtn:Show()</code>) ou consultar valores computados
+  que nao sao armazenados como propriedades simples. No camada OOP do HarbourBuilder, metodos sao invocados
+  com a sintaxe <code>:metodo()</code> em qualquer referencia de objeto.</p>
+</div>
+
+<h2>Construcao e Destruicao</h2>
+
+<table>
+  <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Disponivel Para</th></tr>
+  <tr>
+    <td><code>New()</code></td>
+    <td><code>oParent</code></td>
+    <td>Objeto de controle</td>
+    <td>Cria uma nova instancia de controle dentro do pai especificado. Este e o metodo construtor usado pelo preprocessador xBase para expandir comandos <code>DEFINE</code> e <code>@</code>. Geralmente chamado implicitamente pelo gerador de codigo.</td>
+    <td>Todos os controles</td>
+  </tr>
+  <tr>
+    <td><code>Create()</code></td>
+    <td>nenhum</td>
+    <td>Self (o controle)</td>
+    <td>Realiza o controle na plataforma nativa chamando a API do backend (CreateWindowEx, NSView alloc, gtk_widget_new). Chamado automaticamente durante a ativacao do formulario.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+  <tr>
+    <td><code>Release()</code></td>
+    <td>nenhum</td>
+    <td>nil</td>
+    <td>Destroi o controle e libera seus recursos nativos. No backend, isso chama DestroyWindow, release ou gtk_widget_destroy. Apos Release(), a referencia do objeto se torna invalida.</td>
+    <td>Todos os controles</td>
+  </tr>
+  <tr>
+    <td><code>Close()</code></td>
+    <td>nenhum</td>
+    <td>nil</td>
+    <td>Fecha o formulario. Aciona OnCloseQuery (que pode cancelar o fechamento), depois OnClose, depois OnDestroy. Para controles que nao sao formularios, este metodo nao esta disponivel.</td>
+    <td>Form</td>
+  </tr>
+</table>
+
+<h2>Visibilidade e Foco</h2>
+
+<table>
+  <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Disponivel Para</th></tr>
+  <tr>
+    <td><code>Show()</code></td>
+    <td>nenhum</td>
+    <td>nil</td>
+    <td>Torna o controle visivel. Para formularios, isso tambem ativa e exibe o formulario na tela. Aciona o evento OnShow.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+  <tr>
+    <td><code>Hide()</code></td>
+    <td>nenhum</td>
+    <td>nil</td>
+    <td>Oculta o controle sem destrui-lo. O controle ainda existe e pode ser exibido novamente. Aciona o evento OnHide em formularios.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+  <tr>
+    <td><code>SetFocus()</code></td>
+    <td>nenhum</td>
+    <td>nil</td>
+    <td>Da foco de entrada ao controle. O controle deve estar visivel, habilitado e com lTabStop = .T. Aciona o evento OnEnter.</td>
+    <td>Todos os controles focaveis</td>
+  </tr>
+</table>
+
+<h2>Metodos de Valor</h2>
+
+<table>
+  <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Disponivel Para</th></tr>
+  <tr>
+    <td><code>GetValue()</code></td>
+    <td>nenhum</td>
+    <td>Valor atual</td>
+    <td>Retorna o valor atual do controle. Para Edit/Memo, retorna a string de texto. Para CheckBox, retorna .T./.F. Para ListBox/ComboBox, retorna o item selecionado.</td>
+    <td>Edit, Memo, MaskEdit, CheckBox, Radio, ListBox, ComboBox, TrackBar, UpDown, LabeledEdit</td>
+  </tr>
+  <tr>
+    <td><code>SetValue( xValue )</code></td>
+    <td><code>xValue</code> (qualquer)</td>
+    <td>nil</td>
+    <td>Define o valor do controle. Para Edit/Memo, define o texto. Para CheckBox, define o estado de marcacao. Aciona o evento OnChange.</td>
+    <td>Edit, Memo, MaskEdit, CheckBox, Radio, ListBox, ComboBox, TrackBar, UpDown, LabeledEdit</td>
+  </tr>
+  <tr>
+    <td><code>SetText( cText )</code></td>
+    <td><code>cText</code> (string)</td>
+    <td>nil</td>
+    <td>Define o texto exibido do controle. Equivalente a SetValue() para controles de texto, mas tambem funciona para Label, StaticText, legenda de Botao, etc. Nao aciona OnChange.</td>
+    <td>Label, StaticText, Button, Edit, Memo, LabeledEdit, StatusBar, GroupBox</td>
+  </tr>
+  <tr>
+    <td><code>GetText()</code></td>
+    <td>nenhum</td>
+    <td>String</td>
+    <td>Retorna o texto exibido. Para Edit/Memo, este e o conteudo de texto. Para Label/StaticText, a legenda. Para Button, o prompt.</td>
+    <td>Label, StaticText, Button, Edit, Memo, LabeledEdit</td>
+  </tr>
+</table>
+
+<h2>Metodos de Posicao e Tamanho</h2>
+
+<table>
+  <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Disponivel Para</th></tr>
+  <tr>
+    <td><code>SetBounds( nLeft, nTop, nWidth, nHeight )</code></td>
+    <td>Quatro numeros</td>
+    <td>nil</td>
+    <td>Define posicao e tamanho do controle em uma unica chamada. Mais eficiente que definir cada propriedade separadamente pois aciona apenas um redimensionamento/redesenho nativo.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+  <tr>
+    <td><code>SetPosition( nLeft, nTop )</code></td>
+    <td>Dois numeros</td>
+    <td>nil</td>
+    <td>Define apenas a posicao (esquerda, topo) sem alterar tamanho. Alias: <code>MoveTo()</code>.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+  <tr>
+    <td><code>SetSize( nWidth, nHeight )</code></td>
+    <td>Dois numeros</td>
+    <td>nil</td>
+    <td>Define apenas o tamanho (largura, altura) sem alterar posicao.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+  <tr>
+    <td><code>GetSize()</code></td>
+    <td>nenhum</td>
+    <td>Array <code>{ nWidth, nHeight }</code></td>
+    <td>Retorna a largura e altura atuais como um array de dois elementos.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+  <tr>
+    <td><code>GetPosition()</code></td>
+    <td>nenhum</td>
+    <td>Array <code>{ nLeft, nTop }</code></td>
+    <td>Retorna esquerda e topo atuais como um array de dois elementos.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+</table>
+
+<h2>Metodos de Fonte</h2>
+
+<table>
+  <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Disponivel Para</th></tr>
+  <tr>
+    <td><code>SetFont( cName, nSize, [lBold], [lItalic], [lUnderline] )</code></td>
+    <td>Nome da fonte, tamanho, flags de estilo opcionais</td>
+    <td>nil</td>
+    <td>Define a fonte do controle em uma unica chamada. Parametros de estilo sao opcionais e padrao para .F. Este e um metodo de conveniencia que define cFontName, nFontSize, lFontBold, etc. de uma vez.</td>
+    <td>Todos os controles com texto</td>
+  </tr>
+  <tr>
+    <td><code>GetFont()</code></td>
+    <td>nenhum</td>
+    <td>Objeto de fonte (ou array)</td>
+    <td>Retorna o descritor de fonte atual. O tipo de retorno depende do backend mas tipicamente contem nome da fonte, tamanho e informacao de estilo.</td>
+    <td>Todos os controles com texto</td>
+  </tr>
+</table>
+
+<h2>Metodos de Exibicao e Atualizacao</h2>
+
+<table>
+  <tr><th>Metodo</th><th>Parametros</th><th>Retorna</th><th>Descricao</th><th>Disponivel Para</th></tr>
+  <tr>
+    <td><code>Refresh()</code></td>
+    <td>nenhum</td>
+    <td>nil</td>
+    <td>Forca um redesenho imediato do controle. Isso invalida a area de exibicao do controle e aciona o evento OnPaint. Use quando alterou propriedades que afetam a aparencia e precisa de uma atualizacao visual imediata.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+  <tr>
+    <td><code>Update()</code></td>
+    <td>nenhum</td>
+    <td>nil</td>
+    <td>Processa todas as mensagens de pinturas pendentes imediatamente. Diferente de Refresh() que forca uma repaint, Update() apenas repinta areas que ja estao marcadas como necessitando redesenho.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+  <tr>
+    <td><code>Invalidate()</code></td>
+    <td>nenhum</td>
+    <td>nil</td>
+    <td>Marca a area inteira do controle como necessitando repaint, mas nao forca um redesenho imediato. A pintura acontece durante o proximo ciclo de pintura. Mais eficiente que Refresh() quando voce planeja fazer multiplas alteracoes antes da atualizacao.</td>
+    <td>Todos os controles visuais</td>
+  </tr>
+</table>
+
+<h2>Tabela Resumo Completa de Metodos</h2>
+
+<table>
+  <tr><th>Metodo</th><th>Retorna</th><th>Categoria</th><th>Controles Principais</th></tr>
+  <tr><td><code>New( oParent )</code></td><td>Objeto de controle</td><td>Construcao</td><td>Todos os controles</td></tr>
+  <tr><td><code>Create()</code></td><td>Self</td><td>Construcao</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>Release()</code></td><td>nil</td><td>Destruição</td><td>Todos os controles</td></tr>
+  <tr><td><code>Close()</code></td><td>nil</td><td>Ciclo de Vida</td><td>Form</td></tr>
+  <tr><td><code>Show()</code></td><td>nil</td><td>Visibilidade</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>Hide()</code></td><td>nil</td><td>Visibilidade</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>SetText( cText )</code></td><td>nil</td><td>Valor</td><td>Label, Edit, Button, Memo, StatusBar</td></tr>
+  <tr><td><code>GetText()</code></td><td>String</td><td>Valor</td><td>Label, Edit, Button, Memo</td></tr>
+  <tr><td><code>GetValue()</code></td><td>Qualquer</td><td>Valor</td><td>Edit, Memo, CheckBox, ListBox, ComboBox</td></tr>
+  <tr><td><code>SetValue( xVal )</code></td><td>nil</td><td>Valor</td><td>Edit, Memo, CheckBox, ListBox, ComboBox</td></tr>
+  <tr><td><code>SetBounds()</code></td><td>nil</td><td>Posicao</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>SetPosition()</code></td><td>nil</td><td>Posicao</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>SetSize()</code></td><td>nil</td><td>Posicao</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>GetSize()</code></td><td>Array</td><td>Posicao</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>GetPosition()</code></td><td>Array</td><td>Posicao</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>SetFont()</code></td><td>nil</td><td>Fonte</td><td>Todos os controles com texto</td></tr>
+  <tr><td><code>GetFont()</code></td><td>Objeto de fonte</td><td>Fonte</td><td>Todos os controles com texto</td></tr>
+  <tr><td><code>Refresh()</code></td><td>nil</td><td>Exibicao</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>Update()</code></td><td>nil</td><td>Exibicao</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>Invalidate()</code></td><td>nil</td><td>Exibicao</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>SetFocus()</code></td><td>nil</td><td>Foco</td><td>Todos os controles focaveis</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Encadeamento de metodos</strong>
+  <p>Alguns metodos retornam <code>self</code>, permitindo um estilo fluente:
+  <code>oBtn:New( oForm ):SetBounds( 50, 30, 120, 32 ):SetText( "OK" ):Show()</code>.
+  No entanto, a abordagem tradicional de definir propriedades individualmente e mais legivel e
+  e o estilo usado pelo gerador de codigo HarbourBuilder.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

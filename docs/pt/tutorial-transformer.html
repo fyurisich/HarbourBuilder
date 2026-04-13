@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tutorial de Transformer - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/tutorial-transformer.html">EN</a>
+    <a class="lang-btn" href="../es/tutorial-transformer.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividade (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html" class="active">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Tutoriais</a> <span>/</span> Transformer
+</div>
+
+<h1>Tutorial de Transformer</h1>
+<p>O componente <strong>TTransformer</strong> implementa a arquitetura transformer completa
+descrita no artigo seminal <em>"Attention Is All You Need"</em> (Vaswani et al., 2017).
+Ele permite carregar pesos de modelos pre-treinados, executar inferencia, fazer fine-tune com dados customizados
+e ate treinar transformers pequenos do zero — tudo a partir de codigo xBase Harbour.</p>
+
+<div class="info-box tip">
+  <strong>Exemplos Didaticos</strong>
+  <p>Exemplos completos e executaveis estao na pasta <code>samples/projects/transformer/</code>
+  com 7 exemplos cobrindo todos os aspectos do componente transformer.</p>
+</div>
+
+<h2>Projetos de Exemplo</h2>
+
+<table>
+  <tr><th>#</th><th>Projeto</th><th>Descricao</th></tr>
+  <tr><td>1</td><td><strong>Attention Vis</strong></td><td>Visualize os pesos de self-attention para uma frase de entrada.</td></tr>
+  <tr><td>2</td><td><strong>Text Generator</strong></td><td>Carregue um modelo pre-treinado e gere texto a partir de um prompt.</td></tr>
+  <tr><td>3</td><td><strong>Train from Scratch</strong></td><td>Treine um transformer pequeno em um conjunto de dados toy (tarefa de copia).</td></tr>
+  <tr><td>4</td><td><strong>Tokenizer Explorer</strong></td><td>Inspeccione tokenizacao, IDs de tokens e vocabulario.</td></tr>
+  <tr><td>5</td><td><strong>Sentiment Analyzer</strong></td><td>Fine-tune de um transformer para classificacao positivo/negativo.</td></tr>
+  <tr><td>6</td><td><strong>Translator</strong></td><td>Traducao sequencia-a-sequencia (ex: Ingles para Espanhol).</td></tr>
+  <tr><td>7</td><td><strong>Attention Walkthrough</strong></td><td>Passo a passo da arquitetura "Attention Is All You Need".</td></tr>
+</table>
+
+<h2>Arquitetura do Transformer</h2>
+
+<div class="mermaid">
+graph LR
+    A["Texto de Entrada"] --> B["Tokenizer"]
+    B --> C["Embedding +\nCodificacao Posicional"]
+    C --> D["Self-Attention\nMulti-Head"]
+    D --> E["Rede\nFeed-Forward"]
+    E --> F["Add &amp; Norm\n(Residual)"]
+    F --> G["Repetir N vezes\n(nLayers)"]
+    G --> H["Linear +\nSoftmax"]
+    H --> I["Probabilidades\nde Saida"]
+    style D fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style E fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style G fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+</div>
+
+<h2>Propriedades</h2>
+
+<table>
+  <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
+  <tr><td><code>nLayers</code></td><td>Numerico</td><td>6</td><td>Numero de camadas encoder/decoder na pilha transformer.</td></tr>
+  <tr><td><code>nHeads</code></td><td>Numerico</td><td>8</td><td>Numero de cabecos de atencao por camada. Deve dividir nEmbedDim uniformemente.</td></tr>
+  <tr><td><code>nEmbedDim</code></td><td>Numerico</td><td>512</td><td>Dimensao do embedding (d_model). Largura central do transformer.</td></tr>
+  <tr><td><code>nFFDim</code></td><td>Numerico</td><td>2048</td><td>Dimensao interna da rede feed-forward (tipicamente 4x nEmbedDim).</td></tr>
+  <tr><td><code>nVocabSize</code></td><td>Numerico</td><td>50257</td><td>Tamanho do vocabulario. Deve corresponder ao vocabulario do tokenizer.</td></tr>
+  <tr><td><code>nMaxSeqLen</code></td><td>Numerico</td><td>512</td><td>Tamanho maximo da sequencia de entrada/saida em tokens.</td></tr>
+  <tr><td><code>nDropout</code></td><td>Numerico</td><td>0.1</td><td>Taxa de dropout aplicada nas saidas de atencao e FFN (0 = desabilitado).</td></tr>
+  <tr><td><code>cWeightsFile</code></td><td>String</td><td>""</td><td>Caminho para arquivo de pesos pre-treinados (formato GGUF). Defina antes de carregar.</td></tr>
+  <tr><td><code>lCausal</code></td><td>Logico</td><td>.T.</td><td>Usar mascara causal (decoder). Defina como .F. para modo encoder-only ou bidirecional.</td></tr>
+</table>
+
+<h2>Eventos</h2>
+
+<table>
+  <tr><th>Evento</th><th>Parametros</th><th>Descricao</th></tr>
+  <tr><td><code>OnAttention</code></td><td><code>aWeights, nLayer, nHead</code></td><td>Acionado durante o passe forward com matrizes de peso de atencao. Use para visualizacao e analise.</td></tr>
+  <tr><td><code>OnGenerate</code></td><td><code>cToken, nStep</code></td><td>Acionado para cada token gerado durante a inferencia. Permite saida em streaming.</td></tr>
+  <tr><td><code>OnTrainStep</code></td><td><code>nStep, nLoss, nBatch</code></td><td>Acionado apos cada etapa de treinamento com o valor de loss atual. Use para exibir progresso.</td></tr>
+  <tr><td><code>OnLoss</code></td><td><code>nLoss</code></td><td>Acionado quando o valor de loss e calculado durante o passe forward. Use para monitoramento e parada antecipada.</td></tr>
+</table>
+
+<h2>Exemplo 1: Carregar um Modelo Pre-Treinado</h2>
+
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oTransformer, cOutput
+
+   <span class="cmd">DEFINE TRANSFORMER</span> oTransformer ;
+      <span class="cmd">MODEL</span> <span class="st">"models/tinyllama-1.1b-chat.Q4_K_M.gguf"</span> ;
+      <span class="cmd">CONTEXT</span> <span class="nb">2048</span> ;
+      <span class="cmd">GPU_LAYERS</span> <span class="nb">0</span>
+
+   <span class="kw">if</span> .not. oTransformer:<span class="prop">lLoaded</span>
+      ? <span class="st">"Falha ao carregar modelo:"</span>, oTransformer:<span class="prop">cError</span>
+      <span class="kw">return</span> <span class="kw">nil</span>
+   <span class="kw">endif</span>
+
+   <span class="cm">// Gerar texto a partir de um prompt</span>
+   cOutput := oTransformer:<span class="fn">Generate</span>( ;
+      <span class="st">"Era uma vez"</span>, ;  <span class="cm">// prompt</span>
+      <span class="nb">128</span> )                  <span class="cm">// max tokens</span>
+
+   ? cOutput
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Exemplo 2: Geracao de Tokens em Streaming</h2>
+
+<pre><span class="kw">static function</span> <span class="fn">StreamExample</span>()
+
+   <span class="kw">local</span> oTransformer
+
+   <span class="cmd">DEFINE TRANSFORMER</span> oTransformer ;
+      <span class="cmd">MODEL</span> <span class="st">"models/phi3-mini.Q4_K_M.gguf"</span>
+
+   <span class="cm">// Hook no evento OnGenerate para streaming</span>
+   oTransformer:<span class="prop">OnGenerate</span> := { |cToken, nStep| ;
+      QOut( cToken ) }
+
+   oTransformer:<span class="fn">GenerateStream</span>( ;
+      <span class="st">"Explique a arquitetura transformer"</span>, ;
+      <span class="nb">256</span> )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Exemplo 3: Visualizacao de Atencao</h2>
+
+<pre><span class="kw">static function</span> <span class="fn">AttentionVis</span>()
+
+   <span class="kw">local</span> oTransformer, oForm, oChart
+   <span class="kw">local</span> aAttentionMaps := {}
+
+   <span class="cmd">DEFINE TRANSFORMER</span> oTransformer ;
+      <span class="cmd">MODEL</span> <span class="st">"models/tinyllama-1.1b.Q4_K_M.gguf"</span>
+
+   <span class="cm">// Capturar pesos de atencao via evento OnAttention</span>
+   oTransformer:<span class="prop">OnAttention</span> := ;
+      { |aW, nL, nH| AAdd( aAttentionMaps, ;
+         { nL, nH, aW } ) }
+
+   <span class="cm">// Executar um passe forward</span>
+   oTransformer:<span class="fn">Forward</span>( <span class="st">"The cat sat on the mat"</span> )
+
+   <span class="cm">// Agora aAttentionMaps contem matrizes de pesos</span>
+   <span class="cm">// para cada camada e cabeco - renderizar como heatmap</span>
+   RenderAttentionHeatmap( aAttentionMaps )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Exemplo 4: Treinamento do Zero</h2>
+
+<pre><span class="kw">static function</span> <span class="fn">TrainExample</span>()
+
+   <span class="kw">local</span> oTransformer
+   <span class="kw">local</span> aInputs  := { <span class="st">"hello"</span>, <span class="st">"world"</span>, <span class="st">"test"</span> }
+   <span class="kw">local</span> aTargets := { <span class="st">"hello"</span>, <span class="st">"world"</span>, <span class="st">"test"</span> }  <span class="cm">// tarefa de copia</span>
+
+   <span class="cmd">DEFINE TRANSFORMER</span> oTransformer ;
+      <span class="cmd">LAYERS</span> <span class="nb">2</span> ;
+      <span class="cmd">HEADS</span> <span class="nb">4</span> ;
+      <span class="cmd">EMBED_DIM</span> <span class="nb">128</span> ;
+      <span class="cmd">FF_DIM</span> <span class="nb">256</span> ;
+      <span class="cmd">VOCAB_SIZE</span> <span class="nb">1000</span> ;
+      <span class="cmd">MAX_SEQ_LEN</span> <span class="nb">32</span> ;
+      <span class="cmd">DROPOUT</span> <span class="nb">0.1</span>
+
+   <span class="cm">// Monitorar progresso do treinamento</span>
+   oTransformer:<span class="prop">OnTrainStep</span> := ;
+      { |nStep, nLoss, nBatch| ;
+         QOut( <span class="st">"Step:"</span>, nStep, <span class="st">"Loss:"</span>, nLoss ) }
+
+   oTransformer:<span class="prop">OnLoss</span> := ;
+      { |nLoss| ;
+         <span class="kw">if</span> nLoss &lt; <span class="nb">0.01</span> ;
+            QOut( <span class="st">"Convergiu!"</span> ) ;
+         <span class="kw">endif</span> }
+
+   <span class="cm">// Treinar por 1000 steps</span>
+   oTransformer:<span class="fn">Train</span>( aInputs, aTargets, ;
+      <span class="nb">1000</span>,  <span class="cm">// steps</span>
+      <span class="nb">0.001</span> ) <span class="cm">// taxa de aprendizado</span>
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Detalhes da Arquitetura</h2>
+
+<h3>Mecanismo de Atencao</h3>
+<p>Cada cabeco de atencao computa a atencao padrao de produto escalar escalonado:</p>
+
+<pre>Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V</pre>
+
+<p>O mecanismo multi-head executa <code>nHeads</code> computacoes de atencao paralelas e
+concatena os resultados, depois aplica uma projecao linear.</p>
+
+<h3>Mascaramento Causal</h3>
+<p>Quando <code>lCausal</code> e <code>.T.</code> (o padrao), o transformer aplica uma
+mascara causal (triangular) que impede cada posicao de atender a posicoes futuras.
+Isso e essencial para geracao de texto autorregressiva. Defina <code>lCausal := .F.</code> para
+tarefas bidirecionais como classificacao ou modelagem de linguagem mascarada.</p>
+
+<h3>Rede Feed-Forward</h3>
+<p>Cada camada contem uma rede feed-forward posicional:</p>
+
+<pre>FFN(x) = max(0, x * W1 + b1) * W2 + b2</pre>
+
+<p>onde a dimensao interna e <code>nFFDim</code> (tipicamente 4x a dimensao de embedding).</p>
+
+<div class="info-box info">
+  <strong>Dicas de Desempenho</strong>
+  <p>Para inferencia com modelos pre-treinados, defina <code>GPU_LAYERS</code> para um valor &gt; 0 se
+  voce tiver uma GPU. Isso descarrega computacao para a GPU e acelera significativamente
+  a geracao. Para maquinas apenas com CPU, um modelo quantizado (Q4_K_M) com nLayers = 2–4
+  oferece um bom equilibrio entre qualidade e velocidade.</p>
+</div>
+
+<div class="info-box tip">
+  <strong>Explore os Exemplos</strong>
+  <p>Abra qualquer um dos 7 projetos de exemplo em <code>samples/projects/transformer/</code> para
+  ver implementacoes completas e executaveis de cada padrao descrito neste tutorial.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

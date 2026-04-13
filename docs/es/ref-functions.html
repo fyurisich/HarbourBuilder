@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Referencia del Puente HB_FUNC - Documentacion de HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar en la documentacion..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros pasos</h3>
+    <a href="index.html">Vision general</a>
+    <a href="quickstart.html">Inicio rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividad (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de formularios</a>
+    <a href="object-inspector.html">Inspector de objetos</a>
+    <a href="code-editor.html">Editor de codigo</a>
+    <a href="two-way-tools.html">Herramientas bidireccionales</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente IA</a>
+    <a href="build-run.html">Compilar y ejecutar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriales</h3>
+    <a href="tutorial-hello.html">Hola Mundo</a>
+    <a href="tutorial-forms.html">Trabajar con formularios</a>
+    <a href="tutorial-events.html">Manejo de eventos</a>
+    <a href="tutorial-database.html">CRUD de base de datos</a>
+    <a href="tutorial-webserver.html">Servidor web</a>
+    <a href="tutorial-ai.html">Integracion con IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propiedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html" class="active">Puente HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+<div class="content">
+<div class="breadcrumbs"><a href="index.html">Docs</a> <span>/</span> <a href="index.html">Referencia</a> <span>/</span> Puente HB_FUNC</div>
+<h1>Referencia del Puente HB_FUNC</h1>
+<p>El puente HB_FUNC es la capa critica que conecta el runtime OOP de Harbour con las APIs nativas de la plataforma.
+Cada operacion de control de HarbourBuilder — crear una ventana, establecer una propiedad, manejar
+un evento — fluye a traves de este puente. Esta pagina documenta las funciones HB_FUNC principales y
+explica como funciona la arquitectura.</p>
+
+<div class="info-box info">
+  <strong>¿Que es un HB_FUNC?</strong>
+  <p><code>HB_FUNC</code> es una macro de la API C de Harbour usada para definir funciones C/C++ que pueden ser llamadas desde
+  codigo Harbour. Cada HB_FUNC recibe parametros de la pila de Harbour mediante funciones <code>hb_par*</code>
+  y retorna valores mediante funciones <code>hb_ret*</code>. HarbourBuilder usa aproximadamente 130-160
+  funciones HB_FUNC dependiendo del backend de la plataforma.</p>
+</div>
+
+<h2>Arquitectura del Puente</h2>
+<p>El puente se sienta entre la capa OOP de Harbour y la API nativa de la plataforma. Cuando llamas
+<code>oForm:Create()</code> en Harbour, el metodo OOP internamente llama a <code>UI_FormNew()</code>, que
+es un HB_FUNC que invoca la API de creacion de ventanas nativa de la plataforma:</p>
+
+<div class="mermaid">
+graph TB
+    A["Harbour OOP
+oForm:Create()"] --> B["Metodo de Clase Harbour
+TForm:Create()"]
+    B --> C["Llamada HB_FUNC
+UI_FormNew( cTitle, nW, nH )"]
+    C --> D1["Backend Win32
+CreateWindowEx()"]
+    C --> D2["Backend Cocoa
+[NSWindow alloc]"]
+    C --> D3["Backend GTK3
+gtk_window_new()"]
+    D1 --> E["Ventana Nativa"]
+    D2 --> E
+    D3 --> E
+</div>
+
+<div class="info-box tip">
+  <strong>Un puente, tres backends</strong>
+  <p>El codigo OOP de Harbour y los nombres HB_FUNC son <em>identicos</em> en todas las plataformas. Solo la
+  implementacion C/C++/Obj-C detras de cada HB_FUNC cambia. Esto significa que tu codigo .prg es 100% portable —
+  no necesita saber si se ejecuta en Windows, macOS o Linux.</p>
+</div>
+
+<h2>Funciones HB_FUNC Principales</h2>
+
+<h3>Gestion de Formularios</h3>
+<table>
+  <tr><th>Funcion</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th></tr>
+  <tr><td><code>UI_FormNew</code></td><td><code>cTitle, nWidth, nHeight</code></td><td><code>nFormHandle</code></td><td>Crea una nueva ventana de nivel superior con el titulo y dimensiones especificados. Retorna un manejador numerico que identifica el formulario en todas las llamadas posteriores.</td></tr>
+  <tr><td><code>UI_FormShow</code></td><td><code>nFormHandle</code></td><td>vacio</td><td>Hace visible el formulario en pantalla.</td></tr>
+  <tr><td><code>UI_FormClose</code></td><td><code>nFormHandle</code></td><td>vacio</td><td>Cierra y destruye el formulario. Dispara la limpieza de todos los controles hijos y recursos nativos.</td></tr>
+  <tr><td><code>UI_FormCenter</code></td><td><code>nFormHandle</code></td><td>vacio</td><td>Centra el formulario en la pantalla. Calcula las dimensiones de la pantalla y posiciona la ventana.</td></tr>
+  <tr><td><code>UI_SetTitle</code></td><td><code>nHandle, cTitle</code></td><td>vacio</td><td>Establece el texto de la barra de titulo de un formulario.</td></tr>
+</table>
+
+<h3>Creacion de Controles</h3>
+<table>
+  <tr><th>Funcion</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th></tr>
+  <tr><td><code>UI_ControlCreate</code></td><td><code>nType, nParentHandle, nLeft, nTop, nWidth, nHeight</code></td><td><code>nControlHandle</code></td><td>Crea un widget nativo del tipo especificado (CT_BUTTON, CT_EDIT, etc.) dentro de un contenedor padre. La constante de tipo determina que widget nativo se instancia.</td></tr>
+  <tr><td><code>UI_ButtonCreate</code></td><td><code>nParentHandle, nLeft, nTop, nWidth, nHeight, cCaption</code></td><td><code>nHandle</code></td><td>Funcion de conveniencia que crea un boton con titulo en una llamada.</td></tr>
+  <tr><td><code>UI_EditCreate</code></td><td><code>nParentHandle, nLeft, nTop, nWidth, nHeight</code></td><td><code>nHandle</code></td><td>Crea un campo de entrada de texto de una sola linea.</td></tr>
+  <tr><td><code>UI_LabelCreate</code></td><td><code>nParentHandle, nLeft, nTop, nWidth, nHeight, cText</code></td><td><code>nHandle</code></td><td>Crea una etiqueta de texto estatico.</td></tr>
+</table>
+
+<h3>Gestion de Propiedades</h3>
+<table>
+  <tr><th>Funcion</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th></tr>
+  <tr><td><code>UI_SetProp</code></td><td><code>nHandle, nPropId, xValue</code></td><td>vacio</td><td>Establecedor de propiedades generico. <code>nPropId</code> es una constante que identifica que propiedad establecer (p. ej., PROP_TEXT, PROP_VISIBLE, PROP_COLOR).</td></tr>
+  <tr><td><code>UI_GetProp</code></td><td><code>nHandle, nPropId</code></td><td><code>xValue</code></td><td>Obtenedor de propiedades generico. Retorna el valor actual de la propiedad especificada.</td></tr>
+  <tr><td><code>UI_SetText</code></td><td><code>nHandle, cText</code></td><td>vacio</td><td>Establece el contenido de texto de un control. Envoltorio conveniente alrededor de UI_SetProp(PROP_TEXT, cText).</td></tr>
+  <tr><td><code>UI_GetText</code></td><td><code>nHandle</code></td><td><code>cText</code></td><td>Obtiene el contenido de texto de un control.</td></tr>
+  <tr><td><code>UI_SetColor</code></td><td><code>nHandle, nForeColor, nBackColor</code></td><td>vacio</td><td>Establece los colores de primer plano y fondo de un control.</td></tr>
+  <tr><td><code>UI_SetFont</code></td><td><code>nHandle, cFontName, nSize, lBold, lItalic</code></td><td>vacio</td><td>Establece la fuente de un control con especificacion completa de estilo.</td></tr>
+  <tr><td><code>UI_SetBounds</code></td><td><code>nHandle, nLeft, nTop, nWidth, nHeight</code></td><td>vacio</td><td>Establece posicion y tamano en una sola llamada para eficiencia.</td></tr>
+  <tr><td><code>UI_SetVisible</code></td><td><code>nHandle, lVisible</code></td><td>vacio</td><td>Muestra u oculta un control.</td></tr>
+  <tr><td><code>UI_SetEnabled</code></td><td><code>nHandle, lEnabled</code></td><td>vacio</td><td>Habilita o deshabilita un control (atenuado cuando esta deshabilitado).</td></tr>
+</table>
+
+<h3>Gestion de Eventos</h3>
+<table>
+  <tr><th>Funcion</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th></tr>
+  <tr><td><code>UI_OnEvent</code></td><td><code>nHandle, nEventId, bCodeBlock</code></td><td>vacio</td><td>Registra un bloque de codigo Harbour para ejecutar cuando se dispare el evento especificado en el control. El bloque de codigo se almacena en una tabla de eventos del lado de Harbour.</td></tr>
+  <tr><td><code>FireEvent</code></td><td><code>nHandle, nEventId, [params...]</code></td><td>Resultado del bloque de codigo</td><td>Funcion interna llamada por el manejador de eventos nativo del backend. Busca el bloque de codigo registrado y lo evalua.</td></tr>
+  <tr><td><code>UI_RemoveEvent</code></td><td><code>nHandle, nEventId</code></td><td>vacio</td><td>Elimina un manejador de eventos registrado previamente.</td></tr>
+</table>
+
+<h3>Ciclo de Vida y Utilidades</h3>
+<table>
+  <tr><th>Funcion</th><th>Parametros</th><th>Retorna</th><th>Descripcion</th></tr>
+  <tr><td><code>UI_Destroy</code></td><td><code>nHandle</code></td><td>vacio</td><td>Destruye un control y libera todos los recursos nativos asociados.</td></tr>
+  <tr><td><code>UI_Refresh</code></td><td><code>nHandle</code></td><td>vacio</td><td>Fuerza un redibujado inmediato del control.</td></tr>
+  <tr><td><code>UI_SetFocus</code></td><td><code>nHandle</code></td><td>vacio</td><td>Da foco de entrada al control especificado.</td></tr>
+  <tr><td><code>UI_AppInit</code></td><td><code>cAppName</code></td><td>vacio</td><td>Inicializa los recursos a nivel de aplicacion. Se llama una vez al inicio.</td></tr>
+  <tr><td><code>UI_MsgLoop</code></td><td>ninguno</td><td>vacio (bloquea)</td><td>Entra en el bucle de eventos de la plataforma. Esta funcion bloquea hasta que la aplicacion sale.</td></tr>
+  <tr><td><code>UI_Quit</code></td><td>ninguno</td><td>vacio</td><td>Sale del bucle de eventos y termina la aplicacion.</td></tr>
+  <tr><td><code>UI_MsgInfo</code></td><td><code>cMessage, [cTitle]</code></td><td>vacio</td><td>Muestra un cuadro de mensaje de informacion simple.</td></tr>
+</table>
+
+<h2>Cantidad de Funciones por Plataforma</h2>
+
+<table>
+  <tr><th>Backend</th><th>Lenguaje</th><th>Cantidad HB_FUNC</th><th>Lineas de codigo</th></tr>
+  <tr><td><span class="badge win">Windows</span> Win32</td><td>C++</td><td>~135</td><td>~7,100</td></tr>
+  <tr><td><span class="badge mac">macOS</span> Cocoa</td><td>Objective-C++</td><td>~158</td><td>~3,800</td></tr>
+  <tr><td><span class="badge linux">Linux</span> GTK3</td><td>C</td><td>~132</td><td>~7,300</td></tr>
+</table>
+
+<div class="info-box info">
+  <strong>¿Por que cantidades diferentes?</strong>
+  <p>Cada plataforma tiene capacidades ligeramente diferentes. El backend macOS Cocoa tiene mas funciones HB_FUNC
+  porque el estilo de mensajeria de Objective-C a veces requiere funciones de puente separadas para operaciones
+  que otras plataformas pueden combinar. El backend GTK3 tiene mas lineas porque C requiere mas
+  codigo repetitivo para funcionalidad equivalente.</p>
+</div>
+
+<h2>Agregar un Nuevo HB_FUNC</h2>
+<p>Para extender HarbourBuilder con una nueva capacidad nativa, necesitas:</p>
+
+<ol>
+  <li><strong>Definir el HB_FUNC</strong> en el archivo de fuente del backend de cada plataforma.</li>
+  <li><strong>Registrar la funcion</strong> en la tabla de funciones de Harbour (usualmente automatico con la macro <code>HB_FUNC</code>).</li>
+  <li><strong>Agregar el envoltorio del lado de Harbour</strong> en la clase OOP.</li>
+  <li><strong>Agregar el comando xBase</strong> (opcional) en <code>hbbuilder.ch</code>.</li>
+</ol>
+</div>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

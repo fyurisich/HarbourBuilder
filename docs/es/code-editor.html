@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor de Codigo - Documentacion de HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar en la documentacion..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros pasos</h3>
+    <a href="index.html">Vision general</a>
+    <a href="quickstart.html">Inicio rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividad (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de formularios</a>
+    <a href="object-inspector.html">Inspector de objetos</a>
+    <a href="code-editor.html" class="active">Editor de codigo</a>
+    <a href="two-way-tools.html">Herramientas bidireccionales</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente IA</a>
+    <a href="build-run.html">Compilar y ejecutar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriales</h3>
+    <a href="tutorial-hello.html">Hola Mundo</a>
+    <a href="tutorial-forms.html">Trabajar con formularios</a>
+    <a href="tutorial-events.html">Manejo de eventos</a>
+    <a href="tutorial-database.html">CRUD de base de datos</a>
+    <a href="tutorial-webserver.html">Servidor web</a>
+    <a href="tutorial-ai.html">Integracion con IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propiedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Puente HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Funciones del IDE</a> <span>/</span> Editor de codigo
+</div>
+
+<h1>Editor de Codigo (Scintilla)</h1>
+<p>El editor de codigo de HarbourBuilder esta impulsado por <strong>Scintilla 5.5+</strong>, el mismo componente de edicion utilizado por
+Notepad++, SciTE y Code::Blocks. Proporciona funciones profesionales de edicion de codigo con
+resaltado de sintaxis consciente de Harbour y plegado de codigo inteligente.</p>
+
+<div class="info-box tip">
+  <strong>El mismo motor en todas las plataformas</strong>
+  <p>Las tres plataformas usan Scintilla 5.5+ — Windows usa DLLs dinamicas, macOS usa bibliotecas estaticas
+  y Linux usa bibliotecas compartidas. La experiencia de edicion es identica en todas las plataformas.</p>
+</div>
+
+<h2>Configuracion de Scintilla por Plataforma</h2>
+
+<table>
+  <tr><th>Plataforma</th><th>Tipo de biblioteca</th><th>Archivos</th></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>Bibliotecas dinamicas</td><td><code>Scintilla.dll</code>, <code>Lexilla.dll</code></td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>Bibliotecas estaticas</td><td><code>libscintilla.a</code>, <code>liblexilla.a</code></td></tr>
+  <tr><td><span class="badge linux">Linux</span></td><td>Bibliotecas compartidas</td><td><code>libscintilla.so</code>, <code>liblexilla.so</code></td></tr>
+</table>
+
+<h2>Resaltado de Sintaxis</h2>
+
+<p>El editor usa un tema de color <strong>VS Code Dark+</strong> con resaltado de sintaxis consciente de Harbour:</p>
+
+<table>
+  <tr><th>Tipo de token</th><th>Color</th><th>Estilo</th><th>Ejemplo</th></tr>
+  <tr><td>Palabras clave</td><td><span style="color:#569cd6">Azul</span></td><td>Negrita</td><td><code>function</code>, <code>return</code>, <code>local</code></td></tr>
+  <tr><td>Comandos</td><td><span style="color:#4ec9b0">Verde azulado</span></td><td>Normal</td><td><code>DEFINE FORM</code>, <code>BUTTON</code>, <code>LABEL</code></td></tr>
+  <tr><td>Comentarios</td><td><span style="color:#6a9955">Verde</span></td><td>Cursiva</td><td><code>// Esto es un comentario</code></td></tr>
+  <tr><td>Cadenas</td><td><span style="color:#ce9178">Naranja</span></td><td>Normal</td><td><code>"Hola Mundo"</code></td></tr>
+  <tr><td>Numeros</td><td><span style="color:#b5cea8">Verde claro</span></td><td>Normal</td><td><code>400</code>, <code>3.14</code></td></tr>
+  <tr><td>Preprocesador</td><td><span style="color:#c586c0">Magenta</span></td><td>Normal</td><td><code>#include</code>, <code>#xcommand</code></td></tr>
+</table>
+
+<h2>Plegado de Codigo</h2>
+
+<p>El plegado de codigo consciente de Harbour comprende las estructuras del lenguaje xBase:</p>
+
+<ul>
+  <li><code>function</code> / <code>return</code> — Limites de funcion</li>
+  <li><code>CLASS</code> / <code>ENDCLASS</code> — Definiciones de clase</li>
+  <li><code>if</code> / <code>endif</code> — Bloques condicionales</li>
+  <li><code>for</code> / <code>next</code> — Bucles for</li>
+  <li><code>do while</code> / <code>enddo</code> — Bucles while</li>
+  <li><code>switch</code> / <code>endswitch</code> — Sentencias switch</li>
+  <li><code>begin sequence</code> / <code>end sequence</code> — Manejo de excepciones</li>
+  <li><code>#pragma begindump</code> / <code>#pragma enddump</code> — Codigo C embebido</li>
+</ul>
+
+<h2>Atajos de Teclado</h2>
+
+<table>
+  <tr><th>Atajo</th><th>Accion</th></tr>
+  <tr><td><strong>Ctrl+F / Cmd+F</strong></td><td>Abrir barra de busqueda</td></tr>
+  <tr><td><strong>Ctrl+H / Cmd+H</strong></td><td>Abrir barra de reemplazo</td></tr>
+  <tr><td><strong>Ctrl+Space / Cmd+Space</strong></td><td>Autocompletado (150+ palabras clave)</td></tr>
+  <tr><td><strong>Ctrl+/ / Cmd+/</strong></td><td>Alternar comentario de linea</td></tr>
+  <tr><td><strong>Ctrl+Shift+D / Cmd+Shift+D</strong></td><td>Duplicar linea actual</td></tr>
+  <tr><td><strong>Ctrl+Shift+K / Cmd+Shift+K</strong></td><td>Eliminar linea actual</td></tr>
+  <tr><td><strong>Ctrl+L / Cmd+L</strong></td><td>Seleccionar linea actual</td></tr>
+  <tr><td><strong>Ctrl+G / Cmd+G</strong></td><td>Ir al numero de linea</td></tr>
+  <tr><td><strong>F12</strong></td><td>Ir a la definicion (funcion/procedimiento/metodo/clase)</td></tr>
+</table>
+
+<h2>Autocompletado</h2>
+
+<p>Presiona <strong>Ctrl+Space / Cmd+Space</strong> para activar el autocompletado con 150+ elementos:</p>
+
+<ul>
+  <li><strong>Palabras clave de Harbour</strong> — function, return, local, static, class, method, etc.</li>
+  <li><strong>Funciones de Harbour</strong> — MsgInfo(), MsgStop(), hb_vfExists(), etc.</li>
+  <li><strong>Comandos xBase</strong> — DEFINE FORM, BUTTON, LABEL, ACTIVATE, etc.</li>
+</ul>
+
+<h2>Coincidencia de Corchetes</h2>
+
+<p>El editor resalta automaticamente los corchetes coincidentes:</p>
+<ul>
+  <li><strong>Pares coincidentes</strong> — <code>()</code>, <code>[]</code>, <code>{}</code> resaltados en <span style="color:#ffd700">amarillo</span></li>
+  <li><strong>Corchetes sin par/mal formados</strong> — Resaltados en <span style="color:#ff4444">rojo</span></li>
+</ul>
+
+<h2>Marcadores</h2>
+
+<p>Establece marcadores para navegar rapidamente a ubicaciones importantes del codigo:</p>
+
+<table>
+  <tr><th>Atajo</th><th>Accion</th></tr>
+  <tr><td><strong>Ctrl+0..9 / Cmd+0..9</strong></td><td>Alternar marcador en la linea actual</td></tr>
+  <tr><td><strong>Ctrl+Shift+0..9 / Cmd+Shift+0..9</strong></td><td>Saltar al marcador</td></tr>
+</table>
+
+<h2>Fragmentos de Codigo</h2>
+
+<p>Expansion con Tab para patrones de codigo comunes:</p>
+
+<table>
+  <tr><th>Fragmento</th><th>Se expande a</th></tr>
+  <tr><td><code>forn</code></td><td><code>for nI := 1 to nCount</code></td></tr>
+  <tr><td><code>iff</code></td><td><code>if condition</code></td></tr>
+  <tr><td><code>cls</code></td><td><code>CLASS TClassName FROM TParentClass</code></td></tr>
+  <tr><td><code>func</code></td><td><code>function FunctionName()</code></td></tr>
+  <tr><td><code>proc</code></td><td><code>procedure ProcedureName()</code></td></tr>
+  <tr><td><code>whil</code></td><td><code>do while .T.</code></td></tr>
+  <tr><td><code>swit</code></td><td><code>switch nValue</code></td></tr>
+  <tr><td><code>tryx</code></td><td><code>begin sequence ... end sequence</code></td></tr>
+</table>
+
+<h2>Auto-indentacion</h2>
+
+<p>Cuando presionas Enter, el editor sangra automaticamente la nueva linea para coincidir con el nivel de
+indentacion de la linea anterior. Esto mantiene tu codigo correctamente formateado sin espaciado manual.</p>
+
+<h2>Edicion Multi-Archivo con Pestanas</h2>
+
+<p>El editor soporta edicion con pestanas, permitiendote trabajar en multiples archivos fuente simultaneamente.
+Las pestanas muestran el nombre del archivo y un asterisco (*) cuando el archivo tiene cambios sin guardar.</p>
+
+<h2>Panel de Mensajes de Construccion</h2>
+
+<p>Despues de construir, el panel de Mensajes aparece en la parte inferior mostrando:</p>
+<ul>
+  <li><strong>Errores</strong> — Marcadores rojos con referencias de archivo/linea en las que se puede hacer clic</li>
+  <li><strong>Advertencias</strong> — Marcadores amarillos para problemas potenciales</li>
+  <li><strong>Ir al codigo fuente</strong> — Haz clic en cualquier error para navegar directamente a la linea de codigo</li>
+  <li><strong>Boton limpiar</strong> — Limpia el panel de mensajes</li>
+</ul>
+
+<h2>Barra de Estado</h2>
+
+<p>La barra de estado en la parte inferior muestra informacion de edicion en tiempo real:</p>
+
+<table>
+  <tr><th>Campo</th><th>Descripcion</th></tr>
+  <tr><td><strong>Linea</strong></td><td>Numero de linea actual</td></tr>
+  <tr><td><strong>Columna</strong></td><td>Posicion de columna actual</td></tr>
+  <tr><td><strong>INS/SOB</strong></td><td>Indicador de modo Insercion o Sobrescritura</td></tr>
+  <tr><td><strong>Contador de lineas</strong></td><td>Total de lineas en el archivo</td></tr>
+  <tr><td><strong>Contador de caracteres</strong></td><td>Total de caracteres en el archivo</td></tr>
+  <tr><td><strong>UTF-8</strong></td><td>Codificacion del archivo</td></tr>
+</table>
+
+<div class="info-box info">
+  <strong>Edicion consciente de Harbour</strong>
+  <p>Todas las caracteristicas de Scintilla estan configuradas especificamente para la sintaxis de Harbour/xBase.
+  El lexer comprende las palabras clave, comandos y constructos especificos de xBase de Harbour.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Disenador de Formularios - Documentacion de HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar en la documentacion..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros pasos</h3>
+    <a href="index.html">Vision general</a>
+    <a href="quickstart.html">Inicio rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividad (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html" class="active">Disenador de formularios</a>
+    <a href="object-inspector.html">Inspector de objetos</a>
+    <a href="code-editor.html">Editor de codigo</a>
+    <a href="two-way-tools.html">Herramientas bidireccionales</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente IA</a>
+    <a href="build-run.html">Compilar y ejecutar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriales</h3>
+    <a href="tutorial-hello.html">Hola Mundo</a>
+    <a href="tutorial-forms.html">Trabajar con formularios</a>
+    <a href="tutorial-events.html">Manejo de eventos</a>
+    <a href="tutorial-database.html">CRUD de base de datos</a>
+    <a href="tutorial-webserver.html">Servidor web</a>
+    <a href="tutorial-ai.html">Integracion con IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propiedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Puente HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Funciones del IDE</a> <span>/</span> Disenador de formularios
+</div>
+
+<h1>Disenador Visual de Formularios</h1>
+<p>El Disenador de Formularios es un editor de formularios WYSIWYG (What You See Is What You Get) inspirado en Borland C++Builder.
+Disena formularios visualmente, coloca controles desde la paleta de componentes, configura propiedades en el Inspector de Objetos
+y observa como el codigo se genera automaticamente.</p>
+
+<div class="info-box tip">
+  <strong>Diseno bidireccional</strong>
+  <p>Los cambios en el disenador actualizan instantaneamente el codigo, y los cambios en el codigo actualizan instantaneamente el disenador.
+  Tus implementaciones de METHOD siempre se preservan durante la regeneracion de codigo.</p>
+</div>
+
+<h2>Caracteristicas del Disenador</h2>
+
+<ul>
+  <li><strong>Fondo de cuadricula de puntos</strong> con ajuste a cuadricula para alineacion precisa</li>
+  <li><strong>Asas de seleccion</strong> — 8 asas por control seleccionado para redimensionar</li>
+  <li><strong>Seleccion elastica</strong> — haz clic y arrastra para seleccionar multiples controles</li>
+  <li><strong>Arrastrar y soltar</strong> desde la paleta de componentes a la superficie del formulario</li>
+  <li><strong>Generacion de codigo en tiempo real</strong> — cada accion actualiza el codigo fuente</li>
+  <li><strong>Copiar/Pegar controles</strong> — Cmd/Ctrl+C/V con desplazamiento automatico de +16px</li>
+  <li><strong>Menu Formato</strong> — alinear y distribuir controles</li>
+</ul>
+
+<h2>Seleccion de Controles</h2>
+
+<h3>Seleccion individual</h3>
+<p>Haz clic en cualquier control del formulario para seleccionarlo. Aparece un borde azul con 8 asas de redimension:</p>
+<ul>
+  <li><strong>Asas de esquina</strong> — redimensionan ancho y alto simultaneamente</li>
+  <li><strong>Asas de borde</strong> — redimensionan solo ancho o solo alto</li>
+  <li><strong>Arrastrar cuerpo</strong> — mueve el control sin redimensionar</li>
+</ul>
+
+<h3>Seleccion multiple</h3>
+<p>Mantien Shift y haz clic para agregar/eliminar controles de la seleccion, o haz clic y arrastra para crear un
+rectangulo de seleccion elastica. Todos los controles seleccionados muestran asas simultaneamente.</p>
+
+<h2>Copiar y Pegar Controles</h2>
+
+<p>HarbourBuilder soporta operaciones completas de portapapeles para controles:</p>
+
+<table>
+  <tr><th>Atajo</th><th>Accion</th></tr>
+  <tr><td><strong>Ctrl+C / Cmd+C</strong></td><td>Copiar controles seleccionados al portapapeles</td></tr>
+  <tr><td><strong>Ctrl+V / Cmd+V</strong></td><td>Pegar controles con desplazamiento de +16px</td></tr>
+  <tr><td><strong>Ctrl+X / Cmd+X</strong></td><td>Cortar controles seleccionados (copiar + eliminar)</td></tr>
+  <tr><td><strong>Delete</strong></td><td>Eliminar controles seleccionados</td></tr>
+</table>
+
+<p>Al pegar, los controles se desplazan automaticamente 16 pixeles para evitar superposicion con el original.</p>
+
+<h2>Menu Formato</h2>
+
+<p>El menu Formato proporciona 8 modos de alineacion y distribucion:</p>
+
+<table>
+  <tr><th>Comando</th><th>Descripcion</th></tr>
+  <tr><td><strong>Alinear a la izquierda</strong></td><td>Alinea todos los controles seleccionados al borde izquierdo del control mas a la izquierda</td></tr>
+  <tr><td><strong>Alinear a la derecha</strong></td><td>Alinea al borde derecho del control mas a la derecha</td></tr>
+  <tr><td><strong>Alinear arriba</strong></td><td>Alinea al borde superior del control mas arriba</td></tr>
+  <tr><td><strong>Alinear abajo</strong></td><td>Alinea al borde inferior del control mas abajo</td></tr>
+  <tr><td><strong>Centrar horizontalmente</strong></td><td>Centra todos los controles en el eje horizontal</td></tr>
+  <tr><td><strong>Centrar verticalmente</strong></td><td>Centra todos los controles en el eje vertical</td></tr>
+  <tr><td><strong>Distribuir espaciado horizontal</strong></td><td>Distribuye controles con espaciado horizontal igual</td></tr>
+  <tr><td><strong>Distribuir espaciado vertical</strong></td><td>Distribuye controles con espaciado vertical igual</td></tr>
+</table>
+
+<h2>Generacion de Codigo en Tiempo Real</h2>
+
+<p>Cada accion en el disenador genera codigo xBase correspondiente. Por ejemplo, colocar un boton
+genera:</p>
+
+<pre>@ <span class="nb">120</span>, <span class="nb">140</span> <span class="cmd">BUTTON</span> oBtn <span class="cmd">PROMPT</span> <span class="st">"Button1"</span> ;
+   <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">120</span>, <span class="nb">32</span></pre>
+
+<p>Cambiar propiedades en el Inspector de Objetos actualiza el codigo inmediatamente. La sincronizacion bidireccional asegura
+que tu diseno visual y tu codigo esten siempre en armonia.</p>
+
+<h2>Modo Diseno vs Modo Ejecucion</h2>
+
+<p>Los formularios tienen una propiedad <code>FDesignMode</code> que controla el comportamiento:</p>
+
+<table>
+  <tr><th>Modo</th><th>Comportamiento</th></tr>
+  <tr><td><strong>Modo Diseno</strong> (FDesignMode = .T.)</td><td>Los controles se pueden seleccionar, mover, redimensionar. Se muestra la cuadricula. Generacion de codigo activa.</td></tr>
+  <tr><td><strong>Modo Ejecucion</strong> (FDesignMode = .F.)</td><td>El formulario se ejecuta normalmente. Los controles responden a la interaccion del usuario. Sin generacion de codigo.</td></tr>
+</table>
+
+<h2>Propiedades del Formulario en el Disenador</h2>
+
+<table>
+  <tr><th>Propiedad</th><th>Tipo</th><th>Descripcion</th></tr>
+  <tr><td><code>nWidth, nHeight</code></td><td>Numerico</td><td>Dimensiones del formulario en pixeles</td></tr>
+  <tr><td><code>nLeft, nTop</code></td><td>Numerico</td><td>Posicion en pantalla</td></tr>
+  <tr><td><code>cTitle</code></td><td>Cadena</td><td>Texto de la barra de titulo de la ventana</td></tr>
+  <tr><td><code>nBorderStyle</code></td><td>Numerico</td><td>0=bsSizeable, 1=bsSingle, 2=bsNone, 3=bsToolWindow</td></tr>
+  <tr><td><code>nPosition</code></td><td>Numerico</td><td>0=poDesigned, 1=poCenter, 2=poCenterScreen</td></tr>
+  <tr><td><code>nWindowState</code></td><td>Numerico</td><td>0=wsNormal, 1=wsMinimized, 2=wsMaximized</td></tr>
+  <tr><td><code>nFormStyle</code></td><td>Numerico</td><td>0=fsNormal, 1=fsStayOnTop</td></tr>
+  <tr><td><code>lSizable</code></td><td>Logico</td><td>Permitir al usuario redimensionar la ventana</td></tr>
+  <tr><td><code>lCenter</code></td><td>Logico</td><td>Centrar formulario en pantalla al mostrar</td></tr>
+</table>
+
+<h2>Ejemplos de Codigo</h2>
+
+<h3>Sintaxis Simple DEFINE FORM</h3>
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+   <span class="kw">local</span> oForm
+
+   <span class="cmd">DEFINE FORM</span> oForm <span class="cmd">TITLE</span> <span class="st">"Hola Mundo"</span> ;
+      <span class="cmd">SIZE</span> <span class="nb">400</span>, <span class="nb">300</span> <span class="cmd">FONT</span> <span class="st">"Segoe UI"</span>, <span class="nb">10</span>
+
+   <span class="cmd">ACTIVATE FORM</span> oForm <span class="cmd">CENTERED</span>
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Enfoque Basado en Clases (Generado por el IDE)</h3>
+<pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
+
+   <span class="kw">METHOD</span> <span class="fn">CreateForm</span>()
+
+<span class="kw">ENDCLASS</span>
+
+<span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
+   ::<span class="prop">cTitle</span>  := <span class="st">"Formulario1"</span>
+   ::<span class="prop">nLeft</span>   := <span class="nb">100</span>
+   ::<span class="prop">nTop</span>    := <span class="nb">170</span>
+   ::<span class="prop">nWidth</span>  := <span class="nb">400</span>
+   ::<span class="prop">nHeight</span> := <span class="nb">300</span>
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<div class="info-box info">
+  <strong>Ambos enfoques funcionan</strong>
+  <p>Puedes usar cualquiera de los dos enfoques. La sintaxis DEFINE FORM es mas simple para aplicaciones pequenas,
+  mientras que el enfoque basado en clases es mejor para aplicaciones complejas con multiples formularios.</p>
+</div>
+
+<h2>Consejos para un Diseno Eficiente de Formularios</h2>
+
+<ol>
+  <li><strong>Usa el Inspector de Objetos</strong> — Configura propiedades visualmente en lugar de escribir codigo</li>
+  <li><strong>Doble clic en controles</strong> — Genera automaticamente manejadores de eventos (p. ej., OnClick para botones)</li>
+  <li><strong>Seleccion multiple para alineacion</strong> — Selecciona multiples controles y luego usa el menu Formato para alinear</li>
+  <li><strong>Copiar/Pegar para controles similares</strong> — Disena un boton, pega y modifica para los demas</li>
+  <li><strong>Usa ajuste a cuadricula</strong> — Mantiene los controles alineados sin posicionamiento manual</li>
+  <li><strong>Revisa las herramientas bidireccionales</strong> — Alterna entre vista de disenador y codigo para ver actualizaciones en tiempo real</li>
+  <li><strong>Guarda frecuentemente</strong> — Ctrl+S guarda tanto los datos de diseno como el codigo</li>
+</ol>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

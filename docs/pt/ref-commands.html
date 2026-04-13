@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Referencia de Comandos xBase - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/ref-commands.html">EN</a>
+    <a class="lang-btn" href="../es/ref-commands.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividade (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html" class="active">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Referencia</a> <span>/</span> Comandos xBase
+</div>
+
+<h1>Referencia de Comandos xBase</h1>
+<p>O HarbourBuilder usa as diretivas de preprocessador <code>#xcommand</code> e <code>#translate</code> do Harbour para
+fornecer uma sintaxe estilo xBase/Clipper familiar para criar e configurar controles. Estes comandos
+sao definidos em <code>hbbuilder.ch</code> e sao expandidos em tempo de compilacao para chamadas de metodo OOP Harbour.</p>
+
+<div class="info-box info">
+  <strong>Como comandos xBase funcionam</strong>
+  <p>Quando voce escreve <code>DEFINE FORM oForm TITLE "Meu App"</code>, o preprocessador Harbour o transforma em
+  codigo OOP Harbour que cria um objeto <code>TForm</code> e define suas propriedades. Isso acontece em tempo de
+  compilacao — o codigo OOP gerado e o que realmente e compilado e executado. Voce pode usar qualquer estilo;
+  os comandos sao simplesmente um atalho mais legivel.</p>
+</div>
+
+<h2>Arquitetura de Expansao de Comandos</h2>
+
+<div class="mermaid">
+graph LR
+    A["fonte .prg<br/>com comandos xBase"] --> B["Preprocessador Harbour<br/>#xcommand / #translate"]
+    B --> C["Codigo OOP Harbour<br/>TForm:New(), oBtn:SetText()"]
+    C --> D["Compilador Harbour<br/>harbour.exe"]
+    D --> E["Codigo C<br/>arquivos .c"]
+    E --> F["Binario nativo"]
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style E fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style F fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<h2>Comandos de Formulario</h2>
+
+<table>
+  <tr><th>Comando</th><th>Sintaxe</th><th>Descricao</th><th>Equivalente OOP</th></tr>
+  <tr>
+    <td><code>DEFINE FORM</code></td>
+    <td><code>DEFINE FORM &lt;oForm&gt; [TITLE &lt;cTitle&gt;] [SIZE &lt;nW&gt;, &lt;nH&gt;] [FONT &lt;cFont&gt;, &lt;nSize&gt;]</code></td>
+    <td>Cria um novo formulario de janela com titulo, tamanho e fonte opcionais.</td>
+    <td><code>oForm := TForm():New( nil )</code><br><code>oForm:cTitle := cTitle</code><br><code>oForm:nWidth := nW</code><br><code>oForm:nHeight := nH</code></td>
+  </tr>
+  <tr>
+    <td><code>ACTIVATE FORM</code></td>
+    <td><code>ACTIVATE FORM &lt;oForm&gt; [CENTERED] [MAXIMIZED] [MODAL]</code></td>
+    <td>Exibe o formulario e inicia o loop de eventos. Bloqueia ate o formulario ser fechado.</td>
+    <td><code>oForm:Show()</code><br><code>se CENTERED: oForm:lCentered := .T.</code><br><code>se MAXIMIZED: oForm:nWindowState := 2</code></td>
+  </tr>
+  <tr>
+    <td><code>ON INIT</code></td>
+    <td><code>ON INIT &lt;oForm&gt; &lt;codigo&gt;</code></td>
+    <td>Atribui um bloco de codigo de inicializacao ao evento OnInit do formulario.</td>
+    <td><code>oForm:OnInit := { || &lt;codigo&gt; }</code></td>
+  </tr>
+  <tr>
+    <td><code>ON CLOSE</code></td>
+    <td><code>ON CLOSE &lt;oForm&gt; &lt;codigo&gt;</code></td>
+    <td>Atribui um bloco de codigo de limpeza ao evento OnClose do formulario.</td>
+    <td><code>oForm:OnClose := { || &lt;codigo&gt; }</code></td>
+  </tr>
+</table>
+
+<h2>Comandos de Criacao de Controles</h2>
+
+<h3>Sintaxe @ row, col (Estilo de Coordenadas de Tela)</h3>
+<p>A sintaxe classica estilo Clipper <code>@ row, col</code> cria controles em coordenadas especificas dentro de um container pai:</p>
+
+<table>
+  <tr><th>Comando</th><th>Sintaxe</th><th>Descricao</th></tr>
+  <tr><td><code>@ ... BUTTON</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; BUTTON &lt;oBtn&gt; PROMPT &lt;cCaption&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;] [ACTION &lt;codigo&gt;]</code></td><td>Cria um botao de pressao na posicao especificada.</td></tr>
+  <tr><td><code>@ ... LABEL</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; LABEL &lt;oLbl&gt; VALUE &lt;cText&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td><td>Cria um rotulo de texto estatico.</td></tr>
+  <tr><td><code>@ ... EDIT</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; EDIT &lt;oEdt&gt; [VALUE &lt;cText&gt;] OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td><td>Cria um campo de entrada de texto de linha unica.</td></tr>
+  <tr><td><code>@ ... COMBOBOX</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; COMBOBOX &lt;oCbo&gt; ITEMS &lt;aItems&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td><td>Cria uma caixa de combinacao dropdown.</td></tr>
+  <tr><td><code>@ ... LISTBOX</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; LISTBOX &lt;oLbx&gt; ITEMS &lt;aItems&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td><td>Cria um controle de caixa de listagem.</td></tr>
+  <tr><td><code>@ ... CHECKBOX</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; CHECKBOX &lt;oChk&gt; PROMPT &lt;cCaption&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td><td>Cria uma caixa de selecao.</td></tr>
+  <tr><td><code>@ ... GROUPBOX</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; GROUPBOX &lt;oGrp&gt; PROMPT &lt;cCaption&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td><td>Cria uma caixa de grupo (container emoldurado com legenda).</td></tr>
+  <tr><td><code>@ ... MEMO</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; MEMO &lt;oMemo&gt; [VALUE &lt;cText&gt;] OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td><td>Cria um controle de edicao de texto multi-linha.</td></tr>
+  <tr><td><code>@ ... IMAGE</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; IMAGE &lt;oImg&gt; PICTURE &lt;cFile&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td><td>Cria um controle de exibicao de imagem.</td></tr>
+  <tr><td><code>@ ... PROGRESSBAR</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; PROGRESSBAR &lt;oPb&gt; OF &lt;oParent&gt; [SIZE &lt;nW&gt;, &lt;nH&gt;]</code></td><td>Cria um controle de barra de progresso.</td></tr>
+  <tr><td><code>@ ... TIMER</code></td><td><code>@ &lt;row&gt;, &lt;col&gt; TIMER &lt;oTmr&gt; INTERVAL &lt;nMs&gt; OF &lt;oParent&gt; [ACTION &lt;codigo&gt;]</code></td><td>Cria um controle de timer (nao visual).</td></tr>
+</table>
+
+<h2>Comandos Modificadores de Propriedade</h2>
+<p>Estes comandos podem ser adicionados a qualquer definicao de controle para definir propriedades adicionais:</p>
+
+<table>
+  <tr><th>Modificador</th><th>Sintaxe</th><th>Descricao</th></tr>
+  <tr><td><code>SIZE</code></td><td><code>SIZE &lt;nWidth&gt;, &lt;nHeight&gt;</code></td><td>Define a largura e altura do controle em pixels.</td></tr>
+  <tr><td><code>FONT</code></td><td><code>FONT &lt;cName&gt;, &lt;nSize&gt; [BOLD] [ITALIC]</code></td><td>Define a fonte do controle com modificadores de estilo opcionais.</td></tr>
+  <tr><td><code>COLOR</code></td><td><code>COLOR &lt;nFore&gt; [, &lt;nBack&gt;]</code></td><td>Define a cor de primeiro plano e fundo opcionais.</td></tr>
+  <tr><td><code>VISIBLE</code></td><td><code>VISIBLE &lt;lVisible&gt;</code></td><td>Define a visibilidade inicial (.T. / .F.).</td></tr>
+  <tr><td><code>ENABLED</code></td><td><code>ENABLED &lt;lEnabled&gt;</code></td><td>Define o estado habilitado inicial (.T. / .F.).</td></tr>
+  <tr><td><code>VALUE</code></td><td><code>VALUE &lt;xValue&gt;</code></td><td>Define o valor inicial (texto para Edit, estado marcado para CheckBox, etc.).</td></tr>
+  <tr><td><code>PROMPT</code></td><td><code>PROMPT &lt;cCaption&gt;</code></td><td>Define o texto de legenda/rotulo.</td></tr>
+  <tr><td><code>OF</code></td><td><code>OF &lt;oParent&gt;</code></td><td>Especifica o container pai (obrigatorio para todos os controles exceto DEFINE FORM).</td></tr>
+  <tr><td><code>ACTION</code></td><td><code>ACTION &lt;codigo&gt;</code></td><td>Atribui um bloco de codigo ao evento padrao do controle (OnClick para botoes, OnChange para edicoes).</td></tr>
+  <tr><td><code>WHEN</code></td><td><code>WHEN &lt;lCondicao&gt;</code></td><td>Expressao condicional que determina se o controle esta habilitado.</td></tr>
+  <tr><td><code>VALID</code></td><td><code>VALID &lt;lCondicao&gt;</code></td><td>Expressao de validacao verificada quando o controle perde o foco.</td></tr>
+  <tr><td><code>PICTURE</code></td><td><code>PICTURE &lt;cFile&gt;</code></td><td>Define o arquivo de imagem para controles Image.</td></tr>
+  <tr><td><code>ITEMS</code></td><td><code>ITEMS &lt;aArray&gt;</code></td><td>Define a lista de itens para ListBox, ComboBox e controles similares.</td></tr>
+  <tr><td><code>INTERVAL</code></td><td><code>INTERVAL &lt;nMs&gt;</code></td><td>Define o intervalo do timer em milissegundos.</td></tr>
+  <tr><td><code>MESSAGE</code></td><td><code>MESSAGE &lt;cHint&gt;</code></td><td>Define o texto de dica/tooltip.</td></tr>
+</table>
+
+<h2>Comandos de Menu e Barra de Ferramentas</h2>
+
+<table>
+  <tr><th>Comando</th><th>Sintaxe</th><th>Descricao</th></tr>
+  <tr><td><code>DEFINE POPUP</code></td><td><code>DEFINE POPUP &lt;oMenu&gt; [MENU]</code></td><td>Cria um objeto de popup/menu.</td></tr>
+  <tr><td><code>DEFINE BAR</code></td><td><code>DEFINE BAR &lt;nId&gt; OF &lt;oMenu&gt; PROMPT &lt;cText&gt; [ACTION &lt;codigo&gt;]</code></td><td>Adiciona um item de menu (barra) a um menu.</td></tr>
+  <tr><td><code>DEFINE TOOLBAR</code></td><td><code>DEFINE TOOLBAR &lt;oTb&gt; [OF &lt;oForm&gt;]</code></td><td>Cria um container de barra de ferramentas no formulario.</td></tr>
+  <tr><td><code>DEFINE BUTTON</code></td><td><code>DEFINE BUTTON &lt;oTbBtn&gt; OF &lt;oTb&gt; PROMPT &lt;cCaption&gt; [ACTION &lt;codigo&gt;]</code></td><td>Adiciona um botao a uma barra de ferramentas.</td></tr>
+</table>
+
+<h2>Comandos de Dialogo</h2>
+
+<table>
+  <tr><th>Comando</th><th>Sintaxe</th><th>Descricao</th></tr>
+  <tr><td><code>MsgInfo()</code></td><td><code>MsgInfo( &lt;cMensagem&gt; [, &lt;cTitulo&gt; ] )</code></td><td>Exibe uma caixa de mensagem de informacao.</td></tr>
+  <tr><td><code>MsgStop()</code></td><td><code>MsgStop( &lt;cMensagem&gt; [, &lt;cTitulo&gt; ] )</code></td><td>Exibe uma caixa de mensagem de erro/parada.</td></tr>
+  <tr><td><code>MsgYesNo()</code></td><td><code>MsgYesNo( &lt;cMensagem&gt; [, &lt;cTitulo&gt; ] ) &rarr; nResposta</code></td><td>Exibe um dialogo Sim/Nao. Retorna 6 (Sim) ou 7 (Nao).</td></tr>
+  <tr><td><code>MsgYesNoCancel()</code></td><td><code>MsgYesNoCancel( &lt;cMensagem&gt; [, &lt;cTitulo&gt; ] ) &rarr; nResposta</code></td><td>Exibe um dialogo Sim/Nao/Cancelar. Retorna 6 (Sim), 7 (Nao) ou 2 (Cancelar).</td></tr>
+  <tr><td><code>MsgRun()</code></td><td><code>MsgRun( &lt;oForm&gt; )</code></td><td>Ativa um formulario e entra no loop de eventos. Equivalente a ACTIVATE FORM.</td></tr>
+</table>
+
+<h2>Resumo Completo de Comandos</h2>
+
+<table>
+  <tr><th>Comando</th><th>Categoria</th><th>Arquivo de Header</th></tr>
+  <tr><td><code>DEFINE FORM</code></td><td>Formulario</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>ACTIVATE FORM</code></td><td>Formulario</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>ON INIT</code></td><td>Formulario</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>ON CLOSE</code></td><td>Formulario</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... BUTTON</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... LABEL</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... EDIT</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... COMBOBOX</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... LISTBOX</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... CHECKBOX</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... GROUPBOX</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... MEMO</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... IMAGE</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... PROGRESSBAR</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>@ ... TIMER</code></td><td>Controle</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>DEFINE POPUP</code></td><td>Menu</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>DEFINE BAR</code></td><td>Menu</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>DEFINE TOOLBAR</code></td><td>Barra de Ferramentas</td><td>hbbuilder.ch</td></tr>
+  <tr><td><code>DEFINE BUTTON</code></td><td>Barra de Ferramentas</td><td>hbbuilder.ch</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Comandos vs. OOP</strong>
+  <p>Ambos os estilos sao totalmente suportados. Os comandos xBase sao mais concisos e familiares para desenvolvedores
+  Clipper/xBase. O estilo OOP oferece controle mais fino e e preferido para criacao dinamica de controles em tempo
+  de execucao. O Designer de Formularios gera comandos xBase por padrao, mas voce pode alternar
+  para codigo estilo OOP a qualquer momento — o parser bidirecional compreende ambos.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Herramientas Bidireccionales - Documentacion de HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar en la documentacion..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros pasos</h3>
+    <a href="index.html">Vision general</a>
+    <a href="quickstart.html">Inicio rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividad (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de formularios</a>
+    <a href="object-inspector.html">Inspector de objetos</a>
+    <a href="code-editor.html">Editor de codigo</a>
+    <a href="two-way-tools.html" class="active">Herramientas bidireccionales</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente IA</a>
+    <a href="build-run.html">Compilar y ejecutar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriales</h3>
+    <a href="tutorial-hello.html">Hola Mundo</a>
+    <a href="tutorial-forms.html">Trabajar con formularios</a>
+    <a href="tutorial-events.html">Manejo de eventos</a>
+    <a href="tutorial-database.html">CRUD de base de datos</a>
+    <a href="tutorial-webserver.html">Servidor web</a>
+    <a href="tutorial-ai.html">Integracion con IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propiedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Puente HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span> <a href="index.html">Funciones del IDE</a> <span>/</span> Herramientas bidireccionales
+</div>
+
+<h1>Herramientas Bidireccionales: Sincronizacion Disenador y Codigo</h1>
+<p>El motor de herramientas bidireccionales de HarbourBuilder asegura que tu diseno visual de formularios y tu codigo fuente
+esten perfectamente sincronizados. Cada cambio que haces en el <a href="form-designer.html">Disenador de Formularios</a> visual
+se refleja inmediatamente en el codigo generado, y cada cambio estructural que haces en el codigo
+es visible instantaneamente en el disenador.</p>
+
+<div class="info-box tip">
+  <strong>Tu Logica Esta Segura</strong>
+  <p>El motor de regeneracion de codigo solo actualiza las lineas de definicion de interfaz de usuario (DEFINE, @ POSITION, propiedades).
+  Tus implementaciones de METHOD, manejadores de eventos y logica personalizada <strong>nunca</strong> se tocan ni se sobrescriben.</p>
+</div>
+
+<h2>Como Funciona</h2>
+
+<p>Cuando trabajas en el Disenador de Formularios, cada accion — colocar un control, redimensionar, mover,
+cambiar una propiedad — activa una regeneracion de codigo especifica. El motor analiza tu archivo
+fuente existente, identifica las secciones de definicion de interfaz, las actualiza y deja todo lo demas intacto.</p>
+
+<h2>Que se Regenera</h2>
+
+<p>El motor de codigo identifica y actualiza solo estas categorias:</p>
+
+<table>
+  <tr><th>Categoria</th><th>Ejemplo</th><th>¿Regenerado?</th></tr>
+  <tr><td>Sentencias DEFINE</td><td><code>DEFINE FORM</code>, <code>DEFINE BUTTON</code></td><td>Sí</td></tr>
+  <tr><td>Lineas @ POSITION</td><td><code>@ 10, 20 BUTTON ...</code></td><td>Sí</td></tr>
+  <tr><td>Asignaciones de propiedades</td><td><code>::cTitle := "Hola"</code></td><td>Sí</td></tr>
+  <tr><td>Definiciones CLASS</td><td><code>CLASS TForm1 FROM TForm</code></td><td>Sí</td></tr>
+  <tr><td>Creacion de controles via codigo</td><td><code>TButton():New()</code></td><td>Sí</td></tr>
+  <tr><td><strong>Implementaciones de METHOD</strong></td><td><code>METHOD OnClick() CLASS TForm1</code></td><td><strong>No</strong></td></tr>
+  <tr><td><strong>Cuerpos de manejadores de eventos</strong></td><td><code>bAction := { || ... }</code></td><td><strong>No</strong></td></tr>
+  <tr><td><strong>Funciones personalizadas</strong></td><td><code>static function MiAyudante()</code></td><td><strong>No</strong></td></tr>
+  <tr><td><strong>Comentarios</strong></td><td><code>// TODO: ...</code></td><td><strong>No</strong></td></tr>
+</table>
+
+<h2>Antes y Despues: Regeneracion de Codigo</h2>
+
+<h3>Antes: Colocas un boton en el disenador</h3>
+<pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
+
+   <span class="kw">DATA</span> oBtn1
+
+   <span class="kw">METHOD</span> <span class="fn">CreateForm</span>()
+   <span class="kw">METHOD</span> <span class="fn">OnBtnClic</span>()
+
+<span class="kw">ENDCLASS</span>
+
+<span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
+   ::<span class="prop">cTitle</span>  := <span class="st">"Form1"</span>
+   ::<span class="prop">nWidth</span>  := <span class="nb">400</span>
+   ::<span class="prop">nHeight</span> := <span class="nb">300</span>
+<span class="kw">return</span> <span class="kw">nil</span>
+
+<span class="kw">METHOD</span> <span class="fn">OnBtnClic</span>() <span class="kw">CLASS</span> TForm1
+   <span class="cm">// Tu logica personalizada - PRESERVADA</span>
+   MsgInfo( <span class="st">"¡Boton pulsado!"</span> )
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Despues: Codigo regenerado (boton agregado, metodo intacto)</h3>
+<pre><span class="kw">CLASS</span> <span class="fn">TForm1</span> <span class="kw">FROM</span> TForm
+
+   <span class="kw">DATA</span> oBtn1
+
+   <span class="kw">METHOD</span> <span class="fn">CreateForm</span>()
+   <span class="kw">METHOD</span> <span class="fn">OnBtnClic</span>()
+
+<span class="kw">ENDCLASS</span>
+
+<span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
+   ::<span class="prop">cTitle</span>  := <span class="st">"Form1"</span>
+   ::<span class="prop">nWidth</span>  := <span class="nb">400</span>
+   ::<span class="prop">nHeight</span> := <span class="nb">300</span>
+
+   <span class="cm">// --- NUEVO: Boton agregado por el disenador ---</span>
+   @ <span class="nb">120</span>, <span class="nb">140</span> <span class="cmd">BUTTON</span> ::oBtn1 <span class="cmd">PROMPT</span> <span class="st">"Boton1"</span> ;
+      <span class="cmd">OF</span> <span class="kw">Self</span> <span class="cmd">SIZE</span> <span class="nb">120</span>, <span class="nb">32</span> ;
+      <span class="cmd">ACTION</span> ::<span class="fn">OnBtnClic</span>()
+<span class="kw">return</span> <span class="kw">nil</span>
+
+<span class="kw">METHOD</span> <span class="fn">OnBtnClic</span>() <span class="kw">CLASS</span> TForm1
+   <span class="cm">// Tu logica personalizada - PRESERVADA</span>
+   MsgInfo( <span class="st">"¡Boton pulsado!"</span> )
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<div class="info-box tip">
+  <strong>Observa la preservacion</strong>
+  <p>El cuerpo del metodo <code>OnBtnClic</code> permanece completamente intacto. Solo el
+  metodo <code>CreateForm</code> recibio la nueva definicion del boton.</p>
+</div>
+
+<h2>Flujo de Trabajo</h2>
+
+<ol>
+  <li><strong>Comienza con formulario en blanco</strong> — Archivo &gt; Nuevo formulario</li>
+  <li><strong>Coloca controles desde la paleta</strong> — Arrastra controles al lienzo del formulario</li>
+  <li><strong>Configura propiedades en el Inspector de Objetos</strong> — Cambia textos, tamanios, colores</li>
+  <li><strong>El codigo se autogenera</strong> — Cada cambio actualiza el codigo fuente</li>
+  <li><strong>¿Necesitas logica personalizada?</strong> — Cambia a la vista de codigo</li>
+  <li><strong>Escribe implementaciones de METHOD</strong> — Agrega tu logica de negocio</li>
+  <li><strong>Vuelve al disenador</strong> — Continua el diseno visual; tu logica esta segura</li>
+</ol>
+
+<h2>Reglas de Analisis de Codigo</h2>
+
+<p>El motor de regeneracion usa estas reglas para identificar secciones seguras de modificar:</p>
+
+<ol>
+  <li><strong>Bloques CLASS / ENDCLASS</strong> — Las declaraciones DATA y METHOD se actualizan; los cuerpos de METHOD existentes se omiten.</li>
+  <li><strong>Bloques <code>DEFINE FORM</code></strong> — Las propiedades dentro de los bloques DEFINE se regeneran.</li>
+  <li><strong>Sentencias @ POSITION</strong> — Las clausulas de posicion, tamano y propiedad se actualizan.</li>
+  <li><strong>Bloques <code>ACTIVATE FORM</code></strong> — Las clausulas de activacion se regeneran.</li>
+  <li><strong>Todo lo demas</strong> — Funciones estaticas, cuerpos de METHOD, comentarios y codigo personalizado se dejan intactos.</li>
+</ol>
+
+<div class="info-box info">
+  <strong>Mejor practica</strong>
+  <p>Mantén tu logica personalizada en implementaciones de METHOD separadas o funciones estaticas en lugar de en linea
+  dentro de bloques DEFINE. Esto facilita que el motor de regeneracion identifique y preserve tu codigo.</p>
+</div>
+
+<h2>Manejo de Conflictos</h2>
+
+<p>Si editas manualmente una linea que el disenador tambien gestiona (p. ej., cambiar la posicion de un boton en el codigo
+mientras tambien esta en el lienzo del formulario), la vista del disenador tiene prioridad en la siguiente regeneracion.
+Para evitar conflictos:</p>
+
+<ul>
+  <li>Usa el <strong>Inspector de Objetos</strong> para cambiar propiedades en lugar de editar codigo directamente.</li>
+  <li>Usa el <strong>lienzo del Disenador</strong> para mover y redimensionar controles.</li>
+  <li>Usa el <strong>Editor de Codigo</strong> solo para implementaciones de METHOD, manejadores de eventos y funciones personalizadas.</li>
+</ul>
+
+<div class="info-box tip">
+  <strong>Bidireccional es Confiable</strong>
+  <p>El motor de regeneracion ha sido probado con mas de 200 casos extremos incluyendo bloques DEFINE anidados,
+  multiples formularios en un archivo, sintaxis mixta basada en clases y procedural, y archivos con comentarios extensos.</p>
+</div>
+
+<h2>Alternar Entre Vistas</h2>
+
+<p>Usa el boton de la barra de herramientas o el atajo de teclado para alternar entre las vistas Disenador y Codigo:</p>
+
+<table>
+  <tr><th>Atajo</th><th>Accion</th></tr>
+  <tr><td><strong>F12</strong></td><td>Alternar entre vistas Disenador y Codigo</td></tr>
+  <tr><td><strong>Ctrl+Tab</strong></td><td>Ciclar por las pestanas del editor abiertas</td></tr>
+  <tr><td><strong>Ctrl+S</strong></td><td>Guardar (datos de diseno y codigo)</td></tr>
+</table>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Referencia de Eventos A-Z - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/ref-events.html">EN</a>
+    <a class="lang-btn" href="../es/ref-events.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividade (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html" class="active">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Referencia</a> <span>/</span> Eventos A-Z
+</div>
+
+<h1>Referencia de Eventos A-Z</h1>
+<p>Esta pagina documenta todos os eventos disponiveis no HarbourBuilder. Eventos sao blocos de codigo atribuidos
+a propriedades de controle que sao invocados quando o evento correspondente do nivel do SO e acionado. Eventos formam
+o nucleo do modelo de programacao reativa do HarbourBuilder.</p>
+
+<div class="info-box info">
+  <strong>Como eventos funcionam</strong>
+  <p>Cada evento e uma propriedade em um objeto de controle. Voce atribui um bloco de codigo Harbour
+  (<code>{ || ... }</code>) a ele. Quando o usuario interage com o controle, o HarbourBuilder roteia
+  o evento nativo do SO atraves do backend (Win32/Cocoa/GTK3) e avalia seu bloco de codigo.</p>
+</div>
+
+<h2>Sintaxe de Atribuicao de Eventos</h2>
+<p>Eventos sao atribuidos usando o operador de atribuicao padrao Harbour com um bloco de codigo:</p>
+
+<pre><span class="cm">--- Evento simples: mostrar uma mensagem ---</span>
+oBtn:<span class="fn">OnClick</span> := { || <span class="fn">MsgInfo</span>( <span class="st">"Botao clicado!"</span> ) }
+
+<span class="cm">--- Evento chamando uma funcao ---</span>
+oBtn:<span class="fn">OnClick</span> := { || <span class="fn">ProcessClick</span>( oBtn, oForm ) }
+
+<span class="cm">--- Evento com parametros (eventos de teclado) ---</span>
+oEdit:<span class="fn">OnKeyDown</span> := { | nKey, nFlags | <span class="fn">HandleKey</span>( nKey, nFlags ) }
+
+<span class="cm">--- Evento com coordenadas do mouse ---</span>
+oPaintBox:<span class="fn">OnMouseMove</span> := { | nX, nY | <span class="fn">TrackMouse</span>( nX, nY ) }
+
+<span class="cm">--- Bloco de codigo com multiplas instrucoes ---</span>
+oBtn:<span class="fn">OnClick</span> := { || ;
+   <span class="fn">LogAction</span>( <span class="st">"botao clicado"</span> ), ;
+   <span class="fn">MsgInfo</span>( <span class="st">"Feito!"</span> ), ;
+   oForm:<span class="fn">Close</span>() ;
+}</pre>
+
+<div class="info-box tip">
+  <strong>Eventos atribuidos pelo designer</strong>
+  <p>No Designer de Formularios, selecione um controle, va a aba <strong>Eventos</strong> no Inspetor de Objetos,
+  e de duplo clique em um evento. O IDE gera o bloco de codigo e salta para o editor de codigo.</p>
+</div>
+
+<h2>Eventos do Mouse</h2>
+
+<table>
+  <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
+  <tr>
+    <td><code>OnClick</code></td>
+    <td>nenhum</td>
+    <td>Todos os controles interativos</td>
+    <td>Acionado quando o usuario clica no controle com o botao esquerdo do mouse. Este e o evento mais usado para botoes, itens de lista e nos de arvore.</td>
+  </tr>
+  <tr>
+    <td><code>OnDblClick</code></td>
+    <td>nenhum</td>
+    <td>Todos os controles interativos</td>
+    <td>Acionado no duplo clique. Para controles de lista/grade, isso geralmente aciona uma acao de "editar" ou "abrir". Para formularios, pode acionar comportamento padrao.</td>
+  </tr>
+  <tr>
+    <td><code>OnMouseDown</code></td>
+    <td><code>nButton, nShiftState, nX, nY</code></td>
+    <td>Todos os controles visuais</td>
+    <td>Acionado quando qualquer botao do mouse e pressionado. <code>nButton</code>: 1=esquerdo, 2=direito, 3=central. <code>nShiftState</code>: bitmask para Shift/Ctrl/Alt.</td>
+  </tr>
+  <tr>
+    <td><code>OnMouseUp</code></td>
+    <td><code>nButton, nShiftState, nX, nY</code></td>
+    <td>Todos os controles visuais</td>
+    <td>Acionado quando qualquer botao do mouse e solta. Util para conclusao de arrastar-e-soltar ou medicao de duracao de clique.</td>
+  </tr>
+  <tr>
+    <td><code>OnMouseMove</code></td>
+    <td><code>nX, nY</code></td>
+    <td>Todos os controles visuais</td>
+    <td>Acionado continuamente enquanto o mouse se move sobre o controle. Use com parcimonia; e acionado com muita frequencia. Bom para rastrear posicao do cursor ou efeitos de hover.</td>
+  </tr>
+  <tr>
+    <td><code>OnMouseWheel</code></td>
+    <td><code>nDelta, nX, nY</code></td>
+    <td>Todos os controles visuais</td>
+    <td>Acionado quando a roda do mouse e girada. <code>nDelta</code> e positivo para rolagem para frente/cima, negativo para tras/baixo. Tipicamente usado para zoom ou rolagem de conteudo.</td>
+  </tr>
+</table>
+
+<h2>Eventos do Teclado</h2>
+
+<table>
+  <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
+  <tr>
+    <td><code>OnKeyDown</code></td>
+    <td><code>nKey, nFlags</code></td>
+    <td>Todos os controles focaveis</td>
+    <td>Acionado quando uma tecla e pressionada. <code>nKey</code> e o codigo de tecla virtual (constantes VK_). <code>nFlags</code> contem contagem de repeticao e codigo de varredura.</td>
+  </tr>
+  <tr>
+    <td><code>OnKeyUp</code></td>
+    <td><code>nKey, nFlags</code></td>
+    <td>Todos os controles focaveis</td>
+    <td>Acionado quando uma tecla e solta. Util para detetar quanto tempo uma tecla foi mantida ou para deteccao de combinações de teclas.</td>
+  </tr>
+  <tr>
+    <td><code>OnKeyPress</code></td>
+    <td><code>cKey</code></td>
+    <td>Edit, Memo, MaskEdit, ComboBox</td>
+    <td>Acionado quando um caractere e digitado. <code>cKey</code> e o caractere real (nao codigo virtual). Permite modificar ou cancelar o caractere alterando o parametro.</td>
+  </tr>
+</table>
+
+<h2>Eventos de Foco e Selecao</h2>
+
+<table>
+  <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
+  <tr>
+    <td><code>OnEnter</code></td>
+    <td>nenhum</td>
+    <td>Todos os controles focaveis</td>
+    <td>Acionado quando o controle recebe foco de entrada (via Tab, clique ou programaticamente). Util para destacar o campo ativo ou mostrar ajuda contextual.</td>
+  </tr>
+  <tr>
+    <td><code>OnExit</code></td>
+    <td>nenhum</td>
+    <td>Todos os controles focaveis</td>
+    <td>Acionado quando o controle perde o foco. Use para validacao: verifique o valor do campo e previna perda de foco retornando <code>.F.</code> se invalido.</td>
+  </tr>
+  <tr>
+    <td><code>OnChange</code></td>
+    <td>nenhum</td>
+    <td>Edit, Memo, ComboBox, CheckBox, Radio, TrackBar, UpDown</td>
+    <td>Acionado quando o valor do controle e alterado. Para controles de edicao, acionado a cada tecla. Para combos, acionado quando a selecao muda.</td>
+  </tr>
+</table>
+
+<h2>Eventos do Ciclo de Vida do Formulario</h2>
+
+<table>
+  <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
+  <tr>
+    <td><code>OnCreate</code></td>
+    <td>nenhum</td>
+    <td>Form</td>
+    <td>Acionado quando o objeto formulario e criado pela primeira vez, antes de qualquer controle ser adicionado. Use para inicializacao precoce, carregamento de configuracao ou conexoes de dados.</td>
+  </tr>
+  <tr>
+    <td><code>OnInit</code></td>
+    <td>nenhum</td>
+    <td>Form</td>
+    <td>Acionado apos todos os controles serem criados e o formulario estar prestes a ser exibido. Este e o local ideal para configuracao final: popular listas, definir valores padrao, posicionamento.</td>
+  </tr>
+  <tr>
+    <td><code>OnShow</code></td>
+    <td>nenhum</td>
+    <td>Form</td>
+    <td>Acionado toda vez que o formulario se torna visivel. Acionado na exibicao inicial e novamente se o formulario foi ocultado e exibido novamente.</td>
+  </tr>
+  <tr>
+    <td><code>OnHide</code></td>
+    <td>nenhum</td>
+    <td>Form</td>
+    <td>Acionado quando o formulario e ocultado (via <code>Hide()</code> ou minimizado). Use para pausar timers ou parar tarefas em segundo plano.</td>
+  </tr>
+  <tr>
+    <td><code>OnActivate</code></td>
+    <td>nenhum</td>
+    <td>Form</td>
+    <td>Acionado quando o formulario recebe foco (se torna a janela ativa). Distinto de OnShow: um formulario pode ser exibido mas nao ativado se outra janela esta por cima.</td>
+  </tr>
+  <tr>
+    <td><code>OnDeactivate</code></td>
+    <td>nenhum</td>
+    <td>Form</td>
+    <td>Acionado quando o formulario perde o foco para outra janela na mesma aplicacao.</td>
+  </tr>
+  <tr>
+    <td><code>OnActivateApp</code></td>
+    <td><code>lActive</code></td>
+    <td>Form</td>
+    <td>Acionado quando toda a aplicacao ganha ou perde foco no nivel do SO. <code>lActive</code> e .T. quando o app esta em primeiro plano, .F. quando em segundo plano.</td>
+  </tr>
+  <tr>
+    <td><code>OnCloseQuery</code></td>
+    <td><code>@lCanClose</code></td>
+    <td>Form</td>
+    <td>Acionado antes do formulario fechar. Defina <code>lCanClose</code> como <code>.F.</code> para cancelar a operacao de fechamento. Use para prompts "Salvar alteracoes?".</td>
+  </tr>
+  <tr>
+    <td><code>OnClose</code></td>
+    <td>nenhum</td>
+    <td>Form</td>
+    <td>Acionado quando o formulario esta fechando (apos OnCloseQuery permitir). Use para limpeza: fechar conexoes de banco de dados, salvar estado, liberar recursos.</td>
+  </tr>
+  <tr>
+    <td><code>OnDestroy</code></td>
+    <td>nenhum</td>
+    <td>Form, todos os controles</td>
+    <td>Acionado quando o controle/formulario esta sendo destruido e a memoria esta prestes a ser liberada. Ultima chance para limpeza.</td>
+  </tr>
+</table>
+
+<h2>Eventos de Timer</h2>
+
+<table>
+  <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
+  <tr>
+    <td><code>OnTimer</code></td>
+    <td>nenhum</td>
+    <td>Timer</td>
+    <td>Acionado em intervalos regulares definidos pela propriedade <code>nInterval</code> do Timer (em milissegundos). Use para tarefas periodicas: atualizar um relogio, consultar um servidor, animar, salvar automaticamente.</td>
+  </tr>
+</table>
+
+<h2>Eventos de Pintura e Redimensionamento</h2>
+
+<table>
+  <tr><th>Evento</th><th>Parametros</th><th>Controles Disponiveis</th><th>Descricao</th></tr>
+  <tr>
+    <td><code>OnPaint</code></td>
+    <td>nenhum</td>
+    <td>PaintBox, Form, Panel, Shape, todos os controles visuais</td>
+    <td>Acionado quando o controle precisa ser redesenhado. Use com PaintBox para desenho customizado GDI/Cairo. Acesse o contexto de dispositivo via funcoes de desenho especificas da plataforma.</td>
+  </tr>
+  <tr>
+    <td><code>OnResize</code></td>
+    <td><code>nNewWidth, nNewHeight</code></td>
+    <td>Form, Panel, ScrollBox</td>
+    <td>Acionado quando o container e redimensionado. Os parametros fornecem as novas dimensoes. Use para reposicionar controles filhos ou recalcular layout.</td>
+  </tr>
+</table>
+
+<h2>Tabela Resumo Completa de Eventos</h2>
+
+<table>
+  <tr><th>Evento</th><th>Categoria</th><th>Controles Principais</th></tr>
+  <tr><td><code>OnClick</code></td><td>Mouse</td><td>Button, ListBox, TreeView, MenuItem, Image</td></tr>
+  <tr><td><code>OnDblClick</code></td><td>Mouse</td><td>ListBox, TreeView, StringGrid, Form</td></tr>
+  <tr><td><code>OnMouseDown</code></td><td>Mouse</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>OnMouseUp</code></td><td>Mouse</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>OnMouseMove</code></td><td>Mouse</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>OnMouseWheel</code></td><td>Mouse</td><td>Todos os controles visuais</td></tr>
+  <tr><td><code>OnKeyDown</code></td><td>Teclado</td><td>Todos os controles focaveis</td></tr>
+  <tr><td><code>OnKeyUp</code></td><td>Teclado</td><td>Todos os controles focaveis</td></tr>
+  <tr><td><code>OnKeyPress</code></td><td>Teclado</td><td>Edit, Memo, MaskEdit, ComboBox</td></tr>
+  <tr><td><code>OnChange</code></td><td>Valor</td><td>Edit, Memo, ComboBox, CheckBox, TrackBar</td></tr>
+  <tr><td><code>OnEnter</code></td><td>Foco</td><td>Todos os controles focaveis</td></tr>
+  <tr><td><code>OnExit</code></td><td>Foco</td><td>Todos os controles focaveis</td></tr>
+  <tr><td><code>OnCreate</code></td><td>Ciclo de Vida</td><td>Form</td></tr>
+  <tr><td><code>OnInit</code></td><td>Ciclo de Vida</td><td>Form</td></tr>
+  <tr><td><code>OnShow</code></td><td>Ciclo de Vida</td><td>Form</td></tr>
+  <tr><td><code>OnHide</code></td><td>Ciclo de Vida</td><td>Form</td></tr>
+  <tr><td><code>OnActivate</code></td><td>Ciclo de Vida</td><td>Form</td></tr>
+  <tr><td><code>OnDeactivate</code></td><td>Ciclo de Vida</td><td>Form</td></tr>
+  <tr><td><code>OnActivateApp</code></td><td>Ciclo de Vida</td><td>Form</td></tr>
+  <tr><td><code>OnCloseQuery</code></td><td>Ciclo de Vida</td><td>Form</td></tr>
+  <tr><td><code>OnClose</code></td><td>Ciclo de Vida</td><td>Form</td></tr>
+  <tr><td><code>OnDestroy</code></td><td>Ciclo de Vida</td><td>Todos os controles</td></tr>
+  <tr><td><code>OnTimer</code></td><td>Timer</td><td>Timer</td></tr>
+  <tr><td><code>OnPaint</code></td><td>Desenho</td><td>PaintBox, Shape, Form, Panel</td></tr>
+  <tr><td><code>OnResize</code></td><td>Layout</td><td>Form, Panel, ScrollBox</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Ordem de disparo de eventos</strong>
+  <p>Quando um usuario clica em um botao, a ordem dos eventos e: <code>OnMouseDown</code> &rarr; <code>OnMouseUp</code> &rarr; <code>OnClick</code>.
+  Para entrada de teclado: <code>OnKeyDown</code> &rarr; <code>OnKeyPress</code> &rarr; <code>OnKeyUp</code>.
+  Entender esta ordem ajuda voce a escolher o evento certo para seu caso de uso.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

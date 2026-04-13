@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Controles de Conectividade - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/controls-connectivity.html">EN</a>
+    <a class="lang-btn" href="../es/controls-connectivity.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html" class="active">Conectividade (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Paleta de Componentes</a> <span>/</span> Conectividade
+</div>
+
+<h1>Controles de Conectividade <span class="badge new">NEW</span></h1>
+<p>O HarbourBuilder fornece <strong>9 controles de interoperabilidade de linguagens</strong> que permitem chamar codigo
+escrito em Python, Swift, Go, Node.js, Rust, Java, .NET, Lua e Ruby diretamente das suas
+aplicacoes Harbour. Sem IPC, sem wrappers HTTP, sem filas de mensagens — apenas chamadas de funcao
+diretas atraves de fronteiras de linguagem.</p>
+
+<div class="info-box tip">
+  <strong>Chame Qualquer Linguagem a Partir do Harbour</strong>
+  <p>Cada componente de conectividade fornece uma API xBase limpa que envolve a interface
+  de funcao estrangeira subjacente. Solte o componente no formulario, aponte para seu script ou
+  biblioteca, e chame funcoes como se fossem metodos nativos Harbour.</p>
+</div>
+
+<h2>Linguagens Suportadas</h2>
+
+<table>
+  <tr><th>Componente</th><th>Linguagem</th><th>Mecanismo</th><th>Caso de Uso</th></tr>
+  <tr><td><strong>TPython</strong></td><td>Python</td><td>Python C API (libpython)</td><td>Pipelines de ML, ciencia de dados, scripting, automacao.</td></tr>
+  <tr><td><strong>TSwift</strong></td><td>Swift</td><td>C-interop via @_cdecl</td><td>APIs nativas macOS/iOS, pacotes Swift.</td></tr>
+  <tr><td><strong>TGo</strong></td><td>Go</td><td>Biblioteca compartilhada cgo (buildmode=c-shared)</td><td>Workers concorrentes, microsservicos, criptografia.</td></tr>
+  <tr><td><strong>TNode</strong></td><td>Node.js</td><td>Node-API (n-api) via runtime embutido</td><td>Ecossistema npm, frameworks web, I/O assincrono.</td></tr>
+  <tr><td><strong>TRust</strong></td><td>Rust</td><td>cdylib com extern "C" FFI</td><td>Bibliotecas seguras em memoria, codigo de alta performance.</td></tr>
+  <tr><td><strong>TJava</strong></td><td>Java</td><td>JNI (Java Native Interface)</td><td>Bibliotecas Java empresariais, integracao Android.</td></tr>
+  <tr><td><strong>TDotNet</strong></td><td>C# / .NET</td><td>API de hospedagem CoreCLR</td><td>Ecossistema .NET, pacotes NuGet, interoperabilidade WPF.</td></tr>
+  <tr><td><strong>TLua</strong></td><td>Lua</td><td>Lua C API (liblua)</td><td>Scripting leve, logica de jogos, arquivos de configuracao.</td></tr>
+  <tr><td><strong>TRuby</strong></td><td>Ruby</td><td>Ruby C API (libruby)</td><td>Web scraping, processamento de texto, DSLs.</td></tr>
+</table>
+
+<h2>Padrao de API Comun</h2>
+
+<p>Todos os componentes de conectividade seguem um padrao de API consistente:</p>
+
+<table>
+  <tr><th>Metodo</th><th>Parametros</th><th>Descricao</th></tr>
+  <tr><td><code>:Init()</code></td><td>configuracao</td><td>Inicializa o runtime / carrega a biblioteca.</td></tr>
+  <tr><td><code>:Call( cFunction, ...args )</code></td><td>nome da funcao + args</td><td>Chama uma funcao na linguagem estrangeira.</td></tr>
+  <tr><td><code>:Eval( cCode )</code></td><td>string de codigo fonte</td><td>Executa codigo arbitrario na linguagem estrangeira.</td></tr>
+  <tr><td><code>:SetVar( cName, xValue )</code></td><td>nome, valor</td><td>Define uma variavel no ambiente da linguagem estrangeira.</td></tr>
+  <tr><td><code>:GetVar( cName )</code></td><td>nome</td><td>Obtem o valor de uma variavel da linguagem estrangeira.</td></tr>
+  <tr><td><code>:Shutdown()</code></td><td>—</td><td>Limpa e descarrega o runtime.</td></tr>
+</table>
+
+<h2>Exemplo de Integracao Python</h2>
+
+<p>O componente <strong>TPython</strong> e o mais comumente usado entre os controles de conectividade.
+Ele incorpora um interpretador Python completo na sua aplicacao Harbour:</p>
+
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oPython, cResult, aData
+
+   <span class="cm">// Inicializar runtime Python</span>
+   oPython := TPython():New()
+   oPython:<span class="fn">Init</span>()
+
+   <span class="cm">// Executar codigo Python</span>
+   oPython:<span class="fn">Eval</span>( <span class="st">"import math"</span> )
+   cResult := oPython:<span class="fn">Call</span>( <span class="st">"math.sqrt"</span>, <span class="nb">144</span> )
+   ? <span class="st">"sqrt(144) ="</span>, cResult  <span class="cm">// 12.0</span>
+
+   <span class="cm">// Chamar uma funcao Python de um arquivo de script</span>
+   oPython:<span class="fn">Eval</span>( ;
+      <span class="st">"def greet(name):\n"</span> + ;
+      <span class="st">"    return f'Hello, {name} from Python!'\n"</span> + ;
+      <span class="st">"def process_list(items):\n"</span> + ;
+      <span class="st">"    return [x**2 for x in items]"</span> )
+
+   cResult := oPython:<span class="fn">Call</span>( <span class="st">"greet"</span>, <span class="st">"Harbour"</span> )
+   ? cResult  <span class="cm">// "Hello, Harbour from Python!"</span>
+
+   aData := oPython:<span class="fn">Call</span>( <span class="st">"process_list"</span>, { <span class="nb">1</span>, <span class="nb">2</span>, <span class="nb">3</span>, <span class="nb">4</span>, <span class="nb">5</span> } )
+   <span class="cm">// aData = {1, 4, 9, 16, 25}</span>
+
+   oPython:<span class="fn">Shutdown</span>()
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Exemplo de Integracao Node.js</h2>
+
+<pre>oNode := TNode():New()
+oNode:<span class="fn">Init</span>()
+
+<span class="cm">// Executar um snippet JavaScript</span>
+cResult := oNode:<span class="fn">Eval</span>( ;
+   <span class="st">"const os = require('os');"</span> + ;
+   <span class="st">"JSON.stringify({ platform: os.platform(), arch: os.arch() })"</span> )
+
+? cResult  <span class="cm">// {"platform":"darwin","arch":"arm64"}</span>
+
+oNode:<span class="fn">Shutdown</span>()</pre>
+
+<h2>Exemplo de Integracao Lua</h2>
+
+<pre>oLua := TLua():New()
+oLua:<span class="fn">Init</span>()
+
+<span class="cm">// Definir uma variavel Harbour visivel no Lua</span>
+oLua:<span class="fn">SetVar</span>( <span class="st">"app_name"</span>, <span class="st">"HarbourBuilder"</span> )
+
+<span class="cm">// Executar codigo Lua que acessa a variavel</span>
+oLua:<span class="fn">Eval</span>( <span class="st">"result = 'Hello from ' .. app_name"</span> )
+
+? oLua:<span class="fn">GetVar</span>( <span class="st">"result"</span> )  <span class="cm">// "Hello from HarbourBuilder"</span>
+
+oLua:<span class="fn">Shutdown</span>()</pre>
+
+<h2>Exemplo de Integracao Go</h2>
+
+<p>Compile um pacote Go como biblioteca compartilhada:</p>
+
+<pre><span class="cm">// Fonte Go (golib.go)</span>
+<span class="cm">// export Double</span>
+<span class="kw">func</span> Double(n C.int) C.int {
+    <span class="kw">return</span> n * <span class="nb">2</span>
+}
+
+<span class="cm">// Build: go build -buildmode=c-shared -o golib.so golib.go</span></pre>
+
+<pre>oGo := TGo():New()
+oGo:<span class="prop">cLibPath</span> := <span class="st">"./golib.so"</span>
+oGo:<span class="fn">Init</span>()
+
+? oGo:<span class="fn">Call</span>( <span class="st">"Double"</span>, <span class="nb">21</span> )  <span class="cm">// 42</span>
+
+oGo:<span class="fn">Shutdown</span>()</pre>
+
+<h2>Exemplo de Integracao Rust</h2>
+
+<p>Compile Rust com <code>cdylib</code> e <code>extern "C"</code>:</p>
+
+<pre><span class="cm">// Fonte Rust (src/lib.rs)</span>
+<span class="kw">#[no_mangle]</span>
+<span class="kw">pub extern</span> <span class="st">"C"</span> <span class="kw">fn</span> <span class="fn">hash_string</span>(s: *const c_char) -&gt; *mut c_char {
+    <span class="kw">let</span> input = unsafe { CStr::from_ptr(s).to_str().unwrap() };
+    <span class="kw">let</span> hash = format!(<span class="st">"{:x}"</span>, md5::compute(input));
+    CString::new(hash).unwrap().into_raw()
+}
+
+<span class="cm">// Build: cargo build --release</span></pre>
+
+<pre>oRust := TRust():New()
+oRust:<span class="prop">cLibPath</span> := <span class="st">"./target/release/libmylib.so"</span>
+oRust:<span class="fn">Init</span>()
+
+? oRust:<span class="fn">Call</span>( <span class="st">"hash_string"</span>, <span class="st">"hello"</span> )  <span class="cm">// "5d41402abc4b2a76b9719d911017c592"</span>
+
+oRust:<span class="fn">Shutdown</span>()</pre>
+
+<h2>Arquitetura</h2>
+
+<div class="mermaid">
+graph TB
+    A["Aplicacao Harbour\n(.prg → .hrb)"] --> B["Componente de\nConectividade"]
+    B --> C1["TPython\nlibpython"]
+    B --> C2["TNode\nNode-API"]
+    B --> C3["TLua\nliblua"]
+    B --> C4["TGo\nc-shared .so"]
+    B --> C5["TRust\ncdylib FFI"]
+    B --> C6["TJava\nJNI"]
+    B --> C7["TDotNet\nCoreCLR"]
+    B --> C8["TSwift\n@_cdecl"]
+    B --> C9["TRuby\nlibruby"]
+    style A fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style B fill:#f0883e,stroke:#db6d28,color:#0d1117
+</div>
+
+<h2>Consideracoes de Desempenho</h2>
+
+<table>
+  <tr><th>Componente</th><th>Overhead por Chamada</th><th>Melhor Para</th></tr>
+  <tr><td>TPython</td><td>Baixo (C API direta)</td><td>Chamadas frequentes, troca de dados.</td></tr>
+  <tr><td>TLua</td><td>Muito baixo (VM minima)</td><td>Lacos apertados, scripting embutido.</td></tr>
+  <tr><td>TNode</td><td>Medio (marshalling Node-API)</td><td>Operacoes assincronas, pacotes npm.</td></tr>
+  <tr><td>TGo</td><td>Baixo (C-shared, FFI direto)</td><td>Tarefas concorrentes de alta performance.</td></tr>
+  <tr><td>TRust</td><td>Muito baixo (cdylib, custo zero)</td><td>Computacoes criticas de desempenho.</td></tr>
+  <tr><td>TJava</td><td>Medio (custo de transicao JNI)</td><td>Chamadas de bibliotecas empresariais.</td></tr>
+  <tr><td>TDotNet</td><td>Medio (hospedagem CoreCLR)</td><td>Interop de bibliotecas .NET.</td></tr>
+  <tr><td>TSwift</td><td>Baixo (C-interop)</td><td>Recursos nativos macOS/iOS.</td></tr>
+  <tr><td>TRuby</td><td>Baixo (C API)</td><td>Execucao de DSL, processamento de texto.</td></tr>
+</table>
+
+<div class="info-box info">
+  <strong>Escolhendo uma Linguagem</strong>
+  <p>Para a maioria das necessidades de scripting, <strong>TPython</strong> ou <strong>TLua</strong> sao os mais simples
+  de configurar. Para codigo critico de desempenho, use <strong>TRust</strong> ou <strong>TGo</strong>.
+  Para acessar recursos nativos da plataforma no macOS, use <strong>TSwift</strong>. A escolha certa
+  depende da sua base de codigo existente e da expertise da equipe.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

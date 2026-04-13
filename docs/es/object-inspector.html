@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inspector de Objetos - Documentacion de HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar en la documentacion..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros pasos</h3>
+    <a href="index.html">Vision general</a>
+    <a href="quickstart.html">Inicio rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividad (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de formularios</a>
+    <a href="object-inspector.html" class="active">Inspector de objetos</a>
+    <a href="code-editor.html">Editor de codigo</a>
+    <a href="two-way-tools.html">Herramientas bidireccionales</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente IA</a>
+    <a href="build-run.html">Compilar y ejecutar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriales</h3>
+    <a href="tutorial-hello.html">Hola Mundo</a>
+    <a href="tutorial-forms.html">Trabajar con formularios</a>
+    <a href="tutorial-events.html">Manejo de eventos</a>
+    <a href="tutorial-database.html">CRUD de base de datos</a>
+    <a href="tutorial-webserver.html">Servidor web</a>
+    <a href="tutorial-ai.html">Integracion con IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propiedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Puente HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Funciones del IDE</a> <span>/</span> Inspector de objetos
+</div>
+
+<h1>Inspector de Objetos</h1>
+<p>El Inspector de Objetos es un editor de propiedades y eventos similar a Delphi y C++Builder.
+Permite configurar visualmente las propiedades de los controles y asignar manejadores de eventos sin escribir codigo manualmente.</p>
+
+<h2>Vision General</h2>
+
+<p>El Inspector de Objetos tiene dos pestanas principales:</p>
+<ul>
+  <li><strong>Propiedades</strong> — Edita propiedades del control en una cuadricula categorizada</li>
+  <li><strong>Eventos</strong> — Asigna manejadores de eventos a los eventos del control</li>
+</ul>
+
+<p>En la parte superior, un <strong>Selector de Control</strong> ComboBox permite alternar entre todos los controles del formulario actual.</p>
+
+<div class="info-box tip">
+  <strong>Acceso rapido</strong>
+  <p>Selecciona cualquier control en el Disenador de Formularios para ver sus propiedades en el Inspector de Objetos.
+  Los cambios que realices se reflejan instantaneamente en el disenador y el codigo.</p>
+</div>
+
+<h2>Pestana Propiedades</h2>
+
+<h3>Cuadricula Categorizada</h3>
+<p>Las propiedades estan organizadas en categorias para facilitar la navegacion:</p>
+
+<table>
+  <tr><th>Categoria</th><th>Propiedades</th></tr>
+  <tr><td><strong>Apariencia</strong></td><td>cPrompt, cValue, nWidth, nHeight, nClrPane, nClrText, oFont, cPicture</td></tr>
+  <tr><td><strong>Posicion</strong></td><td>nLeft, nTop, nWidth, nHeight</td></tr>
+  <tr><td><strong>Comportamiento</strong></td><td>lVisible, lEnabled, lTabStop, lReadOnly</td></tr>
+  <tr><td><strong>Datos</strong></td><td>cDataSource, cDataField, nDataType</td></tr>
+  <tr><td><strong>Fuente</strong></td><td>cFontName, nFontSize, lFontBold, lFontItalic</td></tr>
+</table>
+
+<h3>Editores de Propiedades</h3>
+<p>Diferentes tipos de propiedades usan editores distintos:</p>
+
+<table>
+  <tr><th>Tipo de propiedad</th><th>Editor</th><th>Ejemplo</th></tr>
+  <tr><td>Cadena</td><td>Entrada de texto</td><td>Nombre del control, texto de etiqueta</td></tr>
+  <tr><td>Numero</td><td>Entrada numerica</td><td>Posicion, valores de tamanio</td></tr>
+  <tr><td>Logico</td><td>Desplegable (.T./.F.)</td><td>Visible, Habilitado</td></tr>
+  <tr><td>Color</td><td>Selector de color</td><td>Fondo, color de texto</td></tr>
+  <tr><td>Fuente</td><td>Selector de fuente</td><td>Nombre de fuente, tamano, estilo</td></tr>
+  <tr><td>Enumeracion</td><td>Lista desplegable</td><td>BorderStyle, Position, WindowState</td></tr>
+</table>
+
+<h3>Editores Desplegables para Enumeraciones</h3>
+<p>Las propiedades con valores predefinidos muestran listas desplegables:</p>
+
+<table>
+  <tr><th>Propiedad</th><th>Valores</th></tr>
+  <tr><td><code>nBorderStyle</code></td><td>0=bsSizeable, 1=bsSingle, 2=bsNone, 3=bsToolWindow</td></tr>
+  <tr><td><code>nPosition</code></td><td>0=poDesigned, 1=poCenter, 2=poCenterScreen</td></tr>
+  <tr><td><code>nWindowState</code></td><td>0=wsNormal, 1=wsMinimized, 2=wsMaximized</td></tr>
+  <tr><td><code>nFormStyle</code></td><td>0=fsNormal, 1=fsStayOnTop</td></tr>
+  <tr><td><code>nCursor</code></td><td>0=crDefault, 1=crArrow, 2=crIBeam, 3=crHand, etc.</td></tr>
+</table>
+
+<h2>Pestana Eventos</h2>
+
+<p>La pestana Eventos muestra todos los eventos disponibles para el tipo de control seleccionado. La lista de eventos es dinamica
+y se obtiene mediante <code>UI_GETALLEVENTS</code> desde el backend.</p>
+
+<h3>Asignar Manejadores de Eventos</h3>
+
+<ol>
+  <li><strong>Doble clic</strong> en un evento para autogenerar un manejador</li>
+  <li><strong>Escribir</strong> directamente en el campo del evento para asignar un bloque de codigo</li>
+  <li><strong>Seleccionar</strong> desde metodos existentes mediante el desplegable</li>
+</ol>
+
+<pre><span class="comment">// Doble clic en OnClick genera:</span>
+oBtn:<span class="fn">OnClick</span> := { || <span class="fn">Boton1Clic</span>() }
+
+<span class="kw">METHOD</span> <span class="fn">Boton1Clic</span>() <span class="kw">CLASS</span> TForm1
+   <span class="fn">MsgInfo</span>( <span class="st">"¡Boton pulsado!"</span> )
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Eventos Comunes</h3>
+
+<table>
+  <tr><th>Evento</th><th>Se activa cuando</th><th>Disponible para</th></tr>
+  <tr><td><code>OnClick</code></td><td>El usuario hace clic en el control</td><td>Button, CheckBox, RadioButton, ListBox, etc.</td></tr>
+  <tr><td><code>OnChange</code></td><td>El valor del control cambia</td><td>Edit, Memo, ComboBox, CheckBox, etc.</td></tr>
+  <tr><td><code>OnInit</code></td><td>El control se ha creado e inicializado</td><td>Todos los controles</td></tr>
+  <tr><td><code>OnClose</code></td><td>El formulario esta a punto de cerrarse</td><td>Solo Form</td></tr>
+  <tr><td><code>OnTimer</code></td><td>El intervalo del temporizador ha transcurrido</td><td>Solo Timer</td></tr>
+  <tr><td><code>OnKeyDown</code></td><td>Se presiona una tecla</td><td>Todos los controles de entrada</td></tr>
+  <tr><td><code>OnKeyUp</code></td><td>Se suelta una tecla</td><td>Todos los controles de entrada</td></tr>
+  <tr><td><code>OnKeyPress</code></td><td>Se presiona una tecla de caracter</td><td>Todos los controles de entrada</td></tr>
+  <tr><td><code>OnMouseDown</code></td><td>Se presiona el boton del raton</td><td>Todos los controles</td></tr>
+  <tr><td><code>OnMouseUp</code></td><td>Se suelta el boton del raton</td><td>Todos los controles</td></tr>
+  <tr><td><code>OnMouseMove</code></td><td>El raton se mueve sobre el control</td><td>Todos los controles</td></tr>
+  <tr><td><code>OnMouseWheel</code></td><td>Se desplaza la rueda del raton</td><td>Todos los controles</td></tr>
+  <tr><td><code>OnDblClick</code></td><td>El usuario hace doble clic</td><td>Todos los controles</td></tr>
+  <tr><td><code>OnCreate</code></td><td>El formulario se esta creando</td><td>Solo Form</td></tr>
+  <tr><td><code>OnDestroy</code></td><td>El formulario se esta destruyendo</td><td>Solo Form</td></tr>
+  <tr><td><code>OnShow</code></td><td>El formulario se muestra</td><td>Solo Form</td></tr>
+  <tr><td><code>OnHide</code></td><td>El formulario se oculta</td><td>Solo Form</td></tr>
+  <tr><td><code>OnActivate</code></td><td>El formulario recibe el foco</td><td>Solo Form</td></tr>
+  <tr><td><code>OnResize</code></td><td>El formulario se redimensiona</td><td>Solo Form</td></tr>
+  <tr><td><code>OnPaint</code></td><td>El formulario necesita redibujarse</td><td>Solo Form</td></tr>
+</table>
+
+<h2>Tipos de Propiedades (Backend C++)</h2>
+
+<p>En el backend C++, las propiedades se definen con tipos:</p>
+
+<table>
+  <tr><th>Constante</th><th>Valor</th><th>Uso</th></tr>
+  <tr><td><code>PT_STRING</code></td><td>1</td><td>Propiedades de texto (nombre, titulo, valor)</td></tr>
+  <tr><td><code>PT_NUMBER</code></td><td>2</td><td>Propiedades numericas (posicion, tamano, intervalos)</td></tr>
+  <tr><td><code>PT_LOGICAL</code></td><td>3</td><td>Propiedades booleanas (visible, habilitado, marcado)</td></tr>
+  <tr><td><code>PT_COLOR</code></td><td>4</td><td>Propiedades de color (fondo, color de texto)</td></tr>
+  <tr><td><code>PT_FONT</code></td><td>5</td><td>Propiedades de fuente (nombre, tamano, estilo)</td></tr>
+</table>
+
+<h2>Ejemplos de Codigo</h2>
+
+<h3>Configurar Propiedades mediante el Inspector de Objetos</h3>
+<p>Cuando editas propiedades en el inspector, el codigo generado se ve asi:</p>
+
+<pre><span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
+   ::<span class="prop">cTitle</span>     := <span class="st">"Mi Aplicacion"</span>
+   ::<span class="prop">nLeft</span>      := <span class="nb">100</span>
+   ::<span class="prop">nTop</span>       := <span class="nb">170</span>
+   ::<span class="prop">nWidth</span>     := <span class="nb">640</span>
+   ::<span class="prop">nHeight</span>    := <span class="nb">480</span>
+   ::<span class="prop">nPosition</span>  := <span class="nb">2</span>  <span class="comment">// poCenterScreen</span>
+   ::<span class="prop">nWindowState</span> := <span class="nb">0</span>  <span class="comment">// wsNormal</span>
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Asignacion de Eventos en Codigo</h3>
+<pre><span class="comment">// Bloque de codigo en linea</span>
+oBtn:<span class="fn">OnClick</span> := { || <span class="fn">MsgInfo</span>( <span class="st">"¡Hola!"</span> ) }
+
+<span class="comment">// Llamada a metodo</span>
+oBtn:<span class="fn">OnClick</span> := { || ::<span class="fn">ManejarClicBoton</span>() }
+
+<span class="kw">METHOD</span> <span class="fn">ManejarClicBoton</span>() <span class="kw">CLASS</span> TForm1
+   <span class="fn">MsgInfo</span>( <span class="st">"Se hizo clic en el boton"</span> )
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h2>Consejos para Usar el Inspector de Objetos</h2>
+
+<ol>
+  <li><strong>Usa las categorias</strong> — Expande categorias para encontrar propiedades rapidamente</li>
+  <li><strong>Doble clic en eventos</strong> — Autogenera metodos manejadores en tu clase</li>
+  <li><strong>Usa desplegables para enumeraciones</strong> — Asegura valores validos (BorderStyle, Position, etc.)</li>
+  <li><strong>Selector de color</strong> — Haz clic en propiedades de color para abrir el selector de color</li>
+  <li><strong>Selector de control</strong> — Usa el ComboBox superior para cambiar entre controles</li>
+  <li><strong>Actualizaciones en tiempo real</strong> — Los cambios se reflejan instantaneamente en disenador y codigo</li>
+  <li><strong>Restablecer a valor predeterminado</strong> — Clic derecho en una propiedad para restablecer al valor por defecto</li>
+</ol>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

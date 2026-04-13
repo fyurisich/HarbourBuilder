@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guia do macOS - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/platform-macos.html">EN</a>
+    <a class="lang-btn" href="../es/platform-macos.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividade (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html" class="active">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Plataformas</a> <span>/</span> macOS
+</div>
+
+<h1><span class="badge mac">macOS</span> Guia da Plataforma</h1>
+<p>O backend macOS usa Cocoa/AppKit (Objective-C++) para todos os componentes nativos de UI. Ele fornece
+uma experiencia Mac autentica com widgets nativos, suporte ao modo escuro via <code>NSAppearanceNameDarkAqua</code>,
+e integracao completa com o sistema de janelas do macOS.</p>
+
+<div class="info-box info">
+  <strong>Estatisticas do Backend</strong>
+  <table>
+    <tr><th>Linguagem</th><th>Objective-C++</th></tr>
+    <tr><th>Linhas de codigo</th><th>~3.800</th></tr>
+    <tr><th>Funcoes HB_FUNC</th><th>~158</th></tr>
+    <tr><th>API Nativa</th><th>Cocoa / AppKit (NSView, NSWindow)</th></tr>
+    <tr><th>Scintilla</th><th>5.5.3 (biblioteca estatica)</th></tr>
+    <tr><th>SO Suportado</th><th>macOS 12 (Monterey) e posterior</th></tr>
+    <tr><th>Arquiteturas</th><th>x86_64, ARM64 (Apple Silicon)</th></tr>
+  </table>
+</div>
+
+<h2>Visao Geral da Arquitetura</h2>
+
+<div class="mermaid">
+graph TB
+    A["Harbour .prg"] --> B["hbbuilder.ch<br/>preprocessador #xcommand"]
+    B --> C["TForm, TControl<br/>classes OOP Harbour"]
+    C --> D["Bridge HB_FUNC<br/>~158 funcoes"]
+    D --> E["Backend Cocoa<br/>Objective-C++ / NSView"]
+    E --> F["AppKit<br/>NSButton, NSTextField, etc."]
+    E --> G["Core Graphics<br/>Desenho"]
+    E --> H["Scintilla 5.5.3<br/>Biblioteca estatica"]
+    style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style C fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style D fill:#f59e0b,stroke:#d97706,color:#0d1117
+    style E fill:#555,stroke:#333,color:#fff
+    style F fill:#555,stroke:#333,color:#fff
+    style G fill:#555,stroke:#333,color:#fff
+    style H fill:#555,stroke:#333,color:#fff
+</div>
+
+<h2>Criacao de Janelas Nativas</h2>
+<p>Cada formulario HarbourBuilder e um <code>NSWindow</code> nativo com uma visao de conteudo <code>NSView</code>.
+Controles sao subclasses Cocoa de <code>NSView</code>:</p>
+
+<pre><span class="cm">// cocoa_backend.mm - Criando uma janela de formulario</span>
+HB_FUNC( UI_FORMNEW )
+{
+   const char * cTitle = hb_parc( 1 );
+   NSInteger nWidth  = hb_parni( 2 );
+   NSInteger nHeight = hb_parni( 3 );
+
+   NSRect frame = NSMakeRect( <span class="nb">0</span>, <span class="nb">0</span>, nWidth, nHeight );
+   NSWindowStyleMask style = NSWindowStyleMaskTitled |
+                             NSWindowStyleMaskClosable |
+                             NSWindowStyleMaskMiniaturizable |
+                             NSWindowStyleMaskResizable;
+
+   NSWindow * window = [[NSWindow alloc] initWithContentRect:frame
+                                                    styleMask:style
+                                                      backing:NSBackingStoreBuffered
+                                                        defer:NO];
+   [window setTitle:[NSString stringWithUTF8String:cTitle]];
+   [window center];
+
+   <span class="cm">// Configurar a visao de conteudo (NSView para controles filhos)</span>
+   NSView * contentView = [[NSView alloc] initWithFrame:frame];
+   [window setContentView:contentView];
+
+   <span class="cm">// Armazenar handle na tabela de objetos do lado Harbour</span>
+   hb_retnint( (NSInteger)(intptr_t) window );
+}</pre>
+
+<p>Controles mapeiam para classes Cocoa nativas:</p>
+
+<table>
+  <tr><th>Controle HarbourBuilder</th><th>Classe Cocoa</th></tr>
+  <tr><td>Button</td><td><code>NSButton</code> (NSButtonTypeMomentaryPushIn)</td></tr>
+  <tr><td>Label</td><td><code>NSTextField</code> (estilo label, nao editavel)</td></tr>
+  <tr><td>Edit</td><td><code>NSTextField</code> (editavel, linha unica)</td></tr>
+  <tr><td>Memo</td><td><code>NSTextView</code> (em NSScrollView)</td></tr>
+  <tr><td>CheckBox</td><td><code>NSButton</code> (NSButtonTypeSwitch ou NSButtonTypeCheck)</td></tr>
+  <tr><td>ComboBox</td><td><code>NSComboBox</code></td></tr>
+  <tr><td>ListBox</td><td><code>NSScrollView</code> com <code>NSListView</code></td></tr>
+  <tr><td>GroupBox</td><td><code>NSBox</code> (NSBoxTypeCustom)</td></tr>
+  <tr><td>ProgressBar</td><td><code>NSProgressIndicator</code> (NSProgressIndicatorStyleBar)</td></tr>
+  <tr><td>Slider/TrackBar</td><td><code>NSSlider</code></td></tr>
+  <tr><td>Image</td><td><code>NSImageView</code></td></tr>
+  <tr><td>TabControl</td><td><code>NSTabView</code></td></tr>
+  <tr><td>TableView</td><td><code>NSTableView</code> (em NSScrollView)</td></tr>
+  <tr><td>Timer</td><td><code>NSTimer</code></td></tr>
+</table>
+
+<h2>Tratamento de Eventos</h2>
+<p>O backend macOS usa o padrao target-action do Cocoa e o sistema de notificacoes. Cada controle
+registra um target de acao que chama o sistema de eventos Harbour:</p>
+
+<pre><span class="cm">// cocoa_backend.mm - Vinculacao de eventos de botao</span>
+HB_FUNC( UI_ONEVENT )
+{
+   NSInteger nHandle = hb_parnint( 1 );
+   NSInteger nEventId = hb_parnint( 2 );
+   PHB_ITEM pBlock = hb_param( 3, HB_IT_BLOCK );
+
+   NSButton * btn = (NSButton *)(intptr_t) nHandle;
+
+   <span class="cm">// Armazenar o bloco de codigo Harbour em uma tabela lateral</span>
+   <span class="fn">StoreEventBlock</span>( nHandle, nEventId, pBlock );
+
+   <span class="cm">// Configurar o target-action Cocoa</span>
+   EventTarget * target = [[EventTarget alloc] initWithHandle:nHandle eventId:nEventId];
+   [btn setTarget:target];
+   [btn setAction:@selector( fire: )];
+}
+
+<span class="cm">// EventTarget aciona o bloco de codigo Harbour</span>
+<span class="kw">@implementation</span> EventTarget
+- (<span class="kw">void</span>) fire:(<span class="kw">id</span>)sender {
+   <span class="fn">FireEvent</span>( self.handle, self.eventId );
+}
+<span class="kw">@end</span></pre>
+
+<h2>Modo Escuro</h2>
+<p>O modo escuro do macOS e gerenciado nativamente pelo AppKit:</p>
+
+<ul>
+  <li><strong><code>NSAppearanceNameDarkAqua</code></strong> — O backend define a aparencia da aplicacao como
+  <code>NSAppearanceNameDarkAqua</code> quando o sistema esta em modo escuro. Todos os controles Cocoa padrao
+  adaptam automaticamente suas cores.</li>
+  <li><strong>Cores automaticas de controles</strong> — <code>NSColor</code> fornece cores semanticas
+  (<code>labelColor</code>, <code>controlColor</code>, <code>windowBackgroundColor</code>) que
+  alternam automaticamente entre variantes claras e escuras.</li>
+  <li><strong>Observacao do tema do sistema</strong> — O backend registra para <code>NSApplicationDidChangeScreenParametersNotification</code>
+  para detetar mudancas de tema em tempo de execucao.</li>
+</ul>
+
+<div class="info-box tip">
+  <strong>Tema do sistema</strong>
+  <p>O HarbourBuilder segue a configuracao de aparencia do macOS. Se seu Mac estiver definido para o modo Dark
+  (Ajustes do Sistema &rarr; Aparencia), o HarbourBuilder e todos os apps criados com ele usarao automaticamente
+  o tema escuro. Sem configuracao necessaria.</p>
+</div>
+
+<h2>Integracao Scintilla</h2>
+<p>No macOS, Scintilla 5.5.3 e compilado como biblioteca estatica e linkado diretamente no binario do HarbourBuilder:</p>
+
+<table>
+  <tr><th>Arquivo</th><th>Tipo</th><th>Proposito</th></tr>
+  <tr><td><code>libscintilla.a</code></td><td>Biblioteca estatica</td><td>Componente principal de edicao Scintilla</td></tr>
+  <tr><td><code>liblexilla.a</code></td><td>Biblioteca estatica</td><td>Biblioteca de lexer</td></tr>
+</table>
+
+<h2>Processo de Build</h2>
+
+<h3>Pre-requisitos</h3>
+<ol>
+  <li><strong>Xcode Command Line Tools</strong> — Este e o unico pre-requisito. Instale com:
+    <pre>xcode-select --install</pre>
+    Isso fornece <code>clang</code>, <code>make</code> e os headers do SDK macOS.
+  </li>
+  <li><strong>Nenhuma instalacao separada do Harbour necessaria</strong> — O script de build baixa e compila o Harbour automaticamente se nao estiver presente.</li>
+</ol>
+
+<h3>Script de Build (<code>build_mac.sh</code>)</h3>
+<p>O script executa estas etapas:</p>
+
+<ol>
+  <li><strong>Verificar Harbour</strong> — Se <code>$HBDIR</code> nao estiver definido ou o Harbour nao for encontrado em <code>~/harbour</code>, ele clona e compila o Harbour de <a href="https://github.com/harbour/core">github.com/harbour/core</a>.</li>
+  <li><strong>Build do Scintilla</strong> — Baixa o fonte Scintilla 5.5.3 e compila <code>libscintilla.a</code> e <code>liblexilla.a</code> como bibliotecas estaticas.</li>
+  <li><strong>Compilar o IDE</strong> — Compila o fonte do HarbourBuilder usando o compilador Harbour e clang para o backend Objective-C++.</li>
+  <li><strong>Linkagem</strong> — Linka com os frameworks macOS: <code>-framework Cocoa</code>, <code>-framework Foundation</code>, <code>-framework AppKit</code>, mais o runtime Harbour e bibliotecas estaticas Scintilla.</li>
+</ol>
+
+<pre><span class="cm"># build_mac.sh - Sessao de build tipica</span>
+<span class="kw">cd</span> HarbourBuilder/samples
+<span class="kw">./build_mac.sh</span>
+
+<span class="cm"># Copiar para bin/ e executar</span>
+<span class="kw">cp</span> HbBuilder ../bin/
+../bin/HbBuilder</pre>
+
+<div class="info-box info">
+  <strong>Caminho customizado do Harbour</strong>
+  <p>Se voce ja tem o Harbour instalado em outro local: <code>HBDIR=/caminho/para/harbour ./build_mac.sh</code></p>
+</div>
+
+<h2>Consideracoes Apple Silicon</h2>
+
+<p>O build padrao tem como alvo <code>x86_64</code> para compatibilidade. Em Macs Apple Silicon (M1/M2/M3/M4),
+o binario roda sob traducao Rosetta 2. Para builds ARM64 nativas:</p>
+
+<ol>
+  <li>Recompile o Harbour para <code>darwin/clang/arm64</code></li>
+  <li>Atualize <code>HBDIR</code> em <code>build_mac.sh</code> para apontar para o build ARM64 do Harbour</li>
+  <li>Recompile o Scintilla com <code>-arch arm64</code></li>
+  <li>Compile o HarbourBuilder com <code>clang -arch arm64</code></li>
+</ol>
+
+<pre><span class="cm"># Build para Apple Silicon (ARM64)</span>
+<span class="kw">export</span> CFLAGS=<span class="st">"-arch arm64"</span>
+<span class="kw">export</span> LDFLAGS=<span class="st">"-arch arm64"</span>
+HBDIR=~/harbour_arm64 ./build_mac.sh</pre>
+
+<div class="info-box tip">
+  <strong>Desempenho Rosetta 2</strong>
+  <p>A traducao Rosetta 2 e muito eficiente em Apple Silicon. A maioria das aplicacoes roda com impacto
+  de desempenho negligenciavel. No entanto, para o melhor desempenho — especialmente com operacoes
+  intensivas de CPU como compilacao — um build ARM64 nativo e recomendado.</p>
+</div>
+
+<h2>Criacao de Pacote .app</h2>
+<p>Para distribuir uma aplicacao HarbourBuilder como um pacote de aplicacao macOS padrao:</p>
+
+<pre>MyApp.app/
+├── Contents/
+│   ├── Info.plist          <span class="cm">// Metadados do pacote</span>
+│   ├── MacOS/
+│   │   └── MyApp           <span class="cm">// O binario compilado</span>
+│   ├── Resources/
+│   │   ├── icon.icns       <span class="cm">// Icone da aplicacao</span>
+│   │   └── MainMenu.nib    <span class="cm">// (opcional) MainMenu</span>
+│   └── PkgInfo             <span class="cm">// APPL????</span></pre>
+
+<h2>Recursos Especificos da Plataforma</h2>
+
+<table>
+  <tr><th>Recurso</th><th>Implementacao macOS</th></tr>
+  <tr><td>Menus nativos</td><td><code>NSMenu</code> / <code>NSMenuItem</code> na barra de menus do sistema</td></tr>
+  <tr><td>Dialogos Abrir/Salvar</td><td><code>NSOpenPanel</code> / <code>NSSavePanel</code></td></tr>
+  <tr><td>Seletor de fontes</td><td><code>NSFontPanel</code></td></tr>
+  <tr><td>Seletor de cores</td><td><code>NSColorPanel</code></td></tr>
+  <tr><td>Dialogos de alerta</td><td><code>NSAlert</code></td></tr>
+  <tr><td>Notificacoes</td><td><code>NSUserNotificationCenter</code></td></tr>
+  <tr><td>Eventos de arquivo</td><td>API <code>FSEvents</code></td></tr>
+  <tr><td>Pasteboard</td><td><code>NSPasteboard</code></td></tr>
+  <tr><td>Modo escuro</td><td><code>NSAppearanceNameDarkAqua</code></td></tr>
+  <tr><td>Suporte Retina</td><td>Automatico via <code>backing:NSBackingStoreBuffered</code></td></tr>
+</table>
+
+<h2>Limitacoes Conhecidas</h2>
+
+<ul>
+  <li><strong>Gatekeeper</strong> — Aplicacoes nao assinadas podem ser bloqueadas pelo Gatekeeper. Clique direito &rarr; Abrir, ou remova a quarentena: <code>xattr -d com.apple.quarantine HbBuilder</code>.</li>
+  <li><strong>Notarizacao</strong> — Para distribuicao a outros Macs, o binario deve ser notariado pelo programa Developer ID da Apple.</li>
+  <li><strong>Versao do Scintilla</strong> — O backend macOS usa Scintilla 5.5.3 (vs 5.6.1 no Windows/Linux) devido a requisitos de compatibilidade especificos do Cocoa na versao mais recente.</li>
+  <li><strong>ARM64</strong> — Builds nativas Apple Silicon exigem recompilacao manual do Harbour e Scintilla para <code>arm64</code>.</li>
+</ul>
+
+<h2>Dependencias</h2>
+<table>
+  <tr><th>Framework/Biblioteca</th><th>Proposito</th></tr>
+  <tr><td><code>-framework Cocoa</code></td><td>Framework umbrella completo Cocoa/AppKit/Foundation</td></tr>
+  <tr><td><code>-framework AppKit</code></td><td>Controles de UI, janelas, visoes, eventos</td></tr>
+  <tr><td><code>-framework Foundation</code></td><td>NSString, NSArray, NSDate, etc.</td></tr>
+  <tr><td><code>libscintilla.a</code></td><td>Componente de edicao de codigo (estatico)</td></tr>
+  <tr><td><code>liblexilla.a</code></td><td>Componente de lexer (estatico)</td></tr>
+  <tr><td><code>libharbour.a</code></td><td>Runtime Harbour</td></tr>
+</table>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

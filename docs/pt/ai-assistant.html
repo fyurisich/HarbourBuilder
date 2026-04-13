@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Assistente de IA - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/ai-assistant.html">EN</a>
+    <a class="lang-btn" href="../es/ai-assistant.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividade (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html" class="active">Assistente de IA</a>
+    <a href="build-run.html">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Recursos do IDE</a> <span>/</span> Assistente de IA
+</div>
+
+<h1>Assistente de IA</h1>
+<p>O Assistente de IA e um painel de chat integrado ao HarbourBuilder que se conecta ao
+<strong>Ollama</strong> para assistencia de codificacao com IA local. Sem chaves de API, sem servicos em nuvem,
+sem dados saindo da sua maquina — apenas um modelo local fornecendo assistencia instantanea
+enquanto voce codifica.</p>
+
+<div class="info-box tip">
+  <strong>100% Local e Privado</strong>
+  <p>O Assistente de IA se comunica com uma instancia local do Ollama rodando na sua maquina.
+  Seu codigo, perguntas e prompts nunca saem do seu computador. Isso e ideal para ambientes
+  empresariais, bases de codigo proprietarias e desenvolvedores que valorizam a privacidade.</p>
+</div>
+
+<h2>Backends Suportados</h2>
+
+<table>
+  <tr><th>Backend</th><th>Tipo</th><th>Chave API</th><th>Rede</th></tr>
+  <tr><td><strong>Ollama</strong></td><td>Local</td><td>Nenhuma</td><td>Apenas localhost</td></tr>
+  <tr><td><strong>LM Studio</strong></td><td>Local</td><td>Nenhuma</td><td>Apenas localhost</td></tr>
+</table>
+
+<h2>Seletor de Modelos</h2>
+
+<p>O Assistente de IA inclui um seletor de modelos que lista todos os modelos disponiveis detectados
+da sua instancia Ollama ou LM Studio em execucao. As opcoes disponiveis normalmente incluem:</p>
+
+<table>
+  <tr><th>Modelo</th><th>Tamanho</th><th>Melhor Para</th></tr>
+  <tr><td><code>llama3</code></td><td>~5 GB</td><td>Uso geral, codificacao, explicacao</td></tr>
+  <tr><td><code>codellama</code></td><td>~4 GB</td><td>Geracao e refatoracao de codigo</td></tr>
+  <tr><td><code>mistral</code></td><td>~4 GB</td><td>Respostas rapidas, tarefas de codificacao</td></tr>
+  <tr><td><code>deepseek-coder</code></td><td>~4 GB</td><td>Consultas especificas de codigo</td></tr>
+  <tr><td><code>phi3</code></td><td>~2 GB</td><td>Leve, rapido em hardware modesto</td></tr>
+  <tr><td><code>qwen2.5-coder</code></td><td>~3 GB</td><td>Assistencia de codigo multi-linguagem</td></tr>
+</table>
+
+<div class="info-box info">
+  <strong>Gerenciamento de Modelos</strong>
+  <p>Execute <code>ollama list</code> no seu terminal para ver os modelos instalados.
+  Instale novos modelos com <code>ollama pull &lt;nome-do-modelo&gt;</code>. O Assistente de IA
+  deteta automaticamente os modelos disponiveis ao abrir o painel.</p>
+</div>
+
+<h2>Interface de Chat</h2>
+
+<p>O painel do Assistente de IA oferece uma experiencia de chat familiar:</p>
+
+<ul>
+  <li><strong>Historico de chat</strong> — visao de conversa rolavel com suas mensagens e respostas da IA.</li>
+  <li><strong>Campo de entrada</strong> — digite sua pergunta ou cole codigo para analise.</li>
+  <li><strong>Botao enviar</strong> — envie sua mensagem ao modelo.</li>
+  <li><strong>Respostas em streaming</strong> — veja a resposta aparecer token por token.</li>
+  <li><strong>Blocos de codigo</strong> — o codigo gerado e exibido em blocos formatados com destaque de sintaxe e botao de copiar.</li>
+  <li><strong>Seletor de modelo</strong> — troque modelos sem reiniciar.</li>
+  <li><strong>Limpar chat</strong> — resetar o historico de conversa.</li>
+</ul>
+
+<h2>Prompts de Exemplo</h2>
+
+<p>Aqui estao alguns prompts eficazes para testar com o Assistente de IA:</p>
+
+<table>
+  <tr><th>Categoria</th><th>Prompt</th></tr>
+  <tr><td>Geracao de codigo</td><td><em>"Escreva uma funcao Harbour que ordena um array usando quicksort"</em></td></tr>
+  <tr><td>Explicacao</td><td><em>"Explique como o componente TTransformer funciona"</em></td></tr>
+  <tr><td>Depuracao</td><td><em>"Por que estou recebendo um erro 'variavel nao encontrada' nesta linha?"</em></td></tr>
+  <tr><td>Refatoracao</td><td><em>"Reescreva este codigo procedural como uma classe Harbour"</em></td></tr>
+  <tr><td>Boas praticas</td><td><em>"Qual a melhor forma de lidar com conexoes de banco de dados no HarbourBuilder?"</em></td></tr>
+  <tr><td>Aprendizado</td><td><em>"Mostre como usar eventos com um TButton"</em></td></tr>
+</table>
+
+<h2>Usando TOllama no Seu Codigo</h2>
+
+<p>O mesmo componente TOllama que alimenta o Assistente de IA esta disponivel nas suas proprias aplicacoes.
+Veja como usa-lo:</p>
+
+<h3>Uso Basico</h3>
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">function</span> <span class="fn">Main</span>()
+
+   <span class="kw">local</span> oOllama, cResponse
+
+   <span class="cmd">DEFINE OLLAMA</span> oOllama ;
+      <span class="cmd">HOST</span> <span class="st">"localhost"</span> ;
+      <span class="cmd">PORT</span> <span class="nb">11434</span> ;
+      <span class="cmd">MODEL</span> <span class="st">"llama3"</span>
+
+   cResponse := oOllama:<span class="fn">Chat</span>( <span class="st">"O que e a linguagem de programacao Harbour?"</span> )
+
+   ? cResponse
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Resposta em Streaming</h3>
+<pre><span class="kw">static function</span> <span class="fn">StreamExample</span>( oOllama, oMemo )
+
+   <span class="kw">local</span> cPrompt := <span class="st">"Escreva uma funcao Harbour para calcular fibonacci"</span>
+
+   oMemo:<span class="fn">Append</span>( <span class="st">"Gerando...\n\n"</span> )
+
+   <span class="cm">// Stream da resposta token por token em um Memo</span>
+   oOllama:<span class="fn">ChatStream</span>( cPrompt, ;
+      { |cToken| oMemo:<span class="fn">Append</span>( cToken ) } )
+
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<h3>Definindo um Prompt de Sistema</h3>
+<pre>oOllama:<span class="fn">SetSystem</span>( <span class="st">"Voce e um especialista em Harbour/xBase. </span>;
+   <span class="st">Sempre forneca exemplos de codigo completos e funcionais. </span>;
+   <span class="st">Explique seu raciocinio claramente."</span> )
+
+cResponse := oOllama:<span class="fn">Chat</span>( <span class="st">"Como leio um arquivo linha por linha?"</span> )</pre>
+
+<h3>Usando LM Studio</h3>
+<p>LM Studio fornece uma API compativel. Basta apontar o TOllama para o servidor LM Studio:</p>
+
+<pre>oOllama := TOllama():New()
+oOllama:<span class="prop">cHost</span> := <span class="st">"localhost"</span>
+oOllama:<span class="prop">nPort</span> := <span class="nb">1234</span>  <span class="cm">// Porta padrao do LM Studio</span>
+oOllama:<span class="prop">cModel</span> := <span class="st">"local-model"</span></pre>
+
+<h2>Beneficios de Privacidade</h2>
+
+<div class="mermaid">
+graph LR
+    A["Seu Codigo"] --> B["Ollama / LM Studio\n(na sua maquina)"]
+    B --> C["Modelo de IA\n(local)"]
+    C --> D["Resposta\n(de volta para voce)"]
+    style A fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style B fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style C fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style D fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<ul>
+  <li><strong>Sem exfiltracao de dados</strong> — seu codigo fonte, logica de negocio e chaves de API nunca saem da sua maquina.</li>
+  <li><strong>Sem chaves de API para gerenciar</strong> — modelos locais nao requerem autenticacao ou configuracao de faturamento.</li>
+  <li><strong>Funciona offline</strong> — uma vez baixados os modelos, nenhuma conexao com a internet e necessaria.</li>
+  <li><strong>Sem limites de taxa</strong> — consultas ilimitadas sem limites de uso ou custos por token.</li>
+  <li><strong>Seguro para empresas</strong> — em conformidade com politicas que proibem enviar codigo para servicos externos de IA.</li>
+</ul>
+
+<div class="info-box tip">
+  <strong>Assistente de IA vs Componente TOllama</strong>
+  <p>O Assistente de IA usa TOllama internamente. Tudo que voce pode fazer no painel do assistente,
+  voce tambem pode fazer programaticamente nas suas proprias aplicacoes HarbourBuilder. Consulte o
+  <a href="tutorial-ai.html">tutorial de Integracao com IA</a> para um guia completo.</p>
+</div>
+
+<h2>Configuracao</h2>
+
+<p>Abra o painel do Assistente de IA pelo menu <strong>Ferramentas &gt; Assistente de IA</strong> ou use o
+botao na barra de ferramentas. O icone de engrenagem de configuracoes permite configurar:</p>
+
+<table>
+  <tr><th>Configuracao</th><th>Descricao</th><th>Padrao</th></tr>
+  <tr><td><strong>Backend</strong></td><td>Ollama ou LM Studio</td><td>Ollama</td></tr>
+  <tr><td><strong>Host</strong></td><td>Hostname ou IP do servidor</td><td>localhost</td></tr>
+  <tr><td><strong>Porta</strong></td><td>Porta do servidor</td><td>11434</td></tr>
+  <tr><td><strong>Modelo</strong></td><td>Modelo a usar para o chat</td><td>llama3</td></tr>
+  <tr><td><strong>Temperatura</strong></td><td>Criatividade (0,0–2,0)</td><td>0,7</td></tr>
+  <tr><td><strong>Max Tokens</strong></td><td>Tamanho maximo da resposta</td><td>2048</td></tr>
+  <tr><td><strong>Prompt de Sistema</strong></td><td>Instrucoes personalizadas do sistema</td><td>(vazio)</td></tr>
+</table>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

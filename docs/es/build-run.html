@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compilar y Ejecutar - Documentacion de HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar en la documentacion..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros pasos</h3>
+    <a href="index.html">Vision general</a>
+    <a href="quickstart.html">Inicio rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividad (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de formularios</a>
+    <a href="object-inspector.html">Inspector de objetos</a>
+    <a href="code-editor.html">Editor de codigo</a>
+    <a href="two-way-tools.html">Herramientas bidireccionales</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente IA</a>
+    <a href="build-run.html" class="active">Compilar y ejecutar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriales</h3>
+    <a href="tutorial-hello.html">Hola Mundo</a>
+    <a href="tutorial-forms.html">Trabajar con formularios</a>
+    <a href="tutorial-events.html">Manejo de eventos</a>
+    <a href="tutorial-database.html">CRUD de base de datos</a>
+    <a href="tutorial-webserver.html">Servidor web</a>
+    <a href="tutorial-ai.html">Integracion con IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propiedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Puente HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+<div class="content">
+<div class="breadcrumbs"><a href="index.html">Docs</a> <span>/</span> <a href="index.html">Funciones del IDE</a> <span>/</span> Compilar y ejecutar</div>
+<h1>Compilar y Ejecutar</h1>
+<p>Presiona <strong>F9</strong> para compilar, enlazar y ejecutar tu aplicacion en un solo paso.
+HarbourBuilder orquesta todo el proceso de construccion automaticamente, desde el preprocesamiento
+de tus archivos .prg hasta lanzar el ejecutable resultante.</p>
+
+<div class="info-box tip">
+  <strong>Una Tecla para Construir</strong>
+  <p>Presiona <strong>F9</strong> y HarbourBuilder se encarga de todo: compilacion de Harbour,
+  invocacion del compilador C, enlazado, incorporacion de recursos y lanzamiento de tu aplicacion. Sin makefiles,
+  sin scripts de linea de comandos, sin pasos manuales.</p>
+</div>
+
+<h2>El Proceso de Construccion de 7 Pasos</h2>
+
+<h3>Detalles de los Pasos</h3>
+
+<table>
+  <tr><th>Paso</th><th>Herramienta</th><th>Entrada</th><th>Salida</th><th>Descripcion</th></tr>
+  <tr><td><strong>1. Preprocesar</strong></td><td>Harbour</td><td>.prg, .ch</td><td>.ppo</td><td>Procesa directivas #include, #define y preprocesador xBase.</td></tr>
+  <tr><td><strong>2. Compilar</strong></td><td>Harbour</td><td>.ppo</td><td>.c</td><td>Traduce el fuente Harbour preprocesado a codigo C.</td></tr>
+  <tr><td><strong>3. Compilar C</strong></td><td>Compilador C</td><td>.c</td><td>.o / .obj</td><td>Invoca MSVC, BCC, GCC o Clang para producir archivos de objeto.</td></tr>
+  <tr><td><strong>4. Enlazar</strong></td><td>Enlazador</td><td>.o / .obj</td><td>.exe</td><td>Enlaza archivos de objeto con bibliotecas del runtime Harbour y del sistema.</td></tr>
+  <tr><td><strong>5. Incorporar</strong></td><td>Herramienta de recursos</td><td>iconos, imagenes</td><td>.exe</td><td>Incorpora recursos de la aplicacion (iconos, imagenes, formularios) en el ejecutable.</td></tr>
+  <tr><td><strong>6. Validar</strong></td><td>IDE</td><td>registro de construccion</td><td>informe</td><td>Verifica errores de compilacion/enlazado y los muestra en el panel de Mensajes.</td></tr>
+  <tr><td><strong>7. Lanzar</strong></td><td>IDE</td><td>.exe</td><td>aplicacion en ejecucion</td><td>Lanza la aplicacion compilada para pruebas.</td></tr>
+</table>
+
+<h2>Dialogo de Progreso</h2>
+
+<p>Durante la construccion, un dialogo de progreso muestra el estado en tiempo real de cada paso:</p>
+
+<ul>
+  <li><strong>Barra de progreso</strong> — indicacion visual de la construccion completa en los 7 pasos.</li>
+  <li><strong>Etiqueta del paso actual</strong> — muestra que paso se esta ejecutando (p. ej., "Compilando main.prg...").</li>
+  <li><strong>Boton cancelar</strong> — aborta la construccion en cualquier momento.</li>
+  <li><strong>Salida de registro</strong> — salida cruda del compilador y enlazador mostrada en un area de texto desplazable.</li>
+</ul>
+
+<h2>Dialogo de Errores</h2>
+
+<p>Si la construccion falla, aparece un dialogo de errores con:</p>
+
+<ul>
+  <li><strong>Contador de errores</strong> — numero total de errores encontrados.</li>
+  <li><strong>Contador de advertencias</strong> — numero total de advertencias no fatales.</li>
+  <li><strong>Lista de errores en la que se puede hacer clic</strong> — cada error muestra el archivo, numero de linea y descripcion.</li>
+  <li><strong>Doble clic para navegar</strong> — hacer clic en un error abre el archivo fuente en la linea exacta.</li>
+</ul>
+
+<h2>Panel de Mensajes de Construccion</h2>
+
+<p>El panel de Mensajes de Construccion en la parte inferior del IDE muestra la salida de cada construccion:</p>
+
+<table>
+  <tr><th>Columna</th><th>Descripcion</th></tr>
+  <tr><td><strong>Tipo</strong></td><td>Icono de Error (rojo), Advertencia (amarillo) o Informacion (azul).</td></tr>
+  <tr><td><strong>Archivo</strong></td><td>Archivo fuente donde se origino el mensaje.</td></tr>
+  <tr><td><strong>Linea</strong></td><td>Numero de linea del problema.</td></tr>
+  <tr><td><strong>Mensaje</strong></td><td>Descripcion del error del compilador o enlazador.</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Errores en los que se puede hacer clic</strong>
+  <p>Haz doble clic en cualquier error en el panel de Mensajes de Construccion para saltar directamente a esa linea en
+  el editor de codigo. El editor resalta la linea problematica para identificacion rapida.</p>
+</div>
+
+<h2>Atajos de Teclado</h2>
+
+<table>
+  <tr><th>Atajo</th><th>Accion</th></tr>
+  <tr><td><strong>F9</strong></td><td>Compilar y ejecutar</td></tr>
+  <tr><td><strong>Ctrl+F9</strong></td><td>Solo compilar (no ejecutar)</td></tr>
+  <tr><td><strong>Shift+F9</strong></td><td>Reconstruir todo (limpieza + compilacion completa)</td></tr>
+  <tr><td><strong>F5</strong></td><td>Iniciar depuracion (compilar con banderas de depuracion)</td></tr>
+  <tr><td><strong>Ctrl+Shift+B</strong></td><td>Construir solo el archivo actual</td></tr>
+</table>
+
+<h2>Soporte Multi-Compilador</h2>
+
+<p>HarbourBuilder soporta multiples compiladores C para el paso de enlazado. Elige el que
+mejor se adapte a tu plataforma y licenciamiento:</p>
+
+<table>
+  <tr><th>Compilador</th><th>Plataformas</th><th>Licencia</th><th>Notas</th></tr>
+  <tr><td><strong>MSVC</strong> (Microsoft Visual C++)</td><td>Windows</td><td>Propietario (Build Tools gratis disponibles)</td><td>Recomendado para Windows. Mejor rendimiento y compatibilidad.</td></tr>
+  <tr><td><strong>BCC</strong> (Borland C++ Compiler)</td><td>Windows</td><td>Propietario (version gratis disponible)</td><td>Soporte legacy. Compatible con compilaciones Harbour mas antiguas.</td></tr>
+  <tr><td><strong>GCC</strong></td><td>Linux, macOS (via Xcode)</td><td>GPL</td><td>Predeterminado en Linux. Disponible en macOS via Homebrew o Xcode.</td></tr>
+  <tr><td><strong>Clang</strong></td><td>macOS, Linux</td><td>BSD-style</td><td>Recomendado para macOS. Parte de Xcode Command Line Tools.</td></tr>
+</table>
+
+<h2>Reconstruccion Inteligente</h2>
+
+<p>HarbourBuilder usa un sistema de seguimiento de dependencias para evitar recompilaciones innecesarias:</p>
+
+<ul>
+  <li><strong>Timestamps de modificacion de archivos</strong> — solo los archivos .prg modificados desde la ultima construccion se recompilan.</li>
+  <li><strong>Seguimiento de dependencias de inclusion</strong> — si un archivo de cabecera .ch cambia, todos los archivos .prg que lo incluyen (#include) se recompilan.</li>
+  <li><strong>Validacion de archivos de objeto</strong> — los archivos .o / .obj se reutilizan si su fuente no ha cambiado.</li>
+  <li><strong>Enlazado incremental</strong> — el enlazador solo re-enlaza archivos de objeto cambiados cuando es posible.</li>
+</ul>
+
+<div class="info-box info">
+  <strong>Reconstruccion inteligente vs. completa</strong>
+  <p>Presiona <strong>F9</strong> para una construccion inteligente (solo archivos cambiados). Presiona <strong>Shift+F9</strong>
+  para una reconstruccion completa (limpiar todo y recompilar todos los archivos). Usa una reconstruccion completa despues de cambiar
+  configuraciones del compilador, agregar dependencias de bibliotecas, o cuando las construcciones incrementales producen resultados inesperados.</p>
+</div>
+
+<h2>Opciones del Proyecto</h2>
+
+<p>Configura tus ajustes de construccion mediante <strong>Proyecto &gt; Opciones</strong>:</p>
+
+<table>
+  <tr><th>Categoria</th><th>Opciones</th></tr>
+  <tr><td><strong>Compilador</strong></td><td>Banderas de Harbour: -n2, -w3, -gc, -gl, -gh, -b, y banderas personalizadas.</td></tr>
+  <tr><td><strong>Compilador C</strong></td><td>Seleccionar compilador (MSVC/BCC/GCC/Clang), rutas de inclusion, definiciones, nivel de optimizacion.</td></tr>
+  <tr><td><strong>Enlazador</strong></td><td>Rutas de bibliotecas, bibliotecas adicionales, subsistema (consola/GUI), nombre del archivo de salida.</td></tr>
+  <tr><td><strong>Recursos</strong></td><td>Archivo de icono, manifiesto, archivos incorporados, banderas del compilador de recursos.</td></tr>
+  <tr><td><strong>Salida</strong></td><td>Directorio de salida, nombre del ejecutable, directorio de trabajo, argumentos de linea de comandos.</td></tr>
+  <tr><td><strong>Depuracion</strong></td><td>Habilitar construccion de depuracion (-gh -b), generar archivo de mapa, salida de simbolos.</td></tr>
+</table>
+
+<h2>Directorio de Salida de Construccion</h2>
+
+<p>Por defecto, la salida compilada va a la carpeta <code>output/</code> dentro de tu proyecto.
+Puedes personalizar esto en Opciones del Proyecto:</p>
+
+<table>
+  <tr><th>Archivo</th><th>Descripcion</th></tr>
+  <tr><td><code>miapp.exe</code></td><td>La aplicacion compilada (Windows) o binario (macOS/Linux).</td></tr>
+  <tr><td><code>miapp.hrb</code></td><td>Archivo de bytecode (cuando se compila con bandera -b para depuracion).</td></tr>
+  <tr><td><code>miapp.map</code></td><td>Archivo de mapa del enlazador (si esta habilitado en opciones del proyecto).</td></tr>
+  <tr><td><code>*.o</code> / <code>*.obj</code></td><td>Archivos de objeto intermedios (conservados para reconstruccion inteligente).</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Compilaciones de Lanzamiento</strong>
+  <p>Para distribucion, haz una reconstruccion limpia (Shift+F9) sin banderas de depuracion (-gh -b).
+  Esto produce un ejecutable mas pequeno y rapido sin simbolos de depuracion incorporados.</p>
+</div>
+</div>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guia de Plataforma Windows - Documentacion de HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar en la documentacion..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros pasos</h3>
+    <a href="index.html">Vision general</a>
+    <a href="quickstart.html">Inicio rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividad (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de formularios</a>
+    <a href="object-inspector.html">Inspector de objetos</a>
+    <a href="code-editor.html">Editor de codigo</a>
+    <a href="two-way-tools.html">Herramientas bidireccionales</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Asistente IA</a>
+    <a href="build-run.html">Compilar y ejecutar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriales</h3>
+    <a href="tutorial-hello.html">Hola Mundo</a>
+    <a href="tutorial-forms.html">Trabajar con formularios</a>
+    <a href="tutorial-events.html">Manejo de eventos</a>
+    <a href="tutorial-database.html">CRUD de base de datos</a>
+    <a href="tutorial-webserver.html">Servidor web</a>
+    <a href="tutorial-ai.html">Integracion con IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propiedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Puente HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html" class="active">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+<div class="content">
+<div class="breadcrumbs"><a href="index.html">Docs</a> <span>/</span> <a href="index.html">Plataformas</a> <span>/</span> Windows</div>
+<h1><span class="badge win">Windows</span> Guia de Plataforma</h1>
+<p>El backend de Windows usa la API nativa Win32 y GDI/GDI+ para todo el dibujo. Esta escrito en C++
+y compilado con MSVC o BCC. Este es el backend mas maduro y completo en HarbourBuilder.</p>
+
+<div class="info-box info">
+  <strong>Estadisticas del Backend</strong>
+  <table>
+    <tr><th>Lenguaje</th><th>C++</th></tr>
+    <tr><th>Lineas de codigo</th><th>~7,100</th></tr>
+    <tr><th>Funciones HB_FUNC</th><th>~135</th></tr>
+    <tr><th>API Nativa</th><th>Win32 API (CreateWindowEx, GDI)</th></tr>
+    <tr><th>Scintilla</th><th>5.6.1 (DLL dinamica)</th></tr>
+    <tr><th>SO Soportado</th><th>Windows 10, Windows 11</th></tr>
+  </table>
+</div>
+
+<h2>Vision General de la Arquitectura</h2>
+
+<p>Cada ventana y control de HarbourBuilder es una ventana Win32 nativa creada mediante <code>CreateWindowEx()</code>.
+El backend registra clases de ventana personalizadas al inicio. Los controles son controles comunes Win32 estandar:
+<code>BUTTON</code>, <code>EDIT</code>, <code>STATIC</code>, <code>COMBOBOX</code>, <code>LISTBOX</code>,
+<code>msctls_progress32</code>, <code>msctls_trackbar32</code>, <code>SysTreeView32</code>, <code>SysListView32</code>
+y <code>RichEdit</code>.</p>
+
+<h2>Manejo de Eventos (WndProc)</h2>
+<p>El backend de Windows usa un <code>WndProc</code> central (procedimiento de ventana) que recibe todos los mensajes
+del SO. Los despacha a los manejadores de eventos de Harbour:</p>
+
+<pre><span class="cm">// win32_backend.cpp - Despacho de mensajes</span>
+<span class="kw">LRESULT</span> <span class="kw">CALLBACK</span> <span class="fn">WndProc</span>( HWND hWnd, <span class="kw">UINT</span> msg, <span class="kw">WPARAM</span> wParam, <span class="kw">LPARAM</span> lParam )
+{
+   <span class="kw">switch</span>( msg )
+   {
+      <span class="kw">case</span> WM_COMMAND:
+         <span class="fn">FireEvent</span>( hWnd, EVENT_CLICK, CT_BUTTON );
+         <span class="kw">break</span>;
+      <span class="kw">case</span> WM_LBUTTONDOWN:
+         <span class="fn">FireEvent</span>( hWnd, EVENT_MOUSEDOWN );
+         <span class="kw">break</span>;
+      <span class="kw">case</span> WM_KEYDOWN:
+         <span class="fn">FireEvent</span>( hWnd, EVENT_KEYDOWN, (<span class="kw">int</span>) wParam );
+         <span class="kw">break</span>;
+      <span class="kw">case</span> WM_PAINT:
+         <span class="fn">FireEvent</span>( hWnd, EVENT_PAINT );
+         <span class="kw">break</span>;
+      <span class="kw">case</span> WM_CLOSE:
+         <span class="kw">if</span>( !<span class="fn">FireCloseQuery</span>( hWnd ) )
+            <span class="kw">return</span> <span class="nb">0</span>;  <span class="cm">// Cancelar cierre</span>
+         <span class="kw">break</span>;
+   }
+   <span class="kw">return</span> <span class="fn">DefWindowProc</span>( hWnd, msg, wParam, lParam );
+}</pre>
+
+<h2>Soporte de Modo Oscuro</h2>
+<p>HarbourBuilder en Windows sigue el tema del sistema. El modo oscuro se implementa usando:</p>
+
+<ul>
+  <li><strong><code>DwmSetWindowAttribute()</code></strong> — Habilita barras de titulo oscuras en Windows 10/11 estableciendo
+  <code>DWMWA_USE_IMMERSIVE_DARK_MODE</code>.</li>
+  <li><strong>Estilos de clase de ventana oscuros</strong> — Cuando el sistema esta en modo oscuro, el backend registra
+  clases de ventana con pinceles de fondo oscuros.</li>
+  <li><strong>Colores oscuros GDI</strong> — Los colores de los controles usan valores de paleta oscura (fondos casi negros,
+  texto claro).</li>
+  <li><strong>Tema oscuro de Scintilla</strong> — El editor de codigo usa un estilo de lexer oscuro que coincide con el tema del IDE.</li>
+</ul>
+
+<div class="info-box tip">
+  <strong>Deteccion del tema del sistema</strong>
+  <p>HarbourBuilder lee la configuracion del tema de Windows desde el registro
+  (<code>HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize\AppsUseLightTheme</code>)
+  al inicio y configura todos los controles en consecuencia.</p>
+</div>
+
+<h2>Integracion de Scintilla</h2>
+<p>El backend de Windows usa Scintilla 5.6.1 como biblioteca dinamica:</p>
+
+<table>
+  <tr><th>Archivo</th><th>Ubicacion</th><th>Proposito</th></tr>
+  <tr><td><code>Scintilla.dll</code></td><td><code>bin/</code></td><td>Componente principal de edicion Scintilla</td></tr>
+  <tr><td><code>Lexilla.dll</code></td><td><code>bin/</code></td><td>Biblioteca de lexer (resaltado de sintaxis)</td></tr>
+</table>
+
+<p>Scintilla se carga en tiempo de ejecucion mediante <code>LoadLibrary()</code> y <code>GetProcAddress()</code>.</p>
+
+<h2>Opciones del Compilador</h2>
+
+<h3>Compiladores Soportados</h3>
+<table>
+  <tr><th>Compilador</th><th>Version</th><th>Notas</th></tr>
+  <tr><td>MSVC 2022</td><td>19.3x</td><td>Recomendado. Soporte completo C++17, mejor optimizacion.</td></tr>
+  <tr><td>MSVC 2019</td><td>19.2x</td><td>Totalmente soportado. Disponible via Visual Studio 2019 o Build Tools.</td></tr>
+  <tr><td>MSVC Community</td><td>Ultima</td><td>Edicion gratuita, compilador identico a Pro/Enterprise.</td></tr>
+  <tr><td>MSVC BuildTools</td><td>Ultima</td><td>Solo linea de comandos. Bueno para pipelines CI/CD.</td></tr>
+  <tr><td>BCC</td><td>7.7</td><td>Embarcadero Borland C++ Compiler. Alternativa a MSVC.</td></tr>
+</table>
+
+<h3>Script de Construccion</h3>
+<p>El script <code>build_win.bat</code> maneja todo el proceso de construccion:</p>
+
+<ol>
+  <li><strong>Deteccion del compilador</strong> — Busca instalaciones de MSVC (2019, 2022, Community, BuildTools) y BCC.</li>
+  <li><strong>Configuracion del entorno</strong> — Llama a <code>vcvarsall.bat</code> para configurar el entorno del compilador.</li>
+  <li><strong>Compilacion de Harbour</strong> — Construye Harbour desde el codigo fuente si aun no esta presente.</li>
+  <li><strong>Construccion de Scintilla</strong> — Compila las DLLs de Scintilla y Lexilla.</li>
+  <li><strong>Compilacion del IDE</strong> — Compila el codigo fuente de HarbourBuilder.</li>
+  <li><strong>Enlazado</strong> — Enlaza contra <code>user32.lib</code>, <code>gdi32.lib</code>, <code>comctl32.lib</code>, <code>dwmapi.lib</code> y el runtime de Harbour.</li>
+</ol>
+
+<h2>Caracteristicas Especificas de la Plataforma</h2>
+
+<table>
+  <tr><th>Caracteristica</th><th>Implementacion en Windows</th></tr>
+  <tr><td>Control Rich Edit</td><td><code>RichEdit20W</code> / <code>RichEdit50W</code> (msftedit.dll)</td></tr>
+  <tr><td>Dialogos comunes</td><td><code>GetOpenFileName()</code>, <code>GetSaveFileName()</code>, <code>ChooseFont()</code>, <code>ChooseColor()</code></td></tr>
+  <tr><td>Bandeja del sistema</td><td><code>Shell_NotifyIcon()</code> con <code>NOTIFYICONDATA</code></td></tr>
+  <tr><td>Acceso al registro</td><td><code>RegOpenKeyEx()</code>, <code>RegQueryValueEx()</code></td></tr>
+  <tr><td>Asociaciones de archivo</td><td>Basado en registro bajo <code>HKEY_CLASSES_ROOT</code></td></tr>
+  <tr><td>Arrastrar y soltar</td><td><code>DragAcceptFiles()</code> / <code>WM_DROPFILES</code></td></tr>
+  <tr><td>Portapapeles</td><td><code>OpenClipboard()</code>, <code>SetClipboardData()</code></td></tr>
+  <tr><td>Impresion</td><td>API Win32 Print (<code>PrintDlg()</code>, <code>StartDoc()</code>)</td></tr>
+  <tr><td>Barras de titulo oscuras</td><td><code>DwmSetWindowAttribute()</code> con <code>DWMWA_USE_IMMERSIVE_DARK_MODE</code></td></tr>
+</table>
+
+<h2>Limitaciones Conocidas</h2>
+
+<ul>
+  <li><strong>Requisito de manifiesto</strong> — Las aplicaciones de Windows necesitan un manifiesto incrustado para estilos visuales (ComCtl32 v6) y consciencia DPI.</li>
+  <li><strong>Escalado DPI</strong> — El backend tiene consciencia DPI pero el posicionamiento de controles usa coordenadas de pixeles. Las pantallas de alto DPI pueden requerir ajustes de tamano manuales.</li>
+  <li><strong>Version de RichEdit</strong> — El control RichEdit depende de <code>msftedit.dll</code> que puede no estar disponible en versiones muy antiguas de Windows (anteriores a Windows 8).</li>
+  <li><strong>Windows XP/Vista/7/8</strong> — No soportados oficialmente. El backend apunta a APIs de Windows 10+.</li>
+</ul>
+
+<h2>Dependencias</h2>
+<table>
+  <tr><th>Biblioteca</th><th>Proposito</th></tr>
+  <tr><td><code>user32.lib</code></td><td>Gestion de ventanas, mensajes, controles</td></tr>
+  <tr><td><code>gdi32.lib</code></td><td>Dibujo, fuentes, mapas de bits</td></tr>
+  <tr><td><code>comctl32.lib</code></td><td>Controles comunes (TreeView, ListView, ProgressBar, etc.)</td></tr>
+  <tr><td><code>comdlg32.lib</code></td><td>Dialogos comunes (Abrir, Guardar, Fuente, Color)</td></tr>
+  <tr><td><code>dwmapi.lib</code></td><td>Desktop Window Manager (barras de titulo oscuras)</td></tr>
+  <tr><td><code>gdiplus.lib</code></td><td>GDI+ para graficos avanzados</td></tr>
+  <tr><td><code>ole32.lib</code></td><td>Inicializacion COM, portapapeles</td></tr>
+  <tr><td><code>shell32.lib</code></td><td>Funciones del shell, arrastrar y soltar</td></tr>
+</table>
+</div>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

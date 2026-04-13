@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Depurador Integrado - Documentacion de HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+</head>
+<body>
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Buscar en la documentacion..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/index.html">EN</a>
+    <button class="lang-btn active">ES</button>
+    <a class="lang-btn" href="../pt/index.html">PT</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeros pasos</h3>
+    <a href="index.html">Vision general</a>
+    <a href="quickstart.html">Inicio rapido</a>
+    <a href="installation.html">Instalacion</a>
+    <a href="architecture.html">Arquitectura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de componentes</h3>
+    <a href="controls-standard.html">Estandar (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acceso a datos (9)</a>
+    <a href="controls-datacontrols.html">Controles de datos (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Hilos (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividad (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Funciones del IDE</h3>
+    <a href="form-designer.html">Disenador de formularios</a>
+    <a href="object-inspector.html">Inspector de objetos</a>
+    <a href="code-editor.html">Editor de codigo</a>
+    <a href="two-way-tools.html">Herramientas bidireccionales</a>
+    <a href="debugger.html" class="active">Depurador</a>
+    <a href="ai-assistant.html">Asistente IA</a>
+    <a href="build-run.html">Compilar y ejecutar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriales</h3>
+    <a href="tutorial-hello.html">Hola Mundo</a>
+    <a href="tutorial-forms.html">Trabajar con formularios</a>
+    <a href="tutorial-events.html">Manejo de eventos</a>
+    <a href="tutorial-database.html">CRUD de base de datos</a>
+    <a href="tutorial-webserver.html">Servidor web</a>
+    <a href="tutorial-ai.html">Integracion con IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propiedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Puente HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+<div class="content">
+<div class="breadcrumbs"><a href="index.html">Docs</a> <span>/</span> <a href="index.html">Funciones del IDE</a> <span>/</span> Depurador</div>
+<h1>Depurador Integrado</h1>
+<p>HarbourBuilder incluye un depurador completamente integrado que se ejecuta <strong>en proceso</strong> mediante el
+formato de bytecode <code>.hrb</code>. Sin proceso de depurador externo, sin sobrecarga de comunicacion entre procesos
+— el depurador es parte del propio Harbour VM, proporcionando una experiencia de depuracion sin fisuras
+con control total sobre la ejecucion.</p>
+
+<div class="info-box tip">
+  <strong>Depuracion en Proceso</strong>
+  <p>A diferencia de los depuradores tradicionales que se adjuntan a un proceso en ejecucion, el depurador de HarbourBuilder
+  opera dentro del mismo Harbour VM. Esto significa latencia cero para la inspeccion de variables, hits de puntos de interrupcion instantaneos
+  e informacion precisa de la pila de llamadas en todo momento.</p>
+</div>
+
+<h2>Arquitectura</h2>
+
+<div class="mermaid">
+graph TB
+    A["Codigo Fuente (.prg)"] --> B["Compilador Harbour\nharbour -gh -b"]
+    B --> C["Bytecode .hrb\n(simbolos de depuracion)"]
+    C --> D["Harbour VM\ncon API hb_dbg_*"]
+    D --> E["Gancho de Depuracion\nhb_dbg_SetEntry"]
+    E --> F["IDE Depurador UI"]
+    F --> G["Panel Watch"]
+    F --> H["Panel Locales"]
+    F --> I["Panel Pila de Llamadas"]
+    F --> J["Panel Puntos de Interrupcion"]
+    F --> K["Panel de Salida"]
+</div>
+
+<h2>Compilacion para Depuracion</h2>
+
+<p>Para generar bytecode depurable, compila con estas banderas:</p>
+
+<table>
+  <tr><th>Bandera</th><th>Proposito</th></tr>
+  <tr><td><code>-gh</code></td><td>Generar simbolos de depuracion (numeros de linea, nombres de variables, informacion de alcance)</td></tr>
+  <tr><td><code>-b</code></td><td>Generar archivo de bytecode .hrb en lugar de codigo fuente C</td></tr>
+</table>
+
+<pre>harbour miapp.prg -gh -b</pre>
+
+<p>El archivo <code>.hrb</code> contiene toda la informacion que el depurador necesita para mapear instrucciones de bytecode
+de vuelta a lineas de codigo fuente, mostrar nombres de variables y reconstruir la pila de llamadas.</p>
+
+<h2>El Gancho de Depuracion: hb_dbg_SetEntry</h2>
+
+<p>En el nucleo del soporte de depuracion de Harbour esta la funcion gancho <code>hb_dbg_SetEntry()</code>.
+Esta funcion de retrollamada es invocada por el Harbour VM en cada instruccion de bytecode cuando el modo de depuracion esta activo,
+permitiendo al IDE:</p>
+
+<ul>
+  <li>Rastrear la linea de codigo fuente que se esta ejecutando</li>
+  <li>Inspeccionar y modificar variables locales y estaticas</li>
+  <li>Evaluar expresiones en el alcance actual</li>
+  <li>Implementar operaciones de paso a paso, saltar y salir</li>
+  <li>Verificar hits de puntos de interrupcion</li>
+</ul>
+
+<div class="info-box info">
+  <strong>Como Funciona el Gancho</strong>
+  <p>Cuando Harbour ejecuta un archivo .hrb compilado con <code>-gh</code>, cada instruccion desencadena
+  una llamada a <code>hb_dbg_SetEntry</code>. El IDE registra su propia funcion de retrollamada mediante
+  <code>hb_dbg_SetEntry()</code>, recibiendo el archivo actual, numero de linea, nombre de funcion
+  y contexto de variables en cada paso.</p>
+</div>
+
+<h2>Barra de Herramientas de Depuracion</h2>
+
+<p>La barra de herramientas de depuracion proporciona cinco controles de ejecucion esenciales:</p>
+
+<table>
+  <tr><th>Icono</th><th>Atajo</th><th>Accion</th><th>Descripcion</th></tr>
+  <tr><td>&#9654;</td><td><strong>F5</strong></td><td><strong>Ejecutar / Continuar</strong></td><td>Iniciar ejecucion o continuar desde un punto de interrupcion</td></tr>
+  <tr><td>&#9208;</td><td><strong>F6</strong></td><td><strong>Pausar</strong></td><td>Pausar la ejecucion en la linea actual</td></tr>
+  <tr><td>&#8595;</td><td><strong>F7</strong></td><td><strong>Paso a paso (entrar)</strong></td><td>Ejecutar la linea actual; si llama a una funcion, entrar en ella</td></tr>
+  <tr><td>&#8594;</td><td><strong>F8</strong></td><td><strong>Paso a paso (saltar)</strong></td><td>Ejecutar la linea actual; saltar las llamadas a funciones</td></tr>
+  <tr><td>&#9632;</td><td><strong>Shift+F5</strong></td><td><strong>Detener</strong></td><td>Terminar la sesion de depuracion</td></tr>
+</table>
+
+<h2>Paneles Acoplables del Depurador</h2>
+
+<p>El depurador proporciona cinco pestanas acoplables que se pueden organizar segun tu flujo de trabajo:</p>
+
+<table>
+  <tr><th>Pestana</th><th>Descripcion</th></tr>
+  <tr><td><strong>Watch</strong></td><td>Agrega expresiones para monitorear sus valores en tiempo real. Soporta expresiones Harbour como <code>oForm:cTitle</code>, <code>aArray[1]</code> y llamadas a funciones.</td></tr>
+  <tr><td><strong>Locales</strong></td><td>Muestra todas las variables locales en el alcance de la funcion actual, incluyendo sus tipos y valores actuales. Auto-expande arreglos y objetos.</td></tr>
+  <tr><td><strong>Pila de Llamadas</strong></td><td>Muestra la pila de llamadas completa con nombres de archivo, numeros de linea y nombres de funcion. Haz clic en cualquier marco para navegar a esa ubicacion de codigo fuente.</td></tr>
+  <tr><td><strong>Puntos de Interrupcion</strong></td><td>Lista de todos los puntos de interrupcion con archivo, linea, condicion y contador de hits. Habilitar/deshabilitar o eliminar puntos de interrupcion individuales.</td></tr>
+  <tr><td><strong>Salida</strong></td><td>Salida de consola de la aplicacion depurada, incluyendo salida <code>? </code> y <code>?? </code>, registros <code>MsgInfo()</code> y mensajes de traza de depuracion.</td></tr>
+</table>
+
+<h2>Configurar Puntos de Interrupcion</h2>
+
+<p>Haz clic en el margen junto a cualquier numero de linea para alternar un punto de interrupcion. Los puntos de interrupcion se indican
+con un punto rojo:</p>
+
+<ul>
+  <li><strong>Punto de interrupcion estandar</strong> — pausa la ejecucion cuando se llega a la linea.</li>
+  <li><strong>Punto de interrupcion condicional</strong> — clic derecho en un punto de interrupcion para establecer una expresion Harbour; la ejecucion se pausa solo cuando la expresion evalua a <code>.T.</code></li>
+  <li><strong>Punto de interrupcion por contador</strong> — pausar solo despues de que el punto de interrupcion haya sido alcanzado N veces.</li>
+</ul>
+
+<h2>Flujo de Trabajo de Sesion de Depuracion</h2>
+
+<ol>
+  <li><strong>Compilar con banderas de depuracion</strong> — Presiona <strong>F9</strong> para construir; el IDE agrega automaticamente <code>-gh -b</code> al depurar.</li>
+  <li><strong>Establecer puntos de interrupcion</strong> — Haz clic en el margen en las lineas donde deseas pausar.</li>
+  <li><strong>Iniciar depuracion</strong> — Presiona <strong>F5</strong> o haz clic en el boton Ejecutar.</li>
+  <li><strong>Inspeccionar variables</strong> — Usa las pestanas Watch y Locales para examinar el estado.</li>
+  <li><strong>Paso a paso por el codigo</strong> — Usa F7 (Paso a paso entrando) o F8 (Paso a paso saltando) para avanzar.</li>
+  <li><strong>Navegar la pila de llamadas</strong> — Haz clic en los marcos del panel Pila de Llamadas para ver el contexto.</li>
+  <li><strong>Detener</strong> — Presiona <strong>Shift+F5</strong> para terminar la sesion.</li>
+</ol>
+
+<div class="info-box tip">
+  <strong>Consejo rapido</strong>
+  <p>Puedes pasar el raton sobre cualquier variable en el editor de codigo mientras estas en pausa para ver su valor actual
+  en una descripcion emergente. Esto funciona para variables locales, propiedades de objetos y elementos de arreglos.</p>
+</div>
+
+<h2>Cobertura de Pruebas Unitarias</h2>
+
+<p>El subsistema del depurador esta cubierto por <strong>16 pruebas unitarias</strong> que verifican:</p>
+
+<table>
+  <tr><th>#</th><th>Prueba</th><th>Verifica</th></tr>
+  <tr><td>1</td><td>Punto de interrupcion establecido y alcanzado</td><td>La ejecucion se pausa en la linea correcta</td></tr>
+  <tr><td>2</td><td>Paso a paso entrando en llamada a funcion</td><td>El depurador entra en la funcion llamada</td></tr>
+  <tr><td>3</td><td>Paso a paso saltando llamada a funcion</td><td>El depurador salta el cuerpo de la funcion</td></tr>
+  <tr><td>4</td><td>Paso a paso saliendo de funcion</td><td>El depurador retorna al llamador</td></tr>
+  <tr><td>5</td><td>Inspeccion de variables locales</td><td>El panel Locales muestra nombres y valores correctos</td></tr>
+  <tr><td>6</td><td>Inspeccion de variables estaticas</td><td>Las variables estaticas son visibles y correctas</td></tr>
+  <tr><td>7</td><td>Evaluacion de expresion Watch</td><td>Las expresiones se evaluan con precision</td></tr>
+  <tr><td>8</td><td>Precision de la pila de llamadas</td><td>Los marcos de pila coinciden con la cadena de llamadas real</td></tr>
+  <tr><td>9</td><td>Punto de interrupcion condicional (verdadero)</td><td>Se pausa cuando se cumple la condicion</td></tr>
+  <tr><td>10</td><td>Punto de interrupcion condicional (falso)</td><td>No se pausa cuando no se cumple la condicion</td></tr>
+  <tr><td>11</td><td>Punto de interrupcion por contador</td><td>Se pausa solo despues de N hits</td></tr>
+  <tr><td>12</td><td>Habilitar/deshabilitar punto de interrupcion</td><td>Alternar funciona correctamente</td></tr>
+  <tr><td>13</td><td>Multiples puntos de interrupcion</td><td>Todos los puntos de interrupcion son respetados</td></tr>
+  <tr><td>14</td><td>Inspeccion de elementos de arreglo</td><td>Los elementos del arreglo se muestran correctamente</td></tr>
+  <tr><td>15</td><td>Inspeccion de propiedades de objeto</td><td>Las propiedades del objeto son navegables</td></tr>
+  <tr><td>16</td><td>Limpieza de sesion de depuracion</td><td>Los recursos se liberan al detener</td></tr>
+</table>
+
+<h2>Resumen de Atajos del Depurador</h2>
+
+<table>
+  <tr><th>Atajo</th><th>Accion</th></tr>
+  <tr><td><strong>F5</strong></td><td>Ejecutar / Continuar</td></tr>
+  <tr><td><strong>F6</strong></td><td>Pausar</td></tr>
+  <tr><td><strong>F7</strong></td><td>Paso a paso (entrar)</td></tr>
+  <tr><td><strong>F8</strong></td><td>Paso a paso (saltar)</td></tr>
+  <tr><td><strong>Shift+F5</strong></td><td>Detener depuracion</td></tr>
+  <tr><td><strong>F9</strong></td><td>Alternar punto de interrupcion en la linea actual</td></tr>
+  <tr><td><strong>Ctrl+Shift+F9</strong></td><td>Limpiar todos los puntos de interrupcion</td></tr>
+</table>
+
+<div class="info-box info">
+  <strong>Siguientes pasos</strong>
+  <p>Despues de depurar, usa <a href="build-run.html">Compilar y Ejecutar</a> para compilar una version de lanzamiento
+  sin simbolos de depuracion para distribucion. Las versiones de lanzamiento son mas pequenas y rapidas ya que omiten
+  las banderas <code>-gh -b</code>.</p>
+</div>
+</div>
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>

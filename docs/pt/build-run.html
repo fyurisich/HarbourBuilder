@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compilar e Executar - Documentacao do HarbourBuilder</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Pesquisar docs..." oninput="doSearch(this.value)">
+    <a class="lang-btn" href="../en/build-run.html">EN</a>
+    <a class="lang-btn" href="../es/build-run.html">ES</a>
+    <button class="lang-btn active">PT</button>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3>Primeiros Passos</h3>
+    <a href="index.html">Visao Geral</a>
+    <a href="quickstart.html">Inicio Rapido</a>
+    <a href="installation.html">Instalacao</a>
+    <a href="architecture.html">Arquitetura</a>
+  </div>
+  <div class="nav-section">
+    <h3>Paleta de Componentes</h3>
+    <a href="controls-standard.html">Padrao (11)</a>
+    <a href="controls-additional.html">Adicional (10)</a>
+    <a href="controls-native.html">Win32 / Cocoa / GTK3 (9)</a>
+    <a href="controls-system.html">Sistema (2)</a>
+    <a href="controls-dialogs.html">Dialogos (6)</a>
+    <a href="controls-database.html">Acesso a Dados (9)</a>
+    <a href="controls-datacontrols.html">Controles de Dados (8)</a>
+    <a href="controls-internet.html">Internet (9)</a>
+    <a href="controls-threading.html">Threading (8)</a>
+    <a href="controls-ai.html">IA (9)</a>
+    <a href="controls-connectivity.html">Conectividade (9)</a>
+    <a href="controls-git.html">Git (10)</a>
+    <a href="controls-erp.html">ERP / Negocios (12)</a>
+  </div>
+  <div class="nav-section">
+    <h3>Recursos do IDE</h3>
+    <a href="form-designer.html">Designer de Formularios</a>
+    <a href="object-inspector.html">Inspetor de Objetos</a>
+    <a href="code-editor.html">Editor de Codigo</a>
+    <a href="two-way-tools.html">Ferramentas Bidirecionais</a>
+    <a href="debugger.html">Depurador</a>
+    <a href="ai-assistant.html">Assistente de IA</a>
+    <a href="build-run.html" class="active">Compilar &amp; Executar</a>
+  </div>
+  <div class="nav-section">
+    <h3>Tutoriais</h3>
+    <a href="tutorial-hello.html">Hello World</a>
+    <a href="tutorial-forms.html">Trabalhando com Formularios</a>
+    <a href="tutorial-events.html">Tratamento de Eventos</a>
+    <a href="tutorial-database.html">CRUD de Banco de Dados</a>
+    <a href="tutorial-webserver.html">Servidor Web</a>
+    <a href="tutorial-ai.html">Integracao com IA</a>
+    <a href="tutorial-transformer.html">Transformer</a>
+  </div>
+  <div class="nav-section">
+    <h3>Referencia</h3>
+    <a href="ref-properties.html">Propriedades A-Z</a>
+    <a href="ref-events.html">Eventos A-Z</a>
+    <a href="ref-methods.html">Metodos A-Z</a>
+    <a href="ref-commands.html">Comandos xBase</a>
+    <a href="ref-functions.html">Bridge HB_FUNC</a>
+  </div>
+  <div class="nav-section">
+    <h3>Plataformas</h3>
+    <a href="platform-windows.html">Windows</a>
+    <a href="platform-macos.html">macOS</a>
+    <a href="platform-linux.html">Linux</a>
+    <a href="platform-android.html">Android <span class="badge planned">Planned</span></a>
+    <a href="platform-ios.html">iOS <span class="badge planned">Planned</span></a>
+  </div>
+</div>
+
+<div class="content">
+
+<div class="breadcrumbs">
+  <a href="index.html">Docs</a> <span>/</span>
+  <a href="index.html">Recursos do IDE</a> <span>/</span> Compilar &amp; Executar
+</div>
+
+<h1>Compilar &amp; Executar</h1>
+<p>Pressione <strong>F9</strong> para compilar, linkar e executar sua aplicacao em uma unica etapa.
+O HarbourBuilder orquestra todo o processo de build automaticamente, desde o preprocessamento
+dos seus arquivos .prg ate a execucao do executavel resultante.</p>
+
+<div class="info-box tip">
+  <strong>Uma Tecla para Compilar</strong>
+  <p>Pressione <strong>F9</strong> e o HarbourBuilder cuida de tudo: compilacao Harbour, invocacao do
+  compilador C, linkagem, incorporacao de recursos e execucao do seu app. Sem makefiles,
+  sem scripts de linha de comando, sem etapas manuais.</p>
+</div>
+
+<h2>O Processo de Build em 7 Etapas</h2>
+
+<div class="mermaid">
+graph LR
+    S1["1. Preprocessar\narquivos .prg"] --> S2["2. Compilar\nHarbour → .c"]
+    S2 --> S3["3. Compilar C\n.c → .o / .obj"]
+    S3 --> S4["4. Linkar\n.o + libs → exe"]
+    S4 --> S5["5. Incorporar\nrecursos"]
+    S5 --> S6["6. Validar\nverificar erros"]
+    S6 --> S7["7. Executar\nrodar o app"]
+    style S1 fill:#d2a8ff,stroke:#bc8cff,color:#0d1117
+    style S2 fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style S3 fill:#58a6ff,stroke:#388bfd,color:#0d1117
+    style S4 fill:#3fb950,stroke:#2ea043,color:#0d1117
+    style S5 fill:#f0883e,stroke:#db6d28,color:#0d1117
+    style S6 fill:#f0883e,stroke:#db6d28,color:#0d1117
+    style S7 fill:#3fb950,stroke:#2ea043,color:#0d1117
+</div>
+
+<h3>Detalhes das Etapas</h3>
+
+<table>
+  <tr><th>Etapa</th><th>Ferramenta</th><th>Entrada</th><th>Saida</th><th>Descricao</th></tr>
+  <tr><td><strong>1. Preprocessar</strong></td><td>Harbour</td><td>.prg, .ch</td><td>.ppo</td><td>Processa #include, #define e diretivas do preprocessador xBase.</td></tr>
+  <tr><td><strong>2. Compilar</strong></td><td>Harbour</td><td>.ppo</td><td>.c</td><td>Traduz o fonte Harbour preprocessado para codigo C.</td></tr>
+  <tr><td><strong>3. Compilar C</strong></td><td>Compilador C</td><td>.c</td><td>.o / .obj</td><td>Invoca MSVC, BCC, GCC ou Clang para produzir arquivos objeto.</td></tr>
+  <tr><td><strong>4. Linkar</strong></td><td>Linker</td><td>.o / .obj</td><td>.exe</td><td>Linka arquivos objeto com a biblioteca Harbour e libs do sistema.</td></tr>
+  <tr><td><strong>5. Incorporar</strong></td><td>Ferramenta de recursos</td><td>icones, imagens</td><td>.exe</td><td>Incorpora recursos da aplicacao (icones, imagens, formularios) no executavel.</td></tr>
+  <tr><td><strong>6. Validar</strong></td><td>IDE</td><td>log de build</td><td>relatorio</td><td>Verifica erros de compilacao/linkagem e os exibe no painel Mensagens de Build.</td></tr>
+  <tr><td><strong>7. Executar</strong></td><td>IDE</td><td>.exe</td><td>app rodando</td><td>Inicia a aplicacao compilada para teste.</td></tr>
+</table>
+
+<h2>Dialogo de Progresso</h2>
+
+<p>Durante o build, um dialogo de progresso mostra o status em tempo real de cada etapa:</p>
+
+<ul>
+  <li><strong>Barra de progresso</strong> — indicacao visual da conclusao do build nas 7 etapas.</li>
+  <li><strong>Rotulo da etapa atual</strong> — mostra qual etapa esta sendo executada (ex: "Compilando main.prg...").</li>
+  <li><strong>Botao cancelar</strong> — aborta o build a qualquer momento.</li>
+  <li><strong>Saida de log</strong> — saida bruta do compilador e linker em uma area de texto rolavel.</li>
+</ul>
+
+<h2>Dialogo de Erros</h2>
+
+<p>Se o build falhar, um dialogo de erros aparece com:</p>
+
+<ul>
+  <li><strong>Contagem de erros</strong> — numero total de erros encontrados.</li>
+  <li><strong>Contagem de avisos</strong> — numero total de avisos nao fatais.</li>
+  <li><strong>Lista de erros clicavel</strong> — cada erro mostra o arquivo, numero da linha e descricao.</li>
+  <li><strong>Duplo clique para navegar</strong> — clicar em um erro abre o arquivo fonte na linha exata.</li>
+</ul>
+
+<h2>Painel de Mensagens de Build</h2>
+
+<p>O painel Mensagens de Build na parte inferior do IDE mostra a saida de cada build:</p>
+
+<table>
+  <tr><th>Coluna</th><th>Descricao</th></tr>
+  <tr><td><strong>Tipo</strong></td><td>Erro (vermelho), Aviso (amarelo) ou Info (azul).</td></tr>
+  <tr><td><strong>Arquivo</strong></td><td>Arquivo fonte onde a mensagem se originou.</td></tr>
+  <tr><td><strong>Linha</strong></td><td>Numero da linha do problema.</td></tr>
+  <tr><td><strong>Mensagem</strong></td><td>Descricao do erro do compilador ou linker.</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Erros Clicaveis</strong>
+  <p>Duplo clique em qualquer erro no painel Mensagens de Build para ir diretamente aquela linha no
+  editor fonte. O editor destaca a linha problematica para identificacao rapida.</p>
+</div>
+
+<h2>Atalhos de Teclado</h2>
+
+<table>
+  <tr><th>Atalho</th><th>Acao</th></tr>
+  <tr><td><strong>F9</strong></td><td>Compilar e executar</td></tr>
+  <tr><td><strong>Ctrl+F9</strong></td><td>Compilar apenas (nao executar)</td></tr>
+  <tr><td><strong>Shift+F9</strong></td><td>Rebuild total (limpar + compilacao completa)</td></tr>
+  <tr><td><strong>F5</strong></td><td>Iniciar depuracao (compilar com flags de depuracao)</td></tr>
+  <tr><td><strong>Ctrl+Shift+B</strong></td><td>Compilar apenas o arquivo atual</td></tr>
+</table>
+
+<h2>Suporte a Multiplos Compiladores</h2>
+
+<p>O HarbourBuilder suporta multiplos compiladores C para a etapa de linkagem. Escolha o que
+melhor se adequa a sua plataforma e licenciamento:</p>
+
+<table>
+  <tr><th>Compilador</th><th>Plataformas</th><th>Licenca</th><th>Notas</th></tr>
+  <tr><td><strong>MSVC</strong> (Microsoft Visual C++)</td><td>Windows</td><td>Proprietario (Build Tools gratuito disponivel)</td><td>Recomendado para Windows. Melhor desempenho e compatibilidade.</td></tr>
+  <tr><td><strong>BCC</strong> (Borland C++ Compiler)</td><td>Windows</td><td>Proprietario (versao gratuita disponivel)</td><td>Suporte legado. Compativel com builds Harbour mais antigos.</td></tr>
+  <tr><td><strong>GCC</strong></td><td>Linux, macOS (via Xcode)</td><td>GPL</td><td>Padrao no Linux. Disponivel no macOS via Homebrew ou Xcode.</td></tr>
+  <tr><td><strong>Clang</strong></td><td>macOS, Linux</td><td>BSD-style</td><td>Recomendado para macOS. Parte do Xcode Command Line Tools.</td></tr>
+</table>
+
+<h2>Rebuild Inteligente</h2>
+
+<p>O HarbourBuilder usa um sistema de rastreamento de dependencias para evitar recompilacoes desnecessarias:</p>
+
+<ul>
+  <li><strong>Timestamps de modificacao</strong> — apenas arquivos .prg modificados desde o ultimo build sao recompilados.</li>
+  <li><strong>Rastreamento de dependencias de include</strong> — se um arquivo de header .ch e alterado, todos os .prg que o #incluem sao recompilados.</li>
+  <li><strong>Validacao de arquivos objeto</strong> — arquivos .o / .obj sao reutilizados se o fonte nao mudou.</li>
+  <li><strong>Linkagem incremental</strong> — o linker apenas relinka arquivos objeto alterados quando possivel.</li>
+</ul>
+
+<div class="info-box info">
+  <strong>Rebuild Inteligente vs. Rebuild Completo</strong>
+  <p>Pressione <strong>F9</strong> para um build inteligente (apenas arquivos alterados). Pressione <strong>Shift+F9</strong>
+  para um rebuild completo (limpar tudo e recompilar todos os arquivos). Use um rebuild completo apos alterar
+  configuracoes do compilador, adicionar dependencias de bibliotecas ou quando builds incrementais produzem resultados inesperados.</p>
+</div>
+
+<h2>Opcoes do Projeto</h2>
+
+<p>Configure as opcoes de build via <strong>Projeto &gt; Opcoes</strong>:</p>
+
+<table>
+  <tr><th>Categoria</th><th>Opcoes</th></tr>
+  <tr><td><strong>Compilador</strong></td><td>Flags Harbour: -n2, -w3, -gc, -gl, -gh, -b e flags customizadas.</td></tr>
+  <tr><td><strong>Compilador C</strong></td><td>Selecionar compilador (MSVC/BCC/GCC/Clang), caminhos de include, defines, nivel de otimizacao.</td></tr>
+  <tr><td><strong>Linker</strong></td><td>Caminhos de bibliotecas, bibliotecas adicionais, subsistema (console/GUI), nome do arquivo de saida.</td></tr>
+  <tr><td><strong>Recursos</strong></td><td>Arquivo de icone, manifest, arquivos incorporados, flags do compilador de recursos.</td></tr>
+  <tr><td><strong>Saida</strong></td><td>Diretorio de saida, nome do executavel, diretorio de trabalho, argumentos de linha de comando.</td></tr>
+  <tr><td><strong>Depuracao</strong></td><td>Habilitar build de depuracao (-gh -b), gerar arquivo de mapa, saida de simbolos.</td></tr>
+</table>
+
+<h2>Diretorio de Saida do Build</h2>
+
+<p>Por padrao, a saida compilada vai para a pasta <code>output/</code> dentro do seu projeto.
+Voce pode personalizar isso nas Opcoes do Projeto:</p>
+
+<table>
+  <tr><th>Arquivo</th><th>Descricao</th></tr>
+  <tr><td><code>myapp.exe</code></td><td>A aplicacao compilada (Windows) ou binario (macOS/Linux).</td></tr>
+  <tr><td><code>myapp.hrb</code></td><td>Arquivo de bytecode (quando compilado com flag -b para depuracao).</td></tr>
+  <tr><td><code>myapp.map</code></td><td>Arquivo de mapa do linker (se habilitado nas opcoes do projeto).</td></tr>
+  <tr><td><code>*.o</code> / <code>*.obj</code></td><td>Arquivos objeto intermediarios (retidos para rebuild inteligente).</td></tr>
+</table>
+
+<div class="info-box tip">
+  <strong>Builds de Release</strong>
+  <p>Para distribuicao, faca um rebuild completo (Shift+F9) sem flags de depuracao (-gh -b).
+  Isso produz um executavel menor e mais rapido sem simbolos de depuracao incorporados.</p>
+</div>
+
+</div>
+
+<script src="../assets/js/docs.js"></script>
+</body>
+</html>
