@@ -1,6 +1,46 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-15 (iOS: native UIKit backend, Harbour cross-compilation, .app build)
+
+  FEATURES
+  - iOS backend: new source/backends/ios/ with native UIKit controls.
+    Implements the same UI_* API as the Android backend (UI_FormNew,
+    UI_LabelNew, UI_ButtonNew, UI_EditNew, UI_SetText, UI_GetText,
+    UI_OnClick, UI_SetFormColor, UI_SetCtrlColor, UI_SetCtrlFont).
+    Controls are real UILabel, UIButton, UITextField — no WebView.
+  - Harbour for iOS: cross-compiled Harbour 3.2.0dev for iOS arm64
+    (device) and x86_64 (simulator) with minimal patches (3 files
+    guarded for system() unavailability on iOS + auto-detection of
+    HB_OS_IOS via TargetConditionals.h).
+  - build-ios-app.sh: 4-stage build pipeline (PRG→C, cross-compile,
+    link with Harbour iOS libs + UIKit frameworks, create signed .app
+    bundle with Info.plist). Supports both device and simulator targets.
+  - bootstrap-harbour.sh: cross-compiles Harbour source for iOS arm64
+    or x86_64 simulator, mirroring the Android bootstrap script.
+  - setup-ios-toolchain.sh: verifies Xcode, iOS SDK, simulator runtime,
+    and Harbour iOS libs; offers to install missing components.
+  - install-and-run.sh: installs .app on iOS simulator and launches it.
+  - iOS sample project: samples/projects/ios/ with Project1.prg and
+    Form1.prg demonstrating the UI_* API.
+  - iOS platform documentation: docs/en/platform-ios.html and
+    docs/es/platform-ios.html.
+  - harbour-ios-arm64.zip: pre-built Harbour iOS libraries in releases/.
+
+  FILES ADDED
+  - source/backends/ios/ios_core.m
+  - source/backends/ios/hello_ios.prg
+  - source/backends/ios/bootstrap-harbour.sh
+  - source/backends/ios/build-ios-app.sh
+  - source/backends/ios/setup-ios-toolchain.sh
+  - source/backends/ios/install-and-run.sh
+  - samples/projects/ios/Project1.prg
+  - samples/projects/ios/Form1.prg
+  - samples/projects/ios/README.md
+  - docs/en/platform-ios.html
+  - docs/es/platform-ios.html
+  - releases/harbour-ios-arm64.zip
+
 2026-04-14 (macOS: Label OnClick, button caption update, nClrPane fixes)
 
   FEATURES

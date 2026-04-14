@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>iOS Platform Guide - HarbourBuilder Documentation</title>
+  <link rel="stylesheet" href="../assets/css/docs.css">
+  <style>
+    .badge.android { background: #34c759; color: #0d1117; }
+    .badge.ios     { background: #007aff; color: #ffffff; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <a class="logo" href="index.html"><span>HB</span> HarbourBuilder Docs</a>
+  <nav>
+    <input class="search-box" type="text" placeholder="Search docs..." oninput="doSearch(this.value)">
+    <button class="lang-btn active">EN</button>
+    <a class="lang-btn" href="../es/platform-ios.html">ES</a>
+    <button class="theme-toggle" onclick="toggleTheme()">&#9788;</button>
+  </nav>
+</div>
+
+<div class="sidebar">
+  <div class="nav-section">
+    <h3 id="getting-started">Getting Started</h3>
+    <a href="index.html">Overview</a>
+    <a href="quickstart.html">Quick Start</a>
+    <a href="installation.html">Installation</a>
+    <a href="architecture.html">Architecture</a>
+  </div>
+  <div class="nav-section">
+    <h3 id="platforms">Platforms</h3>
+    <a href="platform-android.html">Android</a>
+    <a href="platform-ios.html" class="active">iOS</a>
+  </div>
+</div>
+
+<div class="content">
+  <h1>iOS Platform Guide <span class="badge ios">iOS</span></h1>
+
+  <p>HarbourBuilder can build native iOS applications using UIKit controls,
+  following the same UI_* API used for Android. Your Harbour PRG code
+  compiles to native arm64 machine code — no web views, no interpreters.</p>
+
+  <h2>Architecture</h2>
+  <p>The iOS backend uses the same event-loop-inversion pattern as Android:</p>
+  <ul>
+    <li><strong>iOS owns the event loop</strong> — <code>UIApplicationMain()</code> runs the
+        Cocoa Touch event loop, not Harbour.</li>
+    <li><strong>Harbour VM starts inside AppDelegate</strong> —
+        <code>application:didFinishLaunchingWithOptions:</code> calls
+        <code>hb_vmInit()</code> which runs your <code>Main()</code>.</li>
+    <li><strong>UI_* functions create UIKit controls</strong> — UILabel, UIButton,
+        UITextField are created directly in Objective-C.</li>
+    <li><strong>Click events dispatch to Harbour codeblocks</strong> —
+        UIButton target/action calls <code>hb_evalBlock0()</code>.</li>
+  </ul>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>macOS with <strong>Xcode 15+</strong> installed</li>
+    <li>iOS SDK (installed via Xcode > Settings > Platforms)</li>
+    <li>Harbour for macOS (host compiler for PRG→C translation)</li>
+    <li>Harbour for iOS cross-compiled libraries</li>
+  </ul>
+
+  <h2>Setup</h2>
+  <p>Run the setup wizard from the IDE menu: <strong>Run > iOS Setup Wizard</strong></p>
+  <p>Or manually from the terminal:</p>
+  <pre><code>cd source/backends/ios
+./setup-ios-toolchain.sh</code></pre>
+
+  <p>This will:</p>
+  <ol>
+    <li>Verify Xcode and iOS SDK are installed</li>
+    <li>Download the iOS Simulator runtime if missing</li>
+    <li>Build Harbour for iOS (arm64 device + x86_64 simulator) via <code>bootstrap-harbour.sh</code></li>
+  </ol>
+
+  <h2>Building</h2>
+  <p>From the IDE: <strong>Run > Run on iOS</strong></p>
+  <p>Or manually:</p>
+  <pre><code># Build for simulator
+./build-ios-app.sh hello_ios.prg simulator
+
+# Build for device
+./build-ios-app.sh hello_ios.prg device</code></pre>
+
+  <p>The build pipeline has 4 stages:</p>
+  <ol>
+    <li><strong>PRG → C</strong>: Harbour compiler translates your .prg to C</li>
+    <li><strong>Cross-compile</strong>: Clang compiles C + ios_core.m for iOS</li>
+    <li><strong>Link</strong>: Link with Harbour iOS libraries + UIKit frameworks</li>
+    <li><strong>Bundle</strong>: Create .app with Info.plist and codesign</li>
+  </ol>
+
+  <h2>Running on Simulator</h2>
+  <pre><code>./install-and-run.sh</code></pre>
+  <p>Or manually:</p>
+  <pre><code>xcrun simctl boot "iPhone 16"
+xcrun simctl install booted /tmp/HarbouriOS/app-build/HarbourApp.app
+xcrun simctl launch booted com.harbour.builder.app</code></pre>
+
+  <h2>UI_* API Reference</h2>
+  <table>
+    <tr><th>Function</th><th>Description</th></tr>
+    <tr><td><code>UI_FormNew(cTitle, nW, nH)</code></td><td>Create UIViewController with root UIView</td></tr>
+    <tr><td><code>UI_FormShow(hForm)</code></td><td>No-op (form is visible on creation)</td></tr>
+    <tr><td><code>UI_FormRun(hForm)</code></td><td>No-op (iOS owns the event loop)</td></tr>
+    <tr><td><code>UI_LabelNew(hParent, cText, nX, nY, nW, nH)</code></td><td>Create UILabel</td></tr>
+    <tr><td><code>UI_ButtonNew(hParent, cText, nX, nY, nW, nH)</code></td><td>Create UIButton (system type)</td></tr>
+    <tr><td><code>UI_EditNew(hParent, cText, nX, nY, nW, nH)</code></td><td>Create UITextField</td></tr>
+    <tr><td><code>UI_SetText(hCtrl, cText)</code></td><td>Set control text</td></tr>
+    <tr><td><code>UI_GetText(hCtrl)</code></td><td>Get control text</td></tr>
+    <tr><td><code>UI_OnClick(hCtrl, bBlock)</code></td><td>Register click handler codeblock</td></tr>
+    <tr><td><code>UI_SetFormColor(nClr)</code></td><td>Set form background (BGR COLORREF)</td></tr>
+    <tr><td><code>UI_SetCtrlColor(hCtrl, nClr)</code></td><td>Set control background (BGR COLORREF)</td></tr>
+    <tr><td><code>UI_SetCtrlFont(hCtrl, cFamily, nSize)</code></td><td>Set font family and size (points)</td></tr>
+  </table>
+
+  <h2>Color Format</h2>
+  <p>Colors use the Win32 COLORREF format: <code>0x00BBGGRR</code> (BGR).
+  This is the same format used by Android and Win32 backends, so your
+  PRG code is portable across platforms.</p>
+
+  <h2>Harbour iOS Patches</h2>
+  <p>Three small patches were needed to build Harbour for iOS:</p>
+  <ul>
+    <li><code>src/rtl/hbrunfun.c</code> — <code>system()</code> is unavailable on iOS, returns -1</li>
+    <li><code>src/rtl/run.c</code> — same <code>system()</code> guard</li>
+    <li><code>src/common/hbfopen.c</code> — same <code>system()</code> guard</li>
+    <li><code>include/hbdefs.h</code> — auto-detect iOS via <code>TargetConditionals.h</code></li>
+  </ul>
+  <p>These patches are applied automatically by <code>bootstrap-harbour.sh</code>.</p>
+
+  <h2>File Structure</h2>
+  <pre><code>source/backends/ios/
+  ios_core.m              # UIKit backend (HB_FUNCs + AppDelegate + main)
+  hello_ios.prg           # Demo app
+  bootstrap-harbour.sh    # Cross-compile Harbour for iOS
+  build-ios-app.sh        # Build .app from PRG
+  install-and-run.sh      # Install and launch on simulator
+  setup-ios-toolchain.sh  # Verify/install toolchain</code></pre>
+
+</div>
+
+</body>
+</html>
