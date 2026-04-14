@@ -2670,7 +2670,9 @@ static function TBRunAndroid()
    local cGenPrg     := cBackend + "\_generated.prg"
    local cBuildSh    := cBackend + "\build-apk-gui.sh"
    local cApkPath    := cAndroidDir + "\apk-gui\harbour-gui.apk"
-   local cLogPath    := cAndroidDir + "\apk-gui\build.log"
+   // Build log lives OUTSIDE apk-gui because build-apk-gui.sh does
+   // rm -rf /c/HarbourAndroid/apk-gui at startup, which nuked the file.
+   local cLogPath    := cAndroidDir + "\build-apk-gui.log"
    local cBash       := "C:\Program Files\Git\bin\bash.exe"
    local cAdb        := "C:\Android\Sdk\platform-tools\adb.exe"
    local cPrg, cLog, cCmd, nRc
@@ -2712,8 +2714,18 @@ static function TBRunAndroid()
    W32_ProgressOpen( "Building Android APK...", 2 )
    W32_ProgressStep( "Compiling generated PRG -> signed APK..." )
 
-   cCmd := '"' + cBash + '" -lc "bash /c/HarbourBuilder/source/backends/android/build-apk-gui.sh ' + ;
-           '/c/HarbourBuilder/source/backends/android/_generated.prg > /c/HarbourAndroid/apk-gui/build.log 2>&1"'
+   // Delete any stale APK so the "APK exists=Y" check below reflects THIS
+   // build, not a leftover from a previous run.
+   FErase( cApkPath )
+
+   // cmd.exe /c quote rule: if the first char is '"' and the string has
+   // more than two quotes, cmd strips only the first and last '"' and
+   // passes the rest through. Without an OUTER wrapping pair, cmd would
+   // strip a "real" quote from our bash path and the command would break
+   // silently (which is what made every build a no-op). Wrap everything
+   // in a double-quote at each end to give cmd a pair to strip.
+   cCmd := '""' + cBash + '" -lc "bash /c/HarbourBuilder/source/backends/android/build-apk-gui.sh ' + ;
+           '/c/HarbourBuilder/source/backends/android/_generated.prg > /c/HarbourAndroid/build-apk-gui.log 2>&1""'
    AndroidTrace( "Build cmd: " + cCmd )
    W32_ShellExec( cCmd )
    AndroidTrace( "Build cmd returned. APK exists=" + iif( File( cApkPath ), "Y", "N" ) )
@@ -2728,15 +2740,24 @@ static function TBRunAndroid()
       return nil
    endif
 
-   W32_ProgressStep( "Spawning install-and-run terminal..." )
    W32_ProgressClose()
 
+   // Show the info dialog BEFORE spawning the terminal. Otherwise the new
+   // cmd window steals focus and auto-dismisses this MsgInfo before the
+   // user has a chance to read it.
+   MsgInfo( "APK built:" + Chr(10) + cApkPath + Chr(10) + Chr(10) + ;
+            "Click OK to start install + launch in a separate terminal." + Chr(10) + ;
+            "The emulator will boot if it isn't already running." + Chr(10) + ;
+            "Live logcat (HbAndroid + errors) will stream in that window.", ;
+            "Android target" )
+
    // Fire install-and-run.sh in its own terminal window and return
-   // control to the IDE immediately. Use hb_run( "start ..." ) because
-   // W32_ShellExec captures pipes synchronously and tends to hang when
-   // the child re-spawns detached processes.
-   cCmd := 'start "HarbourBuilder Android" "' + cBash + '" -lc ' + ;
-           '"bash /c/HarbourBuilder/source/backends/android/install-and-run.sh; exec bash"'
+   // control to the IDE. hb_run uses system() so it does not inherit
+   // our stdout pipes (W32_ShellExec does, which caused earlier hangs).
+   // Same outer-quote trick here: start parses its own args, but the
+   // surrounding cmd /c still applies rule 2 to the whole thing.
+   cCmd := '"start "HarbourBuilder Android" "' + cBash + '" -lc ' + ;
+           '"bash /c/HarbourBuilder/source/backends/android/install-and-run.sh; exec bash""'
    AndroidTrace( "Launch cmd: " + cCmd )
    nRc := hb_run( cCmd )
    AndroidTrace( "Launch cmd returned rc=" + LTrim( Str( nRc ) ) )
@@ -2819,47 +2840,78 @@ return AllTrim( StrTran( StrTran( cOut, Chr(13), "" ), Chr(10), "" ) )
 // Supported in iteration 1b: Label (1), Edit (2), Button (3) + button OnClick
 // codeblocks if the user named a handler function <CtrlName>Click. Other
 // control types emit a comment line (rendered as no-op on Android).
+//
+// Event handlers written as METHODs on the form class are translated into
+// plain FUNCTIONs and appended, with ::oXxx:Text accesses rewritten into
+// UI_GetText / UI_SetText calls against the control handles.
 static function GenerateAndroidPRG()
 
    local cPRG, e := Chr(10)
    local hForm, nCount, i, hCtrl, nType
    local cName, cText, nL, nT, nW, nH, cTitle, nFW, nFH
    local cEventTab, aDecls := {}, aCreate := {}, aBind := {}
+   local aCtrlNames := {}
    local cQ := Chr(34)
 
-   if Empty( aForms )
-      return ""
-   endif
+   AndroidTrace( "-- GenerateAndroidPRG --" )
+   AndroidTrace( "  nActiveForm = " + LTrim( Str( iif( ValType( nActiveForm ) == "N", nActiveForm, -1 ) ) ) )
+   AndroidTrace( "  Len(aForms) = " + LTrim( Str( Len( aForms ) ) ) )
+   AndroidTrace( "  oDesignForm type = " + ValType( oDesignForm ) )
 
-   // Use the first/active form (iteration 1b supports a single form).
-   if aForms[1][2] == nil .or. aForms[1][2]:hCpp == nil
+   // Prefer the live design form over aForms[1] — that's the one the user
+   // is actively dragging controls onto. aForms[1][2] can be a stale
+   // object when the designer re-created the form.
+   hForm := nil
+   if oDesignForm != nil .and. ValType( oDesignForm ) == "O"
+      hForm := oDesignForm:hCpp
+      AndroidTrace( "  using oDesignForm:hCpp = " + hb_CStr( hForm ) )
+   endif
+   if ( hForm == nil .or. hForm == 0 ) .and. ! Empty( aForms )
+      if aForms[1][2] != nil .and. ValType( aForms[1][2] ) == "O"
+         hForm := aForms[1][2]:hCpp
+         AndroidTrace( "  fallback aForms[1][2]:hCpp = " + hb_CStr( hForm ) )
+      endif
+   endif
+   if hForm == nil .or. hForm == 0
+      AndroidTrace( "  ABORT: no form handle available" )
       return ""
    endif
-   hForm := aForms[1][2]:hCpp
 
    cTitle := UI_GetProp( hForm, "cText" )
-   if Empty( cTitle ); cTitle := aForms[1][1]; endif
+   if Empty( cTitle )
+      cTitle := iif( ! Empty( aForms ), aForms[1][1], "Form1" )
+   endif
    nFW := UI_GetProp( hForm, "nWidth" )
    nFH := UI_GetProp( hForm, "nHeight" )
+   AndroidTrace( "  title='" + cTitle + "' w=" + LTrim(Str(nFW)) + " h=" + LTrim(Str(nFH)) )
 
-   // User's event-handler code (tab 2+): scan by name to detect OnClick bindings.
-   cEventTab := aForms[1][3]
-   if Empty( cEventTab ); cEventTab := ""; endif
+   cEventTab := ""
+   if ! Empty( aForms ) .and. ValType( aForms[1][3] ) == "C"
+      cEventTab := aForms[1][3]
+   endif
 
    nCount := UI_GetChildCount( hForm )
+   AndroidTrace( "  nCount = " + LTrim( Str( nCount ) ) )
    for i := 1 to nCount
       hCtrl := UI_GetChild( hForm, i )
-      if hCtrl == 0; loop; endif
+      if hCtrl == 0
+         AndroidTrace( "  [" + LTrim(Str(i)) + "] hCtrl == 0, skipped" )
+         loop
+      endif
 
       nType := UI_GetType( hCtrl )
       cName := AllTrim( UI_GetProp( hCtrl, "cName" ) )
       if Empty( cName ); cName := "ctrl" + LTrim( Str( i ) ); endif
 
-      cText := StrTran( UI_GetProp( hCtrl, "cText" ), cQ, "'" )  // strip embedded "
+      cText := StrTran( UI_GetProp( hCtrl, "cText" ), cQ, "'" )
       nL := UI_GetProp( hCtrl, "nLeft" )
       nT := UI_GetProp( hCtrl, "nTop" )
       nW := UI_GetProp( hCtrl, "nWidth" )
       nH := UI_GetProp( hCtrl, "nHeight" )
+      AndroidTrace( "  [" + LTrim(Str(i)) + "] type=" + LTrim(Str(nType)) + ;
+                    " name=" + cName + " text='" + cText + "' @(" + ;
+                    LTrim(Str(nL)) + "," + LTrim(Str(nT)) + ") " + ;
+                    LTrim(Str(nW)) + "x" + LTrim(Str(nH)) )
 
       do case
          case nType == 1  // Label
@@ -2867,16 +2919,19 @@ static function GenerateAndroidPRG()
             AAdd( aCreate, '   h' + cName + ' := UI_LabelNew( hForm, "' + cText + '", ' + ;
                   LTrim(Str(nL)) + ', ' + LTrim(Str(nT)) + ', ' + ;
                   LTrim(Str(nW)) + ', ' + LTrim(Str(nH)) + ' )' )
+            AAdd( aCtrlNames, cName )
          case nType == 2  // Edit
             AAdd( aDecls,  "   LOCAL h" + cName )
             AAdd( aCreate, '   h' + cName + ' := UI_EditNew( hForm, "' + cText + '", ' + ;
                   LTrim(Str(nL)) + ', ' + LTrim(Str(nT)) + ', ' + ;
                   LTrim(Str(nW)) + ', ' + LTrim(Str(nH)) + ' )' )
+            AAdd( aCtrlNames, cName )
          case nType == 3  // Button
             AAdd( aDecls,  "   LOCAL h" + cName )
             AAdd( aCreate, '   h' + cName + ' := UI_ButtonNew( hForm, "' + cText + '", ' + ;
                   LTrim(Str(nL)) + ', ' + LTrim(Str(nT)) + ', ' + ;
                   LTrim(Str(nW)) + ', ' + LTrim(Str(nH)) + ' )' )
+            AAdd( aCtrlNames, cName )
             if ( cName + "Click" ) $ cEventTab
                AAdd( aBind, '   UI_OnClick( h' + cName + ', {|| ' + cName + 'Click() } )' )
             endif
@@ -2887,10 +2942,13 @@ static function GenerateAndroidPRG()
 
    cPRG := "// Auto-generated for Android target - DO NOT EDIT" + e
    cPRG += "// Regenerated every time you click Run on Android..." + e + e
+   // Declare control handles as module-scope STATICs so the event
+   // handlers (separate FUNCTIONs below) can read them. LOCALs of Main
+   // would be invisible to Button1Click and crash on first tap.
+   cPRG += "STATIC hForm"
+   AEval( aCtrlNames, {|c| cPRG += ", h" + c } )
+   cPRG += e + e
    cPRG += "PROCEDURE Main()" + e
-   cPRG += "   LOCAL hForm" + e
-   AEval( aDecls, {|c| cPRG += c + e } )
-   cPRG += e
    cPRG += '   hForm := UI_FormNew( "' + StrTran( cTitle, cQ, "'" ) + '", ' + ;
            LTrim( Str( nFW ) ) + ', ' + LTrim( Str( nFH ) ) + ' )' + e
    AEval( aCreate, {|c| cPRG += c + e } )
@@ -2900,7 +2958,118 @@ static function GenerateAndroidPRG()
    endif
    cPRG += e + "   UI_FormRun( hForm )" + e + "RETURN" + e
 
+   // Translate user's METHOD handlers into standalone FUNCTIONs so the
+   // generated PRG is self-contained and the Android linker finds every
+   // symbol referenced by the UI_OnClick codeblocks.
+   cPRG += TranslateHandlers( aBind, cEventTab, aCtrlNames )
+
+   AndroidTrace( "  emitted " + LTrim(Str(Len(aCreate))) + " creation lines, " + ;
+                 LTrim(Str(Len(aBind))) + " bindings, " + ;
+                 LTrim(Str(Len(aCtrlNames))) + " controls tracked" )
+
 return cPRG
+
+// Translate METHOD handlers referenced by the emitted UI_OnClick bindings
+// into plain FUNCTIONs usable by the generated PRG. Rewrites ::oXxx:Text
+// access so it hits UI_GetText/UI_SetText against the backend handles.
+// Any handler we can't find is emitted as an empty stub (so the link
+// succeeds and the button is simply inert until the user fills it in).
+static function TranslateHandlers( aBind, cEventTab, aCtrlNames )
+
+   local cOut := "", e := Chr(10)
+   local i, j, cBind, cName, nPos, nEnd
+   local cBody, aLines, k, cLine, cSetter, cCtrl
+   local cStartTag
+
+   if Empty( aBind )
+      return cOut
+   endif
+
+   for i := 1 to Len( aBind )
+      // Extract handler function name: the piece between "{|| " and "()"
+      cBind := aBind[i]
+      nPos := At( "{|| ", cBind )
+      if nPos == 0; loop; endif
+      nEnd := At( "()", cBind )
+      if nEnd == 0 .or. nEnd <= nPos; loop; endif
+      cName := SubStr( cBind, nPos + 4, nEnd - nPos - 4 )
+
+      // Find "METHOD <cName>() CLASS ..." in the user's form code.
+      cBody := ""
+      cStartTag := "METHOD " + cName + "()"
+      nPos := At( cStartTag, cEventTab )
+      if nPos > 0
+         // Skip to the method body: the line after the METHOD declaration.
+         nPos := At( e, SubStr( cEventTab, nPos ) ) + nPos - 1
+         nEnd := FindMethodEnd( cEventTab, nPos + 1 )
+         cBody := SubStr( cEventTab, nPos + 1, nEnd - nPos - 1 )
+      endif
+
+      // Rewrite ::oXxx:Text references. Works line by line so we can
+      // balance parentheses on setter assignments.
+      aLines := hb_ATokens( cBody, e )
+      for k := 1 to Len( aLines )
+         cLine := aLines[k]
+         for j := 1 to Len( aCtrlNames )
+            cCtrl := aCtrlNames[j]
+            // Setter first (longer match). We turn
+            //   ::oLabel1:Text := expr
+            // into
+            //   UI_SetText( hLabel1, expr )
+            cSetter := "::o" + cCtrl + ":Text :="
+            if cSetter $ cLine
+               cLine := StrTran( cLine, cSetter, ;
+                                 "UI_SetText( h" + cCtrl + ", " ) + " )"
+            else
+               cSetter := "::o" + cCtrl + ":Text:="
+               if cSetter $ cLine
+                  cLine := StrTran( cLine, cSetter, ;
+                                    "UI_SetText( h" + cCtrl + ", " ) + " )"
+               endif
+            endif
+            // Remaining bare accesses are getters.
+            cLine := StrTran( cLine, "::o" + cCtrl + ":Text", ;
+                              "UI_GetText( h" + cCtrl + " )" )
+         next
+         aLines[k] := cLine
+      next
+
+      cBody := ""
+      AEval( aLines, {|c| cBody += c + e } )
+
+      cOut += e + "FUNCTION " + cName + "()" + e + cBody
+      if ! ( "RETURN" $ Upper( cBody ) )
+         cOut += "RETURN NIL" + e
+      endif
+   next
+
+return cOut
+
+// Find the end of a method body starting from nFrom (just past the METHOD
+// declaration). Ends at the next "METHOD ", "ENDCLASS", or "STATIC FUNCTION"
+// - whichever comes first.
+static function FindMethodEnd( cCode, nFrom )
+   local aMarkers := { Chr(10) + "METHOD ",      ;
+                       Chr(10) + "method ",      ;
+                       Chr(10) + "ENDCLASS",     ;
+                       Chr(10) + "endclass",     ;
+                       Chr(10) + "FUNCTION ",    ;
+                       Chr(10) + "function ",    ;
+                       Chr(10) + "STATIC",       ;
+                       Chr(10) + "static" }
+   local nEnd := 0, n, k
+   for k := 1 to Len( aMarkers )
+      n := At( aMarkers[k], SubStr( cCode, nFrom ) )
+      if n > 0 .and. ( nEnd == 0 .or. n < nEnd )
+         nEnd := n
+      endif
+   next
+   if nEnd == 0
+      nEnd := Len( cCode ) + 1
+   else
+      nEnd += nFrom - 1
+   endif
+return nEnd
 
 static function lIsDir( cPath )
 return ! Empty( hb_DirExists( cPath ) )

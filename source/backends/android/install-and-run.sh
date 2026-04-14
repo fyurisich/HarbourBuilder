@@ -10,7 +10,21 @@
 #   5. Tail logcat filtered to our tag so the user sees live output.
 #
 # This runs in its own shell window; the IDE just spawns it and moves on.
+# If ANY step fails, we drop into a prompt so the user can read what
+# went wrong before the window closes.
 
+on_exit() {
+  rc=$?
+  echo
+  echo "========================================"
+  echo "install-and-run finished (exit code $rc)"
+  echo "========================================"
+  read -p "Press enter to close this window..." dummy
+}
+trap on_exit EXIT
+
+# Don't use set -e: we want to keep running and report rather than
+# silently abort out of the window.
 set -u
 
 ADB=/c/Android/Sdk/platform-tools/adb.exe
