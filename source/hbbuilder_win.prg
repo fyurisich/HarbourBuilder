@@ -2848,7 +2848,8 @@ static function GenerateAndroidPRG()
 
    local cPRG, e := Chr(10)
    local hForm, nCount, i, hCtrl, nType
-   local cName, cText, nL, nT, nW, nH, cTitle, nFW, nFH
+   local cName, cText, nL, nT, nW, nH, cTitle, nFW, nFH, nFormClr, nCtrlClr
+   local cFontSpec, cFontFam, nFontSize, aFont
    local cEventTab, aDecls := {}, aCreate := {}, aBind := {}
    local aCtrlNames := {}
    local cQ := Chr(34)
@@ -2883,7 +2884,9 @@ static function GenerateAndroidPRG()
    endif
    nFW := UI_GetProp( hForm, "nWidth" )
    nFH := UI_GetProp( hForm, "nHeight" )
-   AndroidTrace( "  title='" + cTitle + "' w=" + LTrim(Str(nFW)) + " h=" + LTrim(Str(nFH)) )
+   nFormClr := UI_GetProp( hForm, "nClrPane" )
+   AndroidTrace( "  title='" + cTitle + "' w=" + LTrim(Str(nFW)) + ;
+                 " h=" + LTrim(Str(nFH)) + " color=" + LTrim(Str(nFormClr)) )
 
    cEventTab := ""
    if ! Empty( aForms ) .and. ValType( aForms[1][3] ) == "C"
@@ -2938,6 +2941,24 @@ static function GenerateAndroidPRG()
          otherwise
             AAdd( aCreate, '   // ' + cName + ' (type ' + LTrim(Str(nType)) + ') - not yet supported on Android' )
       endcase
+
+      // Per-control visual extras: background color + font.
+      if nType >= 1 .and. nType <= 3   // only the visual types supported in iter 1b
+         nCtrlClr := UI_GetProp( hCtrl, "nClrPane" )
+         if ValType( nCtrlClr ) == "N" .and. nCtrlClr >= 0 .and. nCtrlClr != 4294967295
+            AAdd( aCreate, '   UI_SetCtrlColor( h' + cName + ', ' + LTrim( Str( nCtrlClr ) ) + ' )' )
+         endif
+         cFontSpec := UI_GetProp( hCtrl, "oFont" )
+         if ValType( cFontSpec ) == "C" .and. ! Empty( cFontSpec )
+            aFont := hb_ATokens( cFontSpec, "," )
+            cFontFam  := iif( Len( aFont ) >= 1, AllTrim( aFont[1] ), "" )
+            nFontSize := iif( Len( aFont ) >= 2, Val( AllTrim( aFont[2] ) ), 0 )
+            if ! Empty( cFontFam ) .or. nFontSize > 0
+               AAdd( aCreate, '   UI_SetCtrlFont( h' + cName + ', "' + ;
+                     StrTran( cFontFam, cQ, "'" ) + '", ' + LTrim( Str( nFontSize ) ) + ' )' )
+            endif
+         endif
+      endif
    next
 
    cPRG := "// Auto-generated for Android target - DO NOT EDIT" + e
@@ -2951,6 +2972,9 @@ static function GenerateAndroidPRG()
    cPRG += "PROCEDURE Main()" + e
    cPRG += '   hForm := UI_FormNew( "' + StrTran( cTitle, cQ, "'" ) + '", ' + ;
            LTrim( Str( nFW ) ) + ', ' + LTrim( Str( nFH ) ) + ' )' + e
+   if ValType( nFormClr ) == "N" .and. nFormClr >= 0 .and. nFormClr != 4294967295
+      cPRG += '   UI_SetFormColor( ' + LTrim( Str( nFormClr ) ) + ' )' + e
+   endif
    AEval( aCreate, {|c| cPRG += c + e } )
    if ! Empty( aBind )
       cPRG += e

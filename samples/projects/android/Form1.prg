@@ -24,9 +24,10 @@ METHOD CreateForm() CLASS TForm1
    ::Height := 600
    ::FontName := "Segoe UI"
    ::FontSize := 9
-   ::Color  := 2960685
+   ::Color  := 14715828
 
    @ 20, 20 SAY ::oLabel1 PROMPT "Type your name:" OF Self SIZE 300, 30
+   ::oLabel1:nClrPane := 11397477
    ::oLabel1:oFont := "Segoe UI,12"
    @ 76, 76 GET ::oEdit1 VAR "" OF Self SIZE 300, 50
    ::oEdit1:oFont := "Segoe UI,12"

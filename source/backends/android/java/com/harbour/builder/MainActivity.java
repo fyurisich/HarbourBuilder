@@ -2,6 +2,7 @@ package com.harbour.builder;
 
 import android.app.Activity;
 import android.graphics.Color;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.DisplayMetrics;
 import android.util.TypedValue;
@@ -114,6 +115,47 @@ public class MainActivity extends Activity {
             View v = ctrls.get( id );
             if( v instanceof TextView ) ( (TextView) v ).setText( text );
         }});
+    }
+
+    public void setFormColor( final int argb ) {
+        runOnUiThread( new Runnable() { @Override public void run() {
+            root.setBackgroundColor( argb );
+        }});
+    }
+
+    public void setCtrlColor( final int id, final int argb ) {
+        runOnUiThread( new Runnable() { @Override public void run() {
+            View v = ctrls.get( id );
+            if( v != null ) v.setBackgroundColor( argb );
+        }});
+    }
+
+    /** Set typeface + size for a TextView-based control. Family is the
+     *  Windows face name; we map the common ones and fall back to the
+     *  default typeface for anything else. Size is in SP. */
+    public void setCtrlFont( final int id, final String family, final int sizeSp ) {
+        runOnUiThread( new Runnable() { @Override public void run() {
+            View v = ctrls.get( id );
+            if( ! ( v instanceof TextView ) ) return;
+            TextView tv = (TextView) v;
+            if( family != null && family.length() > 0 ) {
+                tv.setTypeface( mapFamily( family ) );
+            }
+            if( sizeSp > 0 ) {
+                tv.setTextSize( TypedValue.COMPLEX_UNIT_SP, sizeSp );
+            }
+        }});
+    }
+
+    /** Rough Windows-font-name -> Android-typeface mapping. Anything not
+     *  listed falls back to DEFAULT (Roboto on most devices). */
+    private Typeface mapFamily( String face ) {
+        String f = face.toLowerCase();
+        if( f.contains( "mono" ) || f.contains( "courier" ) || f.contains( "consolas" ) )
+            return Typeface.MONOSPACE;
+        if( f.contains( "serif" ) || f.contains( "times" ) || f.contains( "georgia" ) )
+            return Typeface.SERIF;
+        return Typeface.DEFAULT;
     }
 
     /** Must block until the UI thread answers - JNI caller expects a value. */

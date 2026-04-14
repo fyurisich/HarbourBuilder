@@ -37,6 +37,19 @@ static jmethodID m_createButton;  /* idem */
 static jmethodID m_createEdit;    /* idem */
 static jmethodID m_setText;       /* (int id, String text) */
 static jmethodID m_getText;       /* (int id) -> String */
+static jmethodID m_setFormColor;  /* (int argb) */
+static jmethodID m_setCtrlColor;  /* (int id, int argb) */
+static jmethodID m_setCtrlFont;   /* (int id, String family, int sizeSp) */
+
+/* Win32 COLORREF (0x00BBGGRR) -> Android ARGB (0xFFRRGGBB).
+   Swap the R and B bytes and force full opacity. */
+static int bgr_to_argb( int bgr )
+{
+    int r = ( bgr       ) & 0xFF;
+    int g = ( bgr >>  8 ) & 0xFF;
+    int b = ( bgr >> 16 ) & 0xFF;
+    return (int)( 0xFF000000u | ( (unsigned)r << 16 ) | ( (unsigned)g << 8 ) | (unsigned)b );
+}
 
 /* ------------ Control id table ------------ */
 #define MAX_CTRLS 256
@@ -157,6 +170,42 @@ HB_FUNC( UI_GETTEXT )
     (*env)->DeleteLocalRef( env, js );
 }
 
+/* UI_SetFormColor( nClr ) - paint the root FrameLayout background.
+   Accepts a Win32 COLORREF (0x00BBGGRR); converts to Android ARGB. */
+HB_FUNC( UI_SETFORMCOLOR )
+{
+    JNIEnv * env = get_env();
+    int clr = hb_parni( 1 );
+    if( clr < 0 ) return;                      /* CLR_INVALID */
+    (*env)->CallVoidMethod( env, g_activity, m_setFormColor,
+                            bgr_to_argb( clr ) );
+}
+
+/* UI_SetCtrlColor( hCtrl, nClr ) - setBackgroundColor on the widget. */
+HB_FUNC( UI_SETCTRLCOLOR )
+{
+    JNIEnv * env = get_env();
+    int id  = hb_parni( 1 );
+    int clr = hb_parni( 2 );
+    if( clr < 0 ) return;
+    (*env)->CallVoidMethod( env, g_activity, m_setCtrlColor,
+                            id, bgr_to_argb( clr ) );
+}
+
+/* UI_SetCtrlFont( hCtrl, cFamily, nSize ) - setTypeface + setTextSize.
+   cFamily is the Windows face name; Android will fall back when it's
+   not installed (Roboto default). Size is passed as SP. */
+HB_FUNC( UI_SETCTRLFONT )
+{
+    JNIEnv * env = get_env();
+    int id = hb_parni( 1 );
+    const char * family = HB_ISCHAR( 2 ) ? hb_parc( 2 ) : "";
+    int size = HB_ISNUM( 3 ) ? hb_parni( 3 ) : 0;
+    jstring js = to_jstr( env, family );
+    (*env)->CallVoidMethod( env, g_activity, m_setCtrlFont, id, js, size );
+    (*env)->DeleteLocalRef( env, js );
+}
+
 /* UI_OnClick( hCtrl, bBlock ) - store codeblock keyed by control id. */
 HB_FUNC( UI_ONCLICK )
 {
@@ -190,6 +239,9 @@ static HB_SYMB s_symbols[] = {
     { "UI_SETTEXT",       { HB_FS_PUBLIC }, { HB_FUNCNAME( UI_SETTEXT       ) }, NULL },
     { "UI_GETTEXT",       { HB_FS_PUBLIC }, { HB_FUNCNAME( UI_GETTEXT       ) }, NULL },
     { "UI_ONCLICK",       { HB_FS_PUBLIC }, { HB_FUNCNAME( UI_ONCLICK       ) }, NULL },
+    { "UI_SETFORMCOLOR",  { HB_FS_PUBLIC }, { HB_FUNCNAME( UI_SETFORMCOLOR  ) }, NULL },
+    { "UI_SETCTRLCOLOR",  { HB_FS_PUBLIC }, { HB_FUNCNAME( UI_SETCTRLCOLOR  ) }, NULL },
+    { "UI_SETCTRLFONT",   { HB_FS_PUBLIC }, { HB_FUNCNAME( UI_SETCTRLFONT   ) }, NULL },
     { "UI_SETCTRLOWNER",        { HB_FS_PUBLIC }, { HB_FUNCNAME( UI_SETCTRLOWNER        ) }, NULL },
     { "UI_GETCTRLOWNER",        { HB_FS_PUBLIC }, { HB_FUNCNAME( UI_GETCTRLOWNER        ) }, NULL },
     { "UI_GETCTRLPAGE",         { HB_FS_PUBLIC }, { HB_FUNCNAME( UI_GETCTRLPAGE         ) }, NULL },
@@ -222,6 +274,9 @@ Java_com_harbour_builder_MainActivity_nativeInit( JNIEnv * env, jobject thiz )
     m_createEdit   = (*env)->GetMethodID( env, cls, "createEdit",   "(ILjava/lang/String;IIII)V" );
     m_setText      = (*env)->GetMethodID( env, cls, "setCtrlText",  "(ILjava/lang/String;)V" );
     m_getText      = (*env)->GetMethodID( env, cls, "getCtrlText",  "(I)Ljava/lang/String;" );
+    m_setFormColor = (*env)->GetMethodID( env, cls, "setFormColor", "(I)V" );
+    m_setCtrlColor = (*env)->GetMethodID( env, cls, "setCtrlColor", "(II)V" );
+    m_setCtrlFont  = (*env)->GetMethodID( env, cls, "setCtrlFont",  "(ILjava/lang/String;I)V" );
     (*env)->DeleteLocalRef( env, cls );
 
     hb_register_android_ui();

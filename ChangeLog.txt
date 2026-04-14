@@ -1,6 +1,90 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-14 (Android iteration 1b + 1c: form designer -> APK with working click handlers, colors and fonts)
+
+  FEATURES
+  - Run > Run on Android... now drops the user's IDE form straight
+    onto the emulator. End-to-end flow: drop controls in the designer,
+    write a METHOD Button1Click() CLASS TForm1 handler with the usual
+    ::oLabel1:Text := "..." + ::oEdit1:Text + "..." style, hit the
+    menu. The IDE regenerates _generated.prg, builds a signed APK,
+    boots HarbourBuilderAVD if needed, installs, launches and tails
+    logcat in a dedicated terminal. Validated live on Pixel 5
+    (Android 14) 2026-04-14.
+  - Code generator (GenerateAndroidPRG in hbbuilder_win.prg) walks the
+    live oDesignForm, emits UI_FormNew + per-control UI_LabelNew /
+    UI_EditNew / UI_ButtonNew with exact pixel coordinates, wires
+    UI_OnClick for buttons whose handler exists in the form code.
+    Control handles are emitted as module-scope STATICs so the
+    separate handler FUNCTIONs can see them.
+  - Handler translator: extracts METHOD <Name>Click() bodies from the
+    user's form prg, rewrites them as plain FUNCTIONs and translates
+    ::oXxx:Text getters/setters into UI_GetText / UI_SetText calls
+    against the backend handles. Missing handlers fall back to empty
+    stubs so the Android linker never reports an unresolved symbol.
+  - Colors and fonts carried over from the designer:
+      * UI_SetFormColor( nColor )            - Form.Color / nClrPane
+      * UI_SetCtrlColor( hCtrl, nColor )     - per-control nClrPane
+      * UI_SetCtrlFont ( hCtrl, cFace, nSp ) - parses "Segoe UI,12"
+    Win32 COLORREF (0x00BBGGRR) is byte-swapped to Android ARGB
+    (0xFFRRGGBB) in android_core.c via a bgr_to_argb helper. Font
+    family mapping: mono/courier/consolas -> Typeface.MONOSPACE,
+    serif/times/georgia -> Typeface.SERIF, anything else falls back
+    to Typeface.DEFAULT (Roboto). Size passed as SP.
+  - Auto-emulator boot moved into install-and-run.sh. The IDE spawns
+    the script in its own terminal window (title "HarbourBuilder
+    Android") and returns control immediately. The script does
+    adb start-server, launches HarbourBuilderAVD if nothing is
+    connected, polls sys.boot_completed, installs the APK, starts the
+    activity and tails logcat live. A trap EXIT + "Press enter to
+    close" keeps the window open on failure so errors are readable.
+  - samples/projects/android/ - ready-to-open Label+Edit+Button sample
+    that exercises the whole path, plus README.md with prerequisites.
+
+  FIXES
+  - W32_ShellExec already prefixes 'cmd /c' internally; TBRunAndroid
+    stopped adding another cmd /c on top. Without that fix the triple
+    'cmd /c cmd /c "..."' quoting collapsed and the build silently
+    no-op'd, installing a stale APK every time.
+  - cmd.exe /c rule 2 ("strip first and last quote") was eating a
+    real quote from the bash path. Wrapped the whole command in an
+    outer pair of double-quotes so rule 2 has something to strip.
+  - Generated PRG used LOCAL hXxx in Main(), invisible to the handler
+    FUNCTIONs. Switched to module-scope STATICs; first button tap no
+    longer crashes with "variable does not exist".
+  - MainActivity.java method name setText(int,String) collided with
+    Context.setText(int resId) which is final; renamed to setCtrlText
+    / getCtrlText and updated JNI lookups.
+  - build-apk-gui.sh d8/apksigner calls reference the .bat wrappers
+    (Windows build-tools don't install bare 'd8'); packaging uses
+    jar.exe uf + zipalign.exe instead of 'zip' (not in Git Bash PATH).
+  - build-apk-gui.log moved out of /c/HarbourAndroid/apk-gui/ because
+    build-apk-gui.sh rm -rf's that directory at startup, taking the
+    log with it. Now at /c/HarbourAndroid/build-apk-gui.log, visible
+    to the IDE build-error dialog.
+  - .gitignore un-ignores source/backends/**/*.c (the top-level
+    'backends/' negation didn't match the nested path).
+
+  DEBUG INSTRUMENTATION
+  - AndroidTrace() appends timestamped entries to
+    C:\HarbourBuilder\android_trace.log at every step of TBRunAndroid
+    and GenerateAndroidPRG (paths, sizes, control enumeration, build
+    cmd, launch cmd, return codes).
+
+  ROADMAP (not yet)
+  - ComboBox, CheckBox, RadioButton, ListView, DatePicker bindings in
+    android_core.c / MainActivity.java.
+  - Embedded logcat panel inside the IDE (today it streams in a
+    separate cmd window).
+  - Device picker (emulator / USB / Wi-Fi ADB).
+  - Keystore manager + AAB export for Play Store.
+  - Android toolchain auto-installer wizard (NDK, SDK, JDK, AVD) for
+    Windows, macOS, Linux.
+  - iOS backend (ios_core.m via UIKit) mirroring the Cocoa one.
+
+---
+
 2026-04-13 (Android target - iteration 1: GUI backend, end-to-end APK pipeline from the IDE)
 
   FEATURES
