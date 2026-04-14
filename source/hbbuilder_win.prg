@@ -2740,48 +2740,57 @@ return nil
 // AVD "HarbourBuilderAVD" in background and poll getprop sys.boot_completed
 // for up to 120 seconds. Returns .T. when the device is ready.
 //
-// Note: W32_ShellExec internally wraps its argument with "cmd /c" already
-// and returns the captured stdout+stderr, so we must NOT prefix "cmd /c"
-// ourselves — that produced "cmd /c cmd /c ..." with busted quoting and
-// empty output, which made the loop wait forever.
+// Important: W32_ShellExec captures the child's stdout via an inherited
+// pipe. When adb spawns its daemon for the first time the daemon inherits
+// the write end and never closes it, so ReadFile blocks forever and the
+// IDE appears to "wait" with the emulator visible. We sidestep that with:
+//   - Pre-starting the adb server detached (cmd /c start "" ...) so later
+//     calls don't have to fork a child that holds our pipe.
+//   - Using hb_run with a file redirect to run adb and read the output
+//     back from disk — no inherited pipes involved.
 static function AndroidEnsureDevice( cAdb )
 
    local cEmulator := "C:\Android\Sdk\emulator\emulator.exe"
    local cAvd      := "HarbourBuilderAVD"
-   local cOut, nTries, nEol
+   local cTmp      := hb_DirTemp() + "hb_adb_probe.txt"
+   local nTries
 
-   // 1. Already a device connected and ready?
-   cOut := W32_ShellExec( '"' + cAdb + '" devices' )
-   if ValType( cOut ) == "C"
-      nEol := At( Chr(10), cOut )
-      if nEol > 0 .and. "device" $ SubStr( cOut, nEol + 1 )
-         // Still need to confirm boot_completed (device may be booting)
-         cOut := W32_ShellExec( '"' + cAdb + '" shell getprop sys.boot_completed' )
-         if ValType( cOut ) == "C" .and. "1" $ cOut
-            return .T.
-         endif
-      endif
+   // 1. Make sure the adb daemon is running so nothing blocks our pipes.
+   W32_ShellExec( 'start "" "' + cAdb + '" start-server' )
+   hb_idleSleep( 2 )
+
+   // 2. Already a fully-booted device?
+   if AdbGetProp( cAdb, cTmp ) == "1"
+      return .T.
    endif
 
-   // 2. Launch the emulator detached if nothing is running
+   // 3. No booted device - launch the AVD detached
    if ! File( cEmulator )
       MsgInfo( "Android emulator not found at " + cEmulator, "Android target" )
       return .F.
    endif
-   // cmd /c start "" "<exe>" opens a new window and returns immediately.
    W32_ShellExec( 'start "" "' + cEmulator + '" -avd ' + cAvd + ' -no-snapshot-save' )
 
-   // 3. Poll sys.boot_completed (up to ~120 s at ~2 s per try)
+   // 4. Poll boot_completed up to ~120 s
    for nTries := 1 to 60
-      W32_ProgressStep( "Waiting for emulator (" + LTrim(Str(nTries)) + "/60)..." )
-      cOut := W32_ShellExec( '"' + cAdb + '" shell getprop sys.boot_completed 2^>nul' )
-      if ValType( cOut ) == "C" .and. "1" $ cOut
+      W32_ProgressStep( "Waiting for emulator (" + LTrim( Str( nTries ) ) + "/60)..." )
+      hb_idleSleep( 2 )
+      if AdbGetProp( cAdb, cTmp ) == "1"
          return .T.
       endif
-      hb_idleSleep( 2 )
    next
 
 return .F.
+
+// Run "adb shell getprop sys.boot_completed" without capturing via an
+// inherited pipe - redirect to a temp file and read it back. Returns
+// "1" when boot finished, "" otherwise (device absent, daemon busy, ...).
+static function AdbGetProp( cAdb, cTmp )
+   local cOut
+   hb_run( 'cmd /c ""' + cAdb + '" shell getprop sys.boot_completed > "' + cTmp + '" 2>nul"' )
+   cOut := iif( File( cTmp ), MemoRead( cTmp ), "" )
+   FErase( cTmp )
+return AllTrim( StrTran( StrTran( cOut, Chr(13), "" ), Chr(10), "" ) )
 
 // Build a UI_*-based PRG from the currently designed form.
 // Supported in iteration 1b: Label (1), Edit (2), Button (3) + button OnClick
