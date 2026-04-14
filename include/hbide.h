@@ -310,6 +310,7 @@ public:
    BOOL         FMainWindow;   /* TRUE = this form owns the message loop */
    BOOL         FModal;        /* TRUE = ShowModal() is active (nested message loop) */
    BOOL         FDesignMode;
+   char         FAppTitle[128];  /* custom binary/app name; defaults to UserApp when empty */
 
    /* Toolbar */
    TToolBar *   FToolBar;

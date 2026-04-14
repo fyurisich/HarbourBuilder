@@ -762,6 +762,8 @@ HB_FUNC( UI_SETPROP )
       ((TForm*)p)->FSizable = hb_parl(3);
    else if( lstrcmpi( szProp, "lAppBar" ) == 0 && p->FControlType == CT_FORM )
       ((TForm*)p)->FAppBar = hb_parl(3);
+   else if( lstrcmpi( szProp, "cAppTitle" ) == 0 && p->FControlType == CT_FORM && HB_ISCHAR(3) )
+      lstrcpynA( ((TForm*)p)->FAppTitle, hb_parc(3), sizeof( ((TForm*)p)->FAppTitle ) );
    else if( lstrcmpi( szProp, "lToolWindow" ) == 0 && p->FControlType == CT_FORM )
       ((TForm*)p)->FToolWindow = hb_parl(3);
    else if( lstrcmpi( szProp, "nBorderStyle" ) == 0 && p->FControlType == CT_FORM )
@@ -1027,6 +1029,8 @@ HB_FUNC( UI_GETPROP )
       hb_retl( ((TForm*)p)->FSizable );
    else if( lstrcmpi( szProp, "lAppBar" ) == 0 && p->FControlType == CT_FORM )
       hb_retl( ((TForm*)p)->FAppBar );
+   else if( lstrcmpi( szProp, "cAppTitle" ) == 0 && p->FControlType == CT_FORM )
+      hb_retc( ((TForm*)p)->FAppTitle );
    else if( lstrcmpi( szProp, "nBorderStyle" ) == 0 && p->FControlType == CT_FORM )
       hb_retni( ((TForm*)p)->FBorderStyle );
    else if( lstrcmpi( szProp, "nBorderIcons" ) == 0 && p->FControlType == CT_FORM )
@@ -1702,6 +1706,7 @@ HB_FUNC( UI_GETALLPROPS )
          {  cw = rc.right; ch = rc.bottom; }
          ADD_PROP_N( "nClientWidth", cw, "Position" );
          ADD_PROP_N( "nClientHeight", ch, "Position" );
+         ADD_PROP_S( "cAppTitle", f->FAppTitle, "Application" );
          break;
       }
       case CT_BUTTON:

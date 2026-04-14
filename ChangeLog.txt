@@ -1,6 +1,38 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-14 (Windows catches up with macOS: AppTitle property + full CT_* name resolver)
+
+  FEATURES
+  - NEW cAppTitle property on TForm. Visible in the inspector under a
+    new "Application" category. The name the user types becomes the
+    .exe file name at build time, so what they ship matches what they
+    named. Empty falls back to the historical "UserApp.exe".
+    Persisted in the generated form code as ::AppTitle := "...", and
+    the form loader parses it back into the live form.
+    (Matches macOS 35060e9 where the same property drives the app
+    menu name and the .app bundle.)
+
+  FIXES
+  - ComponentTypeFromName() in hbbuilder_win.prg was missing 40+ entries
+    beyond CT_HTTPCLIENT: AI (46-52), threading (63-70), internet
+    (74-78), data-aware (79-86), ERP/printing/connectivity (90-120),
+    Git (121-130). Replaced the hand-written do case list with a
+    42-entry aMap that mirrors macOS 8ca8d24. Forms saved with the
+    symbolic CT_* names now load correctly on Windows instead of
+    silently dropping to type 0.
+  - Parser of "COMPONENT ::oName TYPE ... OF Self" now strips a
+    trailing ':' from the captured name - previously left it attached
+    to cName, producing phantom controls.
+
+  BACKEND (Win32)
+  - TForm grew a char FAppTitle[128] (hbide.h). Initialized empty in
+    TForm constructor. UI_SetProp/UI_GetProp route "cAppTitle" to it
+    (hbbridge.cpp). UI_GetAllProps exposes it so the Win32 inspector
+    shows it under the "Application" category.
+
+---
+
 2026-04-14 (Android Setup Wizard + prebuilt Harbour-for-Android shipped in repo)
 
   FEATURES

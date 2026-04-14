@@ -34,6 +34,7 @@ static PROPDESC aFormProps[] = {
    { "nFontSize", PT_NUMBER,  0, "Appearance" },
    { "lCenter",   PT_LOGICAL, 0, "Position" },
    { "lSizable",  PT_LOGICAL, 0, "Behavior" },
+   { "cAppTitle", PT_STRING,  0, "Application" },
 };
 
 static int s_nFormCount = 0;
@@ -48,6 +49,7 @@ TForm::TForm()
    FSizable = TRUE;   /* Default: resizable (like Delphi/C++Builder) */
    FAppBar = FALSE;
    FToolWindow = FALSE;
+   FAppTitle[0] = '\0';
    FModalResult = 0;
    FRunning = FALSE;
    FMainWindow = FALSE;

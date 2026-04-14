@@ -684,7 +684,7 @@ static function RegenerateFormCode( cName, hForm )
    local cSep := "//" + Replicate( "-", 68 ) + e
    local cClass := "T" + cName  // TForm1, TForm2...
    local i, nCount, hCtrl, cCtrlName, cCtrlClass, nType
-   local nW, nH, nFL, nFT, cTitle, nClr
+   local nW, nH, nFL, nFT, cTitle, nClr, cAppTitle
    local nL, nT, nCW, nCH, cText, nCtrlClr
    local cDatas := "", cCreate := "", cEvents := ""
    local cExistingCode, aEvents, j, cEvName, cEvSuffix, cHandlerName
@@ -704,11 +704,12 @@ static function RegenerateFormCode( cName, hForm )
       nW     := UI_GetProp( hForm, "nWidth" )
       nH     := UI_GetProp( hForm, "nHeight" )
       nClr   := UI_GetProp( hForm, "nClrPane" )
-
+      cAppTitle := UI_GetProp( hForm, "cAppTitle" )
    else
       cTitle := cName
       nFL := 100; nFT := 100; nW := 400; nH := 300
       nClr   := 15790320  // 0x00F0F0F0
+      cAppTitle := ""
    endif
 
    // Enumerate child controls
@@ -947,6 +948,9 @@ static function RegenerateFormCode( cName, hForm )
    cCode += "   ::FontSize := 9" + e
    if nClr != 15790320  // non-default color
       cCode += "   ::Color  := " + LTrim(Str(nClr)) + e
+   endif
+   if ! Empty( cAppTitle )
+      cCode += '   ::AppTitle := "' + cAppTitle + '"' + e
    endif
    if ! Empty( cCreate )
       cCode += e
@@ -1678,6 +1682,14 @@ static function RestoreFormFromCode( hForm, cCode )
          UI_SetProp( hForm, "nClrPane", Val( AllTrim( SubStr( cTrim, At( ":=", cTrim ) + 2 ) ) ) )
          loop
       endif
+      if '::AppTitle' $ cTrim .and. ':=' $ cTrim
+         nPos := At( '"', cTrim )
+         nPos2 := RAt( '"', cTrim )
+         if nPos > 0 .and. nPos2 > nPos
+            UI_SetProp( hForm, "cAppTitle", SubStr( cTrim, nPos + 1, nPos2 - nPos - 1 ) )
+         endif
+         loop
+      endif
 
       // Parse non-visual components: COMPONENT ::oName TYPE nType OF Self
       if Left( Upper( cTrim ), 10 ) == "COMPONENT "
@@ -1686,6 +1698,8 @@ static function RestoreFormFromCode( hForm, cCode )
             cName := SubStr( cTrim, nPos + 3 )
             nPos2 := At( " ", cName )
             if nPos2 > 0; cName := Left( cName, nPos2 - 1 ); endif
+            // Strip any trailing ':' the parser may leave behind
+            if Right( cName, 1 ) == ":"; cName := Left( cName, Len( cName ) - 1 ); endif
             nPos := At( "TYPE ", Upper( cTrim ) )
             if nPos > 0
                cTypeStr := AllTrim( SubStr( cTrim, nPos + 5 ) )
@@ -2219,13 +2233,22 @@ static function TBRun()
    local cAllCode, nHash
    local cCompiler, cMsvcBase, cWinKit, cWinKitVer
    local cMsvcInc, cMsvcLib, cUcrtInc, cUmInc, cSharedInc, cUcrtLib, cUmLib
-   local cRsp, cRspContent, aCI
+   local cRsp, cRspContent, aCI, cAppName, cAppTitle, cExePath
    static nLastHash := 0
 
    SaveActiveFormCode()
    SyncDesignerToCode()  // Ensure event bindings are up to date
 
    cBuildDir := "c:\hbbuilder_build"
+
+   // Honour ::AppTitle from the main form: user's chosen app name
+   // becomes the .exe name so what they ship matches the inspector.
+   cAppTitle := ""
+   if Len( aForms ) > 0 .and. aForms[1][2] != nil .and. aForms[1][2]:hCpp != 0
+      cAppTitle := UI_GetProp( aForms[1][2]:hCpp, "cAppTitle" )
+   endif
+   cAppName := iif( ! Empty( cAppTitle ), AllTrim( cAppTitle ), "UserApp" )
+   cExePath := cBuildDir + "\" + cAppName + ".exe"
 
    // Quick check: if nothing changed since last successful build, just run
    cAllCode := CodeEditorGetTabText( hCodeEditor, 1 )
@@ -2244,8 +2267,8 @@ static function TBRun()
    for i := 1 to Min( Len( cAllCode ), 5000 )
       nHash := nHash + Asc( SubStr( cAllCode, i, 1 ) ) * i
    next
-   if nHash == nLastHash .and. nLastHash != 0 .and. File( cBuildDir + "\UserApp.exe" )
-      W32_ShellExec( 'cmd /c start "" "' + cBuildDir + '\UserApp.exe"' )
+   if nHash == nLastHash .and. nLastHash != 0 .and. File( cExePath )
+      W32_ShellExec( 'cmd /c start "" "' + cExePath + '"' )
       RefreshIDEToolbars()
       return nil
    endif
@@ -2310,7 +2333,7 @@ static function TBRun()
 
    W32_ShellExec( 'cmd /c mkdir "' + cBuildDir + '" 2>nul' )
    // Delete old exe to avoid running stale builds
-   W32_ShellExec( 'cmd /c del "' + cBuildDir + '\UserApp.exe" 2>nul' )
+   W32_ShellExec( 'cmd /c del "' + cExePath + '" 2>nul' )
    W32_ShellExec( 'cmd /c del "' + cBuildDir + '\*.obj" 2>nul' )
    W32_ShellExec( 'cmd /c del "' + cBuildDir + '\*.o" 2>nul' )
 
@@ -2571,7 +2594,7 @@ static function TBRun()
          cRsp := cBuildDir + "\link.rsp"
          cRspContent := ""
          cRspContent += "/NOLOGO /SUBSYSTEM:WINDOWS /NODEFAULTLIB:LIBCMT" + Chr(10)
-         cRspContent += '/OUT:"' + cBuildDir + '\UserApp.exe"' + Chr(10)
+         cRspContent += '/OUT:"' + cExePath + '"' + Chr(10)
          cRspContent += '/LIBPATH:"' + cMsvcLib + '"' + Chr(10)
          cRspContent += '/LIBPATH:"' + cUcrtLib + '"' + Chr(10)
          cRspContent += '/LIBPATH:"' + cUmLib + '"' + Chr(10)
@@ -2590,7 +2613,7 @@ static function TBRun()
          MemoWrit( cRsp, cRspContent )
          cCmd := 'cmd /S /c ""' + cLinker + '" @"' + cRsp + '" 2>&1"'
       elseif cCompiler == "mingw"
-         cCmd := cLinker + " -static -mwindows -o " + cBuildDir + "\UserApp.exe" + ;
+         cCmd := cLinker + " -static -mwindows -o " + cExePath + ;
                  " " + cObjs + ;
                  " -L" + cHbLib + ;
                  " -Wl,--start-group" + ;
@@ -2612,7 +2635,7 @@ static function TBRun()
                  " -L" + cCDir + "\lib\psdk" + ;
                  " -L" + cHbLib + ;
                  " " + cObjs + "," + ;
-                 " " + cBuildDir + "\UserApp.exe,," + ;
+                 " " + cExePath + ",," + ;
                  " hbrtl.lib hbvm.lib hbcpage.lib hblang.lib hbrdd.lib" + ;
                  " hbmacro.lib hbpp.lib hbcommon.lib hbcplr.lib hbct.lib" + ;
                  " hbhsx.lib hbsix.lib hbusrrdd.lib" + ;
@@ -2627,7 +2650,7 @@ static function TBRun()
       endif
       cOutput := W32_ShellExec( cCmd )
       // Also check if exe was actually created
-      if ! File( cBuildDir + "\UserApp.exe" )
+      if ! File( cExePath )
          cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
          lError := .T.
       else
@@ -2644,12 +2667,12 @@ static function TBRun()
    // Result
    if lError
       W32_BuildErrorDialog( "Build Failed", cLog )
-   elseif ! File( cBuildDir + "\UserApp.exe" )
-      cLog += Chr(10) + "ERROR: UserApp.exe was not created." + Chr(10)
+   elseif ! File( cExePath )
+      cLog += Chr(10) + "ERROR: " + cAppName + ".exe was not created." + Chr(10)
       W32_BuildErrorDialog( "Build Failed", cLog )
    else
       nLastHash := nHash  // remember successful build hash
-      W32_ShellExec( 'cmd /c start "" "' + cBuildDir + '\UserApp.exe"' )
+      W32_ShellExec( 'cmd /c start "" "' + cExePath + '"' )
       RefreshIDEToolbars()
    endif
 
@@ -4641,31 +4664,56 @@ static function ComponentTypeName( nType )
    endcase
 return "CT_UNKNOWN_" + LTrim( Str( nType ) )
 
+// Reverse map: CT_* define name -> numeric type. Used when parsing saved
+// form code that emitted symbolic CT_ names instead of literal numbers.
 static function ComponentTypeFromName( cName )
-   do case
-      case cName == "CT_TIMER";         return 38
-      case cName == "CT_PAINTBOX";      return 39
-      case cName == "CT_OPENDIALOG";    return 40
-      case cName == "CT_SAVEDIALOG";    return 41
-      case cName == "CT_FONTDIALOG";    return 42
-      case cName == "CT_COLORDIALOG";   return 43
-      case cName == "CT_FINDDIALOG";    return 44
-      case cName == "CT_REPLACEDIALOG"; return 45
-      case cName == "CT_DBFTABLE";      return 53
-      case cName == "CT_MYSQL";         return 54
-      case cName == "CT_MARIADB";       return 55
-      case cName == "CT_POSTGRESQL";    return 56
-      case cName == "CT_SQLITE";        return 57
-      case cName == "CT_FIREBIRD";      return 58
-      case cName == "CT_SQLSERVER";     return 59
-      case cName == "CT_ORACLE";        return 60
-      case cName == "CT_MONGODB";       return 61
-      case cName == "CT_WEBVIEW";       return 62
-      case cName == "CT_WEBSERVER";     return 63
-      case cName == "CT_WEBSOCKET";     return 64
-      case cName == "CT_HTTPCLIENT";    return 65
-      case cName == "CT_COMPARRAY";     return 131
-   endcase
+   local i, aMap := { ;
+      { "CT_TIMER", 38 }, { "CT_PAINTBOX", 39 }, ;
+      { "CT_OPENDIALOG", 40 }, { "CT_SAVEDIALOG", 41 }, ;
+      { "CT_FONTDIALOG", 42 }, { "CT_COLORDIALOG", 43 }, ;
+      { "CT_FINDDIALOG", 44 }, { "CT_REPLACEDIALOG", 45 }, ;
+      { "CT_OPENAI", 46 }, { "CT_GEMINI", 47 }, { "CT_CLAUDE", 48 }, ;
+      { "CT_DEEPSEEK", 49 }, { "CT_GROK", 50 }, { "CT_OLLAMA", 51 }, ;
+      { "CT_TRANSFORMER", 52 }, ;
+      { "CT_DBFTABLE", 53 }, { "CT_MYSQL", 54 }, { "CT_MARIADB", 55 }, ;
+      { "CT_POSTGRESQL", 56 }, { "CT_SQLITE", 57 }, { "CT_FIREBIRD", 58 }, ;
+      { "CT_SQLSERVER", 59 }, { "CT_ORACLE", 60 }, { "CT_MONGODB", 61 }, ;
+      { "CT_WEBVIEW", 62 }, { "CT_THREAD", 63 }, { "CT_MUTEX", 64 }, ;
+      { "CT_SEMAPHORE", 65 }, { "CT_CRITICALSECTION", 66 }, ;
+      { "CT_THREADPOOL", 67 }, { "CT_ATOMICINT", 68 }, ;
+      { "CT_CONDVAR", 69 }, { "CT_CHANNEL", 70 }, ;
+      { "CT_WEBSERVER", 71 }, { "CT_WEBSOCKET", 72 }, ;
+      { "CT_HTTPCLIENT", 73 }, { "CT_FTPCLIENT", 74 }, ;
+      { "CT_SMTPCLIENT", 75 }, { "CT_TCPSERVER", 76 }, ;
+      { "CT_TCPCLIENT", 77 }, { "CT_UDPSOCKET", 78 }, ;
+      { "CT_BROWSE", 79 }, { "CT_DBGRID", 80 }, { "CT_DBNAVIGATOR", 81 }, ;
+      { "CT_DBTEXT", 82 }, { "CT_DBEDIT", 83 }, { "CT_DBCOMBOBOX", 84 }, ;
+      { "CT_DBCHECKBOX", 85 }, { "CT_DBIMAGE", 86 }, ;
+      { "CT_PREPROCESSOR", 90 }, { "CT_SCRIPTENGINE", 91 }, ;
+      { "CT_REPORTDESIGNER", 92 }, { "CT_BARCODE", 93 }, ;
+      { "CT_PDFGENERATOR", 94 }, { "CT_EXCELEXPORT", 95 }, ;
+      { "CT_AUDITLOG", 96 }, { "CT_PERMISSIONS", 97 }, ;
+      { "CT_CURRENCY", 98 }, { "CT_TAXENGINE", 99 }, ;
+      { "CT_DASHBOARD", 100 }, { "CT_SCHEDULER", 101 }, ;
+      { "CT_PRINTER", 102 }, { "CT_REPORT", 103 }, { "CT_LABELS", 104 }, ;
+      { "CT_PRINTPREVIEW", 105 }, { "CT_PAGESETUP", 106 }, ;
+      { "CT_PRINTDIALOG", 107 }, { "CT_REPORTVIEWER", 108 }, ;
+      { "CT_BARCODEPRINTER", 109 }, ;
+      { "CT_WHISPER", 110 }, { "CT_EMBEDDINGS", 111 }, ;
+      { "CT_PYTHON", 112 }, { "CT_SWIFT", 113 }, { "CT_GO", 114 }, ;
+      { "CT_NODE", 115 }, { "CT_RUST", 116 }, { "CT_JAVA", 117 }, ;
+      { "CT_DOTNET", 118 }, { "CT_LUA", 119 }, { "CT_RUBY", 120 }, ;
+      { "CT_GITREPO", 121 }, { "CT_GITCOMMIT", 122 }, ;
+      { "CT_GITBRANCH", 123 }, { "CT_GITLOG", 124 }, ;
+      { "CT_GITDIFF", 125 }, { "CT_GITREMOTE", 126 }, ;
+      { "CT_GITSTASH", 127 }, { "CT_GITTAG", 128 }, ;
+      { "CT_GITBLAME", 129 }, { "CT_GITMERGE", 130 }, ;
+      { "CT_COMPARRAY", 131 } }
+   for i := 1 to Len( aMap )
+      if Upper( cName ) == aMap[i][1]
+         return aMap[i][2]
+      endif
+   next
 return 0
 
 // Framework
