@@ -246,8 +246,10 @@ el codeblock almacenado.</p>
 
 <!-- ──────────────────────────────────────────── -->
 <h2 id="toolchain">Requisitos del toolchain</h2>
-<p>El target Android depende de cuatro toolchains externos. Hoy hay que instalarlos manualmente; el
-asistente de auto-instalación está en la hoja de ruta (ver abajo).</p>
+<p>El target Android depende de cuatro toolchains externos. El <strong>Setup Wizard</strong>
+(Run → Android Setup Wizard…) los descarga e instala automáticamente en una ventana terminal
+propia, así que en una máquina limpia sólo tienes que hacer clic y esperar. Las rutas de abajo son las
+que usa el wizard (y los scripts de build).</p>
 
 <table>
   <tr><th>Componente</th><th>Versión</th><th>Ruta por defecto (Windows)</th></tr>
@@ -261,6 +263,29 @@ asistente de auto-instalación está en la hoja de ruta (ver abajo).</p>
 
 <p>Ocupa ≈4 GB de disco. Las instalaciones son autocontenidas — sin entradas de registro ni cambios de
 PATH: los scripts exportan <code>PATH</code> internamente.</p>
+
+<h3 id="setup-wizard">Setup Wizard</h3>
+<p>Menú <strong>Run → Android Setup Wizard…</strong> abre un diálogo que reporta cada componente
+como <code>OK</code> o <code>MISSING</code>. Si falta algo, un <em>Yes</em> lanza
+<code>source/backends/android/setup-android-toolchain.sh</code> en una terminal nueva. El script es
+idempotente — detecta lo que ya está y baja sólo lo que falta:</p>
+
+<table>
+  <tr><th>Componente</th><th>Tamaño</th><th>Origen</th></tr>
+  <tr><td>JDK 17 Temurin</td><td>~175 MB</td><td>Adoptium GitHub Releases</td></tr>
+  <tr><td>Android NDK r26d</td><td>~1.5 GB</td><td><code>dl.google.com</code></td></tr>
+  <tr><td>SDK cmdline-tools</td><td>~100 MB</td><td><code>dl.google.com</code></td></tr>
+  <tr><td>platforms;android-34, build-tools;34.0.0, platform-tools, emulator, system-image x86_64</td>
+      <td>~1.2 GB</td><td>via <code>sdkmanager</code></td></tr>
+  <tr><td>AVD <code>HarbourBuilderAVD</code></td><td>—</td><td>via <code>avdmanager</code></td></tr>
+  <tr><td>Harbour-for-Android libs</td><td>3.6 MB</td><td><code>releases/harbour-android-arm64-v8a.zip</code> (incluido en el repo)</td></tr>
+</table>
+
+<p>El script redirige <code>yes</code> a <code>sdkmanager --licenses</code> para que el install no se
+pare en prompts de licencia, y aplica automáticamente el tweak NDK
+(<code>ar</code>/<code>ranlib</code>/<code>strip</code>) que los mk files de Harbour esperan. Total
+<strong>~2.8 GB</strong> de descarga en una máquina limpia. Git Bash es el único prerequisito que el
+wizard no puede instalar por ti.</p>
 
 <!-- ──────────────────────────────────────────── -->
 <h2 id="example">Hola Android — ejemplo completo</h2>
@@ -318,12 +343,14 @@ adb shell am start -n com.harbour.builder/.MainActivity</pre>
 <table>
   <tr><th>Iteración</th><th>Entregables</th></tr>
   <tr><td><strong>1 ✅</strong></td><td>Pipeline APK, puente JNI, Form/Label/Button/Edit, escalado por densidad, despacho de clicks, validado en emulador</td></tr>
-  <tr><td><strong>1b</strong></td><td>Generador de código Android desde el diseñador (los controles visuales emiten llamadas <code>UI_*</code>)</td></tr>
+  <tr><td><strong>1b ✅</strong></td><td>Generador de código Android desde el diseñador (los controles visuales emiten llamadas <code>UI_*</code>), traducción de METHOD handlers</td></tr>
+  <tr><td><strong>1c ✅</strong></td><td>Colores de form/controles + fuentes viajan al APK (<code>UI_SetFormColor</code>, <code>UI_SetCtrlColor</code>, <code>UI_SetCtrlFont</code>)</td></tr>
+  <tr><td><strong>6 ✅</strong></td><td>Setup Wizard — Run → Android Setup Wizard… descarga e instala JDK/NDK/SDK/AVD y extrae las libs Harbour precompiladas</td></tr>
   <tr><td><strong>2</strong></td><td>CheckBox, RadioButton, ComboBox (Spinner), ListView, DatePicker, TimePicker, ProgressBar, Slider (SeekBar)</td></tr>
   <tr><td><strong>3</strong></td><td>Menú (ActionBar), Diálogo (AlertDialog), Toast, paridad MessageBox</td></tr>
   <tr><td><strong>4</strong></td><td>Render de Imagen/Bitmap, empaquetado de recursos, sets de iconos por densidad</td></tr>
   <tr><td><strong>5</strong></td><td>Panel <code>adb logcat</code> embebido en el IDE + stream de build en vivo + selector de dispositivo (AVD / USB / Wi-Fi ADB)</td></tr>
-  <tr><td><strong>6</strong></td><td>Asistente de auto-instalación del toolchain Android — detecta NDK/SDK/JDK ausentes y los provisiona sin tocar PATH en Windows, macOS y Linux</td></tr>
+  <tr><td><strong>6b</strong></td><td>Port del Setup Wizard a macOS y Linux</td></tr>
   <tr><td><strong>7</strong></td><td>Gestor de keystores de release + export AAB + asistente de subida a Play Console</td></tr>
   <tr><td><strong>8</strong></td><td>Controles específicos de móvil: TSwitch, TSegmentedControl, TFloatingActionButton, TSwipeView, TQRScanner, TCamera, TMapView</td></tr>
 </table>

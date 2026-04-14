@@ -67,18 +67,21 @@ classes.prg   →    UI_FormNew() · UI_ButtonNew() · UI_EditNew() · UI_OnClic
 - ✅ **Harbour cross-compiled for ARM64** — 30 static libraries built against official `harbour/core` sources with NDK Clang, zero source changes
 - ✅ **End-to-end build pipeline** — 8 stages: `harbour → clang → aapt2 → javac → d8 → zipalign → apksigner`
 - ✅ **One-click build from the IDE** — menu `Run → Run on Android...` invokes the full pipeline, signs the APK and launches the emulator
-- ✅ **Native GUI backend** — `UI_FormNew`, `UI_LabelNew`, `UI_ButtonNew`, `UI_EditNew`, `UI_SetText`, `UI_GetText`, `UI_OnClick` wired via JNI
+- ✅ **Native GUI backend** — `UI_FormNew`, `UI_LabelNew`, `UI_ButtonNew`, `UI_EditNew`, `UI_SetText`, `UI_GetText`, `UI_OnClick`, `UI_SetFormColor`, `UI_SetCtrlColor`, `UI_SetCtrlFont` wired via JNI
 - ✅ **Density-aware layout** — form-designer coordinates scale by `DisplayMetrics.density` so a 100-px button looks consistent on mdpi, hdpi, and xxhdpi screens
+- ✅ **IDE form designer → Android APK** — drop controls, hit *Run → Run on Android...*, the IDE generates the UI_* code, builds a signed APK, boots the emulator, installs and launches — colors and fonts included
+- ✅ **Setup Wizard** — menu *Run → Android Setup Wizard...* detects NDK, SDK, JDK, AVD, Harbour-for-Android libs; one click downloads + installs the ~2.8 GB toolchain
+- ✅ **Prebuilt Harbour-for-Android shipped in the repo** (`releases/harbour-android-arm64-v8a.zip`, 3.6 MB) — no need to cross-compile Harbour from source; the wizard just extracts it
 - ✅ **Validated on Pixel 5 / Android 14** — AVD `HarbourBuilderAVD`, Harbour VM initialized, PRG `Main()` executed, widgets rendered, click events dispatched back to Harbour codeblocks
 
 ### Coming next
 
 - 🚧 ComboBox, ListView, RadioButton, CheckBox, DatePicker
-- 🚧 Automatic IDE form designer → Android UI code generator
-- 🚧 Embedded `adb logcat` panel in the IDE (live stream, filter by tag/level)
+- 🚧 Embedded `adb logcat` panel in the IDE (today it streams in a dedicated terminal window)
 - 🚧 Device picker (emulator / USB / Wi-Fi ADB)
 - 🚧 Keystore manager + release AAB export for Play Store
-- 🚧 **Android toolchain auto-installer wizard** — detects missing pieces (NDK, SDK, JDK), downloads, configures, ready to build with zero manual setup on Windows, macOS and Linux
+- 🚧 Setup Wizard port to macOS and Linux hosts
+- 🚧 Multi-ABI prebuilts (x86_64, armeabi-v7a) in addition to the current arm64-v8a
 
 ### Why this matters
 
