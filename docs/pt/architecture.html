@@ -7,6 +7,10 @@
   <link rel="stylesheet" href="../assets/css/docs.css">
   <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
   <script>mermaid.initialize({startOnLoad:true, theme:'dark'});</script>
+  <style>
+    .badge.android { background: #34c759; color: #0d1117; }
+    .badge.ios     { background: #e5e5ea; color: #0d1117; }
+  </style>
 </head>
 <body>
 
@@ -111,6 +115,7 @@ graph TB
     D --> E1["5a. API Win32<br/>C++ &middot; CreateWindowEx"]
     D --> E2["5b. Cocoa / AppKit<br/>Objective-C &middot; NSView"]
     D --> E3["5c. GTK3<br/>C &middot; GtkWidget"]
+    D --> E4["5d. Android<br/>JNI &middot; android.widget.*"]
     style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
     style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
     style C fill:#f59e0b,stroke:#d97706,color:#0d1117
@@ -118,6 +123,7 @@ graph TB
     style E1 fill:#0078d4,stroke:#005a9e,color:#fff
     style E2 fill:#555,stroke:#333,color:#fff
     style E3 fill:#e95420,stroke:#c34113,color:#fff
+    style E4 fill:#34c759,stroke:#1a8d4d,color:#0d1117
 </div>
 
 <div class="info-box tip">
@@ -137,9 +143,11 @@ graph TB
     <th><span class="badge win">Windows</span></th>
     <th><span class="badge mac">macOS</span></th>
     <th><span class="badge linux">Linux</span></th>
+    <th><span class="badge android">Android</span></th>
   </tr>
   <tr>
     <td><strong>Codigo do Aplicativo</strong></td>
+    <td>Harbour .prg</td>
     <td>Harbour .prg</td>
     <td>Harbour .prg</td>
     <td>Harbour .prg</td>
@@ -149,44 +157,59 @@ graph TB
     <td>hbbuilder.ch</td>
     <td>hbbuilder.ch</td>
     <td>hbbuilder.ch</td>
+    <td>UI_* direto (reemitido pelo IDE)</td>
   </tr>
   <tr>
     <td><strong>Camada OOP</strong></td>
     <td>TForm, TControl</td>
     <td>TForm, TControl</td>
     <td>TForm, TControl</td>
+    <td>UI_* plano (iter 1, TForm em breve)</td>
   </tr>
   <tr>
     <td><strong>Bridge HB_FUNC</strong></td>
     <td>C++ (MSVC/MinGW)</td>
     <td>Objective-C (Clang)</td>
     <td>C (GCC)</td>
+    <td>C + JNI (NDK Clang)</td>
   </tr>
   <tr>
     <td><strong>Backend Nativo</strong></td>
     <td>API Win32 / GDI+</td>
     <td>Cocoa / AppKit</td>
     <td>GTK3 / Cairo</td>
+    <td>android.widget.*</td>
   </tr>
   <tr>
     <td><strong>Criacao de Janela</strong></td>
     <td>CreateWindowEx()</td>
     <td>[NSWindow alloc]</td>
     <td>gtk_window_new()</td>
+    <td>FrameLayout em MainActivity</td>
   </tr>
   <tr>
     <td><strong>Loop de Eventos</strong></td>
     <td>GetMessage / WndProc</td>
     <td>[NSApp run]</td>
     <td>gtk_main()</td>
+    <td>Ciclo de vida da Activity</td>
   </tr>
   <tr>
     <td><strong>Desenho</strong></td>
     <td>GDI / GDI+</td>
     <td>Core Graphics</td>
     <td>Cairo / Pango</td>
+    <td>Canvas / Skia</td>
   </tr>
 </table>
+
+<div class="info-box info">
+  <strong>Android e um alvo de cross-compile, nao um host.</strong>
+  O IDE continua rodando em Windows/macOS/Linux; o que ele <em>produz</em> e um APK que roda no
+  dispositivo. Ver <a href="platform-android.html">o guia da plataforma Android</a> para o pipeline
+  completo (harbour.exe &rarr; NDK Clang &rarr; aapt2 &rarr; javac &rarr; d8 &rarr; apksigner) e o
+  Setup Wizard que instala o toolchain automaticamente.
+</div>
 
 <!-- ──────────────────────────────────────────── -->
 <h2 id="sistema-de-tipos-de-controle">Sistema de Tipos de Controle</h2>
