@@ -135,6 +135,12 @@ HB_FUNC( UI_BUTTONNEW )
     btn.frame = CGRectMake(x, y, w, h);
     [btn setTitle:[NSString stringWithUTF8String:text] forState:UIControlStateNormal];
 
+    /* Give the button a visible rounded-rect background */
+    btn.backgroundColor = [UIColor systemBlueColor];
+    [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    btn.layer.cornerRadius = 8.0;
+    btn.clipsToBounds = YES;
+
     /* tag stores the control id for click dispatch */
     int id = g_next_id;   /* pre-allocate id so we can set tag */
     if( id >= MAX_CTRLS ) { hb_retni(0); return; }

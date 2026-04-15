@@ -4106,7 +4106,7 @@ static function GenerateiOSPRG()
       cName  := UI_GetProp( hCtrl, "cName" )
       cText  := UI_GetProp( hCtrl, "cText" )
       nL     := UI_GetProp( hCtrl, "nLeft" )
-      nT     := UI_GetProp( hCtrl, "nTop" )
+      nT     := UI_GetProp( hCtrl, "nTop" ) + 50   // offset for iOS safe area
       nW     := UI_GetProp( hCtrl, "nWidth" )
       nH     := UI_GetProp( hCtrl, "nHeight" )
       nType  := UI_GetType( hCtrl )
@@ -4121,12 +4121,12 @@ static function GenerateiOSPRG()
          AAdd( aCreate, '   ' + cName + ' := UI_LabelNew( hForm, ' + cQ + cText + cQ + ', ' + ;
                LTrim(Str(nL)) + ', ' + LTrim(Str(nT)) + ', ' + ;
                LTrim(Str(nW)) + ', ' + LTrim(Str(nH)) + ' )' )
-      case nType == 2  // Button
-         AAdd( aCreate, '   ' + cName + ' := UI_ButtonNew( hForm, ' + cQ + cText + cQ + ', ' + ;
+      case nType == 2  // Edit
+         AAdd( aCreate, '   ' + cName + ' := UI_EditNew( hForm, ' + cQ + cText + cQ + ', ' + ;
                LTrim(Str(nL)) + ', ' + LTrim(Str(nT)) + ', ' + ;
                LTrim(Str(nW)) + ', ' + LTrim(Str(nH)) + ' )' )
-      case nType == 3  // Edit
-         AAdd( aCreate, '   ' + cName + ' := UI_EditNew( hForm, ' + cQ + cText + cQ + ', ' + ;
+      case nType == 3  // Button
+         AAdd( aCreate, '   ' + cName + ' := UI_ButtonNew( hForm, ' + cQ + cText + cQ + ', ' + ;
                LTrim(Str(nL)) + ', ' + LTrim(Str(nT)) + ', ' + ;
                LTrim(Str(nW)) + ', ' + LTrim(Str(nH)) + ' )' )
       endcase
@@ -4150,7 +4150,7 @@ static function GenerateiOSPRG()
       endif
 
       // OnClick (buttons only — only buttons have click handlers on iOS)
-      if nType == 2 .and. ! Empty( cName )
+      if nType == 3 .and. ! Empty( cName )
          AAdd( aBind, '   UI_OnClick( ' + cName + ', {|| ' + cName + '_OnClick() } )' )
       endif
    next
@@ -4194,7 +4194,7 @@ static function GenerateiOSPRG()
    for i := 1 to nCount
       hCtrl := UI_GetChild( hForm, i )
       nType := UI_GetType( hCtrl )
-      if nType == 2  // Button only
+      if nType == 3  // Button only
          cName := UI_GetProp( hCtrl, "cName" )
          if Empty( cName )
             cName := "ctrl" + LTrim( Str( i ) )
