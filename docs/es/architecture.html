@@ -114,6 +114,7 @@ graph TB
     D --> E2["5b. Cocoa / AppKit<br/>Objective-C &middot; NSView"]
     D --> E3["5c. GTK3<br/>C &middot; GtkWidget"]
     D --> E4["5d. Android<br/>JNI &middot; android.widget.*"]
+    D --> E5["5e. iOS / UIKit<br/>Objective-C &middot; UIView"]
     style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
     style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
     style C fill:#f59e0b,stroke:#d97706,color:#0d1117
@@ -122,6 +123,7 @@ graph TB
     style E2 fill:#555,stroke:#333,color:#fff
     style E3 fill:#e95420,stroke:#c34113,color:#fff
     style E4 fill:#34c759,stroke:#1a8d4d,color:#0d1117
+    style E5 fill:#007aff,stroke:#005ec4,color:#fff
 </div>
 
 <div class="info-box tip">
@@ -140,9 +142,11 @@ graph TB
     <th><span class="badge mac">macOS</span></th>
     <th><span class="badge linux">Linux</span></th>
     <th><span class="badge android">Android</span></th>
+    <th><span class="badge ios">iOS</span></th>
   </tr>
   <tr>
     <td><strong>Codigo de Aplicacion</strong></td>
+    <td>Harbour .prg</td>
     <td>Harbour .prg</td>
     <td>Harbour .prg</td>
     <td>Harbour .prg</td>
@@ -154,12 +158,14 @@ graph TB
     <td>hbbuilder.ch</td>
     <td>hbbuilder.ch</td>
     <td>UI_* directo (re-emitido por el IDE)</td>
+    <td>UI_* directo (re-emitido por el IDE)</td>
   </tr>
   <tr>
     <td><strong>Capa OOP</strong></td>
     <td>TForm, TControl</td>
     <td>TForm, TControl</td>
     <td>TForm, TControl</td>
+    <td>UI_* plano (iter 1, TForm pronto)</td>
     <td>UI_* plano (iter 1, TForm pronto)</td>
   </tr>
   <tr>
@@ -168,6 +174,7 @@ graph TB
     <td>Objective-C (Clang)</td>
     <td>C (GCC)</td>
     <td>C + JNI (NDK Clang)</td>
+    <td>Objective-C (Xcode Clang)</td>
   </tr>
   <tr>
     <td><strong>Backend Nativo</strong></td>
@@ -175,6 +182,7 @@ graph TB
     <td>Cocoa / AppKit</td>
     <td>GTK3 / Cairo</td>
     <td>android.widget.*</td>
+    <td>UIKit / UIView</td>
   </tr>
   <tr>
     <td><strong>Creacion de Ventanas</strong></td>
@@ -182,6 +190,7 @@ graph TB
     <td>[NSWindow alloc]</td>
     <td>gtk_window_new()</td>
     <td>FrameLayout en MainActivity</td>
+    <td>UIView en UIViewController</td>
   </tr>
   <tr>
     <td><strong>Bucle de Eventos</strong></td>
@@ -189,6 +198,7 @@ graph TB
     <td>[NSApp run]</td>
     <td>gtk_main()</td>
     <td>Ciclo de vida de la Activity</td>
+    <td>UIApplicationMain (controlado por el SO)</td>
   </tr>
   <tr>
     <td><strong>Dibujo</strong></td>
@@ -196,15 +206,16 @@ graph TB
     <td>Core Graphics</td>
     <td>Cairo / Pango</td>
     <td>Canvas / Skia</td>
+    <td>Core Graphics (iOS)</td>
   </tr>
 </table>
 
 <div class="info-box info">
-  <strong>Android es un objetivo de cross-compile, no un host.</strong>
-  El IDE sigue ejecutandose en Windows/macOS/Linux; lo que <em>produce</em> es un APK que corre en el
-  dispositivo. Ver <a href="platform-android.html">la guia de la plataforma Android</a> para el
-  pipeline completo (harbour.exe &rarr; NDK Clang &rarr; aapt2 &rarr; javac &rarr; d8 &rarr;
-  apksigner) y el Setup Wizard que instala el toolchain automaticamente.
+  <strong>Android e iOS son objetivos de cross-compile, no hosts.</strong>
+  El IDE sigue ejecutandose en Windows/macOS/Linux; lo que <em>produce</em> es un APK o .app que corre en el
+  dispositivo o simulador. Ver <a href="platform-android.html">la guia de la plataforma Android</a> y
+  <a href="platform-ios.html">la guia de la plataforma iOS</a> para los pipelines completos y los
+  Setup Wizards que instalan los toolchains automaticamente.
 </div>
 
 <!-- ──────────────────────────────────────────── -->
@@ -281,6 +292,8 @@ como el disenador los renderiza y que widget nativo crea el backend en tiempo de
 │   ├── cocoa/          <span class="cm">// Backend Objective-C para macOS</span>
 │   ├── gtk3/           <span class="cm">// Backend GTK3/C para Linux</span>
 │   ├── win32/          <span class="cm">// Backend C++ para Windows</span>
+│   ├── android/        <span class="cm">// Backend JNI + Java para Android</span>
+│   ├── ios/            <span class="cm">// Backend UIKit + Objective-C para iOS</span>
 │   ├── console/        <span class="cm">// Backend TUI de consola</span>
 │   └── web/            <span class="cm">// Backend Web/HTML</span>
 ├── core/               <span class="cm">// Clases OOP de Harbour (TForm, TControl, ...)</span>
@@ -302,19 +315,19 @@ como el disenador los renderiza y que widget nativo crea el backend en tiempo de
 
 <!-- ──────────────────────────────────────────── -->
 <h2 id="sistema-de-eventos">Sistema de Eventos</h2>
-<p>HarbourBuilder enruta los eventos nativos del sistema operativo a traves de una canalizacion unificada que termina en bloques de codigo Harbour definidos por el usuario. El mismo flujo de eventos se aplica en todas las plataformas; solo difiere el punto de entrada (WndProc en Windows, NSResponder en macOS, g_signal en GTK3).</p>
+<p>HarbourBuilder enruta los eventos nativos del sistema operativo a traves de una canalizacion unificada que termina en bloques de codigo Harbour definidos por el usuario. El mismo flujo de eventos se aplica en todas las plataformas; solo difiere el punto de entrada (WndProc en Windows, NSResponder en macOS, g_signal en GTK3, UIEvent en iOS).</p>
 
 <div class="mermaid">
 sequenceDiagram
     participant User
     participant OS as Native OS
-    participant WndProc as WndProc / NSResponder / g_signal
+    participant WndProc as WndProc / NSResponder / g_signal / UIResponder
     participant Fire as FireEvent()
     participant Block as Harbour Code Block
     participant Code as User Code
 
     User->>OS: Click button
-    OS->>WndProc: WM_COMMAND / action / clicked
+    OS->>WndProc: WM_COMMAND / action / clicked / touchUpInside
     WndProc->>Fire: FireEvent( hWnd, nMsg, CT_BUTTON )
     Fire->>Block: Eval( oBtn:OnClick )
     Block->>Code: { || MsgInfo("Hello!") }
@@ -372,9 +385,9 @@ graph LR
     C --> D["C Compiler<br/>(MSVC / Clang / GCC)"]
     D --> E[".obj / .o<br/>Object files"]
     E --> F["Linker<br/>(link / ld)"]
-    G["Native Backend<br/>(Win32 / Cocoa / GTK3)"] --> F
+    G["Native Backend<br/>(Win32 / Cocoa / GTK3 / Android JNI / iOS UIKit)"] --> F
     H["Harbour Runtime<br/>(libharbour)"] --> F
-    F --> I[".exe / app / ELF<br/>Native binary"]
+    F --> I[".exe / app / ELF / APK / .app<br/>Native binary"]
     style A fill:#58a6ff,stroke:#388bfd,color:#0d1117
     style B fill:#8b5cf6,stroke:#7c3aed,color:#fff
     style C fill:#f59e0b,stroke:#d97706,color:#0d1117
@@ -387,30 +400,46 @@ graph LR
 </div>
 
 <table>
-  <tr><th>Etapa</th><th><span class="badge win">Windows</span></th><th><span class="badge mac">macOS</span></th><th><span class="badge linux">Linux</span></th></tr>
+  <tr><th>Etapa</th><th><span class="badge win">Windows</span></th><th><span class="badge mac">macOS</span></th><th><span class="badge linux">Linux</span></th><th><span class="badge android">Android</span></th><th><span class="badge ios">iOS</span></th></tr>
   <tr>
     <td><strong>Compilador Harbour</strong></td>
     <td>harbour.exe</td>
     <td>harbour</td>
     <td>harbour</td>
+    <td>harbour (NDK cross)</td>
+    <td>harbour (Xcode cross)</td>
   </tr>
   <tr>
     <td><strong>Compilador C</strong></td>
     <td>cl.exe (MSVC) / gcc (MinGW)</td>
     <td>clang (Xcode)</td>
     <td>gcc / g++</td>
+    <td>clang (NDK)</td>
+    <td>clang (Xcode)</td>
   </tr>
   <tr>
     <td><strong>Enlazador</strong></td>
     <td>link.exe / ld</td>
     <td>ld (via clang)</td>
     <td>ld (via gcc)</td>
+    <td>ld (NDK)</td>
+    <td>ld (via clang)</td>
+  </tr>
+  <tr>
+    <td><strong>Etapas Extra</strong></td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>&mdash;</td>
+    <td>aapt2 &rarr; javac &rarr; d8 &rarr; zipalign &rarr; apksigner</td>
+    <td>asset catalog &rarr; Info.plist &rarr; .app bundle</td>
   </tr>
   <tr>
     <td><strong>Salida</strong></td>
     <td>.exe</td>
     <td>Paquete .app</td>
     <td>Binario ELF</td>
+    <td>.apk</td>
+    <td>Paquete .app</td>
   </tr>
 </table>
 
