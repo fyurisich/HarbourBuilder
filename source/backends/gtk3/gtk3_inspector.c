@@ -71,6 +71,8 @@ typedef struct {
    PHB_ITEM     pOnPropChanged;    /* after property edit (two-way sync) */
    /* Browse column editing */
    int          nBrowseCol;  /* -1 = not editing column, >= 0 = column index */
+   /* TFolderPage view: -1 = normal, >= 0 = showing page N of folder in hCtrl */
+   int          nFolderPage;
    /* Debug mode */
    int          bDebugMode;
    IROW         dbgLocalsRows[MAX_ROWS];
@@ -746,6 +748,7 @@ HB_FUNC( INS_CREATE )
 
    INSDATA * d = (INSDATA *) calloc( 1, sizeof(INSDATA) );
    d->nBrowseCol = -1;
+   d->nFolderPage = -1;
 
    /* Create window */
    d->window = gtk_window_new( GTK_WINDOW_TOPLEVEL );
@@ -854,6 +857,7 @@ HB_FUNC( INS_REFRESHWITHDATA )
 
    d->hCtrl = (HB_PTRUINT) hb_parnint(2);
    d->nBrowseCol = -1;  /* reset; InspectorRefreshColumn sets it after */
+   d->nFolderPage = -1; /* reset; INS_SetFolderPage sets it after */
 
    if( d->hCtrl == 0 || !pArray || hb_arrayLen(pArray) == 0 )
    {
@@ -1317,4 +1321,57 @@ HB_FUNC( INS_SETDEBUGSTACK )
       for( int k = 0; k < d->nRows; k++ ) d->map[k] = k;
       InsRebuildStore( d );
    }
+}
+
+/* ======================================================================
+ * TFolderPage inspector view: Harbour drives the rows directly via
+ * INS_SetFolderPage + INS_AddCategoryRow + INS_AddRow and finishes with
+ * INS_Rebuild. Bypasses UI_GetAllProps.
+ * ====================================================================== */
+
+HB_FUNC( INS_SETFOLDERPAGE )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   if( !d ) return;
+   d->hCtrl = (HB_PTRUINT) hb_parnint(2);
+   d->nFolderPage = HB_ISNUM(3) ? hb_parni(3) : -1;
+   d->nRows = 0;
+}
+
+HB_FUNC( INS_ADDROW )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   if( !d || d->nRows >= MAX_ROWS - 1 ) return;
+   IROW * r = &d->rows[d->nRows++];
+   memset( r, 0, sizeof(IROW) );
+   strncpy( r->szName,     HB_ISCHAR(2) ? hb_parc(2) : "", 31 );
+   strncpy( r->szValue,    HB_ISCHAR(3) ? hb_parc(3) : "", 255 );
+   strncpy( r->szCategory, HB_ISCHAR(4) ? hb_parc(4) : "General", 31 );
+   r->cType = ( HB_ISCHAR(5) && hb_parc(5)[0] ) ? hb_parc(5)[0] : 'S';
+   r->bIsCat = 0;
+   r->bCollapsed = 0;
+   r->bVisible = 1;
+}
+
+HB_FUNC( INS_ADDCATEGORYROW )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   if( !d || d->nRows >= MAX_ROWS - 1 ) return;
+   IROW * r = &d->rows[d->nRows++];
+   memset( r, 0, sizeof(IROW) );
+   strncpy( r->szName,     HB_ISCHAR(2) ? hb_parc(2) : "", 31 );
+   strncpy( r->szCategory, HB_ISCHAR(2) ? hb_parc(2) : "", 31 );
+   r->cType = 0;
+   r->bIsCat = 1;
+   r->bCollapsed = 0;
+   r->bVisible = 1;
+}
+
+HB_FUNC( INS_REBUILD )
+{
+   INSDATA * d = (INSDATA *)(HB_PTRUINT) hb_parnint(1);
+   if( !d ) return;
+   for( int k = 0; k < d->nRows; k++ ) d->map[k] = k;
+   d->nVisible = d->nRows;
+   InsRebuildStore( d );
 }

@@ -17,12 +17,10 @@ ENDCLASS
 METHOD CreateForm() CLASS TForm1
 
    ::Title  := "Form1"
-   ::Left   := 1129
-   ::Top    := 456
+   ::Left   := 514
+   ::Top    := 236
    ::Width  := 650
    ::Height := 421
-   ::FontName := "Segoe UI"
-   ::FontSize := 9
    ::Color  := 2960685
 
    @ 48, 144 FOLDER ::oFolder1 OF Self SIZE 355, 194 PROMPTS "Uno", "Dos", "Tres"
@@ -30,6 +28,16 @@ METHOD CreateForm() CLASS TForm1
    @ 156, 260 BUTTON ::oButton1 PROMPT "Button" OF ::oFolder1:aPages[1] SIZE 105, 32
    ::oButton1:oFont := "Segoe UI,12"
 
+   // Event wiring
+   ::oButton1:OnClick := { || Button1Click( Self ) }
+
 return nil
 //--------------------------------------------------------------------
+
+//--------------------------------------------------------------------
+static function Button1Click( oForm )
+
+   MsgInfo( 'click' )
+
+return nil
 

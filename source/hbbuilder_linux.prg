@@ -80,6 +80,7 @@ function Main()
    MENUITEM "New Form"        OF oFile ACTION MenuNewForm()
    MENUSEPARATOR OF oFile
    MENUITEM "Open..."    OF oFile ACTION TBOpen()                   ACCEL "o"
+   MENUITEM "Reopen Last Project" OF oFile ACTION ReopenLastProject()
    MENUITEM "Save"       OF oFile ACTION TBSave()                   ACCEL "s"
    MENUITEM "Save As..." OF oFile ACTION TBSaveAs()
    MENUSEPARATOR OF oFile
@@ -171,9 +172,10 @@ function Main()
    UI_MenuSetBitmapByPos( oFile:hPopup, 0, cIcoDir + "menu_new.png" )
    UI_MenuSetBitmapByPos( oFile:hPopup, 1, cIcoDir + "menu_new_form.png" )
    UI_MenuSetBitmapByPos( oFile:hPopup, 3, cIcoDir + "menu_open.png" )
-   UI_MenuSetBitmapByPos( oFile:hPopup, 4, cIcoDir + "menu_save.png" )
-   UI_MenuSetBitmapByPos( oFile:hPopup, 5, cIcoDir + "menu_saveas.png" )
-   UI_MenuSetBitmapByPos( oFile:hPopup, 7, cIcoDir + "menu_exit.png" )
+   UI_MenuSetBitmapByPos( oFile:hPopup, 4, cIcoDir + "menu_open.png" )   // Reopen Last
+   UI_MenuSetBitmapByPos( oFile:hPopup, 5, cIcoDir + "menu_save.png" )
+   UI_MenuSetBitmapByPos( oFile:hPopup, 6, cIcoDir + "menu_saveas.png" )
+   UI_MenuSetBitmapByPos( oFile:hPopup, 8, cIcoDir + "menu_exit.png" )
 
    UI_MenuSetBitmapByPos( oEdit:hPopup, 0, cIcoDir + "menu_undo.png" )
    UI_MenuSetBitmapByPos( oEdit:hPopup, 1, cIcoDir + "menu_redo.png" )
@@ -342,7 +344,7 @@ static function CreatePalette()
 
    // GTK3 tab (equivalent to Win32 in C++Builder)
    nTab := oPal:AddTab( "GTK3" )
-   oPal:AddComp( nTab, "Tab",  "TabControl",  33 )
+   oPal:AddComp( nTab, "Fol",  "Folder",      33 )
    oPal:AddComp( nTab, "TV",   "TreeView",    20 )
    oPal:AddComp( nTab, "LV",   "ListView",    21 )
    oPal:AddComp( nTab, "PB",   "ProgressBar", 22 )
@@ -497,6 +499,7 @@ return nil
 static function OnComboSelect( nSel )
 
    local hTarget, aMap, aEntry
+   local cTabs, aLabels, cCap, hIns
 
    aMap := InspectorGetComboMap()
 
@@ -507,6 +510,24 @@ static function OnComboSelect( nSel )
          // aEntry = { 2, hBrowse, nColIdx }
          UI_FormSelectCtrl( oDesignForm:hCpp, aEntry[2] )
          InspectorRefreshColumn( aEntry[2], aEntry[3] )
+         return nil
+      endif
+
+      if aEntry[1] == 3  // Folder page
+         // aEntry = { 3, hFolder, nPageIdx } — switch tab and show
+         // TFolderPage props (cCaption, nPage) in the inspector.
+         // NOTE: do not call UI_FormSelectCtrl here — it fires OnSelChange
+         // which calls InspectorRefresh(folder) and clobbers the page rows.
+         cTabs := UI_GetProp( aEntry[2], "aTabs" )
+         aLabels := iif( Empty( cTabs ), {}, hb_ATokens( cTabs, "|" ) )
+         cCap := iif( aEntry[3]+1 <= Len(aLabels), aLabels[aEntry[3]+1], "" )
+         UI_TabControlSetSel( aEntry[2], aEntry[3] )
+         hIns := _InsGetData()
+         INS_SetFolderPage( hIns, aEntry[2], aEntry[3] )
+         INS_AddCategoryRow( hIns, "Page" )
+         INS_AddRow( hIns, "cCaption", cCap, "Page", "S" )
+         INS_AddRow( hIns, "nPage", LTrim(Str(aEntry[3]+1)), "Page", "N" )
+         INS_Rebuild( hIns )
          return nil
       endif
 
@@ -588,11 +609,12 @@ static function RegenerateFormCode( cName, hForm )
    local cSep := "//" + Replicate( "-", 68 ) + e
    local cClass := "T" + cName
    local i, nCount, hCtrl, cCtrlName, cCtrlClass, nType
-   local nW, nH, nFL, nFT, cTitle, nClr
+   local nW, nH, nFL, nFT, cTitle, nClr, cAppTitle := ""
    local nL, nT, nCW, nCH, cText
    local cDatas := "", cCreate := "", cEvents := ""
    local cExistingCode, aEvents, j, cEvName, cEvSuffix, cHandlerName
    local cVal, aHdrs, kk, nColCount, aColProps, nColW, nCtrlClr, nInterval
+   local aCtrlMap := {}, cOf, hOwner, nPg, kk2, nLen0, cSlice
 
    // Read existing code to find declared event handlers
    cExistingCode := ""
@@ -607,10 +629,24 @@ static function RegenerateFormCode( cName, hForm )
       nW     := UI_GetProp( hForm, "nWidth" )
       nH     := UI_GetProp( hForm, "nHeight" )
       nClr   := UI_GetProp( hForm, "nClrPane" )
+      cAppTitle := UI_GetProp( hForm, "cAppTitle" )
+      if ValType( cAppTitle ) != "C"; cAppTitle := ""; endif
    else
       cTitle := cName
       nFL := 0; nFT := 0; nW := 400; nH := 300
       nClr   := 15790320
+   endif
+
+   // First pass: map each hCtrl → cCtrlName for OF ::oFolder:aPages[N] emit
+   if hForm != 0
+      nCount := UI_GetChildCount( hForm )
+      for i := 1 to nCount
+         hCtrl := UI_GetChild( hForm, i )
+         if hCtrl == 0; loop; endif
+         cCtrlName := AllTrim( UI_GetProp( hCtrl, "cName" ) )
+         if Empty( cCtrlName ); cCtrlName := "ctrl" + LTrim(Str(i)); endif
+         AAdd( aCtrlMap, { hCtrl, cCtrlName } )
+      next
    endif
 
    if hForm != 0
@@ -624,6 +660,20 @@ static function RegenerateFormCode( cName, hForm )
          nType      := UI_GetType( hCtrl )
          if Empty( cCtrlName ); cCtrlName := "ctrl" + LTrim(Str(i)); endif
 
+         // OF clause: "Self" or "::oFolder:aPages[N]" for paged children
+         cOf := "Self"
+         hOwner := UI_GetCtrlOwner( hCtrl )
+         if ValType( hOwner ) == "N" .and. hOwner != 0
+            nPg := UI_GetCtrlPage( hCtrl )
+            for kk2 := 1 to Len( aCtrlMap )
+               if aCtrlMap[kk2][1] == hOwner
+                  cOf := "::o" + aCtrlMap[kk2][2] + ":aPages[" + ;
+                         LTrim( Str( nPg + 1 ) ) + "]"
+                  exit
+               endif
+            next
+         endif
+
          cDatas += "   DATA o" + cCtrlName + "   // " + cCtrlClass + e
 
          nL := UI_GetProp( hCtrl, "nLeft" )
@@ -632,7 +682,24 @@ static function RegenerateFormCode( cName, hForm )
          nCH := UI_GetProp( hCtrl, "nHeight" )
          cText := UI_GetProp( hCtrl, "cText" )
 
+         // Snapshot cCreate length so we can post-process only this slice
+         nLen0 := Len( cCreate )
+
          do case
+            case nType == CT_TABCONTROL2  // TFolder (33)
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' FOLDER ::o' + cCtrlName + ' OF Self SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               cVal := UI_GetProp( hCtrl, "aTabs" )
+               if ! Empty( cVal )
+                  cCreate += ' PROMPTS '
+                  aHdrs := hb_ATokens( cVal, "|" )
+                  for kk := 1 to Len( aHdrs )
+                     if kk > 1; cCreate += ', '; endif
+                     cCreate += '"' + aHdrs[kk] + '"'
+                  next
+               endif
+               cCreate += e
             case nType == 1
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' SAY ::o' + cCtrlName + ' PROMPT "' + cText + '" OF Self SIZE ' + ;
@@ -722,10 +789,37 @@ static function RegenerateFormCode( cName, hForm )
                endif
          endcase
 
+         // Rewrite "OF Self" in the slice emitted above to "OF <cOf>" when
+         // this control belongs to a TFolder page.
+         if cOf != "Self" .and. Len( cCreate ) > nLen0
+            cSlice := SubStr( cCreate, nLen0 + 1 )
+            cSlice := StrTran( cSlice, " OF Self ", " OF " + cOf + " " )
+            cCreate := Left( cCreate, nLen0 ) + cSlice
+         endif
+
          // Emit nClrPane if non-default (default = 0xFFFFFFFF = 4294967295)
          nCtrlClr := UI_GetProp( hCtrl, "nClrPane" )
          if nCtrlClr != 4294967295 .and. nCtrlClr != 0
             cCreate += '   ::o' + cCtrlName + ':nClrPane := ' + LTrim( Str( nCtrlClr ) ) + e
+         endif
+
+         // Emit nClrText (Label/Edit/StaticText) if non-default
+         if nType == CT_LABEL .or. nType == CT_EDIT .or. nType == 28 /*CT_MASKEDIT2*/ .or. ;
+            nType == CT_LABELEDEDIT .or. nType == CT_STATICTEXT
+            nCtrlClr := UI_GetProp( hCtrl, "nClrText" )
+            if ValType( nCtrlClr ) == "N" .and. nCtrlClr != 4294967295
+               cCreate += '   ::o' + cCtrlName + ':nClrText := ' + LTrim( Str( nCtrlClr ) ) + e
+            endif
+            // Emit nAlign if non-default (0=Left)
+            cVal := UI_GetProp( hCtrl, "nAlign" )
+            if ValType( cVal ) == "N" .and. cVal != 0
+               cCreate += '   ::o' + cCtrlName + ':nAlign := ' + LTrim( Str( cVal ) ) + e
+            endif
+         endif
+
+         // Emit lTransparent for labels when not default (.F. instead of default .T.)
+         if nType == 1 .and. UI_GetProp( hCtrl, "lTransparent" ) == .F.
+            cCreate += '   ::o' + cCtrlName + ':lTransparent := .F.' + e
          endif
 
          // Emit oFont if non-default
@@ -794,6 +888,9 @@ static function RegenerateFormCode( cName, hForm )
    cCode += "   ::Height := " + LTrim(Str(nH)) + e
    if nClr != 15790320
       cCode += "   ::Color  := " + LTrim(Str(nClr)) + e
+   endif
+   if ! Empty( cAppTitle )
+      cCode += '   ::AppTitle := "' + cAppTitle + '"' + e
    endif
    if ! Empty( cCreate )
       cCode += e + cCreate
@@ -970,7 +1067,7 @@ static function OnComponentDrop( hForm, nType, nL, nT, nW, nH )
       "Image", "Shape", "Bevel", "", "", "", "TreeView", "ListView", ;
       "ProgressBar", "RichEdit", "Memo", "Panel", "ScrollBar", ;
       "SpeedButton", "MaskEdit", "StringGrid", "ScrollBox", ;
-      "StaticText", "LabeledEdit", "TabControl", "TrackBar", ;
+      "StaticText", "LabeledEdit", "Folder", "TrackBar", ;
       "SpinButton", "DatePicker", "Calendar", "Timer", "PaintBox", ;
       "OpenDialog", "SaveDialog", "FontDialog", "ColorDialog", ;
       "FindDialog", "ReplaceDialog", ;
@@ -1006,13 +1103,17 @@ static function OnComponentDrop( hForm, nType, nL, nT, nW, nH )
    hCtrl  := UI_GetChild( hForm, nCount )
    if hCtrl != 0
       UI_SetProp( hCtrl, "cName", cName )
+      // Folder: seed default tabs so runtime + codegen have something
+      if nType == CT_TABCONTROL2 .and. Empty( UI_GetProp( hCtrl, "aTabs" ) )
+         UI_SetProp( hCtrl, "aTabs", "Tab 1|Tab 2|Tab 3" )
+      endif
    endif
 
    SyncDesignerToCode()
 
    // Refresh inspector and select the new component
    InspectorPopulateCombo( hForm )
-   INS_ComboSelect( _InsGetData(), nCount )  // select last item (new component)
+   INS_ComboSelect( _InsGetData(), nCount )
    InspectorRefresh( hCtrl )
 
 return nil
@@ -1413,6 +1514,7 @@ static function RestoreFormFromCode( hForm, cCode )
    local aLines, cLine, cTrim, i, nType
    local nT, nL, nW, nH, cText, cName, hCtrl
    local nPos, nPos2, cTitle, cVal, kk, nCount, cTypeStr
+   local cFolderName, hFolder, nPageIdx, kkF, hChildN
 
    if Empty( cCode ) .or. hForm == 0
       return nil
@@ -1431,6 +1533,14 @@ static function RestoreFormFromCode( hForm, cCode )
          if nPos > 0 .and. nPos2 > nPos
             cTitle := SubStr( cTrim, nPos + 1, nPos2 - nPos - 1 )
             UI_SetProp( hForm, "cText", cTitle )
+         endif
+         loop
+      endif
+      if '::AppTitle' $ cTrim .and. ':=' $ cTrim
+         nPos := At( '"', cTrim )
+         nPos2 := RAt( '"', cTrim )
+         if nPos > 0 .and. nPos2 > nPos
+            UI_SetProp( hForm, "cAppTitle", SubStr( cTrim, nPos + 1, nPos2 - nPos - 1 ) )
          endif
          loop
       endif
@@ -1521,9 +1631,48 @@ static function RestoreFormFromCode( hForm, cCode )
       endif
       if nH < 1; nH := 24; endif
 
+      // OF ::oFolder:aPages[N] -> set pending page owner BEFORE creating the
+      // control so AddChild tags it with (FPageOwner, FPageIndex).
+      if At( "OF ::o", cTrim ) > 0 .and. ":aPages[" $ cTrim
+         cVal := SubStr( cTrim, At( "OF ::o", cTrim ) + 6 )
+         cFolderName := Left( cVal, At( ":aPages[", cVal ) - 1 )
+         nPageIdx    := Val( SubStr( cVal, At( ":aPages[", cVal ) + 8 ) )
+         hFolder := 0
+         hChildN := UI_GetChildCount( hForm )
+         for kkF := 1 to hChildN
+            if AllTrim( UI_GetProp( UI_GetChild( hForm, kkF ), "cName" ) ) == cFolderName
+               hFolder := UI_GetChild( hForm, kkF )
+               exit
+            endif
+         next
+         if hFolder != 0
+            UI_SetPendingPageOwner( hFolder, nPageIdx - 1 )
+         endif
+      endif
+
       // Determine control type and create it
       hCtrl := 0
       do case
+         case " FOLDER " $ Upper( cTrim )
+            hCtrl := UI_TabControlNew( hForm, nL, nT, nW, nH )
+            nPos := At( "PROMPTS ", Upper( cTrim ) )
+            if nPos > 0 .and. hCtrl != 0
+               cText := SubStr( cTrim, nPos + 8 )
+               cVal := ""
+               do while ! Empty( cText )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  cText := SubStr( cText, nPos2 + 1 )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  if ! Empty( cVal ); cVal += "|"; endif
+                  cVal += Left( cText, nPos2 - 1 )
+                  cText := SubStr( cText, nPos2 + 1 )
+               enddo
+               if ! Empty( cVal )
+                  UI_SetProp( hCtrl, "aTabs", cVal )
+               endif
+            endif
          case " SAY " $ Upper( cTrim )
             hCtrl := UI_LabelNew( hForm, cText, nL, nT, nW, nH )
          case " BUTTON " $ Upper( cTrim )
@@ -1642,6 +1791,12 @@ static function RestoreFormFromCode( hForm, cCode )
 
       if cVal == "nClrPane" .or. cVal == "Color"
          UI_SetProp( hCtrl, "nClrPane", Val( cText ) )
+      elseif cVal == "nClrText"
+         UI_SetProp( hCtrl, "nClrText", Val( cText ) )
+      elseif cVal == "lTransparent"
+         UI_SetProp( hCtrl, "lTransparent", AllTrim( cText ) == ".T." )
+      elseif cVal == "nAlign"
+         UI_SetProp( hCtrl, "nAlign", Val( cText ) )
       elseif cVal == "oFont"
          if Left( cText, 1 ) == '"'
             cText := SubStr( cText, 2, Len( cText ) - 2 )
@@ -1658,13 +1813,16 @@ static function RestoreFormFromCode( hForm, cCode )
 return nil
 
 static function TBOpen()
+   local cFile := GTK_OpenFileDialog( "Open HbBuilder Project", "hbp" )
+   if Empty( cFile ); return nil; endif
+   OpenProjectFile( cFile )
+return nil
 
-   local cFile, cContent, cDir, aLines, i
+static function OpenProjectFile( cFile )
+
+   local cContent, cDir, aLines, i
    local cFormName, cFormCode, nFormX, nFormY
    local nInsW, nInsTop, nEditorTop, nEditorX, nEditorW, nEditorH
-
-   cFile := GTK_OpenFileDialog( "Open HbBuilder Project", "hbp" )
-   if Empty( cFile ); return nil; endif
 
    cContent := MemoRead( cFile )
    if Empty( cContent )
@@ -1739,6 +1897,7 @@ static function TBOpen()
    endif
 
    cCurrentFile := cFile
+   AddRecentProject( cFile )
 
 return nil
 
@@ -1772,6 +1931,8 @@ static function TBSave()
    for i := 1 to Len( aForms )
       MemoWrit( cDir + aForms[i][1] + ".prg", aForms[i][3] )
    next
+
+   AddRecentProject( cCurrentFile )
 
 return nil
 
@@ -2593,17 +2754,99 @@ return nil
 static function GetIniPath()
 return hb_DirBase() + "hbbuilder.ini"
 
+static function IniRead( cSection, cKey, cDefault )
+   local cContent, aLines, i, cSearch
+   HB_SYMBOL_UNUSED( cSection )
+   cContent := MemoRead( GetIniPath() )
+   if Empty( cContent ); return cDefault; endif
+   aLines := HB_ATokens( cContent, Chr(10) )
+   cSearch := Lower( cKey ) + "="
+   for i := 1 to Len( aLines )
+      if Left( Lower( AllTrim( aLines[i] ) ), Len( cSearch ) ) == cSearch
+         return SubStr( AllTrim( aLines[i] ), Len( cSearch ) + 1 )
+      endif
+   next
+return cDefault
+
+static function IniWrite( cSection, cKey, cValue )
+   local cContent, aLines, i, lFound, cSearch
+   HB_SYMBOL_UNUSED( cSection )
+   cContent := MemoRead( GetIniPath() )
+   if Empty( cContent ); cContent := ""; endif
+   aLines := HB_ATokens( cContent, Chr(10) )
+   cSearch := Lower( cKey ) + "="
+   lFound := .f.
+   for i := 1 to Len( aLines )
+      if Left( Lower( AllTrim( aLines[i] ) ), Len( cSearch ) ) == cSearch
+         aLines[i] := cKey + "=" + cValue
+         lFound := .t.
+         exit
+      endif
+   next
+   if ! lFound; AAdd( aLines, cKey + "=" + cValue ); endif
+   cContent := ""
+   for i := 1 to Len( aLines )
+      if ! Empty( AllTrim( aLines[i] ) )
+         cContent += aLines[i] + Chr(10)
+      endif
+   next
+   MemoWrit( GetIniPath(), cContent )
+return nil
+
+#define MAX_RECENT 8
+
+static function GetRecentProjects()
+   local aList := {}, i, cVal
+   for i := MAX_RECENT to 1 step -1
+      cVal := IniRead( "Recent", "File" + LTrim( Str( i ) ), "" )
+      if ! Empty( cVal ); AAdd( aList, cVal ); endif
+   next
+return aList
+
+static function AddRecentProject( cFile )
+   local aList := GetRecentProjects()
+   local nPos
+   nPos := AScan( aList, { |x| Lower(x) == Lower(cFile) } )
+   if nPos > 0
+      ADel( aList, nPos )
+      aList := ASize( aList, Len(aList) - 1 )
+   endif
+   AAdd( aList, cFile )
+   while Len( aList ) > MAX_RECENT
+      ADel( aList, 1 )
+      aList := ASize( aList, Len(aList) - 1 )
+   enddo
+   for nPos := 1 to MAX_RECENT
+      if Len( aList ) >= nPos
+         IniWrite( "Recent", "File" + LTrim( Str( nPos ) ), aList[ Len(aList) - nPos + 1 ] )
+      else
+         IniWrite( "Recent", "File" + LTrim( Str( nPos ) ), "" )
+      endif
+   next
+return nil
+
+static function ReopenLastProject()
+   local cFile := IniRead( "Recent", "File1", "" )
+   if Empty( cFile )
+      MsgInfo( "No recent project found.", "HbBuilder" )
+      return nil
+   endif
+   if ! File( cFile )
+      MsgInfo( "File not found: " + cFile, "HbBuilder" )
+      return nil
+   endif
+   OpenProjectFile( cFile )
+return nil
+
 static function LoadDarkMode()
-   local cIni := MemoRead( GetIniPath() )
-   if "DarkMode=1" $ cIni
+   if IniRead( "General", "DarkMode", "0" ) == "1"
       GTK_SetDarkMode( .T. )
-      // Editor theme applied later when hCodeEditor is created
       return .T.
    endif
 return .F.
 
 static function SaveDarkMode( lDark )
-   MemoWrit( GetIniPath(), "DarkMode=" + If( lDark, "1", "0" ) + Chr(10) )
+   IniWrite( "General", "DarkMode", If( lDark, "1", "0" ) )
 return nil
 
 static function ToggleDarkMode()

@@ -195,12 +195,21 @@ struct _HBControl
    GtkWidget * FWidget;
    char  FFontDesc[128];  /* "FontName,Size" */
    unsigned int FClrPane;
+   unsigned int FClrText;     /* foreground (text) color; 0xFFFFFFFF = default */
+   int   FTransparent;        /* 1 = no background paint (labels default) */
+   int   FAlign;              /* 0=Left, 1=Center, 2=Right (Label/Edit) */
 
    PHB_ITEM FOnClick, FOnChange, FOnInit, FOnClose;
 
    HBControl * FCtrlParent;
    HBControl * FChildren[MAX_CHILDREN];
    int FChildCount;
+
+   /* TFolder/TPageControl ownership: when this control was created with
+      OF ::oFolder:aPages[N], FPageOwner points to the TFolder and
+      FPageIndex is the 0-based page. NULL owner = not paged. */
+   HBControl * FPageOwner;
+   int         FPageIndex;
 };
 
 /* ======================================================================
@@ -251,6 +260,7 @@ struct _HBForm
    char         FHint[256];
    int          FAutoScroll;
    int          FDoubleBuffered;
+   char         FAppTitle[128];
    int          FClrPaneExplicit; /* 1 once user set nClrPane — CSS uses USER priority to beat dark-mode */
    /* Component drop (palette) */
    int          FPendingControlType;
@@ -265,6 +275,15 @@ struct _HBForm
 /* ======================================================================
  * Specific control structures
  * ====================================================================== */
+
+/* TFolder / TPageControl (CT_TABCONTROL2) — a bar of tabs, children of
+   the form that carry FPageOwner=this + FPageIndex=N are shown only
+   when their page is active. FTabs is pipe-separated "Tab1|Tab2|..." */
+typedef struct {
+   HBControl base;
+   char      FTabs[1024];
+   int       FPageCount;
+} HBTabControl2;
 
 struct _HBLabel    { HBControl base; };
 struct _HBEdit     { HBControl base; int FReadOnly, FPassword; };
@@ -444,13 +463,36 @@ static void HBControl_Init( HBControl * p )
    p->FControlType = 0; p->FWidget = NULL;
    strcpy( p->FFontDesc, "Sans 12" );
    p->FClrPane = 0xFFFFFFFF;
+   p->FClrText = 0xFFFFFFFF;
+   p->FTransparent = 1;
+   p->FAlign = 0;
    p->FOnClick = NULL; p->FOnChange = NULL;
    p->FOnInit = NULL; p->FOnClose = NULL;
    p->FCtrlParent = NULL; p->FChildCount = 0;
    memset( p->FChildren, 0, sizeof(p->FChildren) );
+   p->FPageOwner = NULL;
+   p->FPageIndex = 0;
+}
+
+/* Module globals: pending page ownership consumed by the next AddChild.
+   Set by TFolderPage:hCpp (UI_SETPENDINGPAGEOWNER) or by the designer
+   when a palette drop falls inside a TFolder's client area. */
+static HBControl * g_pendingPageOwner = NULL;
+static int         g_pendingPageIndex = 0;
+
+static void HbApplyPendingPageOwner( HBControl * pCtrl )
+{
+   if( pCtrl && g_pendingPageOwner )
+   {
+      pCtrl->FPageOwner = g_pendingPageOwner;
+      pCtrl->FPageIndex = g_pendingPageIndex;
+      g_pendingPageOwner = NULL;
+      g_pendingPageIndex = 0;
+   }
 }
 
 static void HBControl_CreateWidget( HBControl * child, GtkWidget * fixed, const char * fontDesc );
+static GtkWidget * HBTabControl2_GetPageFixed( HBControl * p, int nPage );
 
 static void HBControl_AddChild( HBControl * parent, HBControl * child )
 {
@@ -458,14 +500,27 @@ static void HBControl_AddChild( HBControl * parent, HBControl * child )
    {
       parent->FChildren[parent->FChildCount++] = child;
       child->FCtrlParent = parent;
+      /* If TFolderPage:hCpp set a pending owner just before this call,
+         claim ownership for that page now. */
+      HbApplyPendingPageOwner( child );
 
       /* If parent form is already shown (FFixed exists) and child has no widget yet,
-         auto-create the GTK widget so runtime-added controls are visible. */
+         auto-create the GTK widget so runtime-added controls are visible.
+         When child has FPageOwner set (from TFolderPage:hCpp) route the
+         widget into that folder page's GtkFixed instead of form->FFixed,
+         so the notebook handles its visibility + event routing natively. */
       if( parent->FControlType == CT_FORM && !child->FWidget )
       {
          HBForm * form = (HBForm *) parent;
-         if( form->FFixed )
-            HBControl_CreateWidget( child, form->FFixed, form->FFormFontDesc );
+         GtkWidget * container = form->FFixed;
+         if( child->FPageOwner )
+         {
+            GtkWidget * page = HBTabControl2_GetPageFixed(
+               child->FPageOwner, child->FPageIndex );
+            if( page ) container = page;
+         }
+         if( container )
+            HBControl_CreateWidget( child, container, form->FFormFontDesc );
       }
    }
 }
@@ -611,6 +666,58 @@ static void HBControl_ApplyFont( HBControl * p )
    }
 }
 
+/* Apply foreground (nClrText) and background (nClrPane, when not transparent)
+   to the widget via CSS USER-priority provider. */
+static void HBControl_ApplyColors( HBControl * p )
+{
+   if( !p->FWidget ) return;
+   char css[512] = "";
+   int has = 0;
+   if( p->FClrText != 0xFFFFFFFF )
+   {
+      int r = p->FClrText & 0xFF, g = (p->FClrText >> 8) & 0xFF, b = (p->FClrText >> 16) & 0xFF;
+      char buf[128];
+      snprintf( buf, sizeof(buf), "* { color: #%02X%02X%02X; }", r, g, b );
+      strcat( css, buf );
+      has = 1;
+   }
+   if( !p->FTransparent && p->FClrPane != 0xFFFFFFFF )
+   {
+      int r = p->FClrPane & 0xFF, g = (p->FClrPane >> 8) & 0xFF, b = (p->FClrPane >> 16) & 0xFF;
+      char buf[160];
+      snprintf( buf, sizeof(buf),
+         "* { background-color: #%02X%02X%02X; background-image: none; }", r, g, b );
+      strcat( css, buf );
+      has = 1;
+   }
+   if( !has ) return;
+   GtkCssProvider * prov = gtk_css_provider_new();
+   gtk_css_provider_load_from_data( prov, css, -1, NULL );
+   gtk_style_context_add_provider( gtk_widget_get_style_context( p->FWidget ),
+      GTK_STYLE_PROVIDER(prov), GTK_STYLE_PROVIDER_PRIORITY_USER );
+   g_object_unref( prov );
+}
+
+/* Apply alignment for Label/Edit via GTK APIs. */
+static void HBControl_ApplyAlign( HBControl * p )
+{
+   if( !p->FWidget ) return;
+   GtkAlign ha = GTK_ALIGN_START;
+   gfloat xa = 0.0f, ea = 0.0f;
+   if( p->FAlign == 1 )      { ha = GTK_ALIGN_CENTER; xa = 0.5f; ea = 0.5f; }
+   else if( p->FAlign == 2 ) { ha = GTK_ALIGN_END;    xa = 1.0f; ea = 1.0f; }
+   if( p->FControlType == CT_LABEL )
+   {
+      gtk_label_set_xalign( GTK_LABEL(p->FWidget), xa );
+      gtk_widget_set_halign( p->FWidget, ha );
+   }
+   else if( p->FControlType == CT_EDIT || p->FControlType == CT_MASKEDIT2 ||
+            p->FControlType == CT_LABELEDEDIT )
+   {
+      gtk_entry_set_alignment( GTK_ENTRY(p->FWidget), ea );
+   }
+}
+
 static void HBControl_UpdatePosition( HBControl * p )
 {
    if( !p->FWidget || !p->FCtrlParent ) return;
@@ -644,6 +751,8 @@ static void HBLabel_CreateWidget( HBLabel * p, GtkWidget * container )
    p->base.FWidget = label;
    /* ApplyFont handles auto-grow for CT_LABEL after measuring with Pango */
    HBControl_ApplyFont( &p->base );
+   HBControl_ApplyColors( &p->base );
+   HBControl_ApplyAlign( &p->base );
    gtk_widget_show( label );
 }
 
@@ -659,6 +768,8 @@ static void HBEdit_CreateWidget( HBEdit * p, GtkWidget * container )
    gtk_widget_set_size_request( entry, p->base.FWidth, p->base.FHeight );
    p->base.FWidget = entry;
    HBControl_ApplyFont( &p->base );
+   HBControl_ApplyColors( &p->base );
+   HBControl_ApplyAlign( &p->base );
    gtk_widget_show( entry );
 }
 
@@ -885,6 +996,9 @@ static HBControl * HBForm_HitTestControl( HBForm * form, int mx, int my )
    for( int i = form->base.FChildCount - 1; i >= 0; i-- )
    {
       HBControl * p = form->base.FChildren[i];
+      /* Skip children hidden on an inactive TFolder page */
+      if( p->FPageOwner && p->FWidget && !gtk_widget_get_visible( p->FWidget ) )
+         continue;
       int l = p->FLeft, t = p->FTop, r = l + p->FWidth, b = t + p->FHeight;
       if( mx >= l && mx <= r && my >= t && my <= b )
       {
@@ -1228,12 +1342,111 @@ static void HBRichEdit_CreateWidget( HBControl * p, GtkWidget * container )
    HBGeneric_CreateWidget( p, container, sw );
 }
 
+static void HBTabControl2_ApplyPageVisibilityAt( HBControl * p, int sel );
+static void HBTabControl2_ApplyPageVisibility( HBControl * p );
+static gboolean on_tab_switch_idle( gpointer data )
+{
+   HBControl * p = (HBControl *) data;
+   if( !p || !p->FWidget ) return G_SOURCE_REMOVE;
+   int sel = gtk_notebook_get_current_page( GTK_NOTEBOOK( p->FWidget ) );
+   HBControl * parent = p->FCtrlParent;
+   if( parent && parent->FControlType == CT_FORM )
+   {
+      for( int i = 0; i < parent->FChildCount; i++ )
+      {
+         HBControl * c = parent->FChildren[i];
+         if( c && c->FPageOwner == p && c->FWidget &&
+             c->FPageIndex == sel && gtk_widget_get_visible( c->FWidget ) )
+         {
+            GdkWindow * cw_ = gtk_widget_get_window( c->FWidget );
+            if( cw_ ) gdk_window_raise( cw_ );
+         }
+      }
+   }
+   return G_SOURCE_REMOVE;
+}
+
+static void on_tab_switch_page( GtkNotebook * nb, GtkWidget * page, guint nPageIdx,
+                                gpointer data )
+{
+   (void) nb; (void) page;
+   HBTabControl2_ApplyPageVisibilityAt( (HBControl *) data, (int) nPageIdx );
+   /* After GTK finishes the switch, raise visible paged children so they
+      sit above the notebook and keep receiving click events. */
+   g_idle_add( on_tab_switch_idle, data );
+}
+
+static void HBTabControl2_SetTabs( HBControl * p, const char * szTabs )
+{
+   HBTabControl2 * pc = (HBTabControl2 *) p;
+   if( !szTabs ) szTabs = "";
+   strncpy( pc->FTabs, szTabs, sizeof(pc->FTabs) - 1 );
+   pc->FTabs[sizeof(pc->FTabs) - 1] = 0;
+   pc->FPageCount = 0;
+   if( !p->FWidget ) return;
+
+   GtkNotebook * nb = GTK_NOTEBOOK( p->FWidget );
+   while( gtk_notebook_get_n_pages( nb ) > 0 )
+      gtk_notebook_remove_page( nb, 0 );
+
+   const char * start = szTabs, * q;
+   char buf[256];
+   for( q = szTabs; ; q++ )
+   {
+      if( *q == '|' || *q == 0 )
+      {
+         int len = (int)( q - start );
+         if( len > (int)sizeof(buf) - 1 ) len = sizeof(buf) - 1;
+         memcpy( buf, start, len ); buf[len] = 0;
+         /* Per-page body = GtkFixed, so children dropped onto that page
+            can be re-parented into it and the notebook handles visibility
+            + event routing natively. */
+         GtkWidget * page = gtk_fixed_new();
+         gtk_widget_show( page );
+         gtk_notebook_append_page( nb, page, gtk_label_new( buf ) );
+         pc->FPageCount++;
+         if( *q == 0 ) break;
+         start = q + 1;
+      }
+   }
+}
+
+/* Return the GtkFixed widget for page nPage of a TFolder, or NULL. */
+static GtkWidget * HBTabControl2_GetPageFixed( HBControl * p, int nPage )
+{
+   if( !p || !p->FWidget || p->FControlType != CT_TABCONTROL2 ) return NULL;
+   GtkNotebook * nb = GTK_NOTEBOOK( p->FWidget );
+   if( nPage < 0 || nPage >= gtk_notebook_get_n_pages( nb ) ) return NULL;
+   GtkWidget * page = gtk_notebook_get_nth_page( nb, nPage );
+   return ( page && GTK_IS_FIXED( page ) ) ? page : NULL;
+}
+
+/* Children live inside notebook page GtkFixed containers, so GTK handles
+   show/hide on tab switch automatically. These are kept as no-ops for
+   binary compat + to satisfy forward declarations. */
+static void HBTabControl2_ApplyPageVisibilityAt( HBControl * p, int sel )
+{
+   (void) p; (void) sel;
+}
+static void HBTabControl2_ApplyPageVisibility( HBControl * p )
+{
+   (void) p;
+}
+
 static void HBTabControl_CreateWidget( HBControl * p, GtkWidget * container )
 {
    GtkWidget * nb = gtk_notebook_new();
-   GtkWidget * page1 = gtk_label_new( "Page 1" );
-   gtk_notebook_append_page( GTK_NOTEBOOK(nb), page1, gtk_label_new("Tab 1") );
    HBGeneric_CreateWidget( p, container, nb );
+   /* Replay FTabs if already set (via palette-drop default or aTabs load) */
+   HBTabControl2 * pc = (HBTabControl2 *) p;
+   if( pc->FTabs[0] )
+   {
+      char saved[1024];
+      strncpy( saved, pc->FTabs, sizeof(saved) - 1 );
+      saved[sizeof(saved) - 1] = 0;
+      HBTabControl2_SetTabs( p, saved );
+   }
+   g_signal_connect( nb, "switch-page", G_CALLBACK( on_tab_switch_page ), p );
 }
 
 static void HBTrackBar_CreateWidget( HBControl * p, GtkWidget * container )
@@ -1676,7 +1889,7 @@ static HBControl * HBForm_CreateControlOfType( HBForm * form, int ctrlType,
             { CT_SCROLLBOX,  "TScrollBox",      "",           185, 140 },
             { CT_STATICTEXT, "TStaticText",     "StaticText",  65,  17 },
             { CT_LABELEDEDIT,"TLabeledEdit",    "",           120,  24 },
-            { CT_TABCONTROL2,"TTabControl",     "",           200, 150 },
+            { CT_TABCONTROL2,"TFolder",         "",           300, 200 },
             { CT_TREEVIEW,   "TTreeView",       "",           150, 200 },
             { CT_LISTVIEW,   "TListView",       "",           200, 150 },
             { CT_PROGRESSBAR,"TProgressBar",    "",           150,  20 },
@@ -1778,6 +1991,7 @@ static HBControl * HBForm_CreateControlOfType( HBForm * form, int ctrlType,
                   case CT_SHAPE:    sz = sizeof(HBShape); break;
                   case CT_BEVEL:    sz = sizeof(HBBevel); break;
                   case CT_TIMER:    sz = sizeof(HBTimer); break;
+                  case CT_TABCONTROL2: sz = sizeof(HBTabControl2); break;
                   /* CT_SPEEDBTN uses base HBControl */
                }
                HBControl * p = (HBControl*)calloc(1, sz);
@@ -1846,6 +2060,28 @@ static gboolean on_overlay_button_release( GtkWidget * widget, GdkEventButton * 
          } else {
             if( rw < 20 ) rw = 80;
             if( rh < 10 ) rh = 24;
+         }
+
+         /* If drop falls inside a TFolder's client area (and we're not
+            dropping the folder itself), tag the new control with that
+            folder's active page so AddChild claims ownership. */
+         if( ctrlType != CT_TABCONTROL2 )
+         {
+            for( int j = 0; j < form->base.FChildCount; j++ )
+            {
+               HBControl * pF = form->base.FChildren[j];
+               if( pF && pF->FControlType == CT_TABCONTROL2 &&
+                   rx1 >= pF->FLeft && rx1 < pF->FLeft + pF->FWidth &&
+                   ry1 >= pF->FTop  && ry1 < pF->FTop  + pF->FHeight )
+               {
+                  int nPage = pF->FWidget
+                     ? gtk_notebook_get_current_page( GTK_NOTEBOOK( pF->FWidget ) )
+                     : 0;
+                  g_pendingPageOwner = pF;
+                  g_pendingPageIndex = nPage < 0 ? 0 : nPage;
+                  break;
+               }
+            }
          }
 
          HBControl * newCtrl = HBForm_CreateControlOfType( form, ctrlType, rx1, ry1, rw, rh );
@@ -2074,15 +2310,45 @@ static void HBForm_CreateAllChildren( HBForm * form )
          strcpy( form->base.FChildren[i]->FFontDesc, form->FFormFontDesc );
          HBGroupBox_CreateWidget( (HBGroupBox *)form->base.FChildren[i], form->FFixed );
       }
-   /* Then other controls */
+   /* Folders next so their per-page GtkFixed containers exist before
+      paged children try to attach. */
+   for( int i = 0; i < form->base.FChildCount; i++ )
+   {
+      HBControl * child = form->base.FChildren[i];
+      if( child->FControlType != CT_TABCONTROL2 ) continue;
+      strcpy( child->FFontDesc, form->FFormFontDesc );
+      HBControl_CreateWidget( child, form->FFixed, form->FFormFontDesc );
+   }
+   /* Remaining controls */
    for( int i = 0; i < form->base.FChildCount; i++ )
    {
       HBControl * child = form->base.FChildren[i];
       if( child->FControlType == CT_GROUPBOX ) continue;
-      /* Non-visual components: icon only in design mode, skip in runtime */
+      if( child->FControlType == CT_TABCONTROL2 ) continue;
       if( IsNonVisualControl( child->FControlType ) && !form->FDesignMode ) continue;
       strcpy( child->FFontDesc, form->FFormFontDesc );
-      HBControl_CreateWidget( child, form->FFixed, form->FFormFontDesc );
+      GtkWidget * container = form->FFixed;
+      int savedLeft = child->FLeft, savedTop = child->FTop;
+      if( child->FPageOwner )
+      {
+         GtkWidget * page = HBTabControl2_GetPageFixed(
+            child->FPageOwner, child->FPageIndex );
+         if( page )
+         {
+            container = page;
+            /* Child coords are form-absolute; convert to page-relative.
+               Tab strip height is ~28px; fine-tuned later if needed. */
+            HBControl * folder = child->FPageOwner;
+            child->FLeft -= folder->FLeft;
+            child->FTop  -= folder->FTop + 28;
+            if( child->FLeft < 0 ) child->FLeft = 0;
+            if( child->FTop  < 0 ) child->FTop  = 0;
+         }
+      }
+      HBControl_CreateWidget( child, container, form->FFormFontDesc );
+      /* Restore form-absolute coords so HitTest and later logic stay sane. */
+      child->FLeft = savedLeft;
+      child->FTop  = savedTop;
    }
 }
 
@@ -3147,9 +3413,35 @@ HB_FUNC( UI_SETPROP )
       ((HBForm *)p)->FAutoScroll = hb_parl(3);
    else if( strcasecmp(szProp,"lDoubleBuffered")==0 && p->FControlType == CT_FORM )
       ((HBForm *)p)->FDoubleBuffered = hb_parl(3);
+   else if( strcasecmp(szProp,"cAppTitle")==0 && p->FControlType == CT_FORM && HB_ISCHAR(3) )
+      strncpy( ((HBForm *)p)->FAppTitle, hb_parc(3), sizeof(((HBForm *)p)->FAppTitle) - 1 );
+   else if( strcasecmp(szProp,"aTabs")==0 && p->FControlType == CT_TABCONTROL2 && HB_ISCHAR(3) )
+      HBTabControl2_SetTabs( p, hb_parc(3) );
+   else if( strcasecmp(szProp,"nClrText")==0 )
+   {
+      p->FClrText = (unsigned int)hb_parnint(3);
+      HBControl_ApplyColors( p );
+   }
+   else if( strcasecmp(szProp,"lTransparent")==0 )
+   {
+      p->FTransparent = hb_parl(3) ? 1 : 0;
+      HBControl_ApplyColors( p );
+   }
+   else if( strcasecmp(szProp,"nAlign")==0 )
+   {
+      p->FAlign = hb_parni(3);
+      HBControl_ApplyAlign( p );
+   }
    else if( strcasecmp(szProp,"nClrPane")==0 )
    {
       p->FClrPane = (unsigned int)hb_parnint(3);
+      /* Setting nClrPane on a non-form/non-browse control implies opaque */
+      if( p->FControlType != CT_FORM && p->FControlType != CT_BROWSE &&
+          p->FControlType != CT_DBGRID )
+      {
+         p->FTransparent = 0;
+         HBControl_ApplyColors( p );
+      }
       if( p->FControlType == CT_FORM )
       {
          HBForm * pF = (HBForm *)p;
@@ -3453,7 +3745,14 @@ HB_FUNC( UI_GETPROP )
       }
       hb_retc( szCols );
    }
+   else if( strcasecmp(szProp,"cAppTitle")==0 && p->FControlType == CT_FORM )
+      hb_retc( ((HBForm *)p)->FAppTitle );
+   else if( strcasecmp(szProp,"aTabs")==0 && p->FControlType == CT_TABCONTROL2 )
+      hb_retc( ((HBTabControl2 *)p)->FTabs );
    else if( strcasecmp(szProp,"nClrPane")==0 )   hb_retnint( (HB_MAXINT)p->FClrPane );
+   else if( strcasecmp(szProp,"nClrText")==0 )   hb_retnint( (HB_MAXINT)p->FClrText );
+   else if( strcasecmp(szProp,"lTransparent")==0 ) hb_retl( p->FTransparent );
+   else if( strcasecmp(szProp,"nAlign")==0 )     hb_retni( p->FAlign );
    else if( strcasecmp(szProp,"oFont")==0 )
    {
       /* Convert Pango format "Sans 12" to "Sans,12" */
@@ -3606,6 +3905,17 @@ HB_FUNC( UI_GETALLPROPS )
       ADD_F("oFont",sf,"Appearance");
    }
    ADD_C("nClrPane",p->FClrPane,"Appearance");
+   if( p->FControlType == CT_LABEL || p->FControlType == CT_EDIT ||
+       p->FControlType == CT_MASKEDIT2 || p->FControlType == CT_LABELEDEDIT ||
+       p->FControlType == CT_STATICTEXT )
+   {
+      ADD_C("nClrText",p->FClrText,"Appearance");
+      ADD_N("nAlign",p->FAlign,"Appearance");
+   }
+   if( p->FControlType == CT_LABEL )
+   {
+      ADD_L("lTransparent",p->FTransparent,"Appearance");
+   }
 
    switch( p->FControlType ) {
       case CT_FORM: {
@@ -3624,6 +3934,7 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_S("cHint",f->FHint,"Behavior");
          ADD_L("lAutoScroll",f->FAutoScroll,"Behavior");
          ADD_L("lDoubleBuffered",f->FDoubleBuffered,"Behavior");
+         ADD_S("cAppTitle",f->FAppTitle,"Info");
          /* Read-only: client area */
          int cw = f->base.FWidth, ch = f->base.FHeight;
          if( f->FWindow ) gtk_window_get_size(GTK_WINDOW(f->FWindow),&cw,&ch);
@@ -3686,6 +3997,16 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_N("nViewStyle",lv->FViewStyle,"Appearance");
          ADD_L("lGridLines",lv->FGridLines,"Appearance");
          ADD_N("nColumnCount",lv->FColumnCount,"Data");
+         break;
+      }
+      case CT_TABCONTROL2: {
+         pRow = hb_itemArrayNew(4);
+         hb_arraySetC( pRow, 1, "aTabs" );
+         hb_arraySetC( pRow, 2, ((HBTabControl2*)p)->FTabs );
+         hb_arraySetC( pRow, 3, "Behavior" );
+         hb_arraySetC( pRow, 4, "A" );
+         hb_arrayAdd( pArray, pRow );
+         hb_itemRelease( pRow );
          break;
       }
       case CT_BROWSE: {
@@ -10843,10 +11164,63 @@ HB_FUNC( GTK_APPTERMINATE )
  * Cocoa backend.
  * --------------------------------------------------------------------- */
 
-HB_FUNC( UI_SETCTRLOWNER )     { }
-HB_FUNC( UI_GETCTRLOWNER )     { hb_retnint( 0 ); }
-HB_FUNC( UI_GETCTRLPAGE )      { hb_retni( 0 ); }
+HB_FUNC( UI_SETCTRLOWNER )
+{
+   HBControl * p = GetCtrl(1);
+   HBControl * owner = HB_ISNUM(2) ? (HBControl *)(HB_PTRUINT) hb_parnint(2) : NULL;
+   if( !p ) return;
+   p->FPageOwner = owner;
+   p->FPageIndex = HB_ISNUM(3) ? hb_parni(3) : 0;
+}
+HB_FUNC( UI_GETCTRLOWNER )
+{
+   HBControl * p = GetCtrl(1);
+   hb_retnint( (HB_PTRUINT)( p ? p->FPageOwner : NULL ) );
+}
+HB_FUNC( UI_GETCTRLPAGE )
+{
+   HBControl * p = GetCtrl(1);
+   hb_retni( p ? p->FPageIndex : 0 );
+}
 HB_FUNC( UI_ISAUTOPAGE )       { hb_retl( 0 ); }
-HB_FUNC( UI_SETPENDINGPAGEOWNER ) { }
-HB_FUNC( UI_TABCONTROLNEW )    { hb_retnint( 0 ); }
+HB_FUNC( UI_SETPENDINGPAGEOWNER )
+{
+   g_pendingPageOwner = HB_ISNUM(1) ? (HBControl *)(HB_PTRUINT) hb_parnint(1) : NULL;
+   g_pendingPageIndex = HB_ISNUM(2) ? hb_parni(2) : 0;
+}
+HB_FUNC( UI_TABCONTROLNEW )
+{
+   /* (hParent, nLeft, nTop, nWidth, nHeight) -> hCtrl */
+   HBControl * parent = GetCtrl(1);
+   HBForm * form = NULL;
+   HBTabControl2 * pc;
+   if( parent )
+   {
+      HBControl * cur = parent;
+      while( cur && cur->FControlType != CT_FORM ) cur = cur->FCtrlParent;
+      if( cur ) form = (HBForm *) cur;
+   }
+   pc = (HBTabControl2 *) calloc( 1, sizeof(HBTabControl2) );
+   HBControl_Init( &pc->base );
+   strcpy( pc->base.FClassName, "TFolder" );
+   pc->base.FControlType = CT_TABCONTROL2;
+   pc->base.FLeft   = HB_ISNUM(2) ? hb_parni(2) : 0;
+   pc->base.FTop    = HB_ISNUM(3) ? hb_parni(3) : 0;
+   pc->base.FWidth  = HB_ISNUM(4) ? hb_parni(4) : 300;
+   pc->base.FHeight = HB_ISNUM(5) ? hb_parni(5) : 200;
+   /* SetPrompts will call UI_SetProp("aTabs", ...) after; no default here */
+   if( form )
+      HBControl_AddChild( &form->base, &pc->base );
+   hb_retnint( (HB_PTRUINT) &pc->base );
+}
 HB_FUNC( UI_TREEVIEWNEW )      { hb_retnint( 0 ); }
+HB_FUNC( UI_TABCONTROLSETSEL )
+{
+   HBControl * p = GetCtrl(1);
+   int nIdx = HB_ISNUM(2) ? hb_parni(2) : 0;
+   if( p && p->FControlType == CT_TABCONTROL2 && p->FWidget )
+   {
+      gtk_notebook_set_current_page( GTK_NOTEBOOK( p->FWidget ), nIdx );
+      HBTabControl2_ApplyPageVisibility( p );
+   }
+}

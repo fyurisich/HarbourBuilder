@@ -13,6 +13,74 @@ HarbourBuilder - Cross-platform visual IDE for Harbour
     so mouse selection of .T./.F. works consistently for
     lTransparent and any other logical property.
 
+2026-04-15 (Linux/GTK3: Inspector properties, AppTitle, Reopen Last Project, TFolder/TPageControl)
+
+  FEATURES
+  - Inspector properties exposed for Label/Edit/StaticText/MaskEdit/
+    LabeledEdit: nClrText (foreground color), nAlign (0=Left,1=Center,
+    2=Right) applied via gtk_label_set_xalign / gtk_entry_set_alignment.
+    Label additionally gets lTransparent; when false + nClrPane is set
+    a background is painted via CSS USER-priority provider.
+  - AppTitle property on TForm (cAppTitle) shown in the Inspector.
+    Codegen emits `::AppTitle := "..."` and load parser restores it
+    from saved source.
+  - File menu: "Reopen Last Project" reopens the most recent .hbp via
+    [Recent] File1..File8 entries in hbbuilder.ini. IniRead/IniWrite
+    are now key-preserving so the DarkMode + Recent entries coexist.
+  - TFolder / TPageControl (CT_TABCONTROL2): new backend infrastructure.
+    HBTabControl2 struct (FTabs, FPageCount); SetTabs builds a real
+    GtkNotebook with per-page GtkFixed bodies. Per-control page
+    ownership via FPageOwner/FPageIndex, applied by HBControl_AddChild
+    through a pending-owner mechanism (set by TFolderPage:hCpp or by
+    the designer when a palette drop lands inside a folder).
+  - Palette drop routing: dropping a non-folder control inside a
+    folder's bounds auto-tags the new control with FPageOwner + active
+    page so it becomes part of the current tab. Palette entry for
+    CT_TABCONTROL2 renamed to "Folder" (TFolder).
+  - Codegen: RegenerateFormCode collects a child→name map and emits
+    FOLDER command with PROMPTS plus "OF ::oFolder:aPages[N]" for each
+    paged child; RestoreFormFromCode parses both, calling
+    UI_SetPendingPageOwner before creating the child.
+  - Inspector: folder-page sub-entries "oFolderN:aPages[M] AS
+    TFolderPage /* Tab text */" in the combo; selecting one switches
+    the active tab (UI_TabControlSetSel) and shows cCaption/nPage in
+    the inspector. New HB_FUNCs INS_SetFolderPage, INS_AddRow,
+    INS_AddCategoryRow, INS_Rebuild in the GTK inspector.
+  - OnComponentDrop seeds a fresh folder with default aTabs
+    ("Tab 1|Tab 2|Tab 3") so both runtime and codegen have visible
+    tabs immediately after the drop.
+  - HBForm_HitTestControl skips children whose widget is hidden or
+    lives on an inactive folder page so selection behaves.
+  - HBForm_CreateAllChildren creates folders before other controls
+    and routes paged children into their page's GtkFixed with coords
+    translated from form-absolute to page-relative (minus tab strip).
+
+  FIXES
+  - Critical heap-corruption fix in UI_GetAllProps. The ADD_S/N/L/C/F
+    macros were multi-statement but not wrapped in do{...}while(0);
+    `if( cond ) ADD_L(...);` left subsequent statements executing
+    unconditionally, causing hb_itemRelease on an already-released
+    PHB_ITEM ("malloc(): unaligned fastbin chunk detected"). Fixed
+    by bracing all conditional ADD_* usages.
+  - on_tab_switch_page: the GtkNotebook "switch-page" signal fires
+    while gtk_notebook_get_current_page still returns the OLD page.
+    Switched to using the nPageIdx signal parameter so visibility
+    updates track the destination tab (was causing the 3→2 case to
+    not show the page-2 control).
+  - Menu bitmap positions in File menu shifted by +1 after adding
+    "Reopen Last Project" so Exit shows menu_exit.png again, etc.
+  - TFolder runtime click routing: paged children now live inside the
+    notebook page's GtkFixed. Previously they were form-level with
+    manual show/hide, which made gtk_widget_show leave them behind
+    the notebook's event grab so button clicks stopped firing after
+    tab1 → tab2 → tab1. GTK now handles visibility + events natively.
+
+  FILES CHANGED
+  - source/backends/gtk3/gtk3_core.c
+  - source/backends/gtk3/gtk3_inspector.c
+  - source/hbbuilder_linux.prg
+  - source/inspector/inspector_gtk.prg
+
 2026-04-15 (macOS: Label nClrText, lTransparent fix, iOS UIKit backend, form designer fixes)
 
   FIXES
