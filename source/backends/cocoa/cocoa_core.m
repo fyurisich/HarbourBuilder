@@ -4229,6 +4229,7 @@ HB_FUNC( UI_GETPROP )
    else if( strcasecmp(szProp,"nItemIndex")==0 && p->FControlType==CT_COMBOBOX )
       hb_retni( ((HBComboBox *)p)->FItemIndex );
    else if( strcasecmp(szProp,"nClrPane")==0 )   hb_retnint( (HB_MAXINT)p->FClrPane );
+   else if( strcasecmp(szProp,"nClrText")==0 )   hb_retnint( (HB_MAXINT)p->FClrText );
    else if( strcasecmp(szProp,"oFont")==0 ) {
       char szFont[192] = "System,12";
       if( p->FFont ) {
