@@ -136,7 +136,7 @@ HB_FUNC( UI_BUTTONNEW )
     [btn setTitle:[NSString stringWithUTF8String:text] forState:UIControlStateNormal];
 
     /* Give the button a visible rounded-rect background */
-    btn.backgroundColor = [UIColor systemGrayColor];
+    btn.backgroundColor = [UIColor colorWithRed:0.82 green:0.82 blue:0.84 alpha:1.0];
     [btn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     btn.layer.cornerRadius = 8.0;
     btn.clipsToBounds = YES;
