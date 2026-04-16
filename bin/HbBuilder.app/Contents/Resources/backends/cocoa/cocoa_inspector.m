@@ -543,6 +543,11 @@ static HBFontPickerTarget * s_fontTarget = nil;
       [panel setAllowedFileTypes:@[@"png",@"jpg",@"jpeg",@"gif",@"bmp",@"tiff",@"tif",@"icns"]];
       [panel setTitle:@"Select Image File"];
    }
+   else if( strcmp( d->rows[nReal].szName, "cSceneFile" ) == 0 )
+   {
+      [panel setAllowedFileTypes:@[@"scn",@"dae",@"usdz",@"usd",@"obj"]];
+      [panel setTitle:@"Select 3D Scene File"];
+   }
 
    /* Set initial directory from current value */
    const char * curVal = d->rows[nReal].szValue;

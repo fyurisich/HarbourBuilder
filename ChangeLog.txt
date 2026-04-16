@@ -1,6 +1,71 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-16 (macOS: Media tab — TMap / TScene3D / TEarthView)
+
+  FEATURES
+  - New palette tab "Media" for embedded rich content. Three controls
+    in this initial drop:
+  - TMap (CT_MAP=140): MapKit-backed map viewer. Properties Lat, Lon,
+    Zoom (1..20), MapType (mtStandard/mtSatellite/mtHybrid/
+    mtMutedStandard). Methods SetRegion, AddPin (lat, lon, title,
+    subtitle), ClearPins. Uses Apple Maps data — free, no API key.
+    MAP command + codegen/parser. Constants mtStandard..mtMutedStandard
+    in hbbuilder.ch.
+  - TScene3D (CT_SCENE3D=141): SceneKit-backed 3D viewer. Loads
+    .usdz / .usd / .dae / .scn / .obj via cSceneFile (alias Picture)
+    with NSImageScaleProportionallyUpOrDown. allowsCameraControl=YES
+    (orbit/zoom/pan with mouse + trackpad), autoenablesDefaultLighting.
+    Default placeholder when no file is loaded: a slowly rotating
+    blue dodecahedron built from scratch via HBBuildRotatingDodecahedron
+    (20 vertices, 12 pentagonal faces fan-triangulated to 36 triangles
+    with per-face normals, blue Phong material, Y-axis rotation
+    SCNAction repeated forever — 8s per turn). SCENE3D command +
+    codegen/parser. Inspector file picker filters by 3D extensions.
+  - TEarthView (CT_EARTHVIEW=142): globe-style satellite Earth view.
+    MKMapView with mapType=Satellite and a high-altitude MKMapCamera
+    (30,000 km) — at this distance modern MapKit renders Earth's
+    curvature, giving a real globe view with live Apple Maps imagery.
+    Auto-rotation via NSTimer (HBEarthRotator) advancing the camera
+    center longitude every 50ms (~9°/sec). Skipped in design mode so
+    coordinates don't mutate while editing. Properties Lat, Lon,
+    lAutoRotate. EARTHVIEW command + codegen/parser. Palette icon
+    composited from SF Symbol globe.americas.fill.
+  - Palette icons: TMap (map.fill), TScene3D (cube.transparent.fill),
+    TEarthView (globe.americas.fill) all composited over the same
+    18px-tall light-grey pill so they match the visual weight of the
+    existing BMP icons.
+  - Sample projects under samples/projects/: scene3D (model loader
+    with Load/Clear/About), maps (city jumps, AddPin demo with 8
+    world capitals, MapType cycle), earth (auto-rotating globe with
+    Pause/Resume + Madrid/Tokyo/NewYork/Sydney jumps). All in IDE-
+    canonical format (CLASS TFormN FROM TForm + METHOD CreateForm).
+
+  FIXES
+  - createAllChildren was filtering all controls with FControlType >=
+    CT_TIMER (38) at runtime, intended to skip non-visual components
+    (Timer, OpenDialog, DBFTable...) but actually hiding every visual
+    control added later: TWebView=62, TBrowse/DB family (79..86),
+    TMap=140, TScene3D=141, TEarthView=142. Replaced the blanket >=
+    CT_TIMER filter with an explicit isVisualHigh allow-list.
+    Without this, dropping any of these controls onto a form
+    showed nothing on Run.
+  - User-project linker (Build action in the IDE) was missing
+    -framework MapKit / CoreLocation / SceneKit, causing undefined
+    symbol errors when a project used TMap, TScene3D or TEarthView.
+    Both invocations in source/hbbuilder_macos.prg and the default
+    string in the Project Options dialog (cocoa_editor.mm) updated.
+  - EARTHVIEW codegen used Str(num, 10, 6) which overflows to
+    "**********" for longitudes wider than 10 chars (e.g.
+    -179.999999 needs 11). Bumped to Str(num, 14, 6).
+  - TEarthView no longer auto-rotates in design mode — the timer
+    mutated FLon continuously, which the codegen then wrote to the
+    .prg at every save. Now FCtrlParent->FDesignMode is checked and
+    the timer is only scheduled at runtime.
+  - Setting the bd->tableView column width via [cols objectAtIndex:]
+    needed an explicit (NSTableColumn *) cast — SceneKit introduced
+    multiple setWidth: methods that made the message ambiguous on id.
+
 2026-04-16 (macOS: TShape/TBevel/TMaskEdit/TStringGrid real implementations)
 
   FEATURES

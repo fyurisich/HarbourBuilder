@@ -188,6 +188,9 @@ clang++ -o ${PROG} \
    -lgtcgi -lgttrm -lgtstd \
    -framework Cocoa \
    -framework QuartzCore \
+   -framework MapKit \
+   -framework CoreLocation \
+   -framework SceneKit \
    $([ "$MACOS_MAJOR" -ge 11 ] 2>/dev/null && echo "-framework UniformTypeIdentifiers" || echo "") \
    -lm -lpthread -lsqlite3
 

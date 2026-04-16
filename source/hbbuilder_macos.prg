@@ -345,6 +345,12 @@ static function CreatePalette()
    oPal:AddComp( nTab, "STx",  "StaticText",  31 )
    oPal:AddComp( nTab, "LEd",  "LabeledEdit", 32 )
 
+   // Media tab — embedded rich content (maps, 3D, web, future video/audio)
+   nTab := oPal:AddTab( "Media" )
+   oPal:AddComp( nTab, "Map",  "Map",         140 )
+   oPal:AddComp( nTab, "3D",   "Scene3D",     141 )
+   oPal:AddComp( nTab, "Eth",  "EarthView",   142 )
+
    // Cocoa tab (equivalent to Win32 in C++Builder)
    nTab := oPal:AddTab( "Cocoa" )
    oPal:AddComp( nTab, "Tab",  "TFolder",     33 )
@@ -773,6 +779,45 @@ static function RegenerateFormCode( cName, hForm )
                   cCreate += '   ::o' + cCtrlName + ':Text := "' + ;
                      StrTran( StrTran( cText, '"', '""' ), Chr(10), '" + Chr(10) + "' ) + ;
                      '"' + e
+               endif
+            case nType == 141  // Scene3D (TScene3D)
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' SCENE3D ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               cVal := UI_GetProp( hCtrl, "cSceneFile" )
+               if ! Empty( cVal )
+                  cCreate += ' FILE "' + cVal + '"'
+               endif
+               cCreate += e
+            case nType == 142  // EarthView (TEarthView)
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' EARTHVIEW ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               nColW := UI_GetProp( hCtrl, "nLat" )
+               nColCount := UI_GetProp( hCtrl, "nLon" )
+               if ValType( nColW ) == "N" .and. ValType( nColCount ) == "N"
+                  cCreate += ' CENTER ' + LTrim( Str( nColW, 14, 6 ) ) + ", " + ;
+                             LTrim( Str( nColCount, 14, 6 ) )
+               endif
+               cCreate += e
+            case nType == 140  // Map (TMap)
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' MAP ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               nColW := UI_GetProp( hCtrl, "nLat" )
+               nColCount := UI_GetProp( hCtrl, "nLon" )
+               if ValType( nColW ) == "N" .and. ValType( nColCount ) == "N"
+                  cCreate += ' CENTER ' + LTrim( Str( nColW, 14, 6 ) ) + ", " + ;
+                             LTrim( Str( nColCount, 14, 6 ) )
+               endif
+               cVal := UI_GetProp( hCtrl, "nZoom" )
+               if ValType( cVal ) == "N" .and. cVal != 10
+                  cCreate += ' ZOOM ' + LTrim( Str( cVal ) )
+               endif
+               cCreate += e
+               cVal := UI_GetProp( hCtrl, "nMapType" )
+               if ValType( cVal ) == "N" .and. cVal > 0
+                  cCreate += '   ::o' + cCtrlName + ':MapType := ' + LTrim( Str( cVal ) ) + e
                endif
             case nType == 29  // StringGrid
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
@@ -1522,6 +1567,55 @@ static function RestoreFormFromCode( hForm, cCode )
             if " CHECKED" $ Upper( cTrim ) .and. hCtrl != 0
                UI_SetProp( hCtrl, "lChecked", .T. )
             endif
+         case " SCENE3D " $ Upper( cTrim )
+            hCtrl := UI_Scene3DNew( hForm, nL, nT, nW, nH )
+            if hCtrl != 0
+               nPos := At( 'FILE "', cTrim )
+               if nPos > 0
+                  cVal := SubStr( cTrim, nPos + 6 )
+                  nPos2 := At( '"', cVal )
+                  if nPos2 > 0
+                     UI_SetProp( hCtrl, "cSceneFile", Left( cVal, nPos2 - 1 ) )
+                  endif
+               endif
+            endif
+         case " EARTHVIEW " $ Upper( cTrim )
+            hCtrl := UI_EarthViewNew( hForm, nL, nT, nW, nH )
+            if hCtrl != 0
+               nPos := At( " CENTER ", Upper( cTrim ) )
+               if nPos > 0
+                  cVal := AllTrim( SubStr( cTrim, nPos + 8 ) )
+                  nPos2 := At( ",", cVal )
+                  if nPos2 > 0
+                     UI_SetProp( hCtrl, "nLat", Val( Left( cVal, nPos2 - 1 ) ) )
+                     cVal := AllTrim( SubStr( cVal, nPos2 + 1 ) )
+                     nPos2 := At( " ", cVal )
+                     if nPos2 > 0; cVal := Left( cVal, nPos2 - 1 ); endif
+                     UI_SetProp( hCtrl, "nLon", Val( cVal ) )
+                  endif
+               endif
+            endif
+         case " MAP " $ Upper( cTrim )
+            hCtrl := UI_MapNew( hForm, nL, nT, nW, nH )
+            if hCtrl != 0
+               nPos := At( " CENTER ", Upper( cTrim ) )
+               if nPos > 0
+                  cVal := AllTrim( SubStr( cTrim, nPos + 8 ) )
+                  nPos2 := At( ",", cVal )
+                  if nPos2 > 0
+                     UI_SetProp( hCtrl, "nLat", Val( Left( cVal, nPos2 - 1 ) ) )
+                     cVal := AllTrim( SubStr( cVal, nPos2 + 1 ) )
+                     nPos2 := At( " ", cVal )
+                     if nPos2 > 0; cVal := Left( cVal, nPos2 - 1 ); endif
+                     UI_SetProp( hCtrl, "nLon", Val( cVal ) )
+                  endif
+               endif
+               nPos := At( " ZOOM ", Upper( cTrim ) )
+               if nPos > 0
+                  UI_SetProp( hCtrl, "nZoom", ;
+                     Val( AllTrim( SubStr( cTrim, nPos + 6 ) ) ) )
+               endif
+            endif
          case " STRINGGRID " $ Upper( cTrim )
             hCtrl := UI_StringGridNew( hForm, nL, nT, nW, nH )
             if hCtrl != 0
@@ -1841,6 +1935,8 @@ static function RestoreFormFromCode( hForm, cCode )
          UI_SetProp( hCtrl, "nFixedRows", Val( cText ) )
       elseif cVal == "FixedCols"
          UI_SetProp( hCtrl, "nFixedCols", Val( cText ) )
+      elseif cVal == "MapType"
+         UI_SetProp( hCtrl, "nMapType", Val( cText ) )
       endif
    next
 
@@ -3014,7 +3110,7 @@ static function TBRun()
               " -lrddntx -lrddnsx -lrddcdx -lrddfpt" + ;
               " -lhbhsx -lhbsix -lhbusrrdd" + ;
               " -lgtcgi -lgtstd" + ;
-              " -framework Cocoa -framework QuartzCore" + If( Val( MAC_ShellExec( "sw_vers -productVersion | cut -d. -f1" ) ) >= 11, " -framework UniformTypeIdentifiers", "" ) + ;
+              " -framework Cocoa -framework QuartzCore -framework MapKit -framework CoreLocation -framework SceneKit" + If( Val( MAC_ShellExec( "sw_vers -productVersion | cut -d. -f1" ) ) >= 11, " -framework UniformTypeIdentifiers", "" ) + ;
               " -lm -lpthread -lc++ -lsqlite3 2>&1"
       cOutput := MAC_ShellExec( cCmd )
       if "error" $ Lower( cOutput )
@@ -3269,7 +3365,7 @@ static function TBDebugRun()
               " -lrddntx -lrddnsx -lrddcdx -lrddfpt" + ;
               " -lhbhsx -lhbsix -lhbusrrdd" + ;
               " -lgtcgi -lgtstd" + ;
-              " -framework Cocoa -framework QuartzCore" + If( Val( MAC_ShellExec( "sw_vers -productVersion | cut -d. -f1" ) ) >= 11, " -framework UniformTypeIdentifiers", "" ) + ;
+              " -framework Cocoa -framework QuartzCore -framework MapKit -framework CoreLocation -framework SceneKit" + If( Val( MAC_ShellExec( "sw_vers -productVersion | cut -d. -f1" ) ) >= 11, " -framework UniformTypeIdentifiers", "" ) + ;
               " -lm -lpthread -lc++ -lsqlite3 2>&1"
       cOutput := MAC_ShellExec( cCmd )
       if "error" $ Lower( cOutput )
@@ -3729,7 +3825,8 @@ static function IsNonVisual( nType )
    // CT_BROWSE=79, CT_DBGRID=80, CT_DBNAVIGATOR=81, CT_DBTEXT=82,
    // CT_DBEDIT=83, CT_DBCOMBOBOX=84, CT_DBCHECKBOX=85, CT_DBIMAGE=86,
    // CT_WEBVIEW=62
-   if nType == 62 .or. ( nType >= 79 .and. nType <= 86 )
+   if nType == 62 .or. ( nType >= 79 .and. nType <= 86 ) .or. ;
+      nType == 140 .or. nType == 141 .or. nType == 142
       return .F.
    endif
 return nType >= 38

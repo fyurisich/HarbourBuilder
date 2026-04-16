@@ -475,6 +475,89 @@ return Self
 //----------------------------------------------------------------------------//
 
 //----------------------------------------------------------------------------//
+// TScene3D — SceneKit-backed 3D viewer (macOS native)
+//----------------------------------------------------------------------------//
+
+CLASS TScene3D INHERIT TControl
+
+   ACCESS cSceneFile       INLINE UI_GetProp( ::hCpp, "cSceneFile" )
+   ASSIGN cSceneFile( c )  INLINE UI_SetProp( ::hCpp, "cSceneFile", c )
+
+   METHOD New( oParent, nLeft, nTop, nWidth, nHeight, cFile )
+
+ENDCLASS
+
+METHOD New( oParent, nLeft, nTop, nWidth, nHeight, cFile ) CLASS TScene3D
+
+   if nWidth  == nil; nWidth  := 400; endif
+   if nHeight == nil; nHeight := 300; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_Scene3DNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight, cFile )
+
+return Self
+
+//----------------------------------------------------------------------------//
+// TEarthView — globe-style satellite Earth view (MapKit + far camera)
+//----------------------------------------------------------------------------//
+
+CLASS TEarthView INHERIT TControl
+
+   ACCESS Lat              INLINE UI_GetProp( ::hCpp, "nLat" )
+   ASSIGN Lat( n )         INLINE UI_SetProp( ::hCpp, "nLat", n )
+   ACCESS Lon              INLINE UI_GetProp( ::hCpp, "nLon" )
+   ASSIGN Lon( n )         INLINE UI_SetProp( ::hCpp, "nLon", n )
+   ACCESS lAutoRotate      INLINE UI_GetProp( ::hCpp, "lAutoRotate" )
+   ASSIGN lAutoRotate( l ) INLINE UI_SetProp( ::hCpp, "lAutoRotate", l )
+
+   METHOD New( oParent, nLeft, nTop, nWidth, nHeight, nLat, nLon )
+
+ENDCLASS
+
+METHOD New( oParent, nLeft, nTop, nWidth, nHeight, nLat, nLon ) CLASS TEarthView
+
+   if nWidth  == nil; nWidth  := 400; endif
+   if nHeight == nil; nHeight := 400; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_EarthViewNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight, nLat, nLon )
+
+return Self
+
+//----------------------------------------------------------------------------//
+// TMap — MapKit-backed map viewer (macOS native)
+//----------------------------------------------------------------------------//
+
+CLASS TMap INHERIT TControl
+
+   ACCESS Lat           INLINE UI_GetProp( ::hCpp, "nLat" )
+   ASSIGN Lat( n )      INLINE UI_SetProp( ::hCpp, "nLat", n )
+   ACCESS Lon           INLINE UI_GetProp( ::hCpp, "nLon" )
+   ASSIGN Lon( n )      INLINE UI_SetProp( ::hCpp, "nLon", n )
+   ACCESS Zoom          INLINE UI_GetProp( ::hCpp, "nZoom" )
+   ASSIGN Zoom( n )     INLINE UI_SetProp( ::hCpp, "nZoom", n )
+   ACCESS MapType       INLINE UI_GetProp( ::hCpp, "nMapType" )
+   ASSIGN MapType( n )  INLINE UI_SetProp( ::hCpp, "nMapType", n )
+
+   METHOD New( oParent, nLeft, nTop, nWidth, nHeight, nLat, nLon, nZoom )
+   METHOD SetRegion( nLat, nLon, nZoom ) INLINE UI_MapSetRegion( ::hCpp, nLat, nLon, nZoom )
+   METHOD AddPin( nLat, nLon, cTitle, cSubtitle ) INLINE ;
+      UI_MapAddPin( ::hCpp, nLat, nLon, cTitle, cSubtitle )
+   METHOD ClearPins() INLINE UI_MapClearPins( ::hCpp )
+
+ENDCLASS
+
+METHOD New( oParent, nLeft, nTop, nWidth, nHeight, nLat, nLon, nZoom ) CLASS TMap
+
+   if nWidth  == nil; nWidth  := 400; endif
+   if nHeight == nil; nHeight := 300; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_MapNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight, nLat, nLon, nZoom )
+
+return Self
+
+//----------------------------------------------------------------------------//
 // TStringGrid — matrix of string cells (Delphi TStringGrid parity, MVP)
 //----------------------------------------------------------------------------//
 

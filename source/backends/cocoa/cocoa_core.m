@@ -6,6 +6,8 @@
  */
 
 #import <Cocoa/Cocoa.h>
+#import <MapKit/MapKit.h>
+#import <SceneKit/SceneKit.h>
 #if __has_include(<UniformTypeIdentifiers/UniformTypeIdentifiers.h>)
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #define HAS_UTTYPE 1
@@ -123,6 +125,9 @@ static void SuppressCursorWarnings(void)
 #define CT_PRINTDIALOG 107
 #define CT_REPORTVIEWER 108
 #define CT_BARCODEPRINTER 109
+#define CT_MAP            140
+#define CT_SCENE3D        141
+#define CT_EARTHVIEW      142
 #define CT_THREAD     63
 #define CT_MUTEX      64
 #define CT_SEMAPHORE  65
@@ -344,6 +349,11 @@ void EnsureNSApp( void )
    int         FFixedRows;         /* TStringGrid FixedRows (non-editable top) */
    int         FFixedCols;         /* TStringGrid FixedCols (non-editable left) */
    NSMutableArray * FGridCells;    /* TStringGrid cells: rows of NSMutableArray<NSString*> */
+   double      FLat, FLon;         /* TMap center */
+   int         FZoom;              /* TMap zoom (1..20) */
+   int         FMapType;           /* TMap type: mtStandard..mtMutedStandard */
+   BOOL        FAutoRotate;        /* TEarthView auto-rotation flag */
+   NSTimer *   FAutoRotTimer;      /* TEarthView spin timer */
 }
 - (void)addChild:(HBControl *)child;
 - (void)setText:(const char *)text;
@@ -867,6 +877,129 @@ static int         s_pendingPage   = 0;
 }
 @end
 
+/* TEarthView spin timer target — advances the MKMapView camera's center
+ * longitude every tick so the globe appears to rotate. Detaches itself
+ * automatically when the owning HBControl is gone. */
+@interface HBEarthRotator : NSObject
+{
+@public
+   __weak HBControl * owner;
+}
+- (void)tick:(NSTimer *)t;
+@end
+
+@implementation HBEarthRotator
+- (void)tick:(NSTimer *)t
+{
+   HBControl * o = owner;
+   if( !o || !o->FView ) { [t invalidate]; return; }
+   if( !o->FAutoRotate ) return;  /* paused */
+   MKMapView * mv = (MKMapView *) o->FView;
+   MKMapCamera * cam = [[mv camera] copy];
+   CLLocationCoordinate2D c = [cam centerCoordinate];
+   c.longitude += 0.4;
+   if( c.longitude >  180 ) c.longitude -= 360;
+   if( c.longitude < -180 ) c.longitude += 360;
+   [cam setCenterCoordinate:c];
+   [mv setCamera:cam];
+   o->FLon = c.longitude;
+}
+@end
+
+/* Build a regular dodecahedron as an SCNNode with blue phong material and a
+ * continuous Y-axis rotation. Used as the placeholder in TScene3D when no
+ * scene file is loaded — more visually interesting than a static cube. */
+static SCNNode * HBBuildRotatingDodecahedron(void)
+{
+   const float phi = 1.61803398874989484820f;
+   const float inv = 1.0f / phi;
+
+   /* 20 source vertices of a regular dodecahedron (unit-phi). */
+   float V[20][3] = {
+      {+1,+1,+1},{+1,+1,-1},{+1,-1,+1},{+1,-1,-1},
+      {-1,+1,+1},{-1,+1,-1},{-1,-1,+1},{-1,-1,-1},
+      {0,+inv,+phi},{0,+inv,-phi},{0,-inv,+phi},{0,-inv,-phi},
+      {+inv,+phi,0},{+inv,-phi,0},{-inv,+phi,0},{-inv,-phi,0},
+      {+phi,0,+inv},{+phi,0,-inv},{-phi,0,+inv},{-phi,0,-inv}
+   };
+
+   /* 12 pentagonal faces (vertex indices, CCW when seen from outside). */
+   int F[12][5] = {
+      {0,8,10,2,16}, {2,10,6,15,13}, {6,10,8,4,18},
+      {4,8,0,12,14}, {0,16,17,1,12}, {1,17,3,11,9},
+      {3,17,16,2,13},{3,13,15,7,11},{4,14,5,19,18},
+      {14,12,1,9,5}, {5,9,11,7,19}, {6,18,19,7,15}
+   };
+
+   /* Fan-triangulate each pentagon → 36 triangles = 108 vertex slots.
+    * Don't share vertices between triangles so per-triangle normals give
+    * correct flat shading without extra smoothing. */
+   const int NTRIS = 36;
+   float verts[108][3];
+   float norms[108][3];
+   int k = 0;
+   for( int f = 0; f < 12; f++ ) {
+      int v0 = F[f][0];
+      for( int i = 1; i < 4; i++ ) {
+         int v1 = F[f][i], v2 = F[f][i+1];
+         memcpy( verts[k+0], V[v0], sizeof(float)*3 );
+         memcpy( verts[k+1], V[v1], sizeof(float)*3 );
+         memcpy( verts[k+2], V[v2], sizeof(float)*3 );
+         /* Face normal = normalize( (v1-v0) × (v2-v0) ). */
+         float e1[3] = { V[v1][0]-V[v0][0], V[v1][1]-V[v0][1], V[v1][2]-V[v0][2] };
+         float e2[3] = { V[v2][0]-V[v0][0], V[v2][1]-V[v0][1], V[v2][2]-V[v0][2] };
+         float n[3] = {
+            e1[1]*e2[2] - e1[2]*e2[1],
+            e1[2]*e2[0] - e1[0]*e2[2],
+            e1[0]*e2[1] - e1[1]*e2[0]
+         };
+         float len = sqrtf( n[0]*n[0] + n[1]*n[1] + n[2]*n[2] );
+         if( len > 0 ) { n[0]/=len; n[1]/=len; n[2]/=len; }
+         memcpy( norms[k+0], n, sizeof(n) );
+         memcpy( norms[k+1], n, sizeof(n) );
+         memcpy( norms[k+2], n, sizeof(n) );
+         k += 3;
+      }
+   }
+
+   NSData * vd = [NSData dataWithBytes:verts length:sizeof(verts)];
+   SCNGeometrySource * vs = [SCNGeometrySource
+      geometrySourceWithData:vd
+      semantic:SCNGeometrySourceSemanticVertex
+      vectorCount:NTRIS*3 floatComponents:YES
+      componentsPerVector:3 bytesPerComponent:sizeof(float)
+      dataOffset:0 dataStride:3*sizeof(float)];
+   NSData * nd = [NSData dataWithBytes:norms length:sizeof(norms)];
+   SCNGeometrySource * ns_ = [SCNGeometrySource
+      geometrySourceWithData:nd
+      semantic:SCNGeometrySourceSemanticNormal
+      vectorCount:NTRIS*3 floatComponents:YES
+      componentsPerVector:3 bytesPerComponent:sizeof(float)
+      dataOffset:0 dataStride:3*sizeof(float)];
+
+   int32_t idx[108];
+   for( int i = 0; i < 108; i++ ) idx[i] = i;
+   NSData * id2 = [NSData dataWithBytes:idx length:sizeof(idx)];
+   SCNGeometryElement * el = [SCNGeometryElement
+      geometryElementWithData:id2
+      primitiveType:SCNGeometryPrimitiveTypeTriangles
+      primitiveCount:NTRIS
+      bytesPerIndex:sizeof(int32_t)];
+
+   SCNGeometry * geom = [SCNGeometry geometryWithSources:@[vs, ns_] elements:@[el]];
+   SCNMaterial * mat = [SCNMaterial material];
+   mat.diffuse.contents  = [NSColor colorWithCalibratedRed:0.18 green:0.45 blue:0.90 alpha:1.0];
+   mat.specular.contents = [NSColor whiteColor];
+   mat.shininess = 0.7;
+   mat.doubleSided = YES;
+   geom.materials = @[mat];
+
+   SCNNode * node = [SCNNode nodeWithGeometry:geom];
+   SCNAction * rot = [SCNAction rotateByX:0 y:(CGFloat)(M_PI*2) z:0 duration:8.0];
+   [node runAction:[SCNAction repeatActionForever:rot]];
+   return node;
+}
+
 /* TStringGrid cell model: 2D NSMutableArray<NSMutableArray<NSString*>*> resized
  * by HBGridEnsureSize to always have exactly FRowCount rows × FColCount cols. */
 static void HBGridEnsureSize( HBControl * p )
@@ -1188,6 +1321,9 @@ static NSImage * HBResolveBitBtnImage( int kind, const char * picture )
       FMaskKind = 0;
       FColCount = 5; FRowCount = 5; FFixedRows = 1; FFixedCols = 0;
       FGridCells = nil;
+      FLat = 40.4168; FLon = -3.7038;  /* Madrid */
+      FZoom = 10; FMapType = 0;
+      FAutoRotate = YES; FAutoRotTimer = nil;
    }
    return self;
 }
@@ -1352,6 +1488,84 @@ static NSImage * HBResolveBitBtnImage( int kind, const char * picture )
          [sv setDocumentView:tv]; [sv setHasVerticalScroller:YES];
          [sv setHasHorizontalScroller:YES]; [sv setBorderType:NSBezelBorder];
          v = sv; break;
+      }
+      case CT_SCENE3D: {
+         SCNView * sv = [[SCNView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
+         [sv setAllowsCameraControl:YES];
+         [sv setAutoenablesDefaultLighting:YES];
+         [sv setBackgroundColor:[NSColor colorWithCalibratedWhite:0.15 alpha:1.0]];
+         SCNScene * scene = nil;
+         if( FPicture[0] ) {
+            NSString * path = [NSString stringWithUTF8String:FPicture];
+            NSError * err = nil;
+            scene = [SCNScene sceneWithURL:[NSURL fileURLWithPath:path]
+                                   options:nil error:&err];
+         }
+         if( !scene ) {
+            /* Placeholder scene: a slowly rotating blue dodecahedron —
+             * more visually expressive than a static cube and makes the
+             * 3D nature of the control obvious even without a file. */
+            scene = [SCNScene scene];
+            [[scene rootNode] addChildNode:HBBuildRotatingDodecahedron()];
+         }
+         [sv setScene:scene];
+         v = sv; break;
+      }
+      case CT_EARTHVIEW: {
+         MKMapView * mv = [[MKMapView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
+         [mv setMapType:MKMapTypeSatellite];
+         [mv setShowsCompass:YES];
+         [mv setShowsScale:NO];
+         [mv setZoomEnabled:YES];
+         [mv setScrollEnabled:YES];
+         [mv setPitchEnabled:YES];
+         [mv setRotateEnabled:YES];
+         /* High-altitude camera looking at the equator — modern MapKit
+          * renders Earth's curvature at this distance, giving the
+          * "globe view" effect without needing a 3D engine. */
+         MKMapCamera * cam = [MKMapCamera
+            cameraLookingAtCenterCoordinate:CLLocationCoordinate2DMake( FLat, FLon )
+            fromDistance:30000000.0
+            pitch:0
+            heading:0];
+         [mv setCamera:cam];
+         /* Auto-rotation: spin the globe ~9°/sec by nudging the camera
+          * center longitude every 50ms (0.4° per tick). Skip in design
+          * mode — otherwise FLon mutates continuously and the codegen
+          * writes a moving value at each save. */
+         BOOL inDesign = NO;
+         if( FCtrlParent && [FCtrlParent isKindOfClass:[HBForm class]] )
+            inDesign = ((HBForm *)FCtrlParent)->FDesignMode;
+         if( FAutoRotate && !inDesign ) {
+            HBEarthRotator * rot = [[HBEarthRotator alloc] init];
+            rot->owner = self;
+            FAutoRotTimer = [NSTimer scheduledTimerWithTimeInterval:0.05
+               target:rot selector:@selector(tick:) userInfo:nil repeats:YES];
+            static NSMutableArray * s_rotators = nil;
+            if( !s_rotators ) s_rotators = [NSMutableArray array];
+            [s_rotators addObject:rot];
+         }
+         v = mv; break;
+      }
+      case CT_MAP: {
+         MKMapView * mv = [[MKMapView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
+         [mv setZoomEnabled:YES];
+         [mv setScrollEnabled:YES];
+         [mv setPitchEnabled:YES];
+         [mv setRotateEnabled:YES];
+         switch( FMapType ) {
+            case 1: [mv setMapType:MKMapTypeSatellite]; break;
+            case 2: [mv setMapType:MKMapTypeHybrid]; break;
+            case 3: [mv setMapType:MKMapTypeMutedStandard]; break;
+            default: [mv setMapType:MKMapTypeStandard];
+         }
+         /* Zoom → span (degrees). Zoom 10 ~ city, 15 ~ street. */
+         double span = 360.0 / pow( 2.0, (double)FZoom );
+         MKCoordinateRegion region = MKCoordinateRegionMake(
+            CLLocationCoordinate2DMake( FLat, FLon ),
+            MKCoordinateSpanMake( span, span ) );
+         [mv setRegion:region animated:NO];
+         v = mv; break;
       }
       case CT_LISTVIEW: {
          NSScrollView * sv = [[NSScrollView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
@@ -2260,6 +2474,9 @@ static NSImage * HBResolveBitBtnImage( int kind, const char * picture )
    if( ctrlType >= CT_PREPROCESSOR && ctrlType <= CT_SCHEDULER ) isNonVisual = 1;
    if( ctrlType >= CT_PRINTER && ctrlType <= CT_BARCODEPRINTER ) isNonVisual = 1;
    if( ctrlType >= 110 ) isNonVisual = 1; /* Whisper, Embeddings, Connectivity, Git */
+   if( ctrlType == CT_MAP ) isNonVisual = 0; /* TMap is visual */
+   if( ctrlType == CT_SCENE3D ) isNonVisual = 0; /* TScene3D is visual */
+   if( ctrlType == CT_EARTHVIEW ) isNonVisual = 0; /* TEarthView is visual */
 
    NSLog(@"[HB] isNonVisual=%d", isNonVisual);
    if( isNonVisual )
@@ -2741,6 +2958,9 @@ static HBPaletteTarget * s_palTarget = nil;
                   { CT_PRINTDIALOG,"TPrintDialog",    "",            32,  32 },
                   { CT_REPORTVIEWER,"TReportViewer",  "",           400, 300 },
                   { CT_BARCODEPRINTER,"TBarcodePrinter","",          32,  32 },
+                  { CT_MAP,        "TMap",            "",           400, 300 },
+                  { CT_SCENE3D,    "TScene3D",        "",           400, 300 },
+                  { CT_EARTHVIEW,  "TEarthView",      "",           400, 400 },
                   { 0, NULL, NULL, 0, 0 }
                };
                for( int i = 0; defs[i].cls; i++ ) {
@@ -3365,14 +3585,21 @@ static HBPaletteTarget * s_palTarget = nil;
          FChildren[i]->FTop += FClientTop;
          [FChildren[i] createViewInParent:FContentView];
       }
-   for( int i = 0; i < FChildCount; i++ )
-      if( FChildren[i]->FControlType != CT_GROUPBOX &&
-          FChildren[i]->FControlType != CT_TOOLBAR &&
-          !( FChildren[i]->FControlType >= CT_TIMER && !FDesignMode ) ) {
-         if( !FChildren[i]->FFont ) FChildren[i]->FFont = FFormFont;
-         FChildren[i]->FTop += FClientTop;
-         [FChildren[i] createViewInParent:FContentView];
-      }
+   for( int i = 0; i < FChildCount; i++ ) {
+      int ct = FChildren[i]->FControlType;
+      if( ct == CT_GROUPBOX || ct == CT_TOOLBAR ) continue;
+      /* At runtime, skip non-visual components — those with type >= CT_TIMER
+       * EXCEPT the visual ones added later: WebView, Browse/DB family,
+       * Map, Scene3D. They render normally. */
+      BOOL isVisualHigh =
+         ct == CT_WEBVIEW ||
+         ( ct >= CT_BROWSE && ct <= CT_DBIMAGE ) ||
+         ct == CT_MAP || ct == CT_SCENE3D || ct == CT_EARTHVIEW;
+      if( ct >= CT_TIMER && !FDesignMode && !isVisualHigh ) continue;
+      if( !FChildren[i]->FFont ) FChildren[i]->FFont = FFormFont;
+      FChildren[i]->FTop += FClientTop;
+      [FChildren[i] createViewInParent:FContentView];
+   }
 }
 
 - (void)setDesignMode:(BOOL)design
@@ -3804,6 +4031,84 @@ HB_FUNC( UI_IMAGENEW )
    if( pForm ) [pForm addChild:p]; RetCtrl( p );
 }
 
+HB_FUNC( UI_SCENE3DNEW )
+{
+   HBForm * pForm = GetForm(1); HBControl * p = [[HBControl alloc] init];
+   p->FControlType = CT_SCENE3D;
+   p->FWidth = 400; p->FHeight = 300;
+   strncpy( p->FClassName, "TScene3D", sizeof(p->FClassName) - 1 );
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);  if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( HB_ISCHAR(6) ) strncpy( p->FPicture, hb_parc(6), sizeof(p->FPicture)-1 );
+   if( pForm ) [pForm addChild:p]; RetCtrl( p );
+}
+
+HB_FUNC( UI_EARTHVIEWNEW )
+{
+   HBForm * pForm = GetForm(1); HBControl * p = [[HBControl alloc] init];
+   p->FControlType = CT_EARTHVIEW;
+   p->FWidth = 400; p->FHeight = 400;
+   strncpy( p->FClassName, "TEarthView", sizeof(p->FClassName) - 1 );
+   p->FLat = 20.0; p->FLon = 0.0;   /* equator-ish, prime meridian */
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);  if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( HB_ISNUM(6) ) p->FLat = hb_parnd(6);
+   if( HB_ISNUM(7) ) p->FLon = hb_parnd(7);
+   if( pForm ) [pForm addChild:p]; RetCtrl( p );
+}
+
+HB_FUNC( UI_MAPNEW )
+{
+   HBForm * pForm = GetForm(1); HBControl * p = [[HBControl alloc] init];
+   p->FControlType = CT_MAP;
+   p->FWidth = 400; p->FHeight = 300;
+   strncpy( p->FClassName, "TMap", sizeof(p->FClassName) - 1 );
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);  if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( HB_ISNUM(6) ) p->FLat = hb_parnd(6);
+   if( HB_ISNUM(7) ) p->FLon = hb_parnd(7);
+   if( HB_ISNUM(8) ) p->FZoom = hb_parni(8);
+   if( pForm ) [pForm addChild:p]; RetCtrl( p );
+}
+
+/* UI_MapSetRegion( hCtrl, dLat, dLon, nZoom ) */
+HB_FUNC( UI_MAPSETREGION )
+{
+   HBControl * p = GetCtrl(1);
+   if( !p || p->FControlType != CT_MAP ) return;
+   p->FLat = hb_parnd(2);
+   p->FLon = hb_parnd(3);
+   if( HB_ISNUM(4) ) p->FZoom = hb_parni(4);
+   if( p->FView ) {
+      double span = 360.0 / pow( 2.0, (double)p->FZoom );
+      MKCoordinateRegion region = MKCoordinateRegionMake(
+         CLLocationCoordinate2DMake( p->FLat, p->FLon ),
+         MKCoordinateSpanMake( span, span ) );
+      [(MKMapView *)p->FView setRegion:region animated:YES];
+   }
+}
+
+/* UI_MapAddPin( hCtrl, dLat, dLon, cTitle, cSubtitle ) */
+HB_FUNC( UI_MAPADDPIN )
+{
+   HBControl * p = GetCtrl(1);
+   if( !p || p->FControlType != CT_MAP || !p->FView ) return;
+   MKPointAnnotation * ann = [[MKPointAnnotation alloc] init];
+   [ann setCoordinate:CLLocationCoordinate2DMake( hb_parnd(2), hb_parnd(3) )];
+   if( HB_ISCHAR(4) ) [ann setTitle:[NSString stringWithUTF8String:hb_parc(4)]];
+   if( HB_ISCHAR(5) ) [ann setSubtitle:[NSString stringWithUTF8String:hb_parc(5)]];
+   [(MKMapView *)p->FView addAnnotation:ann];
+}
+
+/* UI_MapClearPins( hCtrl ) */
+HB_FUNC( UI_MAPCLEARPINS )
+{
+   HBControl * p = GetCtrl(1);
+   if( !p || p->FControlType != CT_MAP || !p->FView ) return;
+   MKMapView * mv = (MKMapView *) p->FView;
+   [mv removeAnnotations:[mv annotations]];
+}
+
 HB_FUNC( UI_STRINGGRIDNEW )
 {
    HBForm * pForm = GetForm(1); HBControl * p = [[HBControl alloc] init];
@@ -4128,7 +4433,7 @@ HB_FUNC( UI_BROWSESETCOLPROP )
       c->nWidth = hb_parni(4);
       NSArray * cols = [bd->tableView tableColumns];
       if( col < (int)[cols count] )
-         [[cols objectAtIndex:col] setWidth:c->nWidth];
+         [(NSTableColumn *)[cols objectAtIndex:col] setWidth:c->nWidth];
    }
    else if( strcasecmp(szProp,"nAlign")==0 ) {
       if( HB_ISNUM(4) ) c->nAlign = hb_parni(4);
@@ -4471,6 +4776,22 @@ HB_FUNC( UI_SETPROP )
          if( img ) [(NSImageView *)p->FView setImageScaling:NSImageScaleProportionallyUpOrDown];
       }
    }
+   else if( p->FControlType == CT_SCENE3D &&
+            ( strcasecmp(szProp,"cSceneFile")==0 || strcasecmp(szProp,"cPicture")==0 ) )
+   {
+      if( HB_ISCHAR(3) )
+         strncpy( p->FPicture, hb_parc(3), sizeof(p->FPicture)-1 );
+      if( p->FView ) {
+         SCNScene * scene = nil;
+         if( p->FPicture[0] ) {
+            NSURL * url = [NSURL fileURLWithPath:
+               [NSString stringWithUTF8String:p->FPicture]];
+            scene = [SCNScene sceneWithURL:url options:nil error:nil];
+         }
+         if( !scene ) scene = [SCNScene scene];
+         [(SCNView *)p->FView setScene:scene];
+      }
+   }
    else if( ( p->FControlType == CT_BITBTN || p->FControlType == CT_SPEEDBTN ) &&
             ( strcasecmp(szProp,"nKind")==0 || strcasecmp(szProp,"cPicture")==0 ) )
    {
@@ -4525,6 +4846,46 @@ HB_FUNC( UI_SETPROP )
       else if( strcasecmp(szProp,"nPenColor")==0 )  p->FPenColor = (unsigned int)hb_parnint(3);
       else if( strcasecmp(szProp,"nPenWidth")==0 )  p->FPenWidth = hb_parni(3);
       if( p->FView ) [p->FView setNeedsDisplay:YES];
+   }
+   else if( p->FControlType == CT_EARTHVIEW &&
+            ( strcasecmp(szProp,"nLat")==0 || strcasecmp(szProp,"nLon")==0 ||
+              strcasecmp(szProp,"lAutoRotate")==0 ) )
+   {
+      if( strcasecmp(szProp,"nLat")==0 )           p->FLat = hb_parnd(3);
+      else if( strcasecmp(szProp,"nLon")==0 )      p->FLon = hb_parnd(3);
+      else if( strcasecmp(szProp,"lAutoRotate")==0 ) p->FAutoRotate = hb_parl(3);
+      if( p->FView && strcasecmp(szProp,"lAutoRotate")!=0 ) {
+         MKMapView * mv = (MKMapView *) p->FView;
+         MKMapCamera * cam = [[mv camera] copy];
+         [cam setCenterCoordinate:CLLocationCoordinate2DMake( p->FLat, p->FLon )];
+         [mv setCamera:cam];
+      }
+   }
+   else if( p->FControlType == CT_MAP &&
+            ( strcasecmp(szProp,"nLat")==0  || strcasecmp(szProp,"nLon")==0 ||
+              strcasecmp(szProp,"nZoom")==0 || strcasecmp(szProp,"nMapType")==0 ) )
+   {
+      if( strcasecmp(szProp,"nLat")==0 )           p->FLat = hb_parnd(3);
+      else if( strcasecmp(szProp,"nLon")==0 )      p->FLon = hb_parnd(3);
+      else if( strcasecmp(szProp,"nZoom")==0 )     p->FZoom = hb_parni(3);
+      else if( strcasecmp(szProp,"nMapType")==0 )  p->FMapType = hb_parni(3);
+      if( p->FView ) {
+         MKMapView * mv = (MKMapView *) p->FView;
+         if( strcasecmp(szProp,"nMapType")==0 ) {
+            switch( p->FMapType ) {
+               case 1: [mv setMapType:MKMapTypeSatellite]; break;
+               case 2: [mv setMapType:MKMapTypeHybrid]; break;
+               case 3: [mv setMapType:MKMapTypeMutedStandard]; break;
+               default: [mv setMapType:MKMapTypeStandard];
+            }
+         } else {
+            double span = 360.0 / pow( 2.0, (double)p->FZoom );
+            MKCoordinateRegion region = MKCoordinateRegionMake(
+               CLLocationCoordinate2DMake( p->FLat, p->FLon ),
+               MKCoordinateSpanMake( span, span ) );
+            [mv setRegion:region animated:YES];
+         }
+      }
    }
    else if( p->FControlType == CT_STRINGGRID &&
             ( strcasecmp(szProp,"nColCount")==0 ||
@@ -5098,6 +5459,8 @@ HB_FUNC( UI_GETPROP )
             ( p->FControlType==CT_BITBTN || p->FControlType==CT_SPEEDBTN ||
               p->FControlType==CT_IMAGE ) )
       hb_retc( p->FPicture );
+   else if( strcasecmp(szProp,"cSceneFile")==0 && p->FControlType==CT_SCENE3D )
+      hb_retc( p->FPicture );
    else if( strcasecmp(szProp,"nModalResult")==0 && p->FControlType==CT_BITBTN )
       hb_retni( p->FBitBtnModalResult );
    else if( strcasecmp(szProp,"lFlat")==0 && p->FControlType==CT_SPEEDBTN )
@@ -5124,6 +5487,20 @@ HB_FUNC( UI_GETPROP )
       hb_retni( p->FFixedRows );
    else if( strcasecmp(szProp,"nFixedCols")==0 && p->FControlType==CT_STRINGGRID )
       hb_retni( p->FFixedCols );
+   else if( strcasecmp(szProp,"nLat")==0 && p->FControlType==CT_MAP )
+      hb_retnd( p->FLat );
+   else if( strcasecmp(szProp,"nLon")==0 && p->FControlType==CT_MAP )
+      hb_retnd( p->FLon );
+   else if( strcasecmp(szProp,"nZoom")==0 && p->FControlType==CT_MAP )
+      hb_retni( p->FZoom );
+   else if( strcasecmp(szProp,"nMapType")==0 && p->FControlType==CT_MAP )
+      hb_retni( p->FMapType );
+   else if( strcasecmp(szProp,"lAutoRotate")==0 && p->FControlType==CT_EARTHVIEW )
+      hb_retl( p->FAutoRotate );
+   else if( strcasecmp(szProp,"nLat")==0 && p->FControlType==CT_EARTHVIEW )
+      hb_retnd( p->FLat );
+   else if( strcasecmp(szProp,"nLon")==0 && p->FControlType==CT_EARTHVIEW )
+      hb_retnd( p->FLon );
    else if( strcasecmp(szProp,"cName")==0 )      hb_retc( p->FName );
    else if( strcasecmp(szProp,"cClassName")==0 ) hb_retc( p->FClassName );
    else if( strcasecmp(szProp,"cFileName")==0 )  hb_retc( p->FFileName );
@@ -5391,6 +5768,26 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_N("nRowCount",  p->FRowCount,  "Data");
          ADD_N("nFixedRows", p->FFixedRows, "Data");
          ADD_N("nFixedCols", p->FFixedCols, "Data"); break;
+      case CT_MAP: {
+         char szLat[32], szLon[32];
+         snprintf(szLat, sizeof(szLat), "%.6f", p->FLat);
+         snprintf(szLon, sizeof(szLon), "%.6f", p->FLon);
+         ADD_S("nLat", szLat, "Location");
+         ADD_S("nLon", szLon, "Location");
+         ADD_N("nZoom", p->FZoom, "Location");
+         ADD_D("nMapType", p->FMapType,
+            "mtStandard|mtSatellite|mtHybrid|mtMutedStandard", "Appearance"); break;
+      }
+      case CT_SCENE3D:
+         ADD_P("cSceneFile", p->FPicture, "Data"); break;
+      case CT_EARTHVIEW: {
+         char szLat[32], szLon[32];
+         snprintf(szLat, sizeof(szLat), "%.6f", p->FLat);
+         snprintf(szLon, sizeof(szLon), "%.6f", p->FLon);
+         ADD_S("nLat", szLat, "Location");
+         ADD_S("nLon", szLon, "Location");
+         ADD_L("lAutoRotate", p->FAutoRotate, "Behavior"); break;
+      }
       case CT_LABEL: ADD_L("lTransparent",p->FTransparent,"Appearance");
          ADD_C("nClrText",p->FClrText,"Appearance");
          ADD_D("nAlign",p->nAlign,"Left|Center|Right","Appearance"); break;
@@ -6034,6 +6431,9 @@ HB_FUNC( UI_PALETTELOADIMAGES )
             NSString * sym = nil;
             int ct = pd->tabs[t].btns[i].nControlType;
             if( ct == CT_MASKEDIT2 ) sym = @"textformat.123";
+            else if( ct == CT_MAP )       sym = @"map.fill";
+            else if( ct == CT_SCENE3D )   sym = @"cube.transparent.fill";
+            else if( ct == CT_EARTHVIEW ) sym = @"globe.americas.fill";
             if( sym && flat < (int)[icons count] ) {
                NSImage * glyph = [NSImage imageWithSystemSymbolName:sym
                   accessibilityDescription:nil];

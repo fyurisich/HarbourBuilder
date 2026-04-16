@@ -73,6 +73,12 @@
 #define bvLowered        0
 #define bvRaised         1
 
+// TMap.nMapType
+#define mtStandard       0
+#define mtSatellite      1
+#define mtHybrid         2
+#define mtMutedStandard  3
+
 // TShape.Shape (C++Builder TShapeType)
 #define stRectangle      0
 #define stSquare         1
@@ -210,6 +216,33 @@
       [ STYLE <nShape> ] ;
    => ;
       <oCtrl> := TShape():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight>, <nShape> )
+
+// Scene3D (SceneKit-backed 3D viewer)
+#xcommand @ <nTop>, <nLeft> SCENE3D <oCtrl> ;
+      OF <oParent> ;
+      SIZE <nWidth>, <nHeight> ;
+      [ FILE <cFile> ] ;
+   => ;
+      <oCtrl> := TScene3D():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight>, <cFile> )
+
+// EarthView (globe-style satellite view)
+#xcommand @ <nTop>, <nLeft> EARTHVIEW <oCtrl> ;
+      OF <oParent> ;
+      SIZE <nWidth>, <nHeight> ;
+      [ CENTER <nLat>, <nLon> ] ;
+   => ;
+      <oCtrl> := TEarthView():New( <oParent>, <nLeft>, <nTop>, ;
+                                   <nWidth>, <nHeight>, <nLat>, <nLon> )
+
+// Map (MapKit-backed)
+#xcommand @ <nTop>, <nLeft> MAP <oCtrl> ;
+      OF <oParent> ;
+      SIZE <nWidth>, <nHeight> ;
+      [ CENTER <nLat>, <nLon> ] ;
+      [ ZOOM <nZoom> ] ;
+   => ;
+      <oCtrl> := TMap():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight>, ;
+                             <nLat>, <nLon>, <nZoom> )
 
 // StringGrid
 #xcommand @ <nTop>, <nLeft> STRINGGRID <oCtrl> ;

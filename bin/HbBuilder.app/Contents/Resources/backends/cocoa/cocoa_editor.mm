@@ -3298,7 +3298,7 @@ HB_FUNC( MAC_PROJECTOPTIONSDIALOG )
    NSTextField * lbl5 = [NSTextField labelWithString:@"Linker Flags:"];
    [lbl5 setFrame:NSMakeRect(10, 230, 150, 20)];
    NSTextField * ldFlags = [[NSTextField alloc] initWithFrame:NSMakeRect(10, 205, 420, 24)];
-   [ldFlags setStringValue:@"-framework Cocoa -framework QuartzCore"];
+   [ldFlags setStringValue:@"-framework Cocoa -framework QuartzCore -framework MapKit -framework CoreLocation -framework SceneKit"];
    NSTextField * lbl6 = [NSTextField labelWithString:@"Libraries:"];
    [lbl6 setFrame:NSMakeRect(10, 175, 150, 20)];
    NSTextField * libs = [[NSTextField alloc] initWithFrame:NSMakeRect(10, 150, 420, 24)];
