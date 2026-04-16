@@ -48,6 +48,39 @@
 #define clGreen             65280    // 0x0000FF00
 #define clBlue           16711680    // 0x00FF0000
 
+// TMaskEdit.MaskKind presets
+#define meCustom         0
+#define meDate           1
+#define meDateISO        2
+#define meTime           3
+#define meTimeSecs       4
+#define mePhone          5
+#define meZipCode        6
+#define meCreditCard     7
+#define meSSN            8
+#define meIPv4           9
+
+// TBevel.Shape (C++Builder TBevelShape)
+#define bsBox            0
+#define bsFrame          1
+#define bsTopLine        2
+#define bsBottomLine     3
+#define bsLeftLine       4
+#define bsRightLine      5
+#define bsSpacer         6
+
+// TBevel.Style (C++Builder TBevelStyle)
+#define bvLowered        0
+#define bvRaised         1
+
+// TShape.Shape (C++Builder TShapeType)
+#define stRectangle      0
+#define stSquare         1
+#define stRoundRect      2
+#define stRoundSquare    3
+#define stEllipse        4
+#define stCircle         5
+
 // BitBtn Kind (C++Builder TBitBtnKind)
 #define bkCustom         0
 #define bkOK             1
@@ -169,6 +202,42 @@
       [ PICTURE <cPic> ] ;
    => ;
       <oCtrl> := TImage():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight>, <cPic> )
+
+// Shape
+#xcommand @ <nTop>, <nLeft> SHAPE <oCtrl> ;
+      OF <oParent> ;
+      SIZE <nWidth>, <nHeight> ;
+      [ STYLE <nShape> ] ;
+   => ;
+      <oCtrl> := TShape():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight>, <nShape> )
+
+// StringGrid
+#xcommand @ <nTop>, <nLeft> STRINGGRID <oCtrl> ;
+      OF <oParent> ;
+      SIZE <nWidth>, <nHeight> ;
+      [ COLS <nCols> ] ;
+      [ ROWS <nRows> ] ;
+   => ;
+      <oCtrl> := TStringGrid():New( <oParent>, <nLeft>, <nTop>, ;
+                                    <nWidth>, <nHeight>, <nCols>, <nRows> )
+
+// MaskEdit
+#xcommand @ <nTop>, <nLeft> MASKEDIT <oCtrl> ;
+      [ MASK <cMask> ] ;
+      OF <oParent> ;
+      SIZE <nWidth>, <nHeight> ;
+   => ;
+      <oCtrl> := TMaskEdit():New( <oParent>, <cMask>, <nLeft>, <nTop>, <nWidth>, <nHeight> )
+
+// Bevel
+#xcommand @ <nTop>, <nLeft> BEVEL <oCtrl> ;
+      OF <oParent> ;
+      SIZE <nWidth>, <nHeight> ;
+      [ SHAPE <nShape> ] ;
+      [ STYLE <nStyle> ] ;
+   => ;
+      <oCtrl> := TBevel():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight>, ;
+                               <nShape>, <nStyle> )
 
 // Memo
 #xcommand @ <nTop>, <nLeft> MEMO <oCtrl> ;

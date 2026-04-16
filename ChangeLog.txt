@@ -1,6 +1,49 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-16 (macOS: TShape/TBevel/TMaskEdit/TStringGrid real implementations)
+
+  FEATURES
+  - TShape: full geometric primitive. New HBShapeView (NSBezierPath)
+    renders stRectangle, stSquare, stRoundRect, stRoundSquare,
+    stEllipse, stCircle. nClrPane acts as fill, new nPenColor and
+    nPenWidth control the stroke. Defaults: solid white fill, black
+    1px pen, stRectangle — applied both from UI_ShapeNew and from
+    palette drop. SHAPE command + codegen/parser round-trip.
+    Constants stRectangle..stCircle in hbbuilder.ch.
+  - TBevel: 3D beveled primitive with Delphi parity. New HBBevelView
+    renders bsBox, bsFrame, bsTopLine, bsBottomLine, bsLeftLine,
+    bsRightLine, bsSpacer with bvLowered / bvRaised styles. Uses 2px
+    light+dark lines for the 3D effect. BEVEL command (with SHAPE
+    and STYLE clauses) + codegen/parser. Constants bsBox..bsSpacer
+    and bvLowered/bvRaised in hbbuilder.ch.
+  - TMaskEdit: live masked input with Delphi-style character classes
+    ('0', '9', '#' digits; 'L', 'l' letters; 'A', 'a' alphanumeric;
+    anything else literal). New HBMaskEditDelegate reformats on
+    controlTextDidChange:, auto-inserting literals between edit slots
+    so users type "12" for a date mask and see "12/". The mask
+    template ("__/__/____") is shown as grey placeholder when the
+    field is empty. New nMaskKind enum of presets: meDate, meDateISO,
+    meTime, meTimeSecs, mePhone, meZipCode, meCreditCard, meSSN,
+    meIPv4 — setting the kind auto-fills cEditMask. TMaskEdit:New
+    accepts either a mask string or a preset number. MASKEDIT
+    command + codegen that emits the preset constant name when set.
+  - TStringGrid: real matrix control. New HBStringGridDataSource
+    (NSTableViewDataSource + Delegate) backed by NSMutableArray of
+    NSMutableArray<NSString*>. Properties nColCount, nRowCount,
+    nFixedRows (default 1, serves as header row), nFixedCols (default
+    0) exposed in the Inspector. Fixed rows/cols are non-editable,
+    rendered with light-grey background + bold font. New HB_FUNCs
+    UI_StringGridNew, UI_GridSetCell, UI_GridGetCell. Resizing the
+    grid preserves existing content. TStringGrid class with
+    ColCount, RowCount, FixedRows, FixedCols, and 1-based
+    SetCell/GetCell methods. STRINGGRID command + codegen/parser.
+  - Palette icons: UI_PaletteLoadImages now composites better icons
+    for selected controls on macOS 11+ using SF Symbols. TMaskEdit
+    gets a composed icon: a low-profile (18px tall) rounded light-
+    grey pill + dark textformat.123 glyph, matching the visual
+    height of the existing BMP icons.
+
 2026-04-16 (macOS: TBitBtn/TSpeedButton/TImage with Kind+Picture, SpeedButton palette fix)
 
   FEATURES

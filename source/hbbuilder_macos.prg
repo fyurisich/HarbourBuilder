@@ -774,6 +774,43 @@ static function RegenerateFormCode( cName, hForm )
                      StrTran( StrTran( cText, '"', '""' ), Chr(10), '" + Chr(10) + "' ) + ;
                      '"' + e
                endif
+            case nType == 29  // StringGrid
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' STRINGGRID ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               cVal := UI_GetProp( hCtrl, "nColCount" )
+               if ValType( cVal ) == "N" .and. cVal != 5
+                  cCreate += ' COLS ' + LTrim( Str( cVal ) )
+               endif
+               cVal := UI_GetProp( hCtrl, "nRowCount" )
+               if ValType( cVal ) == "N" .and. cVal != 5
+                  cCreate += ' ROWS ' + LTrim( Str( cVal ) )
+               endif
+               cCreate += e
+               cVal := UI_GetProp( hCtrl, "nFixedRows" )
+               if ValType( cVal ) == "N" .and. cVal != 1
+                  cCreate += '   ::o' + cCtrlName + ':FixedRows := ' + LTrim( Str( cVal ) ) + e
+               endif
+               cVal := UI_GetProp( hCtrl, "nFixedCols" )
+               if ValType( cVal ) == "N" .and. cVal != 0
+                  cCreate += '   ::o' + cCtrlName + ':FixedCols := ' + LTrim( Str( cVal ) ) + e
+               endif
+            case nType == 28  // MaskEdit
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' MASKEDIT ::o' + cCtrlName
+               nColCount := UI_GetProp( hCtrl, "nMaskKind" )  // reuse local var
+               if ValType( nColCount ) == "N" .and. nColCount > 0
+                  cCreate += ' MASK ' + ;
+                     { "meCustom", "meDate", "meDateISO", "meTime", "meTimeSecs", ;
+                       "mePhone", "meZipCode", "meCreditCard", "meSSN", "meIPv4" }[ nColCount + 1 ]
+               else
+                  cVal := UI_GetProp( hCtrl, "cEditMask" )
+                  if ! Empty( cVal )
+                     cCreate += ' MASK "' + cVal + '"'
+                  endif
+               endif
+               cCreate += ' OF ' + cParent + ' SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
             case nType == 14  // Image
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' IMAGE ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
@@ -783,6 +820,36 @@ static function RegenerateFormCode( cName, hForm )
                   cCreate += ' PICTURE "' + cVal + '"'
                endif
                cCreate += e
+            case nType == 16  // Bevel
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' BEVEL ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               cVal := UI_GetProp( hCtrl, "nShape" )
+               if ValType( cVal ) == "N" .and. cVal > 0
+                  cCreate += ' SHAPE ' + LTrim( Str( cVal ) )
+               endif
+               cVal := UI_GetProp( hCtrl, "nStyle" )
+               if ValType( cVal ) == "N" .and. cVal > 0
+                  cCreate += ' STYLE ' + LTrim( Str( cVal ) )
+               endif
+               cCreate += e
+            case nType == 15  // Shape
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' SHAPE ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               cVal := UI_GetProp( hCtrl, "nShape" )
+               if ValType( cVal ) == "N" .and. cVal > 0
+                  cCreate += ' STYLE ' + LTrim( Str( cVal ) )
+               endif
+               cCreate += e
+               cVal := UI_GetProp( hCtrl, "nPenColor" )
+               if ValType( cVal ) == "N" .and. cVal != 0
+                  cCreate += '   ::o' + cCtrlName + ':PenColor := ' + LTrim( Str( cVal ) ) + e
+               endif
+               cVal := UI_GetProp( hCtrl, "nPenWidth" )
+               if ValType( cVal ) == "N" .and. cVal != 1
+                  cCreate += '   ::o' + cCtrlName + ':PenWidth := ' + LTrim( Str( cVal ) ) + e
+               endif
             case nType == 12 .or. nType == 13  // BitBtn / SpeedButton
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   If( nType == 12, ' BITBTN ', ' SPEEDBUTTON ' ) + '::o' + cCtrlName
@@ -1455,6 +1522,53 @@ static function RestoreFormFromCode( hForm, cCode )
             if " CHECKED" $ Upper( cTrim ) .and. hCtrl != 0
                UI_SetProp( hCtrl, "lChecked", .T. )
             endif
+         case " STRINGGRID " $ Upper( cTrim )
+            hCtrl := UI_StringGridNew( hForm, nL, nT, nW, nH )
+            if hCtrl != 0
+               nPos := At( " COLS ", Upper( cTrim ) )
+               if nPos > 0
+                  UI_SetProp( hCtrl, "nColCount", ;
+                     Val( AllTrim( SubStr( cTrim, nPos + 6 ) ) ) )
+               endif
+               nPos := At( " ROWS ", Upper( cTrim ) )
+               if nPos > 0
+                  UI_SetProp( hCtrl, "nRowCount", ;
+                     Val( AllTrim( SubStr( cTrim, nPos + 6 ) ) ) )
+               endif
+            endif
+         case " MASKEDIT " $ Upper( cTrim )
+            cText := ""
+            nPos := At( ' MASK ', cTrim )
+            if nPos > 0
+               cVal := AllTrim( SubStr( cTrim, nPos + 6 ) )
+               if Left( cVal, 1 ) == '"'
+                  cVal := SubStr( cVal, 2 )
+                  nPos2 := At( '"', cVal )
+                  if nPos2 > 0; cText := Left( cVal, nPos2 - 1 ); endif
+                  hCtrl := UI_MaskEditNew( hForm, cText, nL, nT, nW, nH )
+               else
+                  // Constant name: meDate, mePhone, ...
+                  nPos2 := At( " ", cVal )
+                  if nPos2 > 0; cVal := Left( cVal, nPos2 - 1 ); endif
+                  hCtrl := UI_MaskEditNew( hForm, "", nL, nT, nW, nH )
+                  if hCtrl != 0
+                     cVal := Upper( AllTrim( cVal ) )
+                     do case
+                        case cVal == "MEDATE";       UI_SetProp( hCtrl, "nMaskKind", 1 )
+                        case cVal == "MEDATEISO";    UI_SetProp( hCtrl, "nMaskKind", 2 )
+                        case cVal == "METIME";       UI_SetProp( hCtrl, "nMaskKind", 3 )
+                        case cVal == "METIMESECS";   UI_SetProp( hCtrl, "nMaskKind", 4 )
+                        case cVal == "MEPHONE";      UI_SetProp( hCtrl, "nMaskKind", 5 )
+                        case cVal == "MEZIPCODE";    UI_SetProp( hCtrl, "nMaskKind", 6 )
+                        case cVal == "MECREDITCARD"; UI_SetProp( hCtrl, "nMaskKind", 7 )
+                        case cVal == "MESSN";        UI_SetProp( hCtrl, "nMaskKind", 8 )
+                        case cVal == "MEIPV4";       UI_SetProp( hCtrl, "nMaskKind", 9 )
+                     endcase
+                  endif
+               endif
+            else
+               hCtrl := UI_MaskEditNew( hForm, "", nL, nT, nW, nH )
+            endif
          case " IMAGE " $ Upper( cTrim )
             hCtrl := UI_ImageNew( hForm, nL, nT, nW, nH )
             if hCtrl != 0
@@ -1465,6 +1579,29 @@ static function RestoreFormFromCode( hForm, cCode )
                   if nPos2 > 0
                      UI_SetProp( hCtrl, "cPicture", Left( cVal, nPos2 - 1 ) )
                   endif
+               endif
+            endif
+         case " SHAPE " $ Upper( cTrim )
+            hCtrl := UI_ShapeNew( hForm, nL, nT, nW, nH )
+            if hCtrl != 0
+               nPos := At( " STYLE ", Upper( cTrim ) )
+               if nPos > 0
+                  UI_SetProp( hCtrl, "nShape", ;
+                     Val( AllTrim( SubStr( cTrim, nPos + 7 ) ) ) )
+               endif
+            endif
+         case " BEVEL " $ Upper( cTrim )
+            hCtrl := UI_BevelNew( hForm, nL, nT, nW, nH )
+            if hCtrl != 0
+               nPos := At( " SHAPE ", Upper( cTrim ) )
+               if nPos > 0
+                  UI_SetProp( hCtrl, "nShape", ;
+                     Val( AllTrim( SubStr( cTrim, nPos + 7 ) ) ) )
+               endif
+               nPos := At( " STYLE ", Upper( cTrim ) )
+               if nPos > 0
+                  UI_SetProp( hCtrl, "nStyle", ;
+                     Val( AllTrim( SubStr( cTrim, nPos + 7 ) ) ) )
                endif
             endif
          case " BITBTN " $ Upper( cTrim ) .or. " SPEEDBUTTON " $ Upper( cTrim )
@@ -1696,6 +1833,14 @@ static function RestoreFormFromCode( hForm, cCode )
          UI_SetProp( hCtrl, "lTransparent", cText == ".T." )
       elseif cVal == "nAlign"
          UI_SetProp( hCtrl, "nAlign", Val( cText ) )
+      elseif cVal == "PenColor"
+         UI_SetProp( hCtrl, "nPenColor", Val( cText ) )
+      elseif cVal == "PenWidth"
+         UI_SetProp( hCtrl, "nPenWidth", Val( cText ) )
+      elseif cVal == "FixedRows"
+         UI_SetProp( hCtrl, "nFixedRows", Val( cText ) )
+      elseif cVal == "FixedCols"
+         UI_SetProp( hCtrl, "nFixedCols", Val( cText ) )
       endif
    next
 

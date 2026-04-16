@@ -411,6 +411,134 @@ METHOD New( oParent, nLeft, nTop, nWidth, nHeight, cPic ) CLASS TImage
 return Self
 
 //----------------------------------------------------------------------------//
+// TShape — geometric primitive (rect, ellipse, circle, round-rect...)
+//----------------------------------------------------------------------------//
+
+CLASS TShape INHERIT TControl
+
+   ACCESS Shape           INLINE UI_GetProp( ::hCpp, "nShape" )
+   ASSIGN Shape( n )      INLINE UI_SetProp( ::hCpp, "nShape", n )
+
+   ACCESS PenColor        INLINE UI_GetProp( ::hCpp, "nPenColor" )
+   ASSIGN PenColor( n )   INLINE UI_SetProp( ::hCpp, "nPenColor", n )
+
+   ACCESS PenWidth        INLINE UI_GetProp( ::hCpp, "nPenWidth" )
+   ASSIGN PenWidth( n )   INLINE UI_SetProp( ::hCpp, "nPenWidth", n )
+
+   METHOD New( oParent, nLeft, nTop, nWidth, nHeight, nShape )
+
+ENDCLASS
+
+METHOD New( oParent, nLeft, nTop, nWidth, nHeight, nShape ) CLASS TShape
+
+   if nWidth == nil;  nWidth := 65; endif
+   if nHeight == nil; nHeight := 65; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_ShapeNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight )
+
+   if nShape != nil;  ::Shape := nShape;  endif
+
+return Self
+
+//----------------------------------------------------------------------------//
+// TBevel — 3D beveled line/frame (Delphi TBevel parity)
+//----------------------------------------------------------------------------//
+
+CLASS TBevel INHERIT TControl
+
+   ACCESS Shape       INLINE UI_GetProp( ::hCpp, "nShape" )
+   ASSIGN Shape( n )  INLINE UI_SetProp( ::hCpp, "nShape", n )
+
+   ACCESS Style       INLINE UI_GetProp( ::hCpp, "nStyle" )
+   ASSIGN Style( n )  INLINE UI_SetProp( ::hCpp, "nStyle", n )
+
+   METHOD New( oParent, nLeft, nTop, nWidth, nHeight, nShape, nStyle )
+
+ENDCLASS
+
+METHOD New( oParent, nLeft, nTop, nWidth, nHeight, nShape, nStyle ) CLASS TBevel
+
+   if nWidth == nil;  nWidth := 150; endif
+   if nHeight == nil; nHeight := 50; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_BevelNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight )
+
+   if nShape != nil;  ::Shape := nShape;  endif
+   if nStyle != nil;  ::Style := nStyle;  endif
+
+return Self
+
+//----------------------------------------------------------------------------//
+// TMaskEdit — masked text input (Delphi parity, subset)
+//----------------------------------------------------------------------------//
+
+//----------------------------------------------------------------------------//
+// TStringGrid — matrix of string cells (Delphi TStringGrid parity, MVP)
+//----------------------------------------------------------------------------//
+
+CLASS TStringGrid INHERIT TControl
+
+   ACCESS ColCount       INLINE UI_GetProp( ::hCpp, "nColCount" )
+   ASSIGN ColCount( n )  INLINE UI_SetProp( ::hCpp, "nColCount", n )
+
+   ACCESS RowCount       INLINE UI_GetProp( ::hCpp, "nRowCount" )
+   ASSIGN RowCount( n )  INLINE UI_SetProp( ::hCpp, "nRowCount", n )
+
+   ACCESS FixedRows      INLINE UI_GetProp( ::hCpp, "nFixedRows" )
+   ASSIGN FixedRows( n ) INLINE UI_SetProp( ::hCpp, "nFixedRows", n )
+
+   ACCESS FixedCols      INLINE UI_GetProp( ::hCpp, "nFixedCols" )
+   ASSIGN FixedCols( n ) INLINE UI_SetProp( ::hCpp, "nFixedCols", n )
+
+   METHOD New( oParent, nLeft, nTop, nWidth, nHeight, nCols, nRows )
+   METHOD SetCell( nCol, nRow, cText ) INLINE UI_GridSetCell( ::hCpp, nCol - 1, nRow - 1, cText )
+   METHOD GetCell( nCol, nRow )        INLINE UI_GridGetCell( ::hCpp, nCol - 1, nRow - 1 )
+
+ENDCLASS
+
+METHOD New( oParent, nLeft, nTop, nWidth, nHeight, nCols, nRows ) CLASS TStringGrid
+
+   if nWidth  == nil; nWidth  := 200; endif
+   if nHeight == nil; nHeight := 120; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_StringGridNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight, nCols, nRows )
+
+return Self
+
+//----------------------------------------------------------------------------//
+
+CLASS TMaskEdit INHERIT TControl
+
+   ACCESS EditMask        INLINE UI_GetProp( ::hCpp, "cEditMask" )
+   ASSIGN EditMask( c )   INLINE UI_SetProp( ::hCpp, "cEditMask", c )
+
+   ACCESS MaskKind        INLINE UI_GetProp( ::hCpp, "nMaskKind" )
+   ASSIGN MaskKind( n )   INLINE UI_SetProp( ::hCpp, "nMaskKind", n )
+
+   METHOD New( oParent, xMask, nLeft, nTop, nWidth, nHeight )
+
+ENDCLASS
+
+METHOD New( oParent, xMask, nLeft, nTop, nWidth, nHeight ) CLASS TMaskEdit
+
+   if nWidth  == nil; nWidth  := 120; endif
+   if nHeight == nil; nHeight :=  24; endif
+
+   ::oParent := oParent
+   /* xMask may be a mask string or a preset number (meDate, mePhone, ...) */
+   if ValType( xMask ) == "N"
+      ::hCpp := UI_MaskEditNew( oParent:hCpp, "", nLeft, nTop, nWidth, nHeight )
+      ::MaskKind := xMask
+   else
+      ::hCpp := UI_MaskEditNew( oParent:hCpp, xMask, nLeft, nTop, nWidth, nHeight )
+   endif
+
+return Self
+
+//----------------------------------------------------------------------------//
 // TCheckBox
 //----------------------------------------------------------------------------//
 

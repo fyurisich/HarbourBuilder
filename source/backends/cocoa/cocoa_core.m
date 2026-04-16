@@ -332,6 +332,18 @@ void EnsureNSApp( void )
    int         FBitBtnModalResult; /* TBitBtn ModalResult (mrNone..mrClose) */
    char        FPicture[512];      /* TBitBtn image path */
    BOOL        FFlat;              /* TSpeedButton Flat (NO = show border) */
+   int         FShape;             /* TShape.Shape (stRectangle..stCircle) /
+                                    * TBevel.Shape (bsBox..bsSpacer) */
+   unsigned int FPenColor;         /* TShape pen/border color (BGR) */
+   int         FPenWidth;          /* TShape pen width in px */
+   int         FStyle;             /* TBevel.Style (bvLowered..bvRaised) */
+   char        FEditMask[64];      /* TMaskEdit.EditMask ("00/00/0000") */
+   int         FMaskKind;          /* TMaskEdit.MaskKind preset (meCustom..meIPv4) */
+   int         FColCount;          /* TStringGrid ColCount */
+   int         FRowCount;          /* TStringGrid RowCount */
+   int         FFixedRows;         /* TStringGrid FixedRows (non-editable top) */
+   int         FFixedCols;         /* TStringGrid FixedCols (non-editable left) */
+   NSMutableArray * FGridCells;    /* TStringGrid cells: rows of NSMutableArray<NSString*> */
 }
 - (void)addChild:(HBControl *)child;
 - (void)setText:(const char *)text;
@@ -797,6 +809,330 @@ static int         s_pendingPage   = 0;
 }
 @end
 
+/* TShape backing view — draws rectangle/square/round/ellipse/circle using
+ * the owning HBControl's FShape, FClrPane (fill), FPenColor, FPenWidth. */
+@interface HBShapeView : NSView
+{
+@public
+   __weak HBControl * owner;
+}
+@end
+
+@implementation HBShapeView
+- (BOOL)isFlipped { return YES; }
+- (void)drawRect:(NSRect)dirtyRect
+{
+   (void)dirtyRect;
+   HBControl * o = owner;
+   if( !o ) return;
+   NSRect b = [self bounds];
+   CGFloat pw = ( o->FPenWidth > 0 ) ? (CGFloat)o->FPenWidth : 1.0;
+   /* Inset by half pen width so strokes stay inside bounds */
+   NSRect r = NSInsetRect( b, pw / 2.0, pw / 2.0 );
+
+   /* Square / Circle / RoundSquare: force to a centered square. */
+   if( o->FShape == 1 /* stSquare */ ||
+       o->FShape == 5 /* stCircle */ ||
+       o->FShape == 3 /* stRoundSquare */ )
+   {
+      CGFloat side = MIN( r.size.width, r.size.height );
+      r.origin.x += ( r.size.width  - side ) / 2.0;
+      r.origin.y += ( r.size.height - side ) / 2.0;
+      r.size.width = r.size.height = side;
+   }
+
+   NSBezierPath * path;
+   if( o->FShape == 4 /* stEllipse */ || o->FShape == 5 /* stCircle */ )
+      path = [NSBezierPath bezierPathWithOvalInRect:r];
+   else if( o->FShape == 2 /* stRoundRect */ || o->FShape == 3 /* stRoundSquare */ ) {
+      CGFloat radius = MIN( r.size.width, r.size.height ) * 0.15;
+      path = [NSBezierPath bezierPathWithRoundedRect:r xRadius:radius yRadius:radius];
+   }
+   else
+      path = [NSBezierPath bezierPathWithRect:r];
+
+   /* Fill (skip when FClrPane == sentinel 0xFFFFFFFF) */
+   if( o->FClrPane != 0xFFFFFFFF && o->FBgColor ) {
+      [o->FBgColor setFill];
+      [path fill];
+   }
+
+   /* Stroke */
+   [path setLineWidth:pw];
+   CGFloat r_ = (o->FPenColor & 0xFF) / 255.0;
+   CGFloat g_ = ((o->FPenColor >> 8) & 0xFF) / 255.0;
+   CGFloat b_ = ((o->FPenColor >> 16) & 0xFF) / 255.0;
+   [[NSColor colorWithCalibratedRed:r_ green:g_ blue:b_ alpha:1.0] setStroke];
+   [path stroke];
+}
+@end
+
+/* TStringGrid cell model: 2D NSMutableArray<NSMutableArray<NSString*>*> resized
+ * by HBGridEnsureSize to always have exactly FRowCount rows × FColCount cols. */
+static void HBGridEnsureSize( HBControl * p )
+{
+   if( !p || p->FControlType != CT_STRINGGRID ) return;
+   if( !p->FGridCells ) p->FGridCells = [NSMutableArray array];
+   /* Grow/trim rows */
+   while( (int)[p->FGridCells count] < p->FRowCount )
+      [p->FGridCells addObject:[NSMutableArray array]];
+   while( (int)[p->FGridCells count] > p->FRowCount )
+      [p->FGridCells removeLastObject];
+   /* Grow/trim each row's columns */
+   for( NSMutableArray * row in p->FGridCells ) {
+      while( (int)[row count] < p->FColCount ) [row addObject:@""];
+      while( (int)[row count] > p->FColCount ) [row removeLastObject];
+   }
+}
+
+/* Rebuild NSTableView columns to match FColCount — hide the header since
+ * the "fixed row" model paints row 0 as a header instead. */
+static void HBGridRebuildColumns( HBControl * p, NSTableView * tv )
+{
+   while( [[tv tableColumns] count] > 0 )
+      [tv removeTableColumn:[[tv tableColumns] lastObject]];
+   for( int c = 0; c < p->FColCount; c++ ) {
+      NSTableColumn * col = [[NSTableColumn alloc]
+         initWithIdentifier:[NSString stringWithFormat:@"%d", c]];
+      [col setWidth:80];
+      [col setEditable:YES];
+      [[col headerCell] setStringValue:[NSString stringWithFormat:@"Col%d", c+1]];
+      [tv addTableColumn:col];
+   }
+   [tv setHeaderView:nil];
+}
+
+@interface HBStringGridDataSource : NSObject <NSTableViewDataSource, NSTableViewDelegate>
+{
+@public
+   __weak HBControl * owner;
+}
+@end
+
+@implementation HBStringGridDataSource
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)tv
+{
+   (void)tv; return owner ? owner->FRowCount : 0;
+}
+- (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)col row:(NSInteger)row
+{
+   (void)tv;
+   HBControl * o = owner;
+   if( !o || !o->FGridCells ) return @"";
+   int c = [[col identifier] intValue];
+   if( row < 0 || row >= (NSInteger)[o->FGridCells count] ) return @"";
+   NSArray * r = o->FGridCells[row];
+   if( c < 0 || c >= (int)[r count] ) return @"";
+   return r[c];
+}
+- (void)tableView:(NSTableView *)tv setObjectValue:(id)val
+   forTableColumn:(NSTableColumn *)col row:(NSInteger)row
+{
+   (void)tv;
+   HBControl * o = owner;
+   if( !o || !o->FGridCells ) return;
+   int c = [[col identifier] intValue];
+   if( row < 0 || row >= (NSInteger)[o->FGridCells count] ) return;
+   NSMutableArray * r = o->FGridCells[row];
+   if( c < 0 || c >= (int)[r count] ) return;
+   r[c] = val ? [val description] : @"";
+}
+- (BOOL)tableView:(NSTableView *)tv shouldEditTableColumn:(NSTableColumn *)col row:(NSInteger)row
+{
+   (void)tv;
+   HBControl * o = owner;
+   if( !o ) return NO;
+   if( row < o->FFixedRows ) return NO;
+   int c = [[col identifier] intValue];
+   if( c < o->FFixedCols ) return NO;
+   return YES;
+}
+- (void)tableView:(NSTableView *)tv willDisplayCell:(id)cell
+   forTableColumn:(NSTableColumn *)col row:(NSInteger)row
+{
+   (void)tv;
+   HBControl * o = owner;
+   if( !o || ![cell respondsToSelector:@selector(setBackgroundColor:)] ) return;
+   int c = [[col identifier] intValue];
+   BOOL fixed = ( row < o->FFixedRows || c < o->FFixedCols );
+   NSColor * bg = fixed
+      ? [NSColor colorWithCalibratedWhite:0.90 alpha:1.0]
+      : [NSColor whiteColor];
+   if( [cell respondsToSelector:@selector(setDrawsBackground:)] )
+      [cell setDrawsBackground:YES];
+   [cell setBackgroundColor:bg];
+   if( [cell respondsToSelector:@selector(setFont:)] ) {
+      [cell setFont:fixed
+         ? [NSFont boldSystemFontOfSize:12]
+         : [NSFont systemFontOfSize:12]];
+   }
+}
+@end
+
+/* TMaskEdit live formatter. The mask uses Delphi-style chars:
+ *   '0' / '9' / '#' — digit (required/optional/signed; all treated as digit)
+ *   'L' / 'l'       — letter (A-Z, a-z)
+ *   'A' / 'a'       — alphanumeric
+ *   any other char  — literal (auto-inserted between edit slots)
+ * Only the mask portion before the first ';' is honored (Delphi ;save;blank
+ * sub-fields are ignored — literals are always kept in the displayed text). */
+static BOOL HBMaskCharValid( char m, unichar c )
+{
+   switch( m ) {
+      case '0': case '9': case '#':
+         return c >= '0' && c <= '9';
+      case 'L': case 'l':
+         return ( c >= 'A' && c <= 'Z' ) || ( c >= 'a' && c <= 'z' );
+      case 'A': case 'a':
+         return ( c >= '0' && c <= '9' ) ||
+                ( c >= 'A' && c <= 'Z' ) || ( c >= 'a' && c <= 'z' );
+      default:
+         return NO; /* literal — handled separately */
+   }
+}
+
+/* Build the visual template for a mask — literals as-is, edit slots as '_'.
+ * Used as the NSTextField placeholder so users see "__/__/____" when empty. */
+static NSString * HBMaskTemplate( const char * mask )
+{
+   if( !mask || !mask[0] ) return @"";
+   NSMutableString * out = [NSMutableString string];
+   for( size_t i = 0; mask[i] && mask[i] != ';'; i++ ) {
+      char m = mask[i];
+      BOOL isEdit = ( m == '0' || m == '9' || m == '#' ||
+                      m == 'L' || m == 'l' || m == 'A' || m == 'a' );
+      [out appendFormat:@"%c", isEdit ? '_' : m];
+   }
+   return out;
+}
+
+static NSString * HBMaskApply( const char * mask, NSString * input )
+{
+   if( !mask || !mask[0] ) return input;
+   NSMutableString * out = [NSMutableString string];
+   NSUInteger ui = 0, ulen = [input length];
+   for( size_t mi = 0; mask[mi] && mask[mi] != ';' && ui <= ulen; mi++ ) {
+      char m = mask[mi];
+      BOOL isEdit = ( m == '0' || m == '9' || m == '#' ||
+                      m == 'L' || m == 'l' || m == 'A' || m == 'a' );
+      if( !isEdit ) {
+         /* Literal slot: always emit; consume a matching user-typed char
+          * if present so the caret advances naturally. */
+         [out appendFormat:@"%c", m];
+         if( ui < ulen && [input characterAtIndex:ui] == (unichar)m ) ui++;
+         continue;
+      }
+      /* Edit slot: consume next valid user char; skip invalid ones. */
+      while( ui < ulen ) {
+         unichar c = [input characterAtIndex:ui++];
+         if( HBMaskCharValid( m, c ) ) {
+            [out appendFormat:@"%C", c];
+            goto next_mask_pos;
+         }
+      }
+      break;
+   next_mask_pos: ;
+   }
+   return out;
+}
+
+@interface HBMaskEditDelegate : NSObject <NSTextFieldDelegate>
+{
+@public
+   __weak HBControl * owner;
+}
+@end
+
+@implementation HBMaskEditDelegate
+- (void)controlTextDidChange:(NSNotification *)note
+{
+   HBControl * o = owner;
+   if( !o || !o->FEditMask[0] ) return;
+   NSTextField * tf = [note object];
+   NSString * raw = [tf stringValue];
+   NSString * fmt = HBMaskApply( o->FEditMask, raw );
+   if( ![fmt isEqualToString:raw] ) {
+      [tf setStringValue:fmt];
+      NSText * fe = [[tf window] fieldEditor:YES forObject:tf];
+      if( fe ) [fe setSelectedRange:NSMakeRange( [fmt length], 0 )];
+   }
+}
+@end
+
+/* TBevel backing view — paints beveled lines/boxes based on FShape
+ * (bsBox..bsSpacer) and FStyle (bvLowered/bvRaised). Lowered uses dark
+ * on top/left + light on bottom/right; raised inverts. */
+@interface HBBevelView : NSView
+{
+@public
+   __weak HBControl * owner;
+}
+@end
+
+@implementation HBBevelView
+- (BOOL)isFlipped { return YES; }
+- (void)drawRect:(NSRect)dirtyRect
+{
+   (void)dirtyRect;
+   HBControl * o = owner;
+   if( !o ) return;
+   if( o->FShape == 6 /* bsSpacer */ ) return;
+
+   NSRect b = [self bounds];
+   BOOL raised = ( o->FStyle == 1 );
+   NSColor * cDark  = [NSColor colorWithCalibratedWhite:0.50 alpha:1.0];
+   NSColor * cLight = [NSColor colorWithCalibratedWhite:0.95 alpha:1.0];
+   NSColor * cTL = raised ? cLight : cDark;
+   NSColor * cBR = raised ? cDark  : cLight;
+
+   void (^hline)(CGFloat, CGFloat, CGFloat, NSColor *) =
+      ^(CGFloat x, CGFloat y, CGFloat w, NSColor * c) {
+         [c setFill]; NSRectFill( NSMakeRect(x, y, w, 1) );
+      };
+   void (^vline)(CGFloat, CGFloat, CGFloat, NSColor *) =
+      ^(CGFloat x, CGFloat y, CGFloat h, NSColor * c) {
+         [c setFill]; NSRectFill( NSMakeRect(x, y, 1, h) );
+      };
+
+   CGFloat x = b.origin.x, y = b.origin.y, w = b.size.width, h = b.size.height;
+
+   switch( o->FShape ) {
+      case 0: /* bsBox — outlined rectangle with 3D bevel */
+         hline( x,       y,       w,     cTL );           /* top */
+         vline( x,       y,       h,     cTL );           /* left */
+         hline( x,       y+h-1,   w,     cBR );           /* bottom */
+         vline( x+w-1,   y,       h,     cBR );           /* right */
+         break;
+      case 1: /* bsFrame — outer + inner bevel (double line) */
+         hline( x,       y,       w,     cTL );
+         vline( x,       y,       h,     cTL );
+         hline( x,       y+h-1,   w,     cBR );
+         vline( x+w-1,   y,       h,     cBR );
+         hline( x+1,     y+1,     w-2,   cBR );
+         vline( x+1,     y+1,     h-2,   cBR );
+         hline( x+1,     y+h-2,   w-2,   cTL );
+         vline( x+w-2,   y+1,     h-2,   cTL );
+         break;
+      case 2: /* bsTopLine */
+         hline( x, y,     w, cTL );
+         hline( x, y+1,   w, cBR );
+         break;
+      case 3: /* bsBottomLine */
+         hline( x, y+h-2, w, cTL );
+         hline( x, y+h-1, w, cBR );
+         break;
+      case 4: /* bsLeftLine */
+         vline( x,   y, h, cTL );
+         vline( x+1, y, h, cBR );
+         break;
+      case 5: /* bsRightLine */
+         vline( x+w-2, y, h, cTL );
+         vline( x+w-1, y, h, cBR );
+         break;
+   }
+}
+@end
+
 /* Resolve a TBitBtn NSImage from either Kind (bkOK..bkAll) via SF Symbol,
  * or cPicture file path. Returns nil for bkCustom + empty picture. */
 static NSImage * HBResolveBitBtnImage( int kind, const char * picture )
@@ -848,6 +1184,10 @@ static NSImage * HBResolveBitBtnImage( int kind, const char * picture )
       FListSelIndex = 1;
       FRadioChecked = NO;
       FKind = 0; FBitBtnModalResult = 0; FPicture[0] = '\0'; FFlat = NO;
+      FShape = 0; FPenColor = 0; FPenWidth = 1; FStyle = 0; FEditMask[0] = '\0';
+      FMaskKind = 0;
+      FColCount = 5; FRowCount = 5; FFixedRows = 1; FFixedCols = 0;
+      FGridCells = nil;
    }
    return self;
 }
@@ -965,20 +1305,55 @@ static NSImage * HBResolveBitBtnImage( int kind, const char * picture )
          }
          v = iv; break;
       }
-      case CT_SHAPE: case CT_PAINTBOX: {
+      case CT_SHAPE: {
+         HBShapeView * sv = [[HBShapeView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
+         sv->owner = self;
+         v = sv; break;
+      }
+      case CT_PAINTBOX: {
          NSView * dv = [[NSView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
          [dv setWantsLayer:YES]; dv.layer.borderWidth = 1;
          dv.layer.borderColor = [[NSColor grayColor] CGColor]; v = dv; break;
       }
       case CT_BEVEL: {
-         NSBox * box = [[NSBox alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
-         [box setBoxType:NSBoxSeparator]; v = box; break;
+         HBBevelView * bv = [[HBBevelView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
+         bv->owner = self;
+         v = bv; break;
       }
       case CT_MASKEDIT2: case CT_LABELEDEDIT: {
          NSTextField * tf = [[NSTextField alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
-         [tf setStringValue:@""]; [tf setBezeled:YES]; v = tf; break;
+         [tf setStringValue:@""]; [tf setBezeled:YES];
+         if( FControlType == CT_MASKEDIT2 && FEditMask[0] ) {
+            HBMaskEditDelegate * del = [[HBMaskEditDelegate alloc] init];
+            del->owner = self;
+            [tf setDelegate:(id<NSTextFieldDelegate>)del];
+            static NSMutableArray * s_maskDelegates = nil;
+            if( !s_maskDelegates ) s_maskDelegates = [NSMutableArray array];
+            [s_maskDelegates addObject:del];
+            [tf setPlaceholderString:HBMaskTemplate( FEditMask )];
+         }
+         v = tf; break;
       }
-      case CT_STRINGGRID: case CT_LISTVIEW: {
+      case CT_STRINGGRID: {
+         NSScrollView * sv = [[NSScrollView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
+         NSTableView * tv = [[NSTableView alloc] initWithFrame:NSMakeRect(0,0,FWidth,FHeight)];
+         [tv setUsesAlternatingRowBackgroundColors:NO];
+         [tv setGridStyleMask:NSTableViewSolidHorizontalGridLineMask |
+                              NSTableViewSolidVerticalGridLineMask];
+         HBGridEnsureSize( self );
+         HBGridRebuildColumns( self, tv );
+         HBStringGridDataSource * ds = [[HBStringGridDataSource alloc] init];
+         ds->owner = self;
+         [tv setDataSource:ds];
+         [tv setDelegate:ds];
+         static NSMutableArray * s_gridDS = nil;
+         if( !s_gridDS ) s_gridDS = [NSMutableArray array];
+         [s_gridDS addObject:ds];
+         [sv setDocumentView:tv]; [sv setHasVerticalScroller:YES];
+         [sv setHasHorizontalScroller:YES]; [sv setBorderType:NSBezelBorder];
+         v = sv; break;
+      }
+      case CT_LISTVIEW: {
          NSScrollView * sv = [[NSScrollView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
          NSTableView * tv = [[NSTableView alloc] initWithFrame:NSMakeRect(0,0,FWidth,FHeight)];
          for( int i = 0; i < 3; i++ ) {
@@ -2385,6 +2760,14 @@ static HBPaletteTarget * s_palTarget = nil;
                                                                  blue:0xF0/255.0 alpha:1.0];
                         p->FFlat = NO;
                      }
+                     /* Delphi TShape defaults: white fill, black 1px pen */
+                     if( ctrlType == CT_SHAPE ) {
+                        p->FClrPane = 0x00FFFFFF;
+                        p->FBgColor = [NSColor whiteColor];
+                        p->FPenColor = 0;
+                        p->FPenWidth = 1;
+                        p->FShape = 0;
+                     }
                      newCtrl = p;
                      break;
                   }
@@ -3421,10 +3804,73 @@ HB_FUNC( UI_IMAGENEW )
    if( pForm ) [pForm addChild:p]; RetCtrl( p );
 }
 
+HB_FUNC( UI_STRINGGRIDNEW )
+{
+   HBForm * pForm = GetForm(1); HBControl * p = [[HBControl alloc] init];
+   p->FControlType = CT_STRINGGRID;
+   p->FWidth = 200; p->FHeight = 120;
+   strncpy( p->FClassName, "TStringGrid", sizeof(p->FClassName) - 1 );
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);  if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( HB_ISNUM(6) ) p->FColCount = hb_parni(6);
+   if( HB_ISNUM(7) ) p->FRowCount = hb_parni(7);
+   if( pForm ) [pForm addChild:p]; RetCtrl( p );
+}
+
+/* UI_GridSetCell( hCtrl, nCol, nRow, cText ) — 0-based */
+HB_FUNC( UI_GRIDSETCELL )
+{
+   HBControl * p = GetCtrl(1);
+   if( !p || p->FControlType != CT_STRINGGRID ) return;
+   HBGridEnsureSize( p );
+   int c = hb_parni(2), r = hb_parni(3);
+   if( c < 0 || c >= p->FColCount || r < 0 || r >= p->FRowCount ) return;
+   NSMutableArray * row = p->FGridCells[r];
+   row[c] = HB_ISCHAR(4)
+      ? [NSString stringWithUTF8String:hb_parc(4)]
+      : @"";
+   if( p->FView ) {
+      NSScrollView * sv = (NSScrollView *) p->FView;
+      [(NSTableView *)[sv documentView] reloadData];
+   }
+}
+
+/* UI_GridGetCell( hCtrl, nCol, nRow ) --> cText */
+HB_FUNC( UI_GRIDGETCELL )
+{
+   HBControl * p = GetCtrl(1);
+   if( !p || p->FControlType != CT_STRINGGRID ) { hb_retc(""); return; }
+   HBGridEnsureSize( p );
+   int c = hb_parni(2), r = hb_parni(3);
+   if( c < 0 || c >= p->FColCount || r < 0 || r >= p->FRowCount ) { hb_retc(""); return; }
+   NSArray * row = p->FGridCells[r];
+   NSString * val = row[c];
+   hb_retc( [val UTF8String] );
+}
+
+HB_FUNC( UI_MASKEDITNEW )
+{
+   HBForm * pForm = GetForm(1); HBControl * p = [[HBControl alloc] init];
+   p->FControlType = CT_MASKEDIT2;
+   p->FWidth = 120; p->FHeight = 24;
+   strncpy( p->FClassName, "TMaskEdit", sizeof(p->FClassName) - 1 );
+   if( HB_ISCHAR(2) ) strncpy( p->FEditMask, hb_parc(2), sizeof(p->FEditMask)-1 );
+   if( HB_ISNUM(3) ) p->FLeft = hb_parni(3);   if( HB_ISNUM(4) ) p->FTop = hb_parni(4);
+   if( HB_ISNUM(5) ) p->FWidth = hb_parni(5);  if( HB_ISNUM(6) ) p->FHeight = hb_parni(6);
+   if( pForm ) [pForm addChild:p]; RetCtrl( p );
+}
+
 HB_FUNC( UI_SHAPENEW )
 {
    HBForm * pForm = GetForm(1); HBControl * p = [[HBControl alloc] init];
    p->FControlType = CT_SHAPE;
+   strncpy( p->FClassName, "TShape", sizeof(p->FClassName) - 1 );
+   /* Delphi defaults: solid white fill, black 1px pen, rectangle shape */
+   p->FClrPane = 0x00FFFFFF;
+   p->FBgColor = [NSColor whiteColor];
+   p->FPenColor = 0;  /* black */
+   p->FPenWidth = 1;
+   p->FShape = 0;     /* stRectangle */
    if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
    if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);  if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
    if( pForm ) [pForm addChild:p]; RetCtrl( p );
@@ -4070,6 +4516,102 @@ HB_FUNC( UI_SETPROP )
    }
    else if( strcasecmp(szProp,"nModalResult")==0 && p->FControlType == CT_BITBTN )
       p->FBitBtnModalResult = hb_parni(3);
+   else if( p->FControlType == CT_SHAPE &&
+            ( strcasecmp(szProp,"nShape")==0 ||
+              strcasecmp(szProp,"nPenColor")==0 ||
+              strcasecmp(szProp,"nPenWidth")==0 ) )
+   {
+      if( strcasecmp(szProp,"nShape")==0 )          p->FShape = hb_parni(3);
+      else if( strcasecmp(szProp,"nPenColor")==0 )  p->FPenColor = (unsigned int)hb_parnint(3);
+      else if( strcasecmp(szProp,"nPenWidth")==0 )  p->FPenWidth = hb_parni(3);
+      if( p->FView ) [p->FView setNeedsDisplay:YES];
+   }
+   else if( p->FControlType == CT_STRINGGRID &&
+            ( strcasecmp(szProp,"nColCount")==0 ||
+              strcasecmp(szProp,"nRowCount")==0 ||
+              strcasecmp(szProp,"nFixedRows")==0 ||
+              strcasecmp(szProp,"nFixedCols")==0 ) )
+   {
+      int val = hb_parni(3); if( val < 0 ) val = 0;
+      if( strcasecmp(szProp,"nColCount")==0 )        p->FColCount = val;
+      else if( strcasecmp(szProp,"nRowCount")==0 )   p->FRowCount = val;
+      else if( strcasecmp(szProp,"nFixedRows")==0 )  p->FFixedRows = val;
+      else if( strcasecmp(szProp,"nFixedCols")==0 )  p->FFixedCols = val;
+      HBGridEnsureSize( p );
+      if( p->FView ) {
+         NSScrollView * sv = (NSScrollView *) p->FView;
+         NSTableView * tv = (NSTableView *) [sv documentView];
+         if( strcasecmp(szProp,"nColCount")==0 )
+            HBGridRebuildColumns( p, tv );
+         [tv reloadData];
+      }
+   }
+   else if( strcasecmp(szProp,"nMaskKind")==0 && p->FControlType == CT_MASKEDIT2 ) {
+      static const char * presets[] = {
+         "",                        /* 0 meCustom (leaves cEditMask untouched) */
+         "00/00/0000",              /* 1 meDate */
+         "0000-00-00",              /* 2 meDateISO */
+         "00:00",                   /* 3 meTime */
+         "00:00:00",                /* 4 meTimeSecs */
+         "(999) 999-9999",          /* 5 mePhone */
+         "00000",                   /* 6 meZipCode */
+         "9999 9999 9999 9999",     /* 7 meCreditCard */
+         "000-00-0000",             /* 8 meSSN */
+         "999.999.999.999"          /* 9 meIPv4 */
+      };
+      int k = hb_parni(3);
+      p->FMaskKind = k;
+      if( k > 0 && k < (int)(sizeof(presets)/sizeof(presets[0])) ) {
+         strncpy( p->FEditMask, presets[k], sizeof(p->FEditMask)-1 );
+         p->FEditMask[sizeof(p->FEditMask)-1] = '\0';
+         if( p->FView ) {
+            NSTextField * tf = (NSTextField *) p->FView;
+            if( ![[tf delegate] isKindOfClass:[HBMaskEditDelegate class]] ) {
+               HBMaskEditDelegate * del = [[HBMaskEditDelegate alloc] init];
+               del->owner = p;
+               [tf setDelegate:(id<NSTextFieldDelegate>)del];
+               static NSMutableArray * s_maskDelegates3 = nil;
+               if( !s_maskDelegates3 ) s_maskDelegates3 = [NSMutableArray array];
+               [s_maskDelegates3 addObject:del];
+            }
+            [tf setStringValue:HBMaskApply( p->FEditMask, [tf stringValue] )];
+            [tf setPlaceholderString:HBMaskTemplate( p->FEditMask )];
+         }
+      }
+   }
+   else if( strcasecmp(szProp,"cEditMask")==0 && p->FControlType == CT_MASKEDIT2 ) {
+      if( HB_ISCHAR(3) )
+         strncpy( p->FEditMask, hb_parc(3), sizeof(p->FEditMask)-1 );
+      else
+         p->FEditMask[0] = '\0';
+      /* If the text field already exists, (re)install the mask delegate
+       * and reformat the current content against the new mask. */
+      if( p->FView ) {
+         NSTextField * tf = (NSTextField *) p->FView;
+         if( p->FEditMask[0] ) {
+            if( ![[tf delegate] isKindOfClass:[HBMaskEditDelegate class]] ) {
+               HBMaskEditDelegate * del = [[HBMaskEditDelegate alloc] init];
+               del->owner = p;
+               [tf setDelegate:(id<NSTextFieldDelegate>)del];
+               static NSMutableArray * s_maskDelegates2 = nil;
+               if( !s_maskDelegates2 ) s_maskDelegates2 = [NSMutableArray array];
+               [s_maskDelegates2 addObject:del];
+            }
+            [tf setStringValue:HBMaskApply( p->FEditMask, [tf stringValue] )];
+            [tf setPlaceholderString:HBMaskTemplate( p->FEditMask )];
+         } else {
+            [tf setDelegate:nil];
+            [tf setPlaceholderString:@""];
+         }
+      }
+   }
+   else if( p->FControlType == CT_BEVEL &&
+            ( strcasecmp(szProp,"nShape")==0 || strcasecmp(szProp,"nStyle")==0 ) )
+   {
+      if( strcasecmp(szProp,"nShape")==0 ) p->FShape = hb_parni(3);
+      else                                 p->FStyle = hb_parni(3);
+      if( p->FView ) [p->FView setNeedsDisplay:YES];
+   }
    else if( strcasecmp(szProp,"lFlat")==0 && p->FControlType == CT_SPEEDBTN ) {
       p->FFlat = hb_parl(3);
       if( p->FView ) {
@@ -4560,6 +5102,28 @@ HB_FUNC( UI_GETPROP )
       hb_retni( p->FBitBtnModalResult );
    else if( strcasecmp(szProp,"lFlat")==0 && p->FControlType==CT_SPEEDBTN )
       hb_retl( p->FFlat );
+   else if( strcasecmp(szProp,"nShape")==0 && p->FControlType==CT_SHAPE )
+      hb_retni( p->FShape );
+   else if( strcasecmp(szProp,"nPenColor")==0 && p->FControlType==CT_SHAPE )
+      hb_retnint( (HB_MAXINT) p->FPenColor );
+   else if( strcasecmp(szProp,"nPenWidth")==0 && p->FControlType==CT_SHAPE )
+      hb_retni( p->FPenWidth );
+   else if( strcasecmp(szProp,"nShape")==0 && p->FControlType==CT_BEVEL )
+      hb_retni( p->FShape );
+   else if( strcasecmp(szProp,"nStyle")==0 && p->FControlType==CT_BEVEL )
+      hb_retni( p->FStyle );
+   else if( strcasecmp(szProp,"cEditMask")==0 && p->FControlType==CT_MASKEDIT2 )
+      hb_retc( p->FEditMask );
+   else if( strcasecmp(szProp,"nMaskKind")==0 && p->FControlType==CT_MASKEDIT2 )
+      hb_retni( p->FMaskKind );
+   else if( strcasecmp(szProp,"nColCount")==0 && p->FControlType==CT_STRINGGRID )
+      hb_retni( p->FColCount );
+   else if( strcasecmp(szProp,"nRowCount")==0 && p->FControlType==CT_STRINGGRID )
+      hb_retni( p->FRowCount );
+   else if( strcasecmp(szProp,"nFixedRows")==0 && p->FControlType==CT_STRINGGRID )
+      hb_retni( p->FFixedRows );
+   else if( strcasecmp(szProp,"nFixedCols")==0 && p->FControlType==CT_STRINGGRID )
+      hb_retni( p->FFixedCols );
    else if( strcasecmp(szProp,"cName")==0 )      hb_retc( p->FName );
    else if( strcasecmp(szProp,"cClassName")==0 ) hb_retc( p->FClassName );
    else if( strcasecmp(szProp,"cFileName")==0 )  hb_retc( p->FFileName );
@@ -4806,6 +5370,27 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_L("lFlat", p->FFlat, "Appearance"); break;
       case CT_IMAGE:
          ADD_P("cPicture", p->FPicture, "Appearance"); break;
+      case CT_SHAPE:
+         ADD_D("nShape", p->FShape,
+            "stRectangle|stSquare|stRoundRect|stRoundSquare|stEllipse|stCircle",
+            "Appearance");
+         ADD_C("nPenColor", p->FPenColor, "Appearance");
+         ADD_N("nPenWidth", p->FPenWidth, "Appearance"); break;
+      case CT_BEVEL:
+         ADD_D("nShape", p->FShape,
+            "bsBox|bsFrame|bsTopLine|bsBottomLine|bsLeftLine|bsRightLine|bsSpacer",
+            "Appearance");
+         ADD_D("nStyle", p->FStyle, "bvLowered|bvRaised", "Appearance"); break;
+      case CT_MASKEDIT2:
+         ADD_D("nMaskKind", p->FMaskKind,
+            "meCustom|meDate|meDateISO|meTime|meTimeSecs|mePhone|meZipCode|meCreditCard|meSSN|meIPv4",
+            "Data");
+         ADD_S("cEditMask", p->FEditMask, "Data"); break;
+      case CT_STRINGGRID:
+         ADD_N("nColCount",  p->FColCount,  "Data");
+         ADD_N("nRowCount",  p->FRowCount,  "Data");
+         ADD_N("nFixedRows", p->FFixedRows, "Data");
+         ADD_N("nFixedCols", p->FFixedCols, "Data"); break;
       case CT_LABEL: ADD_L("lTransparent",p->FTransparent,"Appearance");
          ADD_C("nClrText",p->FClrText,"Appearance");
          ADD_D("nAlign",p->nAlign,"Left|Center|Right","Appearance"); break;
@@ -5437,6 +6022,52 @@ HB_FUNC( UI_PALETTELOADIMAGES )
 
    NSMutableArray * icons = SliceBmpStrip( szPath );
    if( !icons || [icons count] == 0 ) return;
+
+   /* Override selected slots with SF Symbols on macOS 11+ — nicer than
+    * the low-res BMP icons for controls added later. Each override
+    * composites the symbol over a light-grey rounded square so the icon
+    * stands out against the palette button. */
+   if( @available(macOS 11.0, *) ) {
+      int flat = 0;
+      for( int t = 0; t < pd->nTabCount; t++ ) {
+         for( int i = 0; i < pd->tabs[t].nBtnCount; i++ ) {
+            NSString * sym = nil;
+            int ct = pd->tabs[t].btns[i].nControlType;
+            if( ct == CT_MASKEDIT2 ) sym = @"textformat.123";
+            if( sym && flat < (int)[icons count] ) {
+               NSImage * glyph = [NSImage imageWithSystemSymbolName:sym
+                  accessibilityDescription:nil];
+               if( glyph ) {
+                  NSImage * composed = [[NSImage alloc] initWithSize:NSMakeSize(32, 32)];
+                  [composed lockFocus];
+                  /* Low-profile light-grey pill, height matches other
+                   * icons' visual weight (~18px) centered vertically. */
+                  CGFloat bgH = 18, bgY = ( 32 - bgH ) / 2.0;
+                  NSBezierPath * bg = [NSBezierPath bezierPathWithRoundedRect:
+                     NSMakeRect(2, bgY, 28, bgH) xRadius:3 yRadius:3];
+                  [[NSColor colorWithCalibratedWhite:0.92 alpha:1.0] setFill];
+                  [bg fill];
+                  [[NSColor colorWithCalibratedWhite:0.60 alpha:1.0] setStroke];
+                  [bg setLineWidth:1.0];
+                  [bg stroke];
+                  /* Glyph centered, height equal to the pill */
+                  CGFloat gH = bgH - 4;
+                  NSRect gRect = NSMakeRect((32-gH)/2.0, bgY + 2, gH, gH);
+                  NSImage * tinted = [glyph copy];
+                  [tinted setTemplate:YES];
+                  [[NSColor colorWithCalibratedWhite:0.15 alpha:1.0] set];
+                  NSRect srcRect = NSMakeRect(0, 0, [tinted size].width, [tinted size].height);
+                  [tinted drawInRect:gRect fromRect:srcRect
+                     operation:NSCompositingOperationSourceOver fraction:1.0
+                     respectFlipped:YES hints:nil];
+                  [composed unlockFocus];
+                  icons[flat] = composed;
+               }
+            }
+            flat++;
+         }
+      }
+   }
 
    pd->palImages = icons;
 
