@@ -1102,7 +1102,7 @@ static LRESULT CALLBACK InsWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
    index into aValues (legacy behavior). */
 typedef struct { const char * szPropName; const char ** aValues; int nCount; BOOL bIsString; } ENUMDEF;
 
-static const char * s_borderStyle[] = { "bsSizeable", "bsSingle", "bsNone", "bsToolWindow" };
+static const char * s_borderStyle[] = { "bsNone", "bsSingle", "bsSizeable", "bsDialog", "bsToolWindow", "bsSizeToolWin" };
 static const char * s_position[]    = { "poDesigned", "poCenter", "poCenterScreen" };
 static const char * s_windowState[] = { "wsNormal", "wsMinimized", "wsMaximized" };
 static const char * s_formStyle[]   = { "fsNormal", "fsStayOnTop" };
@@ -1122,7 +1122,7 @@ static const char * s_cRdd[]        = { "DBFCDX", "DBFNTX", "DBFFPT" };
 static const char * s_logical[]     = { "No", "Yes" };
 
 static ENUMDEF s_enums[] = {
-   { "nBorderStyle",  s_borderStyle,  4, FALSE },
+   { "nBorderStyle",  s_borderStyle,  6, FALSE },
    { "nBorderIcons",  s_borderIcons,  8, FALSE },
    { "nPosition",     s_position,     3, FALSE },
    { "nWindowState",  s_windowState,  3, FALSE },
@@ -1512,7 +1512,15 @@ static void InsRebuild( INSDATA * d )
                sprintf( buf, "(%d items)", cnt );
                lvi.pszText = buf;
             } else {
-               lvi.pszText = d->rows[i].szValue;
+               ENUMDEF * pE = InsGetEnum( d->rows[i].szName );
+               if( pE && !pE->bIsString ) {
+                  int idx = atoi( d->rows[i].szValue );
+                  lvi.pszText = ( idx >= 0 && idx < pE->nCount )
+                                ? (char *) pE->aValues[idx]
+                                : d->rows[i].szValue;
+               } else {
+                  lvi.pszText = d->rows[i].szValue;
+               }
             }
             SendMessageA( d->hList, LVM_SETITEMA, 0, (LPARAM) &lvi );
          }
@@ -1545,6 +1553,13 @@ static void InsRebuild( INSDATA * d )
                }
                sprintf( szDisp, "(%d items)", cnt );
                pDisp = szDisp;
+            } else {
+               ENUMDEF * pE = InsGetEnum( d->rows[i].szName );
+               if( pE && !pE->bIsString ) {
+                  int idx = atoi( d->rows[i].szValue );
+                  if( idx >= 0 && idx < pE->nCount )
+                     pDisp = (char *) pE->aValues[idx];
+               }
             }
             ListView_GetItemText( d->hList, nVis, 1, szOld, sizeof(szOld) );
             if( lstrcmpA( szOld, pDisp ) != 0 )

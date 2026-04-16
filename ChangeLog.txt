@@ -1,6 +1,33 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-16 (Windows: TForm nBorderStyle — bsDialog + enum display fix)
+
+  FIXES
+  - Inspector dropdown for nBorderStyle was missing bsDialog and
+    bsSizeToolWin, and had the wrong item order (bsSizeable at index 0
+    instead of bsNone). Fixed s_borderStyle array in
+    inspector/inspector_win.prg to match the hbbuilder.ch constants:
+    index 0=bsNone, 1=bsSingle, 2=bsSizeable, 3=bsDialog,
+    4=bsToolWindow, 5=bsSizeToolWin (nCount 4→6).
+  - TForm::CreateHandle (tform.cpp) ignored FBorderStyle entirely and
+    used the legacy FSizable/FToolWindow flags. Replaced with a switch
+    on FBorderStyle so bsNone/bsSingle/bsDialog/bsToolWindow/
+    bsSizeToolWin all produce the correct Win32 style flags at creation.
+    FBorderStyle default changed from 0 to 2 (bsSizeable) to match the
+    Delphi/C++Builder convention and the macOS backend.
+  - When nBorderStyle is changed live in the Inspector while the design
+    window is already open, hbbridge.cpp now applies SetWindowLongPtr +
+    SWP_FRAMECHANGED immediately, the same way macOS applies
+    applyStyleMask. Previously the change was stored but not reflected
+    until the form was recreated.
+  - All 12 numeric ENUMDEF properties (nBorderStyle, nPosition,
+    nWindowState, nFormStyle, nCursor, nBevelStyle, nBevelOuter,
+    nAlignment, nScrollBars, nShapeType, nViewStyle, nBorderIcons)
+    were displayed as raw integers in the Inspector value column. Fixed
+    InsRebuild (both full-rebuild and partial-update paths) to resolve
+    the numeric index to its ENUMDEF string name before rendering.
+
 2026-04-16 (Windows: fix ListBox/ComboBox nItemIndex inspector + runtime)
 
   FIXES

@@ -59,7 +59,7 @@ TForm::TForm()
    FGridDC = NULL;
    FGridW = FGridH = 0;
    FOverlay = NULL;
-   FBorderStyle = 0;
+   FBorderStyle = 2;  /* bsSizeable — matches Delphi/C++Builder default */
    FBorderIcons = 7;  /* biSystemMenu | biMinimize | biMaximize */
    FBorderWidth = 0;
    FPosition = 0;
@@ -199,16 +199,33 @@ void TForm::CreateHandle( HWND hParent )
          dwStyle = WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU | WS_MINIMIZEBOX |
                    WS_CLIPCHILDREN;
       }
-      else if( FToolWindow )
-      {
-         /* Compact caption, no taskbar entry (design form, inspector) */
-         dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN;
-         dwExStyle = WS_EX_TOOLWINDOW;
-      }
-      else if( FSizable || FDesignMode )
+      else if( FDesignMode )
          dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;
       else
-         dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_MODALFRAME | WS_CLIPCHILDREN;
+      {
+         switch( FBorderStyle )
+         {
+            case 0: /* bsNone */
+               dwStyle = WS_POPUP | WS_CLIPCHILDREN;
+               break;
+            case 1: /* bsSingle */
+               dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN;
+               break;
+            case 3: /* bsDialog */
+               dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_MODALFRAME | WS_CLIPCHILDREN;
+               break;
+            case 4: /* bsToolWindow */
+               dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN;
+               dwExStyle = WS_EX_TOOLWINDOW;
+               break;
+            case 5: /* bsSizeToolWin */
+               dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN;
+               dwExStyle = WS_EX_TOOLWINDOW;
+               break;
+            default: /* bsSizeable (2) */
+               dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN;
+         }
+      }
 
       FHandle = CreateWindowExA( dwExStyle, szClass, FText,
          dwStyle,

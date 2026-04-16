@@ -303,7 +303,7 @@ public:
    BOOL         FSizable;      /* resizable window */
    BOOL         FAppBar;       /* thin top-bar style (IDE main window) */
    BOOL         FToolWindow;   /* compact caption, no taskbar entry */
-   int          FBorderStyle;  /* 0=bsSizeable, 1=bsSingle, 2=bsNone, 3=bsToolWindow */
+   int          FBorderStyle;  /* 0=bsNone,1=bsSingle,2=bsSizeable,3=bsDialog,4=bsToolWindow,5=bsSizeToolWin */
    int          FBorderIcons;  /* bitfield: 1=biSystemMenu, 2=biMinimize, 4=biMaximize */
    int          FBorderWidth;
    int          FPosition;     /* 0=poDesigned, 1=poCenter, 2=poCenterScreen */

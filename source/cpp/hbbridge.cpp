@@ -844,7 +844,27 @@ HB_FUNC( UI_SETPROP )
    else if( lstrcmpi( szProp, "lToolWindow" ) == 0 && p->FControlType == CT_FORM )
       ((TForm*)p)->FToolWindow = hb_parl(3);
    else if( lstrcmpi( szProp, "nBorderStyle" ) == 0 && p->FControlType == CT_FORM )
-      ((TForm*)p)->FBorderStyle = hb_parni(3);
+   {
+      TForm * f = (TForm*)p;
+      f->FBorderStyle = hb_parni(3);
+      if( f->FHandle )
+      {
+         DWORD dwStyle, dwExStyle = 0;
+         switch( f->FBorderStyle )
+         {
+            case 0: dwStyle = WS_POPUP | WS_CLIPCHILDREN; break;
+            case 1: dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN; break;
+            case 3: dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | DS_MODALFRAME | WS_CLIPCHILDREN; break;
+            case 4: dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_CLIPCHILDREN; dwExStyle = WS_EX_TOOLWINDOW; break;
+            case 5: dwStyle = WS_POPUP | WS_CAPTION | WS_SYSMENU | WS_THICKFRAME | WS_CLIPCHILDREN; dwExStyle = WS_EX_TOOLWINDOW; break;
+            default: dwStyle = WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN; break;
+         }
+         SetWindowLongPtr( f->FHandle, GWL_STYLE, dwStyle );
+         SetWindowLongPtr( f->FHandle, GWL_EXSTYLE, dwExStyle );
+         SetWindowPos( f->FHandle, NULL, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED );
+      }
+   }
    else if( lstrcmpi( szProp, "nBorderIcons" ) == 0 && p->FControlType == CT_FORM )
       ((TForm*)p)->FBorderIcons = hb_parni(3);
    else if( lstrcmpi( szProp, "nBorderWidth" ) == 0 && p->FControlType == CT_FORM )
