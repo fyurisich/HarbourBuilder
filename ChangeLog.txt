@@ -1,6 +1,58 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-16 (macOS: TListBox/TComboBox aItems+nItemIndex, TForm nBorderStyle live update)
+
+  FEATURES
+  - TListBox: new aItems property exposed in the Inspector as an
+    editable array (same popup used by TTreeView). Backed by FHeaders;
+    an HBListBoxDataSource mirrors the pipe-separated string into a
+    flat NSTableView row list. The LISTBOX command in hbbuilder.ch
+    accepts an ITEMS clause; codegen emits and the parser restores it
+    from the generated .prg.
+  - TListBox: new nItemIndex property (1-based, default 1, valid
+    range 1..count, 0 = no selection). Reading via UI_GetProp,
+    writing via UI_SetProp, round-trips the NSTableView selection.
+    HBListBoxDataSource now also acts as NSTableViewDelegate and
+    fires OnChange with the 1-based index on user selection.
+  - TComboBox: aItems property exposed in the Inspector. FHeaders
+    is the source of truth; when set, FItems[] and the NSPopUpButton
+    are rebuilt. UI_ComboAddItem now also appends to FHeaders so the
+    two stay in sync with incremental additions from code.
+  - TComboBox: nItemIndex is 1-based like TListBox (default 1,
+    0 = no selection). New UI_SetProp handler for CT_COMBOBOX
+    converts 1↔0 at the NSPopUpButton boundary. TComboBox:Value
+    ASSIGN now routes through UI_SetProp so the round-trip is
+    consistent.
+  - TForm nBorderStyle: the style mask is now computed by a new
+    -[HBForm computeStyleMask] helper and applied live via
+    -[HBForm applyStyleMask]. Setting nBorderStyle, nBorderIcons,
+    lToolWindow or lAppBar in the Inspector updates the window
+    immediately without needing to reopen the form.
+  - TForm bsToolWindow / bsSizeToolWin: macOS honors
+    NSWindowStyleMaskUtilityWindow only on NSPanel, so tool windows
+    are now instantiated as NSPanel (setFloatingPanel:YES). A live
+    change between bsToolWindow and the other styles recreates the
+    window in applyStyleMask, preserving contentView, title, frame
+    and background color.
+  - nBorderStyle persistence: GenerateFormCode emits
+    `::BorderStyle := N` when not bsSizeable, and RestoreFormFromCode
+    recognizes the line and applies it via UI_SetProp. Runtime now
+    honors the value chosen in the designer.
+
+  FIXES
+  - nBorderStyle=bsDialog (and other non-resizable styles) now
+    actually prevents resizing. setStyleMask alone is unreliable
+    on already-visible NSWindows, so applyStyleMask also pins
+    minSize = maxSize = frame.size and hides the resize indicator
+    when the mask lacks NSWindowStyleMaskResizable. Restores
+    sensible min/unlimited max on resizable styles.
+  - applyStyleMask is now called at the end of createWindowWithRunLoop
+    so the min/max pinning is in place from the first frame the user
+    sees at runtime (previously the runtime window was briefly
+    non-resizable but then reverted to the default geometry
+    constraints).
+
 2026-04-15 (macOS: Inspector logical dropdown fix)
 
   FIXES

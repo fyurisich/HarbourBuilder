@@ -740,7 +740,17 @@ static function RegenerateFormCode( cName, hForm )
             case nType == 7  // ListBox
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' LISTBOX ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
-                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH)) + e
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               cVal := UI_GetProp( hCtrl, "aItems" )
+               if ! Empty( cVal )
+                  aHdrs := hb_ATokens( cVal, "|" )
+                  cCreate += ' ITEMS '
+                  for kk := 1 to Len( aHdrs )
+                     if kk > 1; cCreate += ', '; endif
+                     cCreate += '"' + AllTrim( aHdrs[kk] ) + '"'
+                  next
+               endif
+               cCreate += e
             case nType == 8  // RadioButton
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' RADIOBUTTON ::o' + cCtrlName + ' PROMPT "' + cText + '" OF ' + cParent + ' SIZE ' + ;
@@ -1073,6 +1083,10 @@ static function RegenerateFormCode( cName, hForm )
    if ValType( nInterval ) == "N" .and. nInterval > 0
       cCode += "   ::Position := " + LTrim(Str(nInterval)) + e
    endif
+   nInterval := UI_GetProp( hForm, "nBorderStyle" )
+   if ValType( nInterval ) == "N" .and. nInterval != 2  // != bsSizeable (default)
+      cCode += "   ::BorderStyle := " + LTrim(Str(nInterval)) + e
+   endif
    if ! Empty( cAppTitle )
       cCode += '   ::AppTitle := "' + cAppTitle + '"' + e
    endif
@@ -1152,6 +1166,10 @@ static function RestoreFormFromCode( hForm, cCode )
       endif
       if '::Position' $ cTrim .and. ':=' $ cTrim .and. ! "::o" $ cTrim
          UI_SetProp( hForm, "nPosition", Val( AllTrim( SubStr( cTrim, At( ":=", cTrim ) + 2 ) ) ) )
+         loop
+      endif
+      if '::BorderStyle' $ cTrim .and. ':=' $ cTrim .and. ! "::o" $ cTrim
+         UI_SetProp( hForm, "nBorderStyle", Val( AllTrim( SubStr( cTrim, At( ":=", cTrim ) + 2 ) ) ) )
          loop
       endif
       if '::AppTitle' $ cTrim .and. ':=' $ cTrim
@@ -1413,6 +1431,24 @@ static function RestoreFormFromCode( hForm, cCode )
             hCtrl := UI_GroupBoxNew( hForm, cText, nL, nT, nW, nH )
          case " LISTBOX " $ Upper( cTrim )
             hCtrl := UI_ListBoxNew( hForm, nL, nT, nW, nH )
+            nPos := At( "ITEMS ", Upper( cTrim ) )
+            if nPos > 0
+               cText := SubStr( cTrim, nPos + 6 )
+               cVal := ""
+               do while ! Empty( cText )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  cText := SubStr( cText, nPos2 + 1 )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  if ! Empty( cVal ); cVal += "|"; endif
+                  cVal += Left( cText, nPos2 - 1 )
+                  cText := SubStr( cText, nPos2 + 1 )
+               enddo
+               if hCtrl != 0 .and. ! Empty( cVal )
+                  UI_SetProp( hCtrl, "aItems", cVal )
+               endif
+            endif
          case " RADIOBUTTON " $ Upper( cTrim )
             hCtrl := UI_RadioButtonNew( hForm, cText, nL, nT, nW, nH )
          case " MEMO " $ Upper( cTrim )

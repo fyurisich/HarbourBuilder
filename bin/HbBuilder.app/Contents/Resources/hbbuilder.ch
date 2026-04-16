@@ -176,8 +176,10 @@
 #xcommand @ <nTop>, <nLeft> LISTBOX <oCtrl> ;
       [ OF <oParent> ] ;
       [ SIZE <nWidth>, <nHeight> ] ;
+      [ ITEMS <items,...> ] ;
    => ;
-      <oCtrl> := TListBox():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight> )
+      <oCtrl> := TListBox():New( <oParent>, <nLeft>, <nTop>, <nWidth>, <nHeight> ) ;
+      [; <oCtrl>:SetItems( \{ <items> \} ) ]
 
 // GroupBox
 #xcommand @ <nTop>, <nLeft> GROUPBOX <oCtrl> ;

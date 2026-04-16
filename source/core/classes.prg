@@ -336,7 +336,7 @@ return Self
 CLASS TComboBox INHERIT TControl
 
    ACCESS Value      INLINE UI_GetProp( ::hCpp, "nItemIndex" )
-   ASSIGN Value( n ) INLINE UI_ComboSetIndex( ::hCpp, n )
+   ASSIGN Value( n ) INLINE UI_SetProp( ::hCpp, "nItemIndex", n )
 
    METHOD New( oParent, nLeft, nTop, nWidth, nHeight )
    METHOD AddItem( cItem ) INLINE UI_ComboAddItem( ::hCpp, cItem )
@@ -409,7 +409,15 @@ return Self
 
 CLASS TListBox INHERIT TControl
 
+   DATA aItems   INIT {}
+
+   ACCESS nItemIndex      INLINE UI_GetProp( ::hCpp, "nItemIndex" )
+   ASSIGN nItemIndex( n ) INLINE UI_SetProp( ::hCpp, "nItemIndex", n )
+   ACCESS Value           INLINE UI_GetProp( ::hCpp, "nItemIndex" )
+   ASSIGN Value( n )      INLINE UI_SetProp( ::hCpp, "nItemIndex", n )
+
    METHOD New( oParent, nLeft, nTop, nWidth, nHeight )
+   METHOD SetItems( aLabels )
 
 ENDCLASS
 
@@ -420,6 +428,20 @@ METHOD New( oParent, nLeft, nTop, nWidth, nHeight ) CLASS TListBox
 
    ::oParent := oParent
    ::hCpp := UI_ListBoxNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight )
+
+return Self
+
+METHOD SetItems( aLabels ) CLASS TListBox
+
+   local cVal := "", i
+   if aLabels != nil .and. Len( aLabels ) > 0
+      for i := 1 to Len( aLabels )
+         if i > 1; cVal += "|"; endif
+         cVal += aLabels[i]
+      next
+      ::aItems := aLabels
+      UI_SetProp( ::hCpp, "aItems", cVal )
+   endif
 
 return Self
 

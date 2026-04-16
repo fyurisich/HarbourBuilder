@@ -326,6 +326,7 @@ void EnsureNSApp( void )
    BOOL        FAutoPage;   /* Auto-created page TPanel for a TPageControl tab */
    BOOL        FTransparent; /* TRUE = don't draw background (labels default TRUE) */
    int         nAlign;      /* 0=Left, 1=Center, 2=Right (text alignment) */
+   int         FListSelIndex; /* TListBox selected row (1-based, clamped 1..count) */
 }
 - (void)addChild:(HBControl *)child;
 - (void)setText:(const char *)text;
@@ -464,6 +465,8 @@ void EnsureNSApp( void )
 - (void)clearSelection;
 - (BOOL)isSelected:(HBControl *)ctrl;
 - (void)notifySelChange;
+- (NSUInteger)computeStyleMask;
+- (void)applyStyleMask;
 @end
 
 /* Form content view: fires form OnClick/OnMouseDown/OnMouseUp events at runtime */
@@ -748,6 +751,47 @@ static int         s_pendingPage   = 0;
 { (void)ov; (void)col; return item[@"text"]; }
 @end
 
+/* NSTableView data source + delegate for TListBox: flat list backed by
+ * FHeaders ("|"-separated string). Same pattern as HBTreeDataSource. */
+@interface HBListBoxDataSource : NSObject <NSTableViewDataSource, NSTableViewDelegate>
+{
+@public
+   __weak HBControl * owner;
+   NSMutableArray * items;   /* array of NSString */
+}
+- (void)rebuild;
+@end
+
+@implementation HBListBoxDataSource
+- (void)rebuild
+{
+   items = [NSMutableArray array];
+   HBControl * o = owner;
+   if( !o || !o->FHeaders[0] ) return;
+   NSString * s = [NSString stringWithUTF8String:o->FHeaders];
+   for( NSString * raw in [s componentsSeparatedByString:@"|"] )
+      if( [raw length] > 0 ) [items addObject:raw];
+}
+- (NSInteger)numberOfRowsInTableView:(NSTableView *)tv
+{ (void)tv; if( !items ) [self rebuild]; return (NSInteger)[items count]; }
+- (id)tableView:(NSTableView *)tv objectValueForTableColumn:(NSTableColumn *)col row:(NSInteger)row
+{
+   (void)tv; (void)col;
+   if( !items ) [self rebuild];
+   if( row < 0 || row >= (NSInteger)[items count] ) return @"";
+   return [items objectAtIndex:row];
+}
+- (void)tableViewSelectionDidChange:(NSNotification *)note
+{
+   HBControl * o = owner;
+   if( !o ) return;
+   NSTableView * tv = [note object];
+   NSInteger sel = [tv selectedRow];
+   o->FListSelIndex = ( sel >= 0 ) ? (int)(sel + 1) : 0;
+   [o fireEvent:o->FOnChange];
+}
+@end
+
 @implementation HBControl
 
 - (instancetype)init
@@ -766,6 +810,7 @@ static int         s_pendingPage   = 0;
       FCtrlParent = nil; FChildCount = 0;
       memset( FChildren, 0, sizeof(FChildren) );
       FOwnerCtrl = nil; FOwnerPage = 0; FAutoPage = NO; FTransparent = NO; nAlign = 0;
+      FListSelIndex = 1;
    }
    return self;
 }
@@ -817,6 +862,17 @@ static int         s_pendingPage   = 0;
          NSTableColumn * col = [[NSTableColumn alloc] initWithIdentifier:@"col"];
          [col setWidth:FWidth-20]; [tv addTableColumn:col]; [tv setHeaderView:nil];
          [sv setDocumentView:tv]; [sv setHasVerticalScroller:YES]; [sv setBorderType:NSBezelBorder];
+         HBListBoxDataSource * ds = [[HBListBoxDataSource alloc] init];
+         ds->owner = self;
+         [tv setDataSource:ds];
+         [tv setDelegate:ds];
+         static NSMutableArray * s_listBoxDS = nil;
+         if( !s_listBoxDS ) s_listBoxDS = [NSMutableArray array];
+         [s_listBoxDS addObject:ds];
+         [tv reloadData];
+         if( FListSelIndex >= 1 && FListSelIndex <= [tv numberOfRows] )
+            [tv selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)(FListSelIndex - 1)]
+               byExtendingSelection:NO];
          v = sv; break;
       }
       case CT_RADIO: {
@@ -1415,6 +1471,14 @@ static int         s_pendingPage   = 0;
 {
    if( FItemCount < 32 ) strncpy( FItems[FItemCount++], item, 63 );
    if( FView ) [(NSPopUpButton *)FView addItemWithTitle:[NSString stringWithUTF8String:item]];
+   size_t used = strlen( FHeaders );
+   size_t ilen = strlen( item );
+   size_t cap  = sizeof(FHeaders) - 1;
+   if( used + ilen + 1 < cap ) {
+      if( used > 0 ) FHeaders[used++] = '|';
+      memcpy( FHeaders + used, item, ilen );
+      FHeaders[used + ilen] = '\0';
+   }
 }
 
 - (void)setItemIndex:(int)idx
@@ -2376,6 +2440,97 @@ static HBPaletteTarget * s_palTarget = nil;
 
 @implementation HBForm
 
+- (NSUInteger)computeStyleMask
+{
+   NSUInteger style = 0;
+   if( FAppBar ) {
+      style = NSWindowStyleMaskBorderless;
+   } else {
+      switch( FBorderStyle ) {
+         case BS_NONE:
+            style = NSWindowStyleMaskBorderless;
+            break;
+         case BS_SINGLE:
+         case BS_DIALOG:
+            style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
+            if( FBorderIcons & 2 ) style |= NSWindowStyleMaskMiniaturizable;
+            break;
+         case BS_TOOLWINDOW:
+            style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
+                  | NSWindowStyleMaskUtilityWindow;
+            break;
+         case BS_SIZETOOLWIN:
+            style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
+                  | NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow;
+            break;
+         case BS_SIZEABLE:
+         default:
+            style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
+            if( FBorderIcons & 2 ) style |= NSWindowStyleMaskMiniaturizable;
+            if( FBorderIcons & 4 ) style |= NSWindowStyleMaskResizable;
+            break;
+      }
+      if( FSizable && FBorderStyle != BS_NONE )
+         style |= NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable;
+   }
+   return style;
+}
+
+- (void)applyStyleMask
+{
+   if( !FWindow ) return;
+   NSUInteger mask = [self computeStyleMask];
+
+   /* NSWindowStyleMaskUtilityWindow is honored only by NSPanel instances.
+    * If the required window class doesn't match the current one, rebuild
+    * the NSWindow/NSPanel while preserving contentView, title and frame. */
+   BOOL wantsPanel = ( FBorderStyle == BS_TOOLWINDOW || FBorderStyle == BS_SIZETOOLWIN );
+   BOOL isPanel    = [FWindow isKindOfClass:[NSPanel class]];
+   if( wantsPanel != isPanel )
+   {
+      NSRect frame    = [FWindow frame];
+      NSRect contentR = [FWindow contentRectForFrameRect:frame];
+      NSString * title = [FWindow title];
+      NSColor  * bg    = [FWindow backgroundColor];
+      BOOL wasVisible  = [FWindow isVisible];
+      NSView * content = [FWindow contentView];
+      [FWindow setContentView:[[NSView alloc] initWithFrame:NSZeroRect]];
+      [FWindow setDelegate:nil];
+      [FWindow orderOut:nil];
+
+      Class winClass = wantsPanel ? [NSPanel class] : [NSWindow class];
+      FWindow = [[winClass alloc] initWithContentRect:contentR
+         styleMask:mask
+         backing:NSBackingStoreBuffered defer:NO];
+      [FWindow setTitle:title];
+      [FWindow setDelegate:self];
+      [FWindow setReleasedWhenClosed:NO];
+      if( bg ) [FWindow setBackgroundColor:bg];
+      [FWindow setContentView:content];
+      if( wantsPanel ) [(NSPanel *)FWindow setFloatingPanel:YES];
+      [FWindow setFrame:frame display:YES];
+      if( wasVisible ) [FWindow makeKeyAndOrderFront:nil];
+   }
+   else
+   {
+      [FWindow setStyleMask:mask];
+   }
+
+   /* setStyleMask alone is unreliable on already-visible windows for
+    * disabling resize. Also pin min/max size when the style doesn't
+    * include Resizable, so the drag handle becomes a no-op. */
+   if( mask & NSWindowStyleMaskResizable ) {
+      [FWindow setMinSize:NSMakeSize(80, 50)];
+      [FWindow setMaxSize:NSMakeSize(FLT_MAX, FLT_MAX)];
+      [FWindow setShowsResizeIndicator:YES];
+   } else {
+      NSSize sz = [FWindow frame].size;
+      [FWindow setMinSize:sz];
+      [FWindow setMaxSize:sz];
+      [FWindow setShowsResizeIndicator:NO];
+   }
+}
+
 - (instancetype)init
 {
    self = [super init];
@@ -2514,45 +2669,17 @@ static HBPaletteTarget * s_palTarget = nil;
    }
 
    NSRect frame = NSMakeRect( 0, 0, FWidth, FHeight );
-   NSUInteger style = 0;
+   NSUInteger style = [self computeStyleMask];
 
-   if( FAppBar ) {
-      /* AppBar: no title bar, no shadow - thin strip flush with content below */
-      style = NSWindowStyleMaskBorderless;
-   }
-   else {
-      switch( FBorderStyle ) {
-         case BS_NONE:
-            style = NSWindowStyleMaskBorderless;
-            break;
-         case BS_SINGLE:
-         case BS_DIALOG:
-            style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
-            if( FBorderIcons & 2 ) style |= NSWindowStyleMaskMiniaturizable;
-            break;
-         case BS_TOOLWINDOW:
-            style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
-                  | NSWindowStyleMaskUtilityWindow;
-            break;
-         case BS_SIZETOOLWIN:
-            style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable
-                  | NSWindowStyleMaskResizable | NSWindowStyleMaskUtilityWindow;
-            break;
-         case BS_SIZEABLE:
-         default:
-            style = NSWindowStyleMaskTitled | NSWindowStyleMaskClosable;
-            if( FBorderIcons & 2 ) style |= NSWindowStyleMaskMiniaturizable;
-            if( FBorderIcons & 4 ) style |= NSWindowStyleMaskResizable;
-            break;
-      }
-      /* Legacy FSizable override */
-      if( FSizable && FBorderStyle != BS_NONE )
-         style |= NSWindowStyleMaskResizable | NSWindowStyleMaskMiniaturizable;
-   }
-
-   FWindow = [[NSWindow alloc] initWithContentRect:frame
+   /* NSWindowStyleMaskUtilityWindow is only honored by NSPanel instances;
+    * use NSPanel for tool/utility windows so bsToolWindow/bsSizeToolWin
+    * actually get the small title bar. */
+   BOOL isToolWin = ( FBorderStyle == BS_TOOLWINDOW || FBorderStyle == BS_SIZETOOLWIN );
+   Class winClass = isToolWin ? [NSPanel class] : [NSWindow class];
+   FWindow = [[winClass alloc] initWithContentRect:frame
       styleMask:style
       backing:NSBackingStoreBuffered defer:NO];
+   if( isToolWin ) [(NSPanel *)FWindow setFloatingPanel:YES];
    [FWindow setTitle:[NSString stringWithUTF8String:FText]];
    [FWindow setDelegate:self];
    [FWindow setReleasedWhenClosed:NO];
@@ -2648,6 +2775,9 @@ static HBPaletteTarget * s_palTarget = nil;
 
    [FWindow makeKeyAndOrderFront:nil];
    [NSApp activateIgnoringOtherApps:YES];
+
+   /* Pin min/max size if style doesn't include Resizable */
+   [self applyStyleMask];
 
    static int s_nRunLoopDepth = 0;
    if( enterLoop ) {
@@ -3871,6 +4001,49 @@ HB_FUNC( UI_SETPROP )
          }
       }
 
+      /* For ComboBox, re-populate FItems[] and NSPopUpButton from FHeaders */
+      if( p->FControlType == CT_COMBOBOX )
+      {
+         HBComboBox * cb = (HBComboBox *)p;
+         memset( cb->FItems, 0, sizeof(cb->FItems) );
+         cb->FItemCount = 0;
+         const char * src = cb->FHeaders;
+         while( src && *src && cb->FItemCount < 32 )
+         {
+            const char * sep = strchr( src, '|' );
+            int len = sep ? (int)(sep - src) : (int)strlen(src);
+            if( len > 63 ) len = 63;
+            memcpy( cb->FItems[cb->FItemCount], src, (size_t)len );
+            cb->FItems[cb->FItemCount][len] = '\0';
+            cb->FItemCount++;
+            src = sep ? sep + 1 : NULL;
+         }
+         if( cb->FView ) {
+            NSPopUpButton * pu = (NSPopUpButton *) cb->FView;
+            [pu removeAllItems];
+            for( int i = 0; i < cb->FItemCount; i++ )
+               [pu addItemWithTitle:[NSString stringWithUTF8String:cb->FItems[i]]];
+            if( cb->FItemIndex >= 0 && cb->FItemIndex < cb->FItemCount )
+               [pu selectItemAtIndex:cb->FItemIndex];
+         }
+      }
+
+      /* For ListBox, reload the NSTableView from FHeaders */
+      if( p->FControlType == CT_LISTBOX && p->FView )
+      {
+         NSScrollView * sv = (NSScrollView *) p->FView;
+         NSTableView * tv = (NSTableView *) [sv documentView];
+         if( tv ) {
+            id ds = [tv dataSource];
+            if( [ds isKindOfClass:[HBListBoxDataSource class]] )
+               [(HBListBoxDataSource *)ds rebuild];
+            [tv reloadData];
+            if( p->FListSelIndex >= 1 && p->FListSelIndex <= [tv numberOfRows] )
+               [tv selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)(p->FListSelIndex - 1)]
+                  byExtendingSelection:NO];
+         }
+      }
+
       /* For TTabControl, create/update NSTabView tabs immediately */
       if( p->FControlType == CT_TABCONTROL2 && p->FView )
       {
@@ -3952,6 +4125,25 @@ HB_FUNC( UI_SETPROP )
          }
       }
    }
+   else if( strcasecmp(szProp,"nItemIndex")==0 && p->FControlType == CT_COMBOBOX ) {
+      int idx1 = hb_parni(3);
+      [(HBComboBox *)p setItemIndex:( idx1 >= 1 ? idx1 - 1 : -1 )];
+   }
+   else if( strcasecmp(szProp,"nItemIndex")==0 && p->FControlType == CT_LISTBOX ) {
+      int idx = hb_parni(3);
+      p->FListSelIndex = idx;
+      if( p->FView ) {
+         NSScrollView * sv = (NSScrollView *) p->FView;
+         NSTableView * tv = (NSTableView *) [sv documentView];
+         if( tv ) {
+            if( idx >= 1 && idx <= [tv numberOfRows] )
+               [tv selectRowIndexes:[NSIndexSet indexSetWithIndex:(NSUInteger)(idx - 1)]
+                  byExtendingSelection:NO];
+            else
+               [tv deselectAll:nil];
+         }
+      }
+   }
    else if( strcasecmp(szProp,"aData")==0 && HB_ISCHAR(3) )
       strncpy( p->FData, hb_parc(3), sizeof(p->FData)-1 );
    else if( strcasecmp(szProp,"cDataSource")==0 && HB_ISCHAR(3) )
@@ -3964,15 +4156,26 @@ HB_FUNC( UI_SETPROP )
    }
    else if( strcasecmp(szProp,"lSizable")==0 && p->FControlType == CT_FORM )
       ((HBForm *)p)->FSizable = hb_parl(3);
-   else if( strcasecmp(szProp,"lAppBar")==0 && p->FControlType == CT_FORM )
-      ((HBForm *)p)->FAppBar = hb_parl(3);
-   else if( strcasecmp(szProp,"lToolWindow")==0 && p->FControlType == CT_FORM ) {
-      if( hb_parl(3) ) ((HBForm *)p)->FBorderStyle = BS_TOOLWINDOW;
+   else if( strcasecmp(szProp,"lAppBar")==0 && p->FControlType == CT_FORM ) {
+      HBForm * f = (HBForm *)p;
+      f->FAppBar = hb_parl(3);
+      [f applyStyleMask];
    }
-   else if( strcasecmp(szProp,"nBorderStyle")==0 && p->FControlType == CT_FORM )
-      ((HBForm *)p)->FBorderStyle = hb_parni(3);
-   else if( strcasecmp(szProp,"nBorderIcons")==0 && p->FControlType == CT_FORM )
-      ((HBForm *)p)->FBorderIcons = hb_parni(3);
+   else if( strcasecmp(szProp,"lToolWindow")==0 && p->FControlType == CT_FORM ) {
+      HBForm * f = (HBForm *)p;
+      if( hb_parl(3) ) f->FBorderStyle = BS_TOOLWINDOW;
+      [f applyStyleMask];
+   }
+   else if( strcasecmp(szProp,"nBorderStyle")==0 && p->FControlType == CT_FORM ) {
+      HBForm * f = (HBForm *)p;
+      f->FBorderStyle = hb_parni(3);
+      [f applyStyleMask];
+   }
+   else if( strcasecmp(szProp,"nBorderIcons")==0 && p->FControlType == CT_FORM ) {
+      HBForm * f = (HBForm *)p;
+      f->FBorderIcons = hb_parni(3);
+      [f applyStyleMask];
+   }
    else if( strcasecmp(szProp,"nPosition")==0 && p->FControlType == CT_FORM )
       ((HBForm *)p)->FPosition = hb_parni(3);
    else if( strcasecmp(szProp,"nWindowState")==0 && p->FControlType == CT_FORM ) {
@@ -4226,8 +4429,12 @@ HB_FUNC( UI_GETPROP )
       if( f->FWindow ) hb_retni( (int)[[f->FWindow contentView] bounds].size.height );
       else hb_retni( f->FHeight );
    }
-   else if( strcasecmp(szProp,"nItemIndex")==0 && p->FControlType==CT_COMBOBOX )
-      hb_retni( ((HBComboBox *)p)->FItemIndex );
+   else if( strcasecmp(szProp,"nItemIndex")==0 && p->FControlType==CT_COMBOBOX ) {
+      int ix = ((HBComboBox *)p)->FItemIndex;
+      hb_retni( ix >= 0 ? ix + 1 : 0 );
+   }
+   else if( strcasecmp(szProp,"nItemIndex")==0 && p->FControlType==CT_LISTBOX )
+      hb_retni( p->FListSelIndex );
    else if( strcasecmp(szProp,"nClrPane")==0 )   hb_retnint( (HB_MAXINT)p->FClrPane );
    else if( strcasecmp(szProp,"nClrText")==0 )   hb_retnint( (HB_MAXINT)p->FClrText );
    else if( strcasecmp(szProp,"oFont")==0 ) {
@@ -4391,9 +4598,13 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_L("lReadOnly",((HBEdit*)p)->FReadOnly,"Behavior");
          ADD_L("lPassword",((HBEdit*)p)->FPassword,"Behavior");
          ADD_D("nAlign",p->nAlign,"Left|Center|Right","Appearance"); break;
-      case CT_COMBOBOX:
-         ADD_N("nItemIndex",((HBComboBox*)p)->FItemIndex,"Data");
-         ADD_N("nItemCount",((HBComboBox*)p)->FItemCount,"Data"); break;
+      case CT_COMBOBOX: {
+         HBComboBox * cb = (HBComboBox *)p;
+         int ix = cb->FItemIndex;
+         ADD_A("aItems",p->FHeaders,"Data");
+         ADD_N("nItemIndex", ix >= 0 ? ix + 1 : 0, "Data");
+         ADD_N("nItemCount",cb->FItemCount,"Data"); break;
+      }
       case CT_DBFTABLE: {
          int rddIdx = 0;
          if( strcasecmp(p->FRdd,"DBFNTX") == 0 ) rddIdx = 1;
@@ -4414,6 +4625,9 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_A("aTabs",p->FHeaders,"Behavior"); break;
       case CT_TREEVIEW:
          ADD_A("aItems",p->FHeaders,"Data"); break;
+      case CT_LISTBOX:
+         ADD_A("aItems",p->FHeaders,"Data");
+         ADD_N("nItemIndex",p->FListSelIndex,"Data"); break;
    }
    hb_itemReturnRelease(pArray);
 }
