@@ -649,6 +649,7 @@ static function RegenerateFormCode( cName, hForm )
    local aMethodNames, cMethodName
    local lCommented
    local nWSPort, cWSRoot, nWSTimeout, nWSMaxUpload, lWSHttps, lWSTrace, cWSCookie, nWSTTL
+   local cBandFields, aBandField, aBandRec, cBandFldLine
 
    // Read existing code to find declared event handlers
    cExistingCode := ""
@@ -1003,6 +1004,42 @@ static function RegenerateFormCode( cName, hForm )
                   cCreate += ' TYPE "' + cVal + '"'
                endif
                cCreate += e
+               // Emit REPORTFIELD lines for each field stored in this band
+               cBandFields := UI_GetProp( hCtrl, "aData" )
+               if ! Empty( cBandFields )
+                  aBandField := hb_ATokens( cBandFields, Chr(10) )
+                  for kk := 1 to Len( aBandField )
+                     cBandFldLine := AllTrim( aBandField[kk] )
+                     if Empty( cBandFldLine ); loop; endif
+                     aBandRec := hb_ATokens( cBandFldLine, "|" )
+                     // name|type|text|field|format|top|left|w|h|font|fontsize|bold|italic|align
+                     if Len( aBandRec ) >= 14
+                        cCreate += '   REPORTFIELD ::o' + aBandRec[1] + ;
+                           ' TYPE "' + aBandRec[2] + '"'
+                        if ! Empty( aBandRec[3] )
+                           cCreate += ' PROMPT "' + aBandRec[3] + '"'
+                        endif
+                        if ! Empty( aBandRec[4] )
+                           cCreate += ' FIELD "' + aBandRec[4] + '"'
+                        endif
+                        if ! Empty( aBandRec[5] )
+                           cCreate += ' FORMAT "' + aBandRec[5] + '"'
+                        endif
+                        cCreate += ' OF ::o' + cCtrlName + ;
+                           ' AT ' + aBandRec[6] + ',' + aBandRec[7] + ;
+                           ' SIZE ' + aBandRec[8] + ',' + aBandRec[9]
+                        if aBandRec[10] != "Sans" .or. Val(aBandRec[11]) != 10
+                           cCreate += ' FONT "' + aBandRec[10] + '",' + aBandRec[11]
+                        endif
+                        if aBandRec[12] == "1"; cCreate += ' BOLD';   endif
+                        if aBandRec[13] == "1"; cCreate += ' ITALIC'; endif
+                        if Val(aBandRec[14]) != 0
+                           cCreate += ' ALIGN ' + aBandRec[14]
+                        endif
+                        cCreate += e
+                     endif
+                  next
+               endif
             case nType == 80  // DBGrid
                cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
                   ' DBGRID ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
@@ -1362,6 +1399,9 @@ static function RestoreFormFromCode( hForm, cCode )
    local aLines, cLine, cTrim, i, j, nType, nCount, lInCreateForm
    local nT, nL, nW, nH, cText, cName, hCtrl
    local nPos, nPos2, cTitle, cVal, cPropName, kk, nColCount
+   local cFldName, cFldType, cFldPrompt, cFldField, cFldFormat
+   local cFldFont, nFldFontSize, lFldBold, lFldItalic, nFldAlign
+   local cBandName, hBandCtrl, cFldSerial, cExistFields
 
    if Empty( cCode ) .or. hForm == 0
       return nil
@@ -1655,6 +1695,143 @@ static function RestoreFormFromCode( hForm, cCode )
                   exit
                endif
             next
+         endif
+         loop
+      endif
+
+      // Parse REPORTFIELD lines: REPORTFIELD ::oFldN TYPE "..." ... OF ::oBandN AT top,left SIZE w,h ...
+      if Left( Upper( cTrim ), 12 ) == "REPORTFIELD "
+         // Extract field variable name (::oFldN -> "FldN")
+         nPos := At( "::o", cTrim )
+         if nPos > 0
+            cFldName := SubStr( cTrim, nPos + 3 )
+            nPos2 := At( " ", cFldName )
+            if nPos2 > 0; cFldName := Left( cFldName, nPos2 - 1 ); endif
+         else
+            cFldName := ""
+         endif
+
+         // Extract TYPE "..."
+         cFldType := "text"
+         nPos := At( ' TYPE "', cTrim )
+         if nPos > 0
+            cFldType := SubStr( cTrim, nPos + 7 )
+            nPos2 := At( '"', cFldType )
+            if nPos2 > 0; cFldType := Left( cFldType, nPos2 - 1 ); endif
+         endif
+
+         // Extract PROMPT "..."
+         cFldPrompt := ""
+         nPos := At( ' PROMPT "', cTrim )
+         if nPos > 0
+            cFldPrompt := SubStr( cTrim, nPos + 9 )
+            nPos2 := At( '"', cFldPrompt )
+            if nPos2 > 0; cFldPrompt := Left( cFldPrompt, nPos2 - 1 ); endif
+         endif
+
+         // Extract FIELD "..."
+         cFldField := ""
+         nPos := At( ' FIELD "', cTrim )
+         if nPos > 0
+            cFldField := SubStr( cTrim, nPos + 8 )
+            nPos2 := At( '"', cFldField )
+            if nPos2 > 0; cFldField := Left( cFldField, nPos2 - 1 ); endif
+         endif
+
+         // Extract FORMAT "..."
+         cFldFormat := ""
+         nPos := At( ' FORMAT "', cTrim )
+         if nPos > 0
+            cFldFormat := SubStr( cTrim, nPos + 9 )
+            nPos2 := At( '"', cFldFormat )
+            if nPos2 > 0; cFldFormat := Left( cFldFormat, nPos2 - 1 ); endif
+         endif
+
+         // Extract OF ::oBandName
+         cBandName := ""
+         nPos := At( " OF ::o", cTrim )
+         if nPos > 0
+            cBandName := SubStr( cTrim, nPos + 7 )
+            nPos2 := At( " ", cBandName )
+            if nPos2 > 0; cBandName := Left( cBandName, nPos2 - 1 ); endif
+         endif
+
+         // Extract AT top, left
+         nT := 0; nL := 0
+         nPos := At( " AT ", Upper( cTrim ) )
+         if nPos > 0
+            cVal := AllTrim( SubStr( cTrim, nPos + 4 ) )
+            nT := Val( cVal )
+            nPos2 := At( ",", cVal )
+            if nPos2 > 0; nL := Val( SubStr( cVal, nPos2 + 1 ) ); endif
+         endif
+
+         // Extract SIZE w, h
+         nW := 80; nH := 14
+         nPos := At( " SIZE ", Upper( cTrim ) )
+         if nPos > 0
+            cVal := AllTrim( SubStr( cTrim, nPos + 6 ) )
+            nW := Val( cVal )
+            nPos2 := At( ",", cVal )
+            if nPos2 > 0; nH := Val( SubStr( cVal, nPos2 + 1 ) ); endif
+         endif
+
+         // Extract FONT "name", size
+         cFldFont := "Sans"
+         nFldFontSize := 10
+         nPos := At( ' FONT "', cTrim )
+         if nPos > 0
+            cFldFont := SubStr( cTrim, nPos + 7 )
+            nPos2 := At( '"', cFldFont )
+            if nPos2 > 0
+               cFldFont := Left( cFldFont, nPos2 - 1 )
+               // Look for size after closing quote: FONT "name",14
+               cVal := AllTrim( SubStr( cTrim, nPos + 7 + nPos2 ) )
+               if Left( cVal, 1 ) == ","
+                  nFldFontSize := Val( AllTrim( SubStr( cVal, 2 ) ) )
+                  if nFldFontSize < 1; nFldFontSize := 10; endif
+               endif
+            endif
+         endif
+
+         // Extract BOLD and ITALIC flags
+         lFldBold   := " BOLD"   $ Upper( cTrim )
+         lFldItalic := " ITALIC" $ Upper( cTrim )
+
+         // Extract ALIGN n
+         nFldAlign := 0
+         nPos := At( " ALIGN ", Upper( cTrim ) )
+         if nPos > 0
+            nFldAlign := Val( AllTrim( SubStr( cTrim, nPos + 7 ) ) )
+         endif
+
+         // Find the parent band control by name and append serialized field data
+         // Format per field (pipe-separated): name|type|text|field|format|top|left|w|h|font|fontsize|bold|italic|align
+         if ! Empty( cBandName )
+            nCount := UI_GetChildCount( hForm )
+            hBandCtrl := 0
+            for kk := 1 to nCount
+               if AllTrim( UI_GetProp( UI_GetChild( hForm, kk ), "cName" ) ) == cBandName
+                  hBandCtrl := UI_GetChild( hForm, kk )
+                  exit
+               endif
+            next
+            if hBandCtrl != 0
+               cFldSerial := cFldName + "|" + cFldType + "|" + cFldPrompt + "|" + ;
+                  cFldField + "|" + cFldFormat + "|" + ;
+                  LTrim(Str(nT)) + "|" + LTrim(Str(nL)) + "|" + ;
+                  LTrim(Str(nW)) + "|" + LTrim(Str(nH)) + "|" + ;
+                  cFldFont + "|" + LTrim(Str(nFldFontSize)) + "|" + ;
+                  iif( lFldBold, "1", "0" ) + "|" + ;
+                  iif( lFldItalic, "1", "0" ) + "|" + ;
+                  LTrim(Str(nFldAlign))
+               cExistFields := UI_GetProp( hBandCtrl, "aData" )
+               if Empty( cExistFields )
+                  UI_SetProp( hBandCtrl, "aData", cFldSerial )
+               else
+                  UI_SetProp( hBandCtrl, "aData", cExistFields + Chr(10) + cFldSerial )
+               endif
+            endif
          endif
          loop
       endif
