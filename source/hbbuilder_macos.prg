@@ -3074,11 +3074,15 @@ static function TBRun()
       MAC_ShellExec( "cp " + HB_DirBase() + "../Resources/hbbuilder.ch " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + HB_DirBase() + "../Resources/hbide.ch " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + HB_DirBase() + "../Resources/stddlgs_mac.mm " + cBuildDir + "/ 2>/dev/null" )
+      MAC_ShellExec( "cp " + HB_DirBase() + "../Resources/hix_runtime.prg " + cBuildDir + "/ 2>/dev/null" )
+      MAC_ShellExec( "cp " + HB_DirBase() + "../Resources/hix_template.prg " + cBuildDir + "/ 2>/dev/null" )
    else
       MAC_ShellExec( "cp " + cProjDir + "/source/core/classes.prg " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/include/hbbuilder.ch " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/include/hbide.ch " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/resources/stddlgs_mac.mm " + cBuildDir + "/ 2>/dev/null" )
+      MAC_ShellExec( "cp " + cProjDir + "/source/hix_runtime.prg " + cBuildDir + "/ 2>/dev/null" )
+      MAC_ShellExec( "cp " + cProjDir + "/source/hix_template.prg " + cBuildDir + "/ 2>/dev/null" )
    endif
 
    // Step 2: Assemble main.prg
@@ -3127,6 +3131,26 @@ static function TBRun()
       else
          cLog += "    OK" + Chr(10)
       endif
+      cCmd := cHbBin + "/harbour " + cBuildDir + "/hix_runtime.prg -n -w -q" + ;
+              " -I" + cHbInc + " -I" + cBuildDir + ;
+              " -o" + cBuildDir + "/hix_runtime.c 2>&1"
+      cOutput := MAC_ShellExec( cCmd )
+      if ! Empty( cOutput ) .and. "error" $ Lower( cOutput )
+         cLog += "    hix_runtime FAILED:" + Chr(10) + cOutput + Chr(10)
+         lError := .T.
+      else
+         cLog += "    hix_runtime OK" + Chr(10)
+      endif
+      cCmd := cHbBin + "/harbour " + cBuildDir + "/hix_template.prg -n -w -q" + ;
+              " -I" + cHbInc + " -I" + cBuildDir + ;
+              " -o" + cBuildDir + "/hix_template.c 2>&1"
+      cOutput := MAC_ShellExec( cCmd )
+      if ! Empty( cOutput ) .and. "error" $ Lower( cOutput )
+         cLog += "    hix_template FAILED:" + Chr(10) + cOutput + Chr(10)
+         lError := .T.
+      else
+         cLog += "    hix_template OK" + Chr(10)
+      endif
    endif
 
    // Step 5: Compile C
@@ -3151,6 +3175,24 @@ static function TBRun()
       else
          cLog += "    OK" + Chr(10)
       endif
+      cCmd := "clang -c -O2 -Wno-unused-value -I" + cHbInc + ;
+              " " + cBuildDir + "/hix_runtime.c -o " + cBuildDir + "/hix_runtime.o 2>&1"
+      cOutput := MAC_ShellExec( cCmd )
+      if ! Empty( cOutput ) .and. "error" $ Lower( cOutput )
+         cLog += "    FAILED hix_runtime.c:" + Chr(10) + cOutput + Chr(10)
+         lError := .T.
+      else
+         cLog += "    hix_runtime.o OK" + Chr(10)
+      endif
+      cCmd := "clang -c -O2 -Wno-unused-value -I" + cHbInc + ;
+              " " + cBuildDir + "/hix_template.c -o " + cBuildDir + "/hix_template.o 2>&1"
+      cOutput := MAC_ShellExec( cCmd )
+      if ! Empty( cOutput ) .and. "error" $ Lower( cOutput )
+         cLog += "    FAILED hix_template.c:" + Chr(10) + cOutput + Chr(10)
+         lError := .T.
+      else
+         cLog += "    hix_template.o OK" + Chr(10)
+      endif
    endif
 
    // Step 6: Compile Cocoa backend + editor + GT dummy
@@ -3160,6 +3202,10 @@ static function TBRun()
       cCmd := "clang -c -O2 -fobjc-arc -I" + cHbInc + ;
               " " + cBackends + "/cocoa_core.m" + ;
               " -o " + cBuildDir + "/cocoa_core.o 2>&1"
+      MAC_ShellExec( cCmd )
+      cCmd := "clang -c -O2 -fobjc-arc -I" + cHbInc + ;
+              " " + cBackends + "/cocoa_webserver.m" + ;
+              " -o " + cBuildDir + "/cocoa_webserver.o 2>&1"
       MAC_ShellExec( cCmd )
       cCmd := "clang++ -c -O2 -std=c++17 -fobjc-arc -I" + cHbInc + ;
               " -I" + cSciInc + ;
@@ -3189,9 +3235,12 @@ static function TBRun()
               " " + cBuildDir + "/main.o" + ;
               " " + cBuildDir + "/classes.o" + ;
               " " + cBuildDir + "/cocoa_core.o" + ;
+              " " + cBuildDir + "/cocoa_webserver.o" + ;
               " " + cBuildDir + "/cocoa_editor.o" + ;
               " " + cBuildDir + "/gt_dummy.o" + ;
               If( File( cBuildDir + "/stddlgs_mac.o" ), " " + cBuildDir + "/stddlgs_mac.o", "" ) + ;
+              " " + cBuildDir + "/hix_runtime.o" + ;
+              " " + cBuildDir + "/hix_template.o" + ;
               " " + cSciLib + "/libscintilla.a" + ;
               " " + cSciLib + "/liblexilla.a" + ;
               " -L" + cHbLib + ;
@@ -3323,12 +3372,16 @@ static function TBDebugRun()
       MAC_ShellExec( "cp " + cResDir + "/hbide.ch " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cResDir + "/dbgclient.prg " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cResDir + "/stddlgs_mac.mm " + cBuildDir + "/ 2>/dev/null" )
+      MAC_ShellExec( "cp " + cResDir + "/hix_runtime.prg " + cBuildDir + "/ 2>/dev/null" )
+      MAC_ShellExec( "cp " + cResDir + "/hix_template.prg " + cBuildDir + "/ 2>/dev/null" )
    else
       MAC_ShellExec( "cp " + cProjDir + "/source/core/classes.prg " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/include/hbbuilder.ch " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/include/hbide.ch " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/source/debugger/dbgclient.prg " + cBuildDir + "/" )
       MAC_ShellExec( "cp " + cProjDir + "/resources/stddlgs_mac.mm " + cBuildDir + "/ 2>/dev/null" )
+      MAC_ShellExec( "cp " + cProjDir + "/source/hix_runtime.prg " + cBuildDir + "/ 2>/dev/null" )
+      MAC_ShellExec( "cp " + cProjDir + "/source/hix_template.prg " + cBuildDir + "/ 2>/dev/null" )
    endif
 
    // Step 2: Assemble debug_main.prg (tracking line offsets for each section)
@@ -3369,6 +3422,15 @@ static function TBDebugRun()
    // dbgclient.prg (debug — not in editor)
    AAdd( aDbgOffsets, { nCurLine, "dbgclient.prg", 0, 0 } )
    cAllPrg += MemoRead( cBuildDir + "/dbgclient.prg" ) + Chr(10)
+
+   // hix_runtime.prg (web server runtime — not in editor)
+   if File( cBuildDir + "/hix_runtime.prg" )
+      cAllPrg += MemoRead( cBuildDir + "/hix_runtime.prg" ) + Chr(10)
+   endif
+   // hix_template.prg (template engine — not in editor)
+   if File( cBuildDir + "/hix_template.prg" )
+      cAllPrg += MemoRead( cBuildDir + "/hix_template.prg" ) + Chr(10)
+   endif
 
    MemoWrit( cBuildDir + "/debug_main.prg", cAllPrg )
 
@@ -3419,6 +3481,10 @@ static function TBDebugRun()
               " " + cBackends + "/cocoa_core.m" + ;
               " -o " + cBuildDir + "/cocoa_core.o 2>&1"
       MAC_ShellExec( cCmd )
+      cCmd := "clang -c -O2 -fobjc-arc -I" + cHbInc + ;
+              " " + cBackends + "/cocoa_webserver.m" + ;
+              " -o " + cBuildDir + "/cocoa_webserver.o 2>&1"
+      MAC_ShellExec( cCmd )
       cCmd := "clang++ -c -O2 -std=c++17 -fobjc-arc -I" + cHbInc + ;
               " -I" + cSciInc + " -I" + cSciCocoa + " -I" + cLexInc + ;
               " " + cBackends + "/cocoa_editor.mm" + ;
@@ -3444,6 +3510,7 @@ static function TBDebugRun()
               " " + cBuildDir + "/debug_main.o" + ;
               " " + cBuildDir + "/dbghook.o" + ;
               " " + cBuildDir + "/cocoa_core.o" + ;
+              " " + cBuildDir + "/cocoa_webserver.o" + ;
               " " + cBuildDir + "/cocoa_editor.o" + ;
               " " + cBuildDir + "/gt_dummy.o" + ;
               If( File( cBuildDir + "/stddlgs_mac.o" ), " " + cBuildDir + "/stddlgs_mac.o", "" ) + ;
