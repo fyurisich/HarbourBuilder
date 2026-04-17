@@ -1684,6 +1684,15 @@ static void InsPopulateEvents( INSDATA * d )
          AC("Error");
          AE("OnError");
          break;
+      case 102: /* CT_PRINTER */
+         AC("Document");
+         AE("OnBeginDoc");
+         AE("OnEndDoc");
+         AC("Page");
+         AE("OnNewPage");
+         AC("Error");
+         AE("OnError");
+         break;
       case 22: /* CT_PROGRESSBAR */
          break;
       case 34: /* CT_TRACKBAR */

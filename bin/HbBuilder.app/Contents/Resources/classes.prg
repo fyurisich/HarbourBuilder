@@ -2477,6 +2477,17 @@ CLASS TPrinter
    DATA lPreview     INIT .F.
    DATA nPageWidth   INIT 0
    DATA nPageHeight  INIT 0
+
+   DATA bOnBeginDoc  INIT nil
+   DATA bOnEndDoc    INIT nil
+   DATA bOnNewPage   INIT nil
+   DATA bOnError     INIT nil
+
+   ASSIGN OnBeginDoc( b ) INLINE ::bOnBeginDoc := b
+   ASSIGN OnEndDoc( b )   INLINE ::bOnEndDoc   := b
+   ASSIGN OnNewPage( b )  INLINE ::bOnNewPage  := b
+   ASSIGN OnError( b )    INLINE ::bOnError    := b
+
    METHOD New() CONSTRUCTOR
    METHOD BeginDoc( cTitle )
    METHOD EndDoc()
@@ -2491,12 +2502,15 @@ return Self
 
 METHOD BeginDoc( cTitle ) CLASS TPrinter
    HB_SYMBOL_UNUSED( cTitle )
+   if ::bOnBeginDoc != nil; Eval( ::bOnBeginDoc ); endif
 return nil
 
 METHOD EndDoc() CLASS TPrinter
+   if ::bOnEndDoc != nil; Eval( ::bOnEndDoc ); endif
 return nil
 
 METHOD NewPage() CLASS TPrinter
+   if ::bOnNewPage != nil; Eval( ::bOnNewPage ); endif
 return nil
 
 METHOD PrintLine( nRow, nCol, cText ) CLASS TPrinter

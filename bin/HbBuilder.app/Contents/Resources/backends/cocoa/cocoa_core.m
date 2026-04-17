@@ -7223,6 +7223,7 @@ HB_FUNC( UI_PALETTELOADIMAGES )
             else if( ct == CT_PAINTBOX )       { sym = @"paintpalette.fill";      clr = nil; /* multicolor */        }
             else if( ct == CT_WEBVIEW )        { sym = @"safari";                 clr = nil; /* multicolor */        }
             else if( ct == CT_WEBSERVER )      { sym = @"network";                clr = [NSColor systemTealColor];   }
+            else if( ct == CT_PRINTER )        { sym = @"printer.fill";           clr = [NSColor systemGrayColor];   }
             if( sym && flat < (int)[icons count] ) {
                NSImage * glyph = [NSImage imageWithSystemSymbolName:sym
                   accessibilityDescription:nil];
