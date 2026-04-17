@@ -2623,7 +2623,7 @@ METHOD Print() CLASS TReport
    ::RenderBand( ::GetDesignBand( "Header" ) )
    ::RenderBand( ::GetDesignBand( "PageHeader" ) )
 
-   if ::oDataSource != nil .and. ::oDataSource:oDatabase != nil
+   if ::oDataSource != nil .and. ::oDataSource:oDatabase != nil .and. ::oDataSource:oDatabase:IsConnected()
       ::oDataSource:oDatabase:GoTop()
       while ! ::oDataSource:oDatabase:Eof()
          oBand := ::GetDesignBand( "Detail" )
