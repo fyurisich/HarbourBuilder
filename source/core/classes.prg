@@ -2775,13 +2775,24 @@ METHOD Dispatch( cMethod, cPath, cQuery, cBody, cIP ) CLASS TWebServer
    local i, aRoute, xHandler
    local cFilePath
 
+   HB_SYMBOL_UNUSED( cQuery )
+   HB_SYMBOL_UNUSED( cBody )
+   HB_SYMBOL_UNUSED( cIP )
+
    // Set cRoot for UView() and static file helpers
    HIX_SetRoot( ::cRoot )
+
+   // Guard against path traversal
+   if ".." $ cPath
+      UI_HIX_SETSTATUS( 400 )
+      UI_HIX_WRITE( "<h1>400 Bad Request</h1>" )
+      return nil
+   endif
 
    // Try registered routes first
    for i := 1 to Len( ::aRoutes )
       aRoute := ::aRoutes[ i ]
-      if ( aRoute[1] == "*" .or. Upper(aRoute[1]) == Upper(cMethod) ) .and. aRoute[2] == cPath
+      if ( aRoute[1] == "*" .or. aRoute[1] == Upper(cMethod) ) .and. aRoute[2] == cPath
          xHandler := aRoute[3]
          if ValType( xHandler ) == "B"
             Eval( xHandler )
@@ -2801,7 +2812,11 @@ METHOD Dispatch( cMethod, cPath, cQuery, cBody, cIP ) CLASS TWebServer
       HIX_ServeStatic( cFilePath )
    else
       UI_HIX_SETSTATUS( 404 )
-      UI_HIX_WRITE( "<h1>404 Not Found</h1><p>" + cPath + "</p>" )
+      if hb_hHasKey( ::hErrorPages, 404 ) .and. File( ::hErrorPages[ 404 ] )
+         HIX_ServeStatic( ::hErrorPages[ 404 ] )
+      else
+         UI_HIX_WRITE( "<h1>404 Not Found</h1><p>" + cPath + "</p>" )
+      endif
       if ::bOnError != nil; Eval( ::bOnError, 404, cPath ); endif
    endif
 

@@ -55,11 +55,6 @@ function Main()
    next
    ?
 
-   // Test static file serving
-   MemoWrit( "/tmp/test_static.txt", "Static file content" )
-   ? "   ServeStatic('test_static.txt'): " + oSrv:ServeStatic( "test_static.txt" )
-   ? "   ServeStatic('missing.txt'): " + oSrv:ServeStatic( "missing.txt" )
-
    ?
    ? "=== Done ==="
 
