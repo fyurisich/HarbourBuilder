@@ -170,6 +170,7 @@
 #define CT_GITMERGE        130
 // Non-visual: Data containers
 #define CT_COMPARRAY       131
+#define CT_BAND            132
 
 // Alignment
 #define ALIGN_LEFT         0
