@@ -1042,6 +1042,146 @@ METHOD LoadFromDataSource( oForm ) CLASS TBrowse
 return Self
 
 //----------------------------------------------------------------------------//
+// TDBGrid - Database-aware grid control
+//----------------------------------------------------------------------------//
+
+CLASS TDBGrid INHERIT TControl
+
+   DATA aColumns      INIT {}
+   DATA oDataSource   INIT ""
+   DATA oForm         INIT nil   // kept for Refresh()
+
+   METHOD New( oParent, nLeft, nTop, nWidth, nHeight )
+   METHOD SetupColumns( cColumnsDef )
+   METHOD AddColumn( cTitle, nWidth, nAlign )
+   METHOD LoadFromDataSource( oForm )
+   METHOD Refresh()
+
+ENDCLASS
+
+METHOD New( oParent, nLeft, nTop, nWidth, nHeight ) CLASS TDBGrid
+
+   if nWidth == nil;  nWidth := 400; endif
+   if nHeight == nil; nHeight := 200; endif
+
+   ::oParent := oParent
+   ::hCpp := UI_DBGridNew( oParent:hCpp, nLeft, nTop, nWidth, nHeight )
+
+return Self
+
+METHOD SetupColumns( aColsDef ) CLASS TDBGrid
+
+   local i, cTitle, nWidth
+
+   if ValType( aColsDef ) != "A"; return Self; endif
+   for i := 1 to Len( aColsDef )
+      if ValType( aColsDef[i] ) == "A"
+         cTitle := aColsDef[i][1]
+         nWidth := iif( Len( aColsDef[i] ) > 1, aColsDef[i][2], 100 )
+      else
+         cTitle := aColsDef[i]
+         nWidth := 100
+      endif
+      ::AddColumn( cTitle, nWidth )
+   next
+
+return Self
+
+METHOD AddColumn( cTitle, nWidth, nAlign ) CLASS TDBGrid
+
+   local hCol
+
+   if nWidth == nil; nWidth := 100; endif
+   if nAlign == nil; nAlign := 0; endif
+   hCol := UI_BrowseAddCol( ::hCpp, cTitle, "", nWidth, nAlign )
+   AAdd( ::aColumns, hCol )
+
+return Self
+
+METHOD LoadFromDataSource( oForm ) CLASS TDBGrid
+
+   local cDS, oComp, nFields, i, aData, aHeaders, j
+   local aAllRows := {}, aRow, xVal
+
+   ::oForm := oForm
+   cDS := ::oDataSource
+   if Empty( cDS )
+      return Self
+   endif
+
+   if ! __objHasMsg( oForm, "o" + cDS )
+      return Self
+   endif
+   oComp := __objSendMsg( oForm, "o" + cDS )
+   if oComp == nil
+      return Self
+   endif
+
+   if ! __objHasMethod( oComp, "FIELDCOUNT" )
+      // TCompArray datasource
+      if ! __objHasMethod( oComp, "GETARRAY" )
+         return Self
+      endif
+      aData    := oComp:GetArray()
+      aHeaders := oComp:GetHeaders()
+      if Len( ::aColumns ) == 0
+         for i := 1 to Len( aHeaders )
+            ::AddColumn( aHeaders[i], 100 )
+         next
+      endif
+      for i := 1 to Len( aData )
+         aRow := {}
+         if ValType( aData[i] ) == "A"
+            for j := 1 to Len( aData[i] )
+               AAdd( aRow, hb_ValToStr( aData[i][j] ) )
+            next
+         else
+            AAdd( aRow, hb_ValToStr( aData[i] ) )
+         endif
+         AAdd( aAllRows, aRow )
+      next
+   else
+      // DB datasource
+      if ! oComp:lConnected
+         return Self
+      endif
+      nFields := oComp:FieldCount()
+      if Len( ::aColumns ) == 0
+         for i := 1 to nFields
+            ::AddColumn( oComp:FieldName(i), 100 )
+         next
+      else
+         nFields := Min( nFields, Len( ::aColumns ) )
+      endif
+      // Read all records into Harbour array (safe — pure Harbour code)
+      oComp:GoTop()
+      do while ! oComp:Eof()
+         aRow := {}
+         for i := 1 to nFields
+            xVal := oComp:FieldGet(i)
+            AAdd( aRow, AllTrim( hb_ValToStr( xVal ) ) )
+         next
+         AAdd( aAllRows, aRow )
+         oComp:Skip(1)
+      enddo
+   endif
+
+   // Hand the pre-built array to C. If BrowseData exists (post-Activate/Refresh),
+   // it updates rowData + schedules reloadData. If not yet (pre-Activate),
+   // it stores in FPendingRowData and loadAllDBGrids applies it after createAllChildren.
+   UI_DBGridSetCache( ::hCpp, aAllRows )
+
+return Self
+
+METHOD Refresh() CLASS TDBGrid
+   // Re-read datasource into Harbour array, then push to rowData + reloadData
+   if ::hCpp != 0 .and. ::oForm != nil
+      ::aColumns := {}
+      ::LoadFromDataSource( ::oForm )
+   endif
+return Self
+
+//----------------------------------------------------------------------------//
 // TCompArray - Non-visual array data container
 // TTimer - non-visual timer component
 //----------------------------------------------------------------------------//
@@ -1238,6 +1378,7 @@ METHOD CreateForm( oForm ) CLASS TApplication
    endif
 
    // Call the form's CreateForm method (like C++Builder constructor)
+   // TDBGrid:LoadFromDataSource is called explicitly in the generated CreateForm code
    if __objHasMethod( oForm, "CREATEFORM" )
       oForm:CreateForm()
    endif

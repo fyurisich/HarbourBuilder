@@ -1,6 +1,29 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-17 (macOS: TDBGrid — cell content visible at runtime from datasource)
+
+  FEATURES
+  - TDBGrid now displays live data from a connected datasource (TDBFTable,
+    TCompArray, etc.) when the form runs. LoadFromDataSource() reads all
+    records into a Harbour array and passes them to the Cocoa layer via
+    UI_DBGridSetCache before Activate() is called.
+
+  FIXES
+  - HBBrowseDelegate (NSTableView datasource/delegate) was stored only as a
+    local variable; NSTableView holds delegates as weak references so ARC
+    deallocated it before the window appeared. Added a strong reference in
+    BrowseData.delegate to keep it alive.
+  - loadAllDBGrids was only called in the "window already exists" path of
+    createWindowWithRunLoop:. New windows (first Activate) never flushed
+    FPendingRowData into rowData. Fixed by calling loadAllDBGrids after
+    createAllChildren in both code paths.
+  - FlushPendingDBGrids now recurses through the full child subtree so
+    DBGrids nested inside panels/containers are also populated.
+  - RegenerateFormCode defers LoadFromDataSource() calls to the end of the
+    generated CreateForm() method so all datasource components are fully
+    constructed before the grid tries to read from them.
+
 2026-04-16 (Windows: Inspector enum dropdown — TrackPopupMenu + BorderStyle codegen)
 
   FIXES

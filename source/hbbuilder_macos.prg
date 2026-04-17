@@ -638,7 +638,7 @@ static function RegenerateFormCode( cName, hForm )
    local i, nCount, hCtrl, cCtrlName, cCtrlClass, nType
    local nW, nH, nFL, nFT, cTitle, nClr, cAppTitle
    local nL, nT, nCW, nCH, cText
-   local cDatas := "", cCreate := "", cEvents := "", cVal
+   local cDatas := "", cCreate := "", cEvents := "", cVal, cDeferredDS := ""
    local cExistingCode, aEvents, j, cEvName, cEvSuffix, cHandlerName
    local aHdrs, kk, nColCount, aColProps, nColW, nCtrlClr, nInterval
    local cParent, nOwnerH, nPos, nPos2, cLine
@@ -972,6 +972,26 @@ static function RegenerateFormCode( cName, hForm )
                if ! Empty( cVal )
                   cCreate += '   ::o' + cCtrlName + ':cDataSource := "' + cVal + '"' + e
                endif
+            case nType == 80  // DBGrid
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' DBGRID ::o' + cCtrlName + ' OF ' + cParent + ' SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               cVal := UI_GetProp( hCtrl, "aColumns" )
+               if ! Empty( cVal )
+                  aHdrs := hb_ATokens( cVal, "|" )
+                  cCreate += ' HEADERS '
+                  for kk := 1 to Len( aHdrs )
+                     if kk > 1; cCreate += ', '; endif
+                     cCreate += '"' + AllTrim( aHdrs[kk] ) + '"'
+                  next
+               endif
+               cCreate += e
+               cVal := UI_GetProp( hCtrl, "oDataSource" )
+               if ! Empty( cVal )
+                  cCreate += '   ::o' + cCtrlName + ':oDataSource := "' + cVal + '"' + e
+                  // Deferred: run after all components are created so datasource exists
+                  cDeferredDS += '   ::o' + cCtrlName + ':LoadFromDataSource( Self )' + e
+               endif
             otherwise
                if IsNonVisual( nType )
                   cCreate += '   COMPONENT ::o' + cCtrlName + ' TYPE ' + ;
@@ -1253,6 +1273,11 @@ static function RegenerateFormCode( cName, hForm )
       cCode += e
       cCode += "   // Event wiring" + e
       cCode += cEvents
+   endif
+   if ! Empty( cDeferredDS )
+      cCode += e
+      cCode += "   // Load datasource grids after all components are created" + e
+      cCode += cDeferredDS
    endif
    cCode += e
    cCode += "return nil" + e
@@ -1836,6 +1861,27 @@ static function RestoreFormFromCode( hForm, cCode )
                   UI_SetProp( hCtrl, "aColumns", cVal )
                endif
             endif
+         case " DBGRID " $ Upper( cTrim )
+            hCtrl := UI_DBGridNew( hForm, nL, nT, nW, nH )
+            // Extract HEADERS "col1", "col2", "col3"
+            nPos := At( "HEADERS ", Upper( cTrim ) )
+            if nPos > 0
+               cText := SubStr( cTrim, nPos + 8 )
+               cVal := ""
+               do while ! Empty( cText )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  cText := SubStr( cText, nPos2 + 1 )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  if ! Empty( cVal ); cVal += "|"; endif
+                  cVal += Left( cText, nPos2 - 1 )
+                  cText := SubStr( cText, nPos2 + 1 )
+               enddo
+               if hCtrl != 0 .and. ! Empty( cVal )
+                  UI_SetProp( hCtrl, "aColumns", cVal )
+               endif
+            endif
       endcase
 
       // Set the control name
@@ -1915,11 +1961,11 @@ static function RestoreFormFromCode( hForm, cCode )
             cText := SubStr( cText, 2, Len( cText ) - 2 )
          endif
          UI_SetProp( hCtrl, "oFont", cText )
-      elseif cVal == "cDataSource"
+      elseif cVal == "cDataSource" .or. cVal == "oDataSource"
          if Left( cText, 1 ) == '"'
             cText := SubStr( cText, 2, Len( cText ) - 2 )
          endif
-         UI_SetProp( hCtrl, "cDataSource", cText )
+         UI_SetProp( hCtrl, cVal, cText )
       elseif cVal == "Text" .or. cVal == "cText"
          cText := RebuildStringExpr( cText )
          UI_SetProp( hCtrl, "cText", cText )
