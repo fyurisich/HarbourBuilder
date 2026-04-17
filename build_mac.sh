@@ -116,6 +116,40 @@ else
    echo "[2/4] ${SRC}.o — up to date"
 fi
 
+# [2b/4] hix_runtime.prg → C → Object
+if needs_rebuild "$PROJDIR/source/hix_runtime.prg" hix_runtime.c || \
+   needs_rebuild "$PROJDIR/include/hbbuilder.ch" hix_runtime.c; then
+   echo "[2b/4] Compiling hix_runtime.prg..."
+   "$HBBIN/harbour" "$PROJDIR/source/hix_runtime.prg" -n -w -q \
+      -I"$HBINC" \
+      -I"$PROJDIR/include" \
+      -ohix_runtime.c
+   NEED_LINK=1
+fi
+if needs_rebuild hix_runtime.c hix_runtime.o; then
+   clang -c -O2 -mmacosx-version-min=10.15 -Wno-unused-value \
+      -I"$HBINC" \
+      hix_runtime.c -o hix_runtime.o
+   NEED_LINK=1
+fi
+
+# [2c/4] hix_template.prg → C → Object
+if needs_rebuild "$PROJDIR/source/hix_template.prg" hix_template.c || \
+   needs_rebuild "$PROJDIR/include/hbbuilder.ch" hix_template.c; then
+   echo "[2c/4] Compiling hix_template.prg..."
+   "$HBBIN/harbour" "$PROJDIR/source/hix_template.prg" -n -w -q \
+      -I"$HBINC" \
+      -I"$PROJDIR/include" \
+      -ohix_template.c
+   NEED_LINK=1
+fi
+if needs_rebuild hix_template.c hix_template.o; then
+   clang -c -O2 -mmacosx-version-min=10.15 -Wno-unused-value \
+      -I"$HBINC" \
+      hix_template.c -o hix_template.o
+   NEED_LINK=1
+fi
+
 # [3/4] Cocoa sources (only if .m changed)
 if needs_rebuild "$PROJDIR/source/backends/cocoa/cocoa_core.m" cocoa_core.o; then
    echo "[3/4] Compiling cocoa_core.m..."
@@ -135,6 +169,16 @@ if needs_rebuild "$PROJDIR/source/backends/cocoa/cocoa_inspector.m" cocoa_inspec
    NEED_LINK=1
 else
    echo "[3/4] cocoa_inspector.o — up to date"
+fi
+
+if needs_rebuild "$PROJDIR/source/backends/cocoa/cocoa_webserver.m" cocoa_webserver.o; then
+   echo "[3d/4] Compiling cocoa_webserver.m..."
+   clang -c -O2 -mmacosx-version-min=10.15 -fobjc-arc \
+      -I"$HBINC" \
+      "$PROJDIR/source/backends/cocoa/cocoa_webserver.m" -o cocoa_webserver.o
+   NEED_LINK=1
+else
+   echo "[3d/4] cocoa_webserver.o — up to date"
 fi
 
 # [3b/4] Scintilla editor (only if .mm changed)
@@ -176,7 +220,8 @@ fi
 
 echo "[4/4] Linking ${PROG}..."
 clang++ -o ${PROG} \
-   ${SRC}.o cocoa_core.o cocoa_inspector.o cocoa_editor.o stddlgs_mac.o \
+   ${SRC}.o cocoa_core.o cocoa_inspector.o cocoa_webserver.o cocoa_editor.o stddlgs_mac.o \
+   hix_runtime.o hix_template.o \
    -L"$HBLIB" \
    -L"$SCIBUILD" \
    -lscintilla -llexilla \
@@ -191,6 +236,7 @@ clang++ -o ${PROG} \
    -framework MapKit \
    -framework CoreLocation \
    -framework SceneKit \
+   -framework WebKit \
    $([ "$MACOS_MAJOR" -ge 11 ] 2>/dev/null && echo "-framework UniformTypeIdentifiers" || echo "") \
    -lm -lpthread -lsqlite3
 
@@ -218,6 +264,9 @@ mkdir -p "$APP/Contents/Resources/backends/cocoa"
 cp "$PROJDIR/source/backends/cocoa/cocoa_core.m" "$APP/Contents/Resources/backends/cocoa/" 2>/dev/null
 cp "$PROJDIR/source/backends/cocoa/cocoa_editor.mm" "$APP/Contents/Resources/backends/cocoa/" 2>/dev/null
 cp "$PROJDIR/source/backends/cocoa/cocoa_inspector.m" "$APP/Contents/Resources/backends/cocoa/" 2>/dev/null
+cp "$PROJDIR/source/backends/cocoa/cocoa_webserver.m" "$APP/Contents/Resources/backends/cocoa/" 2>/dev/null
+cp "$PROJDIR/source/hix_runtime.prg" "$APP/Contents/Resources/" 2>/dev/null
+cp "$PROJDIR/source/hix_template.prg" "$APP/Contents/Resources/" 2>/dev/null
 cp "$PROJDIR/source/backends/cocoa/gt_dummy.c" "$APP/Contents/Resources/backends/cocoa/" 2>/dev/null
 # iOS backend
 if [ -d "$PROJDIR/source/backends/ios" ]; then
