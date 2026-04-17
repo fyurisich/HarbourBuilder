@@ -7512,13 +7512,21 @@ HB_FUNC( UI_FORMPASTECONTROLS )
          c->FHeight = s_clipboard[i].nHeight;
          strncpy( c->FText, s_clipboard[i].szText, sizeof(c->FText) - 1 );
          [pForm addChild:c];
+         /* Create the actual NSView so the control is visible */
+         if( pForm->FContentView )
+            [c createViewInParent:(NSView *)pForm->FContentView];
          if( pForm->FSelCount < MAX_CHILDREN )
             pForm->FSelected[pForm->FSelCount++] = c;
       }
    }
 
+   /* Bring overlay on top so selection handles draw over the new controls */
    if( pForm->FOverlayView )
+   {
+      [(NSView *)pForm->FOverlayView removeFromSuperview];
+      [(NSView *)pForm->FContentView addSubview:(NSView *)pForm->FOverlayView];
       [(NSView *)pForm->FOverlayView setNeedsDisplay:YES];
+   }
 
    hb_retni( s_clipCount );
 }
@@ -7527,6 +7535,47 @@ HB_FUNC( UI_FORMPASTECONTROLS )
 HB_FUNC( UI_FORMGETCLIPCOUNT )
 {
    hb_retni( s_clipCount );
+}
+
+/* UI_FormSelCount( hForm ) --> nCount — number of selected controls */
+HB_FUNC( UI_FORMSELCOUNT )
+{
+   HBForm * pForm = (__bridge HBForm *)(void *)(HB_PTRUINT) hb_parnint(1);
+   hb_retni( pForm ? pForm->FSelCount : 0 );
+}
+
+/* UI_FormDeleteSelected( hForm ) — delete selected controls from form */
+HB_FUNC( UI_FORMDELETESELECTED )
+{
+   HBForm * pForm = (__bridge HBForm *)(void *)(HB_PTRUINT) hb_parnint(1);
+   if( !pForm || pForm->FSelCount == 0 ) return;
+
+   for( int i = 0; i < pForm->FSelCount; i++ )
+   {
+      HBControl * c = pForm->FSelected[i];
+      /* Remove view from superview */
+      if( c->FView )
+      {
+         [(NSView *)c->FView removeFromSuperview];
+         c->FView = nil;
+      }
+      /* Remove from FChildren array */
+      for( int j = 0; j < pForm->FChildCount; j++ )
+      {
+         if( pForm->FChildren[j] == c )
+         {
+            [s_allControls removeObject:c];
+            pForm->FChildren[j] = pForm->FChildren[--pForm->FChildCount];
+            pForm->FChildren[pForm->FChildCount] = nil;
+            break;
+         }
+      }
+   }
+
+   [pForm clearSelection];
+
+   if( pForm->FOverlayView )
+      [(NSView *)pForm->FOverlayView setNeedsDisplay:YES];
 }
 
 /* -----------------------------------------------------------------------

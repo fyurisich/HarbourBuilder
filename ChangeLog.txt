@@ -1,6 +1,27 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-17 (macOS: Smart Cut/Copy/Paste + paste renders controls)
+
+  FEATURES
+  - Toolbar Cut/Copy/Paste buttons and Edit menu now route through
+    SmartCut() / SmartCopy() / SmartPaste(): when the form designer is the
+    key window and has selected controls, operations act on those controls;
+    otherwise they delegate to the code editor.
+  - SmartCut() saves an undo snapshot before deleting the cut controls.
+  - Added UI_FormSelCount( hForm ) HB_FUNC to query the number of selected
+    controls from Harbour code.
+  - Added UI_FormDeleteSelected( hForm ) HB_FUNC to remove selected controls
+    from the form (view + child array + global registry).
+
+  FIXES
+  - Pasted controls were invisible: UI_FormPasteControls created the
+    HBControl object but never called createViewInParent:, so no NSView was
+    built. Fixed by calling createViewInParent: after addChild: for each
+    pasted control.
+  - After paste the overlay is re-raised to the top of the subview stack so
+    selection handles draw correctly over the new controls.
+
 2026-04-17 (macOS: Undo/Redo wired to toolbar buttons + design undo fixes)
 
   FEATURES

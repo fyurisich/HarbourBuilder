@@ -102,9 +102,9 @@ function Main()
    MENUITEM "Undo"  OF oEdit ACTION SmartUndo()  ACCEL "z"
    MENUITEM "Redo"  OF oEdit ACTION SmartRedo()  ACCEL "y"
    MENUSEPARATOR OF oEdit
-   MENUITEM "Cut"   OF oEdit ACTION CodeEditorCut( hCodeEditor )   ACCEL "x"
-   MENUITEM "Copy"  OF oEdit ACTION CodeEditorCopy( hCodeEditor )  ACCEL "c"
-   MENUITEM "Paste" OF oEdit ACTION CodeEditorPaste( hCodeEditor ) ACCEL "v"
+   MENUITEM "Cut"   OF oEdit ACTION SmartCut()   ACCEL "x"
+   MENUITEM "Copy"  OF oEdit ACTION SmartCopy()  ACCEL "c"
+   MENUITEM "Paste" OF oEdit ACTION SmartPaste() ACCEL "v"
 
    DEFINE POPUP oSearch PROMPT "Search" OF oIDE
    MENUITEM "Find..."        OF oSearch ACTION CodeEditorFind( hCodeEditor )     ACCEL "f"
@@ -232,9 +232,9 @@ function Main()
    BUTTON "Open"  OF oTB TOOLTIP "Open file (Cmd+O)"    ACTION TBOpen()
    BUTTON "Save"  OF oTB TOOLTIP "Save file (Cmd+S)"    ACTION TBSave()
    SEPARATOR OF oTB
-   BUTTON "Cut"   OF oTB TOOLTIP "Cut (Cmd+X)"          ACTION CodeEditorCut( hCodeEditor )
-   BUTTON "Copy"  OF oTB TOOLTIP "Copy (Cmd+C)"         ACTION CodeEditorCopy( hCodeEditor )
-   BUTTON "Paste" OF oTB TOOLTIP "Paste (Cmd+V)"        ACTION CodeEditorPaste( hCodeEditor )
+   BUTTON "Cut"   OF oTB TOOLTIP "Cut (Cmd+X)"          ACTION SmartCut()
+   BUTTON "Copy"  OF oTB TOOLTIP "Copy (Cmd+C)"         ACTION SmartCopy()
+   BUTTON "Paste" OF oTB TOOLTIP "Paste (Cmd+V)"        ACTION SmartPaste()
    SEPARATOR OF oTB
    BUTTON "Undo"  OF oTB TOOLTIP "Undo (Cmd+Z)"         ACTION SmartUndo()
    BUTTON "Redo"  OF oTB TOOLTIP "Redo (Cmd+Y)"         ACTION SmartRedo()
@@ -3783,12 +3783,44 @@ static function ShowEnvironmentOptions()
    MAC_ProjectOptionsDialog()
 return nil
 
-// === Copy/Paste Controls ===
+// === Cut / Copy / Paste (context-aware: design form first, then code editor) ===
+
+static function DesignHasSel()
+return oDesignForm != nil .and. UI_FormIsKeyWindow( oDesignForm:hCpp ) .and. ;
+       UI_FormSelCount( oDesignForm:hCpp ) > 0
+
+static function SmartCut()
+   if DesignHasSel()
+      UI_FormUndoPush( oDesignForm:hCpp )
+      UI_FormCopySelected( oDesignForm:hCpp )
+      UI_FormDeleteSelected( oDesignForm:hCpp )
+      SyncDesignerToCode()
+   else
+      CodeEditorCut( hCodeEditor )
+   endif
+return nil
+
+static function SmartCopy()
+   if DesignHasSel()
+      UI_FormCopySelected( oDesignForm:hCpp )
+   else
+      CodeEditorCopy( hCodeEditor )
+   endif
+return nil
+
+static function SmartPaste()
+   if oDesignForm != nil .and. UI_FormIsKeyWindow( oDesignForm:hCpp ) .and. ;
+      UI_FormGetClipCount() > 0
+      UI_FormUndoPush( oDesignForm:hCpp )
+      UI_FormPasteControls( oDesignForm:hCpp )
+      SyncDesignerToCode()
+   else
+      CodeEditorPaste( hCodeEditor )
+   endif
+return nil
 
 static function CopyControls()
-   if oDesignForm != nil
-      UI_FormCopySelected( oDesignForm:hCpp )
-   endif
+   UI_FormCopySelected( oDesignForm:hCpp )
 return nil
 
 static function PasteControls()
