@@ -3343,7 +3343,7 @@ static function TBRun()
               " -lhbhsx -lhbsix -lhbusrrdd" + ;
               " -lgtcgi -lgtstd" + ;
               " -framework Cocoa -framework QuartzCore -framework MapKit -framework CoreLocation -framework SceneKit -framework WebKit" + If( Val( MAC_ShellExec( "sw_vers -productVersion | cut -d. -f1" ) ) >= 11, " -framework UniformTypeIdentifiers", "" ) + ;
-              " -lm -lpthread -lc++ -lsqlite3 2>&1"
+              " -lm -lpthread -lc++ -lsqlite3 -lcups 2>&1"
       cOutput := MAC_ShellExec( cCmd )
       if "error" $ Lower( cOutput )
          cLog += "    FAILED:" + Chr(10) + cOutput + Chr(10)
@@ -3616,7 +3616,7 @@ static function TBDebugRun()
               " -lhbhsx -lhbsix -lhbusrrdd" + ;
               " -lgtcgi -lgtstd" + ;
               " -framework Cocoa -framework QuartzCore -framework MapKit -framework CoreLocation -framework SceneKit -framework WebKit" + If( Val( MAC_ShellExec( "sw_vers -productVersion | cut -d. -f1" ) ) >= 11, " -framework UniformTypeIdentifiers", "" ) + ;
-              " -lm -lpthread -lc++ -lsqlite3 2>&1"
+              " -lm -lpthread -lc++ -lsqlite3 -lcups 2>&1"
       cOutput := MAC_ShellExec( cCmd )
       if "error" $ Lower( cOutput )
          cLog += cOutput + Chr(10)

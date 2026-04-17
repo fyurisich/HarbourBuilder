@@ -2489,6 +2489,8 @@ CLASS TPrinter
    ASSIGN OnError( b )    INLINE ::bOnError    := b
 
    METHOD New() CONSTRUCTOR
+   METHOD GetPrinters()
+   METHOD ShowPrintPanel()
    METHOD BeginDoc( cTitle )
    METHOD EndDoc()
    METHOD NewPage()
@@ -2499,6 +2501,16 @@ ENDCLASS
 
 METHOD New() CLASS TPrinter
 return Self
+
+METHOD GetPrinters() CLASS TPrinter
+return UI_GetPrinters()
+
+METHOD ShowPrintPanel() CLASS TPrinter
+   local cName := UI_ShowPrintPanel()
+   if !Empty( cName )
+      ::cPrinterName := cName
+   endif
+return !Empty( cName )
 
 METHOD BeginDoc( cTitle ) CLASS TPrinter
    HB_SYMBOL_UNUSED( cTitle )

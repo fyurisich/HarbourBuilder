@@ -238,7 +238,7 @@ clang++ -o ${PROG} \
    -framework SceneKit \
    -framework WebKit \
    $([ "$MACOS_MAJOR" -ge 11 ] 2>/dev/null && echo "-framework UniformTypeIdentifiers" || echo "") \
-   -lm -lpthread -lsqlite3
+   -lm -lpthread -lsqlite3 -lcups
 
 # [5/5] Create .app bundle
 APP="$PROJDIR/bin/${PROG}.app"

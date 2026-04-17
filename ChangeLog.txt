@@ -1,6 +1,20 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-17 (macOS: TPrinter — printer selection and native print panel)
+
+  FEATURES
+  - TPrinter: added GetPrinters() method — returns array of installed printer
+    names via NSPrinter.printerNames (System Settings printers).
+  - TPrinter: added ShowPrintPanel() method — shows native macOS NSPrintPanel
+    (modal, returns selected printer name or "" if cancelled).
+  - cocoa_core.m: UI_GetPrinters() native function using NSPrinter API.
+  - cocoa_core.m: UI_ShowPrintPanel() native function — runs NSPrintPanel
+    synchronously on main thread (no dispatch_sync to avoid deadlock).
+  - build_mac.sh / hbbuilder_macos.prg: added -lcups to linker flags.
+  - samples/projects/printer: printer combobox populated on Print/Preview
+    click; falls back to demo list when no system printers are configured.
+
 2026-04-17 (samples: webserver and hix_app fixes)
 
   FIXES

@@ -7,6 +7,7 @@
 
 #import <Cocoa/Cocoa.h>
 #import <MapKit/MapKit.h>
+#include <cups/cups.h>
 #import <SceneKit/SceneKit.h>
 #import <WebKit/WebKit.h>
 #if __has_include(<UniformTypeIdentifiers/UniformTypeIdentifiers.h>)
@@ -7610,6 +7611,43 @@ HB_FUNC( MAC_SHELLEXEC )
    }
    @catch( NSException * e ) {
       hb_retc( [[e reason] UTF8String] );
+   }
+}
+
+/* UI_GetPrinters() --> aNames  — returns array of installed printer names */
+HB_FUNC( UI_GETPRINTERS )
+{
+   PHB_ITEM pArray = hb_itemArrayNew( 0 );
+
+   /* NSPrinter printerNames — includes printers added via System Settings */
+   NSArray<NSString *> * nsNames = [NSPrinter printerNames];
+   for( NSUInteger i = 0; i < [nsNames count]; i++ ) {
+      PHB_ITEM pStr = hb_itemPutC( NULL, [[nsNames objectAtIndex:i] UTF8String] );
+      hb_arrayAdd( pArray, pStr );
+      hb_itemRelease( pStr );
+   }
+
+   hb_itemReturnRelease( pArray );
+}
+
+/* UI_ShowPrintPanel() --> cPrinterName
+ * Shows the native macOS print panel (includes "Save as PDF").
+ * Returns the selected printer name, or "" if cancelled.
+ * Must be called from the main thread (already the case for button handlers). */
+HB_FUNC( UI_SHOWPRINTPANEL )
+{
+   NSPrintInfo  * info  = [NSPrintInfo sharedPrintInfo];
+   NSPrintPanel * panel = [NSPrintPanel printPanel];
+   [panel setOptions: NSPrintPanelShowsCopies |
+                      NSPrintPanelShowsOrientation |
+                      NSPrintPanelShowsPaperSize |
+                      NSPrintPanelShowsScaling];
+   NSInteger rc = [panel runModalWithPrintInfo:info];
+   if( rc == NSModalResponseOK ) {
+      NSString * name = [[info dictionary] objectForKey:NSPrintPrinterName];
+      hb_retc( name ? [name UTF8String] : "" );
+   } else {
+      hb_retc( "" );
    }
 }
 
