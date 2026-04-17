@@ -53,11 +53,33 @@ return nil
 
 METHOD OnStartClick() CLASS TForm1
 
-   // HIX-style routes: string path to controller .prg
-   // cRoot is resolved relative to the project folder at runtime
    ::oWebServer1:aRoutes := {}
-   ::oWebServer1:AddRoute( "GET", "/",        "controllers/home.prg" )
-   ::oWebServer1:AddRoute( "GET", "/api/info", "controllers/api.prg"  )
+
+   ::oWebServer1:AddRoute( "GET", "/", {|| ;
+      local aTickets := { ;
+         { "TKT-001", "Login button broken",    "Open"        }, ;
+         { "TKT-002", "Dashboard loads slowly", "In Progress" }, ;
+         { "TKT-003", "Export CSV not working", "Open"        }, ;
+         { "TKT-004", "Dark mode contrast",     "Closed"      } }, ;
+      cUser := iif( Empty( UGet("user") ), "Guest", UGet("user") ) ; ;
+      UWrite( '<!DOCTYPE html><html><head><title>HIX App</title>' + ;
+         '<style>body{font-family:sans-serif;padding:1.5em;background:#f8f8f8}' + ;
+         'table{border-collapse:collapse;width:100%}' + ;
+         'th,td{border:1px solid #ccc;padding:8px 12px;text-align:left}' + ;
+         'th{background:#336699;color:#fff}.closed{color:#888}</style></head><body>' + ;
+         '<h2>HIX App — Welcome, ' + cUser + '</h2>' + ;
+         '<table><tr><th>ID</th><th>Title</th><th>Status</th></tr>' ) ; ;
+      AEval( aTickets, {|r| ;
+         UWrite( '<tr' + iif(r[3]=="Closed",' class="closed"','') + '>' + ;
+            '<td>' + r[1] + '</td><td>' + r[2] + '</td><td>' + r[3] + '</td></tr>' ) } ) ; ;
+      UWrite( '</table><p><a href="/api/info">/api/info</a></p></body></html>' ) } )
+
+   ::oWebServer1:AddRoute( "GET", "/api/info", {|| ;
+      UWrite( hb_jsonEncode( { ;
+         "server" => "HarbourBuilder/HIX", ;
+         "time"   => Time(), ;
+         "date"   => DToC( Date() ), ;
+         "port"   => ::oWebServer1:nPort } ) ) } )
 
    ::oWebServer1:Start()
    if ::oWebServer1:lRunning
