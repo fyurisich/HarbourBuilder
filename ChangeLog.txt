@@ -1,6 +1,21 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-17 (macOS: WebView fixes + sample project)
+
+  FIXES
+  - RestoreFormFromCode: WEBVIEW, DATETIMEPICKER and MONTHCALENDAR controls
+    were silently lost on project reload (missing cases in first parse pass).
+  - RestoreFormFromCode: ControlAlign property was not restored on reload.
+  - Inspector Events tab: CT_WEBVIEW fell through to generic default case;
+    now correctly shows OnNavigate / OnLoad / OnError under "Navigation".
+
+  SAMPLES
+  - samples/projects/webview: complete browser demo with URL bar,
+    Back / Forward / Reload buttons, status label, and all three WebView
+    events wired (OnNavigate updates URL bar, OnLoad shows "Done", OnError
+    shows error message). WebView uses ControlAlign=alClient to fill the form.
+
 2026-04-17 (macOS: Align property — C++Builder-style dock layout)
 
   FEATURES
