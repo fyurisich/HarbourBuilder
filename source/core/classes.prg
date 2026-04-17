@@ -3025,6 +3025,77 @@ return nil
 METHOD FieldCount() CLASS TReportBand
 return Len( ::aFields )
 
+//--------------------------------------------------------------------
+// TBand — visual designer control (TControl subclass, auto-stacked)
+//--------------------------------------------------------------------
+
+CLASS TBand INHERIT TControl
+
+   DATA cBandType          INIT "Detail"
+   DATA lPrintOnEveryPage  INIT .F.
+   DATA lVisible           INIT .T.
+   DATA nBackColor         INIT -1
+   DATA nType              INIT 0
+   DATA nLeft              INIT 0
+   DATA nTop               INIT 0
+   DATA nWidth             INIT 600
+   DATA nHeight            INIT 20
+   DATA aFields            INIT {}
+   DATA bOnPrint
+   DATA bOnAfterPrint
+
+   METHOD New( oParent, cType, nHeight )
+   METHOD AddField( oField )
+   METHOD RemoveField( nIndex )
+   METHOD FieldCount()
+   METHOD BandOrder()
+
+ENDCLASS
+
+METHOD New( oParent, cType, nHeight ) CLASS TBand
+   local nColor
+   ::oParent     := oParent
+   ::nType       := CT_BAND
+   ::cBandType   := iif( ValType( cType ) == "C", cType, "Detail" )
+   ::nHeight     := iif( ValType( nHeight ) == "N", nHeight, 20 )
+   ::nLeft       := 0
+   ::nTop        := 0
+   ::nWidth      := iif( oParent != nil, oParent:nWidth, 600 )
+   ::lPrintOnEveryPage := ( ::BandOrder() == 2 .or. ::BandOrder() == 4 )
+   do case
+   case ::cBandType == "Header"     ; nColor := 173 + 216 * 256 + 230 * 65536  // light blue
+   case ::cBandType == "PageHeader" ; nColor := 144 + 238 * 256 + 144 * 65536  // light green
+   case ::cBandType == "Detail"     ; nColor := 255 + 255 * 256 + 255 * 65536  // white
+   case ::cBandType == "PageFooter" ; nColor := 144 + 238 * 256 + 144 * 65536  // light green
+   case ::cBandType == "Footer"     ; nColor := 211 + 211 * 256 + 211 * 65536  // light gray
+   otherwise                        ; nColor := 255 + 255 * 256 + 255 * 65536
+   endcase
+   ::nBackColor := nColor
+return Self
+
+METHOD AddField( oField ) CLASS TBand
+   oField:oBand := Self
+   AAdd( ::aFields, oField )
+return nil
+
+METHOD RemoveField( nIndex ) CLASS TBand
+   ADel( ::aFields, nIndex )
+   ASize( ::aFields, Len( ::aFields ) - 1 )
+return nil
+
+METHOD FieldCount() CLASS TBand
+return Len( ::aFields )
+
+METHOD BandOrder() CLASS TBand
+   do case
+   case ::cBandType == "Header"     ; return 1
+   case ::cBandType == "PageHeader" ; return 2
+   case ::cBandType == "Detail"     ; return 3
+   case ::cBandType == "PageFooter" ; return 4
+   case ::cBandType == "Footer"     ; return 5
+   endcase
+return 3
+
 //----------------------------------------------------------------------------//
 
 CLASS TReportField
