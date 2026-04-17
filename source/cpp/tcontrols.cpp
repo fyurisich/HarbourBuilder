@@ -867,6 +867,13 @@ void TMonthCalendar::CreateParams(DWORD*s,DWORD*e,const char**c) { *c=MONTHCAL_C
 const PROPDESC* TMonthCalendar::GetPropDescs(int*n) { return TControl::GetPropDescs(n); }
 
 /* ======================================================================
+ * TWebView (Win32 placeholder — design-time only)
+ * ====================================================================== */
+TWebView::TWebView() { lstrcpy(FClassName,"TWebView"); FControlType=CT_WEBVIEW; FWidth=320; FHeight=240; }
+void TWebView::CreateParams(DWORD*s,DWORD*e,const char**c) { *c="STATIC"; *s=WS_CHILD|WS_VISIBLE|WS_BORDER|SS_BLACKFRAME; *e=0; }
+const PROPDESC* TWebView::GetPropDescs(int*n) { return TControl::GetPropDescs(n); }
+
+/* ======================================================================
  * TPaintBox (System)
  * ====================================================================== */
 TPaintBox::TPaintBox() { lstrcpy(FClassName,"TPaintBox"); FControlType=CT_PAINTBOX; FWidth=105; FHeight=105; }
@@ -1783,8 +1790,10 @@ TControl * CreateControlByType( BYTE bType )
       case CT_UPDOWN:   return new TUpDown();
       case CT_DATETIMEPICKER: return new TDateTimePicker();
       case CT_MONTHCALENDAR: return new TMonthCalendar();
+      case CT_WEBVIEW: return new TWebView();
       case CT_PAINTBOX: return new TPaintBox();
       case CT_BROWSE:  return new TBrowse();
+      case CT_DBGRID:  { TBrowse * p = new TBrowse(); p->FControlType = CT_DBGRID; return p; }
    }
    return NULL;
 }

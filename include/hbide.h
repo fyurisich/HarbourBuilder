@@ -756,6 +756,17 @@ public:
 };
 
 /*
+ * TWebView (Win32 placeholder — design-time only)
+ */
+class TWebView : public TControl
+{
+public:
+   TWebView();
+   void CreateParams( DWORD * pdwStyle, DWORD * pdwExStyle, const char ** pszClass );
+   const PROPDESC * GetPropDescs( int * pnCount );
+};
+
+/*
  * TPaintBox (C++Builder System tab)
  */
 class TPaintBox : public TControl

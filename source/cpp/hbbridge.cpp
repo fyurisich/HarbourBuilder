@@ -494,6 +494,63 @@ HB_FUNC( UI_TIMERNEW )
  * TBrowse - Data Grid
  * ====================================================================== */
 
+/* UI_DateTimePickerNew( hParent, nLeft, nTop, nWidth, nHeight ) --> hCtrl */
+HB_FUNC( UI_DATETIMEPICKERNEW )
+{
+   TForm * pForm = GetForm(1);
+   TDateTimePicker * p = new TDateTimePicker();
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);
+   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);
+   if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( pForm ) pForm->AddChild( p );
+   RetCtrl( p );
+}
+
+/* UI_MonthCalendarNew( hParent, nLeft, nTop, nWidth, nHeight ) --> hCtrl */
+HB_FUNC( UI_MONTHCALENDARNEW )
+{
+   TForm * pForm = GetForm(1);
+   TMonthCalendar * p = new TMonthCalendar();
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);
+   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);
+   if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( pForm ) pForm->AddChild( p );
+   RetCtrl( p );
+}
+
+/* ======================================================================
+ * TWebView stubs (design-time placeholder — no live rendering on Windows)
+ * ====================================================================== */
+
+HB_FUNC( UI_WEBVIEWNEW )
+{
+   TForm * pForm = GetForm(1);
+   TWebView * p = new TWebView();
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);
+   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);
+   if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( pForm ) pForm->AddChild( p );
+   RetCtrl( p );
+}
+
+HB_FUNC( UI_WEBVIEWLOAD )        { (void)hb_param(1,HB_IT_ANY); }
+HB_FUNC( UI_WEBVIEWLOADHTML )    { (void)hb_param(1,HB_IT_ANY); }
+HB_FUNC( UI_WEBVIEWGOBACK )      { (void)hb_param(1,HB_IT_ANY); }
+HB_FUNC( UI_WEBVIEWGOFORWARD )   { (void)hb_param(1,HB_IT_ANY); }
+HB_FUNC( UI_WEBVIEWRELOAD )      { (void)hb_param(1,HB_IT_ANY); }
+HB_FUNC( UI_WEBVIEWSTOP )        { (void)hb_param(1,HB_IT_ANY); }
+HB_FUNC( UI_WEBVIEWEVALUATEJS )  { (void)hb_param(1,HB_IT_ANY); }
+HB_FUNC( UI_WEBVIEWGETURL )      { TControl * p = GetCtrl(1); hb_retc( p ? p->FText : "" ); }
+HB_FUNC( UI_WEBVIEWCANGOBACK )   { hb_retl( FALSE ); }
+HB_FUNC( UI_WEBVIEWCANGOFORWARD ){ hb_retl( FALSE ); }
+
+/* ======================================================================
+ * TBrowse - Data Grid
+ * ====================================================================== */
+
 /* UI_BrowseNew( hParent, nLeft, nTop, nWidth, nHeight ) --> hCtrl */
 HB_FUNC( UI_BROWSENEW )
 {
@@ -506,6 +563,23 @@ HB_FUNC( UI_BROWSENEW )
    if( pForm ) pForm->AddChild( p );
    RetCtrl( p );
 }
+
+/* UI_DbGridNew( hParent, nLeft, nTop, nWidth, nHeight ) --> hCtrl */
+HB_FUNC( UI_DBGRIDNEW )
+{
+   TForm * pForm = GetForm(1);
+   TBrowse * p = new TBrowse();
+   p->FControlType = CT_DBGRID;
+   lstrcpyA( p->FClassName, "TDBGrid" );
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);
+   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);
+   if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( pForm ) pForm->AddChild( p );
+   RetCtrl( p );
+}
+
+HB_FUNC( UI_DBGRIDSETCACHE ) { (void)hb_param(1,HB_IT_ANY); }
 
 /* UI_BrowseAddCol( hBrowse, cTitle, cField, nWidth, nAlign ) --> nColIdx */
 HB_FUNC( UI_BROWSEADDCOL )

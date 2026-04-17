@@ -1,6 +1,21 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-17 (win: fix link errors for WebView, DateTimePicker, MonthCalendar, DbGrid)
+
+  FIXES
+  - Windows build: resolved 15 unresolved external symbols that prevented
+    linking hbbuilder_win.exe. The missing HB_FUNC wrappers were:
+    UI_WebViewNew/Load/LoadHTML/GoBack/GoForward/Reload/Stop/EvaluateJS/
+    GetUrl/CanGoBack/CanGoForward, UI_DateTimePickerNew, UI_MonthCalendarNew,
+    UI_DbGridNew and UI_DbGridSetCache.
+  - Added TWebView class (design-time placeholder) to hbide.h and tcontrols.cpp;
+    renders as a bordered STATIC window in the form designer.
+  - UI_DbGridNew reuses TBrowse with CT_DBGRID type (consistent with existing
+    event handling in hbbridge.cpp).
+  - UI_DbGridSetCache and all WebView navigation functions are stubs on Windows
+    (no live browser rendering at design-time).
+
 2026-04-17 (macOS: colored SF Symbol icons in component palette)
 
   FEATURES
