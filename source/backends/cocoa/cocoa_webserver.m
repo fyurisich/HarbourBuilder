@@ -61,7 +61,9 @@ static void hix_ctx_write(HixCtx *ctx, const char *text, size_t len)
     if (!text || len == 0) return;
     if (ctx->out_len + len + 1 > ctx->out_cap) {
         ctx->out_cap = (ctx->out_len + len + 1) * 2 + 4096;
-        ctx->out_buf = realloc(ctx->out_buf, ctx->out_cap);
+        char *new_buf = realloc(ctx->out_buf, ctx->out_cap);
+        if (!new_buf) { ctx->out_cap = ctx->out_len; return; }
+        ctx->out_buf = new_buf;
     }
     memcpy(ctx->out_buf + ctx->out_len, text, len);
     ctx->out_len += len;
@@ -81,7 +83,7 @@ static void hix_ctx_free(HixCtx *ctx)
 
 static HixCtx  *s_current_ctx = NULL;
 static PHB_ITEM s_pServer     = NULL;
-static volatile int s_running = 0;
+static _Atomic int s_running = 0;
 static int      s_listen_fd   = -1;
 
 /* ── HTTP parser ─────────────────────────────────────────────── */
@@ -120,12 +122,15 @@ static int parse_http(int fd, const char *ip, ParsedRequest *req)
     char *qp = strchr(rawpath, '?');
     if (qp) {
         strncpy(req->query, qp+1, sizeof(req->query)-1);
+        req->query[sizeof(req->query)-1] = '\0';
         *qp = '\0';
     } else {
         req->query[0] = '\0';
     }
     strncpy(req->path, rawpath, sizeof(req->path)-1);
+    req->path[sizeof(req->path)-1] = '\0';
     strncpy(req->ip,   ip,      sizeof(req->ip)-1);
+    req->ip[sizeof(req->ip)-1] = '\0';
 
     /* Body (after \r\n\r\n) */
     req->body[0] = '\0';
@@ -143,16 +148,35 @@ static int parse_http(int fd, const char *ip, ParsedRequest *req)
 
 /* ── HTTP response sender ────────────────────────────────────── */
 
+static const char *hix_status_text(int status)
+{
+    switch (status) {
+        case 200: return "OK";
+        case 201: return "Created";
+        case 204: return "No Content";
+        case 301: return "Moved Permanently";
+        case 302: return "Found";
+        case 304: return "Not Modified";
+        case 400: return "Bad Request";
+        case 401: return "Unauthorized";
+        case 403: return "Forbidden";
+        case 404: return "Not Found";
+        case 405: return "Method Not Allowed";
+        case 500: return "Internal Server Error";
+        default:  return "OK";
+    }
+}
+
 static void send_response(int fd, HixCtx *ctx)
 {
     char hdr[512];
     int hlen = snprintf(hdr, sizeof(hdr),
-        "HTTP/1.1 %d OK\r\n"
+        "HTTP/1.1 %d %s\r\n"
         "Content-Type: %s\r\n"
         "Content-Length: %zu\r\n"
         "Connection: close\r\n"
         "\r\n",
-        ctx->status, ctx->content_type, ctx->out_len);
+        ctx->status, hix_status_text(ctx->status), ctx->content_type, ctx->out_len);
     send(fd, hdr, hlen, 0);
     if (ctx->out_len > 0)
         send(fd, ctx->out_buf, ctx->out_len, 0);
@@ -166,8 +190,9 @@ static void harbour_dispatch(int client_fd, ParsedRequest *req)
 
     dispatch_sync(dispatch_get_main_queue(), ^{
         s_current_ctx = ctx;
-        if (s_pServer) {
-            hb_vmPushSymbol( hb_dynsymFindName("DISPATCH") );
+        PHB_DYNS pDynDisp = hb_dynsymFindName("DISPATCH");
+        if (s_pServer && pDynDisp) {
+            hb_vmPushSymbol( hb_dynsymSymbol(pDynDisp) );
             hb_vmPush( s_pServer );
             hb_vmPushString( req->method, strlen(req->method) );
             hb_vmPushString( req->path,   strlen(req->path)   );
