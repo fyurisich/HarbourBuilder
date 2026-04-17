@@ -83,8 +83,10 @@ FUNCTION HIX_RenderTemplate( cTpl, aArgs )
          loop
       endif
       if lInIf .and. AllTrim(cLine) == "@else"
-         lInElse   := .T.
-         lIfResult := !lIfResult
+         if !lInElse
+            lInElse   := .T.
+            lIfResult := !lIfResult
+         endif
          loop
       endif
       if lInIf .and. AllTrim(cLine) == "@endif"
@@ -110,8 +112,9 @@ FUNCTION HIX_ProcessLine( cLine, hVars )
    do while .T.
       nStart := At( "{{", cLine )
       if nStart == 0; EXIT; endif
-      nEnd := At( "}}", cLine )
+      nEnd := At( "}}", SubStr(cLine, nStart+2) )
       if nEnd == 0; EXIT; endif
+      nEnd  := nStart + 1 + nEnd
       cOut  += Left( cLine, nStart-1 )
       cExpr  := AllTrim( SubStr( cLine, nStart+2, nEnd-nStart-2 ) )
       cVal   := hb_CStr( HIX_EvalExpr( cExpr, hVars ) )
