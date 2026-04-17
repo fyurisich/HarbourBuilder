@@ -3436,6 +3436,7 @@ function HB_CreateComponent( nType, oParent )
          endif
          return oComp
       case nType == CT_WEBSERVER;  return TWebServer():New()
+      case nType == CT_PRINTER;    return TPrinter():New()
    endcase
 return nil
 
