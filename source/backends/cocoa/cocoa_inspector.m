@@ -1693,6 +1693,11 @@ static void InsPopulateEvents( INSDATA * d )
          AC("Error");
          AE("OnError");
          break;
+      case 132: /* CT_BAND */
+         AC("Print");
+         AE("OnPrint");
+         AE("OnAfterPrint");
+         break;
       case 22: /* CT_PROGRESSBAR */
          break;
       case 34: /* CT_TRACKBAR */
