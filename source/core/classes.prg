@@ -2623,9 +2623,9 @@ METHOD Print() CLASS TReport
    ::RenderBand( ::GetDesignBand( "Header" ) )
    ::RenderBand( ::GetDesignBand( "PageHeader" ) )
 
-   if ::oDataSource != nil
-      ::oDataSource:GoFirst()
-      while ! ::oDataSource:Eof()
+   if ::oDataSource != nil .and. ::oDataSource:oDatabase != nil
+      ::oDataSource:oDatabase:GoTop()
+      while ! ::oDataSource:oDatabase:Eof()
          oBand := ::GetDesignBand( "Detail" )
          if oBand != nil .and. ::nCurrentY + oBand:nHeight > ::nMarginTop + ::nUsableHeight
             ::RenderBand( ::GetDesignBand( "PageFooter" ) )
@@ -2635,7 +2635,7 @@ METHOD Print() CLASS TReport
             ::RenderBand( ::GetDesignBand( "PageHeader" ) )
          endif
          ::RenderBand( oBand )
-         ::oDataSource:Skip()
+         ::oDataSource:oDatabase:Skip( 1 )
       enddo
    endif
 
@@ -2650,10 +2650,16 @@ METHOD RenderBand( oBand ) CLASS TReport
    if oBand == nil .or. ! oBand:lVisible
       return nil
    endif
+   if __objHasMsg( oBand, "BONPRINT" ) .and. oBand:bOnPrint != nil
+      Eval( oBand:bOnPrint )
+   endif
    for each oField in oBand:aFields
       oField:Render( ::oPrinter, ::nCurrentY, ::oDataSource )
    next
    ::nCurrentY += oBand:nHeight
+   if __objHasMsg( oBand, "BONAFTERPRINT" ) .and. oBand:bOnAfterPrint != nil
+      Eval( oBand:bOnAfterPrint )
+   endif
 return nil
 
 METHOD AddDesignBand( oBand ) CLASS TReport
@@ -2667,12 +2673,18 @@ METHOD RemoveDesignBand( nIndex ) CLASS TReport
    endif
 return nil
 
-METHOD GetDesignBand( cName ) CLASS TReport
-   local i
-   local cUpper := Upper( cName )
+METHOD GetDesignBand( cType ) CLASS TReport
+   local i, oBand
+   local cUpper := Upper( cType )
+   // Search ::aDesignBands — match TBand objects by cBandType, TReportBand by cName
    for i := 1 to Len( ::aDesignBands )
-      if Upper( ::aDesignBands[i]:cName ) == cUpper
-         return ::aDesignBands[i]
+      oBand := ::aDesignBands[i]
+      if __objHasMsg( oBand, "CBANDTYPE" )
+         if Upper( oBand:cBandType ) == cUpper
+            return oBand
+         endif
+      elseif Upper( oBand:cName ) == cUpper
+         return oBand
       endif
    next
 return nil
