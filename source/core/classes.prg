@@ -3053,7 +3053,8 @@ CLASS TBand INHERIT TControl
 ENDCLASS
 
 METHOD New( oParent, cType, nHeight ) CLASS TBand
-   local nColor
+   local nColor, nOrd
+   ::aFields     := {}
    ::oParent     := oParent
    ::nType       := CT_BAND
    ::cBandType   := iif( ValType( cType ) == "C", cType, "Detail" )
@@ -3061,7 +3062,8 @@ METHOD New( oParent, cType, nHeight ) CLASS TBand
    ::nLeft       := 0
    ::nTop        := 0
    ::nWidth      := iif( oParent != nil, oParent:nWidth, 600 )
-   ::lPrintOnEveryPage := ( ::BandOrder() == 2 .or. ::BandOrder() == 4 )
+   nOrd := ::BandOrder()
+   ::lPrintOnEveryPage := ( nOrd == 2 .or. nOrd == 4 )
    do case
    case ::cBandType == "Header"     ; nColor := 173 + 216 * 256 + 230 * 65536  // light blue
    case ::cBandType == "PageHeader" ; nColor := 144 + 238 * 256 + 144 * 65536  // light green
@@ -3079,8 +3081,10 @@ METHOD AddField( oField ) CLASS TBand
 return nil
 
 METHOD RemoveField( nIndex ) CLASS TBand
-   ADel( ::aFields, nIndex )
-   ASize( ::aFields, Len( ::aFields ) - 1 )
+   if nIndex >= 1 .and. nIndex <= Len( ::aFields )
+      ADel( ::aFields, nIndex )
+      ASize( ::aFields, Len( ::aFields ) - 1 )
+   endif
 return nil
 
 METHOD FieldCount() CLASS TBand
