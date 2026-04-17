@@ -440,7 +440,7 @@
       [ FIELD <cField> ] ;
       [ FORMAT <cFmt> ] ;
       OF <oBand> ;
-      AT <nTop>, <nLeft> SIZE <nW> [, <nH>] ;
+      AT <nTop>, <nLeft> SIZE <nW>, <nH> ;
       [ FONT <cFont> [, <nFSize>] ] ;
       [ BOLD ] [ ITALIC ] ;
       [ ALIGN <nAlign> ] ;
