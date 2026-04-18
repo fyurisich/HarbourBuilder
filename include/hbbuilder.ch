@@ -449,22 +449,25 @@
       [ FORMAT <cFmt> ] ;
       OF <oBand> ;
       AT <nTop>, <nLeft> SIZE <nW>, <nH> ;
-      [ FONT <cFont> [, <nFSize>] ] ;
+      [ FONT <cFont>, <nFSize> ] ;
       [ BOLD ] [ ITALIC ] ;
       [ ALIGN <nAlign> ] ;
    => ;
-   <oVar> := TReportField():New() ;; ;
-   <oVar>:cFieldType := <cType> ;; ;
-   [ <oVar>:cText      := <cText> ;; ] ;
-   [ <oVar>:cFieldName := <cField> ;; ] ;
-   [ <oVar>:cFormat    := <cFmt> ;; ] ;
-   <oVar>:nTop    := <nTop> ; <oVar>:nLeft   := <nLeft> ;; ;
-   <oVar>:nWidth  := <nW>   ; <oVar>:nHeight := <nH> ;; ;
-   [ <oVar>:cFontName := <cFont> ; <oVar>:nFontSize := <nFSize> ;; ] ;
-   [ <oVar>:lBold   := .T. ;; ] ;
-   [ <oVar>:lItalic := .T. ;; ] ;
-   [ <oVar>:nAlignment := <nAlign> ;; ] ;
-   <oBand>:AddField( <oVar> )
+   <oVar> := TReportField():New() ; ;
+   <oVar>:cFieldType := <cType>   ; ;
+   <oVar>:nTop    := <nTop>       ; ;
+   <oVar>:nLeft   := <nLeft>      ; ;
+   <oVar>:nWidth  := <nW>         ; ;
+   <oVar>:nHeight := <nH>         ;
+   [; <oVar>:cText      := <cText>  ] ;
+   [; <oVar>:cFieldName := <cField> ] ;
+   [; <oVar>:cFormat    := <cFmt>   ] ;
+   [; <oVar>:cFontName  := <cFont>  ] ;
+   [; <oVar>:nFontSize  := <nFSize> ] ;
+   [; <oVar>:lBold      := .T.      ] ;
+   [; <oVar>:lItalic    := .T.      ] ;
+   [; <oVar>:nAlignment := <nAlign> ] ;
+   ; <oBand>:AddField( <oVar> )
 
 // REPORT TEXT - static text field with font
 #xcommand REPORT TEXT <oFld> ;
