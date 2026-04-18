@@ -1794,6 +1794,16 @@ TControl * CreateControlByType( BYTE bType )
       case CT_PAINTBOX: return new TPaintBox();
       case CT_BROWSE:  return new TBrowse();
       case CT_DBGRID:  { TBrowse * p = new TBrowse(); p->FControlType = CT_DBGRID; return p; }
+      case CT_REPORTLABEL:
+      case CT_REPORTFIELD:
+      case CT_REPORTIMAGE:
+      {
+         TControl * p = new TControl();
+         p->FControlType = (BYTE) bType;
+         p->FWidth  = (bType == CT_REPORTIMAGE) ? 80 : 120;
+         p->FHeight = (bType == CT_REPORTIMAGE) ? 60 : 20;
+         return p;
+      }
    }
    return NULL;
 }
