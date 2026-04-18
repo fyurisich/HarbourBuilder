@@ -1058,6 +1058,8 @@ HB_FUNC( UI_SETPROP )
 
    if( lstrcmpi( szProp, "cText" ) == 0 && HB_ISCHAR(3) )
       p->SetText( hb_parc(3) );
+   else if( lstrcmpi( szProp, "cUrl" ) == 0 && HB_ISCHAR(3) )
+      p->SetText( hb_parc(3) );
    else if( lstrcmpi( szProp, "nLeft" ) == 0 )
    {  p->FLeft = hb_parni(3);
       if( p->FControlType == CT_FORM ) ((TForm*)p)->FCenter = FALSE;
@@ -1459,6 +1461,8 @@ HB_FUNC( UI_GETPROP )
    if( !p || !szProp ) { hb_ret(); return; }
 
    if( lstrcmpi( szProp, "cText" ) == 0 )
+      hb_retc( p->FText );
+   else if( lstrcmpi( szProp, "cUrl" ) == 0 )
       hb_retc( p->FText );
    else if( lstrcmpi( szProp, "nLeft" ) == 0 )
       hb_retni( p->FLeft );
@@ -2160,12 +2164,11 @@ HB_FUNC( UI_GETALLPROPS )
 
    /* ControlAlign (all controls) */
    {
-      static const char * szAlignEnum = "alNone|alTop|alBottom|alLeft|alRight|alClient";
       pRow = hb_itemArrayNew(4);
       hb_arraySetC( pRow, 1, "nControlAlign" );
       hb_arraySetNI( pRow, 2, p->FDockAlign );
       hb_arraySetC( pRow, 3, "Layout" );
-      hb_arraySetC( pRow, 4, szAlignEnum );
+      hb_arraySetC( pRow, 4, "N" );
       hb_arrayAdd( pArray, pRow );
       hb_itemRelease( pRow );
    }
@@ -2300,17 +2303,19 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_PROP_S( "cDataSource", br->FDataSourceName, "Data" );
          break;
       }
+      case CT_WEBVIEW:
+         ADD_PROP_S( "cUrl", p->FText, "Web" );
+         break;
       case CT_TIMER:
          ADD_PROP_N( "nInterval", p->FInterval, "Behavior" );
          break;
       case CT_BAND:
       {
-         static const char * szBandEnum = "Header|PageHeader|Detail|PageFooter|Footer";
          pRow = hb_itemArrayNew(4);
          hb_arraySetC( pRow, 1, "cBandType" );
          hb_arraySetC( pRow, 2, p->FText );
          hb_arraySetC( pRow, 3, "Band" );
-         hb_arraySetC( pRow, 4, szBandEnum );
+         hb_arraySetC( pRow, 4, "S" );
          hb_arrayAdd( pArray, pRow );
          hb_itemRelease( pRow );
          ADD_PROP_S( "aData", p->FData, "Band" );

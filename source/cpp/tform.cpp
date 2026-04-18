@@ -437,7 +437,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                   if( ctrlType >= CT_WEBSERVER && ctrlType <= CT_UDPSOCKET ) isNonVisual = 1;
                   if( ctrlType >= CT_PREPROCESSOR && ctrlType <= CT_SCHEDULER ) isNonVisual = 1;
                   if( ctrlType >= CT_PRINTER && ctrlType <= CT_BARCODEPRINTER ) isNonVisual = 1;
-                  if( ctrlType >= CT_WHISPER ) isNonVisual = 1; /* Whisper, Embeddings, Connectivity, Git */
+                  if( ctrlType >= CT_WHISPER && ctrlType != CT_BAND ) isNonVisual = 1; /* Whisper, Embeddings, Connectivity, Git */
 
                   if( isNonVisual && g_designForm )
                   {
@@ -1038,6 +1038,10 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                {
                   if( !IsSelected( pHit ) )
                      SelectControl( pHit, FALSE );
+
+                  if( pHit->FControlType == CT_BAND )
+                     break;  /* bands are positioned by BandStackAll; no drag */
+
                   /* Bring selected controls to top of z-order */
                   {
                      int s;
@@ -1377,10 +1381,17 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
 
          if( FDesignMode && ( FDragging || FResizing ) )
          {
+            BOOL bWasBandResize = ( FResizing && FSelCount > 0 &&
+                                    FSelected[0]->FControlType == CT_BAND );
             FDragging = FALSE;
             FResizing = FALSE;
             FResizeHandle = -1;
             ReleaseCapture();
+
+            /* After resizing a band, restack all bands so those below adjust */
+            if( bWasBandResize )
+               BandStackAll( FHandle );
+
             UpdateOverlay();
 
             /* Refresh inspector with updated positions */
@@ -1915,8 +1926,17 @@ int TForm::HitTestHandle( int x, int y )
    {
       TControl * p = FSelected[i];
       int px = p->FLeft, py = p->FTop, pw = p->FWidth, ph = p->FHeight;
-      int hx[8], hy[8];
 
+      if( p->FControlType == CT_BAND )
+      {
+         /* Bands: only bottom-center handle for vertical resize */
+         int hxBC = px + pw/2 - 3, hyBC = py + ph - 3;
+         if( x >= hxBC && x <= hxBC+7 && y >= hyBC && y <= hyBC+7 )
+            return 5;  /* BC */
+         continue;
+      }
+
+      int hx[8], hy[8];
       hx[0]=px-3;      hy[0]=py-3;
       hx[1]=px+pw/2-3; hy[1]=py-3;
       hx[2]=px+pw-3;   hy[2]=py-3;
@@ -1995,7 +2015,6 @@ void TForm::PaintSelectionHandles( HDC hDC )
    {
       TControl * p = FSelected[i];
       int x = p->FLeft, y = p->FTop + FClientTop, w = p->FWidth, h = p->FHeight;
-      int hx[8], hy[8];
 
       /* Dashed border */
       HPEN hDash = CreatePen( PS_DASH, 1, RGB(0, 120, 215) );
@@ -2005,20 +2024,30 @@ void TForm::PaintSelectionHandles( HDC hDC )
       SelectObject( hDC, hOldBr );
       DeleteObject( hDash );
 
-      /* 8 handles: white fill + blue border */
-      hx[0]=x-3;     hy[0]=y-3;
-      hx[1]=x+w/2-3; hy[1]=y-3;
-      hx[2]=x+w-3;   hy[2]=y-3;
-      hx[3]=x+w-3;   hy[3]=y+h/2-3;
-      hx[4]=x+w-3;   hy[4]=y+h-3;
-      hx[5]=x+w/2-3; hy[5]=y+h-3;
-      hx[6]=x-3;     hy[6]=y+h-3;
-      hx[7]=x-3;     hy[7]=y+h/2-3;
-
       SelectObject( hDC, hPen );
       SelectObject( hDC, hWhite );
-      for( j = 0; j < 8; j++ )
-         Rectangle( hDC, hx[j], hy[j], hx[j]+7, hy[j]+7 );
+
+      if( p->FControlType == CT_BAND )
+      {
+         /* Bands: only bottom-center handle for vertical resize */
+         int hxBC = x+w/2-3, hyBC = y+h-3;
+         Rectangle( hDC, hxBC, hyBC, hxBC+7, hyBC+7 );
+      }
+      else
+      {
+         /* 8 handles: white fill + blue border */
+         int hx[8], hy[8];
+         hx[0]=x-3;     hy[0]=y-3;
+         hx[1]=x+w/2-3; hy[1]=y-3;
+         hx[2]=x+w-3;   hy[2]=y-3;
+         hx[3]=x+w-3;   hy[3]=y+h/2-3;
+         hx[4]=x+w-3;   hy[4]=y+h-3;
+         hx[5]=x+w/2-3; hy[5]=y+h-3;
+         hx[6]=x-3;     hy[6]=y+h-3;
+         hx[7]=x-3;     hy[7]=y+h/2-3;
+         for( j = 0; j < 8; j++ )
+            Rectangle( hDC, hx[j], hy[j], hx[j]+7, hy[j]+7 );
+      }
    }
 
    SelectObject( hDC, hOldPen );

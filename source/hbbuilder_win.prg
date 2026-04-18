@@ -6746,8 +6746,8 @@ HB_FUNC( W32_GENERATEPALETTEICONS )
       "Tm","Px","Op","Sv","Ft","Cl","Fn","Rp",
       "DB","My","Mr","Pg","SL","Fb","MS","Or","Mg",
       "Bw","DG","DN","DT","DE","DC","DK","DI",
-      "Pr","Rp","Lb","PP","PS","PD","RV","BP",
       "Wb","WS","Wk","HT","FT","SM","TS","TC","UD",
+      "Pr","Rp","Lb","PP","PS","PD","RV","BP","Bd",
       "PP","Sc","Rp","BC","PD","XL","Au","Pm","Cu","Tx","Ds","Sh",
       "Th","Mx","Se","CS","TP","At","CV","Ch",
       "OA","Gm","Cl","DS","Gk","Ol","Tf",
@@ -6760,8 +6760,8 @@ HB_FUNC( W32_GENERATEPALETTEICONS )
       0x0FC4F1,0x0FC4F1,0x227EE6,0x227EE6,0x227EE6,0x227EE6,0x227EE6,0x227EE6,
       0x3C4CE7,0x3C4CE7,0x3C4CE7,0x3C4CE7,0x3C4CE7,0x3C4CE7,0x3C4CE7,0x3C4CE7,0x3C4CE7,
       0x2B39C0,0x2B39C0,0x2B39C0,0x2B39C0,0x2B39C0,0x2B39C0,0x2B39C0,0x2B39C0,
-      0x8D8C7F,0x8D8C7F,0x8D8C7F,0x8D8C7F,0x8D8C7F,0x8D8C7F,0x8D8C7F,0x8D8C7F,
       0x9CBC1A,0x9CBC1A,0x9CBC1A,0x9CBC1A,0x9CBC1A,0x9CBC1A,0x9CBC1A,0x9CBC1A,0x9CBC1A,
+      0x8D8C7F,0x8D8C7F,0x8D8C7F,0x8D8C7F,0x8D8C7F,0x8D8C7F,0x8D8C7F,0x8D8C7F,0x5E84A2,
       0xAD448E,0xAD448E,0xAD448E,0xAD448E,0xAD448E,0xAD448E,0xAD448E,0xAD448E,0xAD448E,0xAD448E,0xAD448E,0xAD448E,
       0x503E2C,0x503E2C,0x503E2C,0x503E2C,0x503E2C,0x503E2C,0x503E2C,0x503E2C,
       0x129CF3,0x129CF3,0x129CF3,0x129CF3,0x129CF3,0x129CF3,0x129CF3,
@@ -6822,6 +6822,25 @@ HB_FUNC( W32_GENERATEPALETTEICONS )
             }
             GdipDisposeImage(pImg);
          }
+      }
+
+      /* Band icon (index 72): 3 horizontal stripes like rectangle.split.3x1 */
+      if( !bDrawn && i == 72 )
+      {
+         HBRUSH hBr; HPEN hPn;
+         hBr = CreateSolidBrush(RGB(162,132,94));
+         hPn = CreatePen(PS_SOLID,1,RGB(110,80,44));
+         SelectObject(hM,hBr); SelectObject(hM,hPn);
+         RoundRect(hM,ri.left,ri.top,ri.right,ri.bottom,4,4);
+         DeleteObject(hBr); DeleteObject(hPn);
+         hPn = CreatePen(PS_SOLID,1,RGB(240,225,200));
+         SelectObject(hM,hPn);
+         SelectObject(hM,GetStockObject(NULL_BRUSH));
+         Rectangle(hM,x+4,5,x+28,11);   /* header stripe */
+         Rectangle(hM,x+4,12,x+28,21);  /* detail stripe */
+         Rectangle(hM,x+4,22,x+28,28);  /* footer stripe */
+         DeleteObject(hPn);
+         bDrawn = TRUE;
       }
 
       /* Fallback: colored rectangle with text */

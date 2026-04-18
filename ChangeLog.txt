@@ -1,6 +1,34 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-18b (Windows — band palette icon, inspector cBandType/nControlAlign/cUrl fixes)
+
+  REPORT DESIGNER (Windows):
+  - CT_BAND excluded from non-visual auto-drop path (was incorrectly treated as
+    a 32x32 component icon due to ctrlType >= CT_WHISPER range check). Bands
+    now use rubber-band visual drop like all other controls.
+  - Form title changes to "Report1" on first band drop (was broken by the
+    non-visual misclassification).
+  - Bands are not draggable after placement; BandStackAll positions them.
+  - Only bottom-center resize handle shown/active for CT_BAND (vertical resize only).
+  - BandStackAll called after band resize to maintain canonical stacking order.
+
+  INSPECTOR (Windows):
+  - cBandType: fixed to use type 'S' (string); shows correct dropdown
+    (Header / PageHeader / Detail / PageFooter / Footer).
+  - nControlAlign: fixed to use type 'N' (numeric); shows correct dropdown
+    (alNone / alTop / alBottom / alLeft / alRight / alClient).
+  - cUrl property added to CT_WEBVIEW (WebView) in Inspector, UI_GetAllProps,
+    UI_SetProp, UI_GetProp.
+
+  PALETTE ICON GENERATOR (Windows):
+  - W32_GENERATEPALETTEICONS: Internet tab now precedes Printing tab in ab[]/cl[]
+    arrays, matching actual palette tab order in hbbuilder_win.prg (was swapped).
+  - Band ("Bd") added as 9th Printing tab entry with warm brown color (0x5E84A2),
+    matching Mac's systemBrownColor for CT_BAND.
+  - Custom Band icon drawing: 3 horizontal white-outlined stripes on brown
+    background (header / detail / footer), mirroring Mac SF Symbol rectangle.split.3x1.
+
 2026-04-18 (Windows — macOS parity: bands, ControlAlign, REPORTFIELD, inspector)
 
   REPORT DESIGNER (Windows):

@@ -1237,6 +1237,8 @@ static const char * s_shapeType[]   = { "stRectangle", "stCircle", "stRoundRect"
 static const char * s_viewStyle[]   = { "vsIcon", "vsList", "vsReport", "vsSmallIcon" };
 static const char * s_bevelOuter[]  = { "bvNone", "bvLowered", "bvRaised" };
 static const char * s_cRdd[]        = { "DBFCDX", "DBFNTX", "DBFFPT" };
+static const char * s_bandType[]    = { "Header", "PageHeader", "Detail", "PageFooter", "Footer" };
+static const char * s_controlAlign[] = { "alNone", "alTop", "alBottom", "alLeft", "alRight", "alClient" };
 
 /* Shared dropdown for all PT_LOGICAL properties: "No" / "Yes" */
 static const char * s_logical[]     = { "No", "Yes" };
@@ -1255,6 +1257,8 @@ static ENUMDEF s_enums[] = {
    { "nShapeType",    s_shapeType,    4, FALSE },
    { "nViewStyle",    s_viewStyle,    4, FALSE },
    { "cRDD",          s_cRdd,         3, TRUE  },
+   { "cBandType",     s_bandType,     5, TRUE  },
+   { "nControlAlign", s_controlAlign, 6, FALSE },
    { NULL, NULL, 0, FALSE }
 };
 
