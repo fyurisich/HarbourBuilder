@@ -3558,6 +3558,12 @@ static HBPaletteTarget * s_palTarget = nil;
 
    if( form->FDragging || form->FResizing ) {
       form->FDragging = NO; form->FResizing = NO; form->FResizeHandle = -1;
+      /* If a band was dragged, snap all bands back to their stacked positions */
+      for( int i = 0; i < form->FSelCount; i++ )
+         if( form->FSelected[i] && form->FSelected[i]->FControlType == CT_BAND ) {
+            BandStackAll( (HBControl *)form );
+            break;
+         }
       [self setNeedsDisplay:YES]; [form notifySelChange];
    }
 }
@@ -5027,10 +5033,14 @@ static void BandStackAll( HBControl * parent )
    }];
 
    CGFloat formW = 0;
-   if( [parent isKindOfClass:[HBForm class]] )
-      formW = ((HBForm *)parent)->FWindow.frame.size.width;
+   BOOL inDesign = NO;
+   if( [parent isKindOfClass:[HBForm class]] ) {
+      formW   = ((HBForm *)parent)->FWindow.frame.size.width;
+      inDesign = ((HBForm *)parent)->FDesignMode;
+   }
 
-   CGFloat y = 0;
+   /* In design mode rulers occupy the top 20px — stack bands below them */
+   CGFloat y = inDesign ? 20.0 : 0.0;
    for( HBControl * b in bands ) {
       b->FLeft = 0;
       b->FTop  = (int)y;
