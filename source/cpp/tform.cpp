@@ -864,7 +864,10 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
             this, dragging the design form after Open flickered the
             editor horribly as every frame re-emitted the whole class. */
          if( !FInSizeMove )
+         {
             FireEvent( FOnResize );
+            ApplyDockAlign( this );
+         }
          break;
       }
 

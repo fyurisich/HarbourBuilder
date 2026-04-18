@@ -16,7 +16,6 @@
 #include <string.h>
 
 /* Forward declaration — defined in tform.cpp */
-class TForm;
 void ApplyDockAlign( TForm * form );
 
 /* ---- CT_BAND helpers ---------------------------------------------------- */
@@ -1175,7 +1174,8 @@ HB_FUNC( UI_SETPROP )
       lstrcpynA( p->FData, hb_parc(3), sizeof(p->FData) - 1 );
    else if( lstrcmpi( szProp, "nControlAlign" ) == 0 && HB_ISNUM(3) )
    {
-      p->FDockAlign = hb_parni(3);
+      int nAlign = hb_parni(3);
+      p->FDockAlign = ( nAlign >= ALIGN_NONE && nAlign <= ALIGN_CLIENT ) ? nAlign : ALIGN_NONE;
       if( p->FCtrlParent && p->FCtrlParent->FControlType == CT_FORM )
          ApplyDockAlign( (TForm *) p->FCtrlParent );
    }
