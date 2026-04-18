@@ -1994,7 +1994,7 @@ static function RestoreFormFromCode( hForm, cCode )
          cFldName := ""; cFldType := "text"; cFldPrompt := ""; cFldField := ""
          cFldFormat := ""; cBandName := ""; cFldFont := "Sans"; nFldFontSize := 10
          lFldBold := .F.; lFldItalic := .F.; nFldAlign := 0
-         cTrim := AllTrim( cLine )
+         cTrim := StrTran( AllTrim( cLine ), Chr(13), "" )
          nPos := At( "::o", cTrim )
          if nPos > 0
             cFldName := SubStr( cTrim, nPos + 3 )
@@ -2916,6 +2916,7 @@ static function TBRun()
    local cMsvcInc, cMsvcLib, cUcrtInc, cUmInc, cSharedInc, cUcrtLib, cUmLib
    local cRsp, cRspContent, aCI, cAppName, cAppTitle, cExePath
    local hRunForm, nRunCount, hRunCtrl, oRunReport, oRunBand, cRunType, nRunH
+   local cFldData, aFldLines, cFldLine, aFldRec, oFld
    static nLastHash := 0
 
    SaveActiveFormCode()
@@ -2939,10 +2940,38 @@ static function TBRun()
             nRunH    := UI_GetProp( hRunCtrl, "nHeight" )
             oRunBand := TBand():New( nil, cRunType, nRunH )
             oRunReport:AddDesignBand( oRunBand )
+            // Reconstruct fields from serialized aData
+            cFldData := UI_GetProp( hRunCtrl, "aData" )
+            if ! Empty( cFldData )
+               aFldLines := hb_ATokens( cFldData, Chr(10) )
+               for each cFldLine in aFldLines
+                  cFldLine := StrTran( AllTrim( cFldLine ), Chr(13), "" )
+                  if Empty( cFldLine ); loop; endif
+                  aFldRec := hb_ATokens( cFldLine, "|" )
+                  if Len( aFldRec ) >= 14
+                     oFld := TReportField():New()
+                     oFld:cName      := aFldRec[1]
+                     oFld:cFieldType := aFldRec[2]
+                     oFld:cText      := aFldRec[3]
+                     oFld:cFieldName := aFldRec[4]
+                     oFld:cFormat    := aFldRec[5]
+                     oFld:nTop       := Val( aFldRec[6] )
+                     oFld:nLeft      := Val( aFldRec[7] )
+                     oFld:nWidth     := Val( aFldRec[8] )
+                     oFld:nHeight    := Val( aFldRec[9] )
+                     oFld:cFontName  := aFldRec[10]
+                     oFld:nFontSize  := Val( aFldRec[11] )
+                     oFld:lBold      := ( aFldRec[12] == "1" )
+                     oFld:lItalic    := ( aFldRec[13] == "1" )
+                     oFld:nAlignment := Val( aFldRec[14] )
+                     oRunBand:AddField( oFld )
+                  endif
+               next
+            endif
          endif
       next
       if oRunReport != nil
-         oRunReport:Print()
+         oRunReport:Preview()
          return nil
       endif
    endif
