@@ -48,9 +48,15 @@ static LRESULT CALLBACK BandWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM 
       LineTo( hdc, rc.right, rc.bottom - 1 );
       SelectObject( hdc, hOld );
       DeleteObject( hPen );
-      SetBkMode( hdc, TRANSPARENT );
-      SetTextColor( hdc, RGB(255,255,255) );
-      DrawTextA( hdc, szType, -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+      { HFONT hFont = CreateFontA( -13, 0, 0, 0, FW_BOLD, 0, 0, 0,
+           ANSI_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS,
+           DEFAULT_QUALITY, DEFAULT_PITCH | FF_SWISS, "Segoe UI" );
+        HFONT hFontOld = (HFONT) SelectObject( hdc, hFont );
+        SetBkMode( hdc, TRANSPARENT );
+        SetTextColor( hdc, RGB(255,255,255) );
+        DrawTextA( hdc, szType, -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE );
+        SelectObject( hdc, hFontOld );
+        DeleteObject( hFont ); }
       EndPaint( hWnd, &ps );
       return 0;
    }

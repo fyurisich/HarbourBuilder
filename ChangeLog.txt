@@ -1,6 +1,18 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-18d (Windows — band: centered label, focus/dots, vertical drag with snap-back)
+
+  REPORT DESIGNER (Windows):
+  - Band type label ("Header", "Detail", etc.) rendered with bold Segoe UI 13px,
+    centered horizontally and vertically via DT_CENTER|DT_VCENTER; auto-recenters
+    on form resize because WM_PAINT always uses the current client rect.
+  - Band window subclassed after auto-drop so mouse clicks reach the form and
+    the band receives selection focus with blue dot handles.
+  - Band can be dragged vertically in design mode (horizontal movement blocked);
+    on mouse release BandStackAll snaps all bands back to canonical positions.
+  - BandStackAll now called after both drag and resize of any CT_BAND.
+
 2026-04-18c (Windows — band always auto-drops; Header height 100px)
 
   REPORT DESIGNER (Windows):

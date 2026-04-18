@@ -544,6 +544,7 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                         hb_vmPushInteger( 65 );
                         hb_vmSend( 6 );
                      }
+                     g_designForm->SubclassChildren();
                      g_designForm->UpdateOverlay();
                   }
                   else if( g_designForm )
@@ -1057,9 +1058,6 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
                   if( !IsSelected( pHit ) )
                      SelectControl( pHit, FALSE );
 
-                  if( pHit->FControlType == CT_BAND )
-                     break;  /* bands are positioned by BandStackAll; no drag */
-
                   /* Bring selected controls to top of z-order */
                   {
                      int s;
@@ -1187,6 +1185,10 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
 
             dx = (dx / 4) * 4;
             dy = (dy / 4) * 4;
+
+            /* Bands move vertically only; BandStackAll snaps on release */
+            if( FSelCount > 0 && FSelected[0]->FControlType == CT_BAND )
+               dx = 0;
 
             if( dx != 0 || dy != 0 )
             {
@@ -1399,15 +1401,15 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
 
          if( FDesignMode && ( FDragging || FResizing ) )
          {
-            BOOL bWasBandResize = ( FResizing && FSelCount > 0 &&
-                                    FSelected[0]->FControlType == CT_BAND );
+            BOOL bWasBandOp = ( FSelCount > 0 &&
+                                FSelected[0]->FControlType == CT_BAND );
             FDragging = FALSE;
             FResizing = FALSE;
             FResizeHandle = -1;
             ReleaseCapture();
 
-            /* After resizing a band, restack all bands so those below adjust */
-            if( bWasBandResize )
+            /* After any band drag or resize, snap all bands to canonical positions */
+            if( bWasBandOp )
                BandStackAll( FHandle );
 
             UpdateOverlay();
