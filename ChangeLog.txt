@@ -1,6 +1,13 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-18c (Windows — band instant-drop on palette click)
+
+  REPORT DESIGNER (Windows):
+  - CT_BAND palette click now auto-drops instantly (no rubber-band required):
+    fires OnComponentDrop directly, UI_BandNew + BandStackAll handle positioning.
+    Band appears below the ruler or below the last existing band.
+
 2026-04-18b (Windows — band palette icon, inspector cBandType/nControlAlign/cUrl fixes)
 
   REPORT DESIGNER (Windows):
