@@ -183,11 +183,12 @@ static LRESULT CALLBACK ReportCtrlWndProc( HWND hWnd, UINT msg, WPARAM wParam, L
          else /* CT_REPORTIMAGE */
          {
             HPEN hPDiag = CreatePen( PS_SOLID, 1, RGB(180,180,180) );
-            SelectObject( hdc, hPDiag );
+            HPEN hOldD  = (HPEN) SelectObject( hdc, hPDiag );
             MoveToEx( hdc, rc.left+2, rc.top+2, NULL );
             LineTo( hdc, rc.right-2, rc.bottom-2 );
             MoveToEx( hdc, rc.right-2, rc.top+2, NULL );
             LineTo( hdc, rc.left+2, rc.bottom-2 );
+            SelectObject( hdc, hOldD );
             DeleteObject( hPDiag );
          }
          SelectObject( hdc, hFontOld );
