@@ -171,6 +171,9 @@
 // Non-visual: Data containers
 #define CT_COMPARRAY       131
 
+// Report designer
+#define CT_BAND            132
+
 // Alignment
 #define ALIGN_LEFT         0
 #define ALIGN_CENTER       1

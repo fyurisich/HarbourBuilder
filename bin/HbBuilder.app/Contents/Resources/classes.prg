@@ -2556,6 +2556,9 @@ CLASS TReport
    DATA nMarginRight   INIT 15
    DATA nMarginTop     INIT 15
    DATA nMarginBottom  INIT 15
+   DATA nCurrentY      INIT 0
+   DATA nCurrentPage   INIT 0
+   DATA nUsableHeight  INIT 0
    METHOD New( oPrn ) CONSTRUCTOR
    METHOD AddBand( cName, bBlock )
    METHOD AddColumn( cTitle, cField, nWidth )
@@ -2564,6 +2567,7 @@ CLASS TReport
    METHOD AddDesignBand( oBand )
    METHOD RemoveDesignBand( nIndex )
    METHOD GetDesignBand( cName )
+   METHOD RenderBand( oBand )
    METHOD GenerateCode( cClassName )
 ENDCLASS
 
@@ -2606,34 +2610,60 @@ METHOD Preview() CLASS TReport
 return nil
 
 METHOD Print() CLASS TReport
-   local i
+   local oBand, lPageFooterRendered := .F.
    if ::oPrinter == nil; return nil; endif
+
+   ::nCurrentPage  := 0
+   ::nCurrentY     := ::nMarginTop
+   ::nUsableHeight := ::nPageHeight - ::nMarginTop - ::nMarginBottom
+
    ::oPrinter:BeginDoc( ::cTitle )
-   // Header band
-   for i := 1 to Len( ::aBands )
-      if ::aBands[i][1] == "Header" .and. ::aBands[i][2] != nil
-         Eval( ::aBands[i][2], ::oPrinter )
-      endif
-   next
-   // Detail band (iterate datasource)
-   if ::oDataSource != nil .and. ::oDataSource:oDatabase != nil
+   ::nCurrentPage := 1
+
+   ::RenderBand( ::GetDesignBand( "Header" ) )
+   ::RenderBand( ::GetDesignBand( "PageHeader" ) )
+
+   if ::oDataSource != nil .and. ::oDataSource:oDatabase != nil .and. ::oDataSource:oDatabase:IsConnected()
       ::oDataSource:oDatabase:GoTop()
       while ! ::oDataSource:oDatabase:Eof()
-         for i := 1 to Len( ::aBands )
-            if ::aBands[i][1] == "Detail" .and. ::aBands[i][2] != nil
-               Eval( ::aBands[i][2], ::oPrinter, ::oDataSource:oDatabase )
-            endif
-         next
-         ::oDataSource:oDatabase:Skip()
+         oBand := ::GetDesignBand( "Detail" )
+         if oBand != nil .and. ::nCurrentY + oBand:nHeight > ::nMarginTop + ::nUsableHeight
+            ::RenderBand( ::GetDesignBand( "PageFooter" ) )
+            lPageFooterRendered := .T.
+            ::oPrinter:NewPage()
+            ::nCurrentPage++
+            ::nCurrentY := ::nMarginTop
+            lPageFooterRendered := .F.
+            ::RenderBand( ::GetDesignBand( "PageHeader" ) )
+         endif
+         ::RenderBand( oBand )
+         ::oDataSource:oDatabase:Skip( 1 )
       enddo
    endif
-   // Footer band
-   for i := 1 to Len( ::aBands )
-      if ::aBands[i][1] == "Footer" .and. ::aBands[i][2] != nil
-         Eval( ::aBands[i][2], ::oPrinter )
-      endif
-   next
+
+   if ! lPageFooterRendered
+      ::RenderBand( ::GetDesignBand( "PageFooter" ) )
+   endif
+   ::RenderBand( ::GetDesignBand( "Footer" ) )
+
    ::oPrinter:EndDoc()
+return nil
+
+METHOD RenderBand( oBand ) CLASS TReport
+   local oField
+   if oBand == nil .or. ! oBand:lVisible
+      return nil
+   endif
+   if __objHasMsg( oBand, "BONPRINT" ) .and. oBand:bOnPrint != nil
+      Eval( oBand:bOnPrint )
+   endif
+   for each oField in oBand:aFields
+      oField:Render( ::oPrinter, ::nCurrentY, ::oDataSource )
+   next
+   ::nCurrentY += oBand:nHeight
+   if __objHasMsg( oBand, "BONAFTERPRINT" ) .and. oBand:bOnAfterPrint != nil
+      Eval( oBand:bOnAfterPrint )
+   endif
 return nil
 
 METHOD AddDesignBand( oBand ) CLASS TReport
@@ -2647,12 +2677,18 @@ METHOD RemoveDesignBand( nIndex ) CLASS TReport
    endif
 return nil
 
-METHOD GetDesignBand( cName ) CLASS TReport
-   local i
-   local cUpper := Upper( cName )
+METHOD GetDesignBand( cType ) CLASS TReport
+   local i, oBand
+   local cUpper := Upper( cType )
+   // Search ::aDesignBands — match TBand objects by cBandType, TReportBand by cName
    for i := 1 to Len( ::aDesignBands )
-      if Upper( ::aDesignBands[i]:cName ) == cUpper
-         return ::aDesignBands[i]
+      oBand := ::aDesignBands[i]
+      if __objHasMsg( oBand, "CBANDTYPE" )
+         if Upper( oBand:cBandType ) == cUpper
+            return oBand
+         endif
+      elseif Upper( oBand:cName ) == cUpper
+         return oBand
       endif
    next
 return nil
@@ -3025,6 +3061,81 @@ return nil
 METHOD FieldCount() CLASS TReportBand
 return Len( ::aFields )
 
+//--------------------------------------------------------------------
+// TBand — visual designer control (TControl subclass, auto-stacked)
+//--------------------------------------------------------------------
+
+CLASS TBand INHERIT TControl
+
+   DATA cBandType          INIT "Detail"
+   DATA lPrintOnEveryPage  INIT .F.
+   DATA lVisible           INIT .T.
+   DATA nBackColor         INIT -1
+   DATA nType              INIT 0
+   DATA nLeft              INIT 0
+   DATA nTop               INIT 0
+   DATA nWidth             INIT 600
+   DATA nHeight            INIT 20
+   DATA aFields            INIT {}
+   DATA bOnPrint
+   DATA bOnAfterPrint
+
+   METHOD New( oParent, cType, nHeight )
+   METHOD AddField( oField )
+   METHOD RemoveField( nIndex )
+   METHOD FieldCount()
+   METHOD BandOrder()
+
+ENDCLASS
+
+METHOD New( oParent, cType, nHeight ) CLASS TBand
+   local nColor, nOrd
+   ::aFields     := {}
+   ::oParent     := oParent
+   ::nType       := CT_BAND
+   ::cBandType   := iif( ValType( cType ) == "C", cType, "Detail" )
+   ::nHeight     := iif( ValType( nHeight ) == "N", nHeight, 20 )
+   ::nLeft       := 0
+   ::nTop        := 0
+   ::nWidth      := iif( oParent != nil, oParent:Width, 600 )
+   nOrd := ::BandOrder()
+   ::lPrintOnEveryPage := ( nOrd == 2 .or. nOrd == 4 )
+   do case
+   case ::cBandType == "Header"     ; nColor := 173 + 216 * 256 + 230 * 65536  // light blue
+   case ::cBandType == "PageHeader" ; nColor := 144 + 238 * 256 + 144 * 65536  // light green
+   case ::cBandType == "Detail"     ; nColor := 255 + 255 * 256 + 255 * 65536  // white
+   case ::cBandType == "PageFooter" ; nColor := 144 + 238 * 256 + 144 * 65536  // light green
+   case ::cBandType == "Footer"     ; nColor := 211 + 211 * 256 + 211 * 65536  // light gray
+   otherwise                        ; nColor := 255 + 255 * 256 + 255 * 65536
+   endcase
+   ::nBackColor := nColor
+return Self
+
+METHOD AddField( oField ) CLASS TBand
+   oField:oBand := Self
+   AAdd( ::aFields, oField )
+return nil
+
+METHOD RemoveField( nIndex ) CLASS TBand
+   if nIndex >= 1 .and. nIndex <= Len( ::aFields )
+      ADel( ::aFields, nIndex )
+      ASize( ::aFields, Len( ::aFields ) - 1 )
+   endif
+return nil
+
+METHOD FieldCount() CLASS TBand
+return Len( ::aFields )
+
+METHOD BandOrder() CLASS TBand
+   do case
+   case ::cBandType == "Header"     ; return 1
+   case ::cBandType == "PageHeader" ; return 2
+   case ::cBandType == "Detail"     ; return 3
+   case ::cBandType == "PageFooter" ; return 4
+   case ::cBandType == "Footer"     ; return 5
+   endcase
+return 3
+
 //----------------------------------------------------------------------------//
 
 CLASS TReportField
@@ -3047,13 +3158,27 @@ CLASS TReportField
    DATA nBackColor    INIT -1
    DATA nBorderWidth  INIT 0
    DATA cFieldType    INIT "text"
+   DATA oBand         INIT nil
    METHOD New( cName ) CONSTRUCTOR
+   METHOD SetOpts( cText, cField, cFmt, cFont, nFSize, lBold, lItalic, nAlign )
    METHOD IsDataBound()
    METHOD GetValue( oDataSource )
+   METHOD Render( oPrinter, nBaseY, oDataSource )
 ENDCLASS
 
 METHOD New( cName ) CLASS TReportField
    if cName != nil; ::cName := cName; endif
+return Self
+
+METHOD SetOpts( cText, cField, cFmt, cFont, nFSize, lBold, lItalic, nAlign ) CLASS TReportField
+   if cText   != nil; ::cText      := cText;   endif
+   if cField  != nil; ::cFieldName := cField;  endif
+   if cFmt    != nil; ::cFormat    := cFmt;    endif
+   if cFont   != nil; ::cFontName  := cFont;   endif
+   if nFSize  != nil; ::nFontSize  := nFSize;  endif
+   if lBold   != nil; ::lBold      := lBold;   endif
+   if lItalic != nil; ::lItalic    := lItalic; endif
+   if nAlign  != nil; ::nAlignment := nAlign;  endif
 return Self
 
 METHOD IsDataBound() CLASS TReportField
@@ -3061,13 +3186,37 @@ return ! Empty( ::cFieldName )
 
 METHOD GetValue( oDataSource ) CLASS TReportField
    local xValue := nil
-   if oDataSource != nil .and. oDataSource:oDatabase != nil .and. ! Empty( ::cFieldName )
-      xValue := oDataSource:oDatabase:FieldGet( ::cFieldName )
-      if ! Empty( ::cFormat ) .and. xValue != nil
+   if ! Empty( ::cFieldName )
+      if "(" $ ::cFieldName
+         // Expression field: evaluate as a Harbour macro
+         xValue := &( ::cFieldName )
+      elseif oDataSource != nil .and. oDataSource:oDatabase != nil
+         xValue := oDataSource:oDatabase:FieldGet( ::cFieldName )
+      endif
+      if xValue != nil .and. ! Empty( ::cFormat )
          xValue := Transform( xValue, ::cFormat )
       endif
    endif
+   if ValType( xValue ) != "C"
+      xValue := hb_ValToStr( xValue )
+   endif
 return xValue
+
+METHOD Render( oPrinter, nBaseY, oDataSource ) CLASS TReportField
+   local nAbsY := nBaseY + ::nTop
+   local cVal
+   do case
+   case ::cFieldType == "label"
+      oPrinter:PrintLine( nAbsY, ::nLeft, ::cText )
+   case ::cFieldType == "data"
+      cVal := ::GetValue( oDataSource )
+      oPrinter:PrintLine( nAbsY, ::nLeft, cVal )
+   case ::cFieldType == "image"
+      oPrinter:PrintImage( nAbsY, ::nLeft, ::nWidth, ::nHeight, ::cText )
+   case ::cFieldType == "line"
+      oPrinter:PrintRect( nAbsY, ::nLeft, ::nWidth, ::nBorderWidth )
+   endcase
+return nil
 
 // Helper functions for report xcommand macros
 function RPT_NewTextField( oBand, cText, nTop, nLeft, nW, nH, cFont, nFSize, lBold, lItalic, nAlign )

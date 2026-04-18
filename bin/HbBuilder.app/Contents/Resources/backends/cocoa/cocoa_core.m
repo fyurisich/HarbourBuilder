@@ -14,6 +14,7 @@
 #import <UniformTypeIdentifiers/UniformTypeIdentifiers.h>
 #define HAS_UTTYPE 1
 #endif
+#include <objc/runtime.h>
 #include <hbapi.h>
 #include <hbapiitm.h>
 #include <hbapicls.h>
@@ -127,6 +128,7 @@ static void SuppressCursorWarnings(void)
 #define CT_PRINTDIALOG 107
 #define CT_REPORTVIEWER 108
 #define CT_BARCODEPRINTER 109
+#define CT_BAND           132   // Report designer band
 #define CT_MAP            140
 #define CT_SCENE3D        141
 #define CT_EARTHVIEW      142
@@ -557,6 +559,8 @@ void EnsureNSApp( void )
 
 static void UndoPushSnapshot( HBForm * pForm );   /* forward declaration */
 static void ApplyDockAlign( HBForm * form );      /* forward declaration */
+static void BandStackAll( HBControl * parent );   /* forward declaration */
+static void UI_BandRulersUpdate( HBControl * form ); /* forward declaration */
 
 /* TWebView navigation delegate */
 @interface HBWebViewDelegate : NSObject <WKNavigationDelegate>
@@ -1376,6 +1380,178 @@ static NSString * HBMaskApply( const char * mask, NSString * input )
 }
 @end
 
+/* --- HBBandView --- */
+/* Backing NSView for TBand: colored background + centered type label.
+ * Band type is read from the owning HBControl's FText field. */
+@interface HBBandView : NSView
+{
+@public
+   __weak HBControl * owner;
+}
+@end
+
+@implementation HBBandView
+- (BOOL)isFlipped { return YES; }
+- (void)drawRect:(NSRect)dirtyRect
+{
+   (void)dirtyRect;
+   HBControl * o = owner;
+   NSString * btype = o && o->FText[0] ?
+      [NSString stringWithUTF8String:o->FText] : @"Detail";
+
+   NSColor * bg;
+   if      ([btype isEqualToString:@"Header"])     bg = [NSColor colorWithRed:0.678 green:0.847 blue:0.902 alpha:1.0];
+   else if ([btype isEqualToString:@"PageHeader"]) bg = [NSColor colorWithRed:0.565 green:0.933 blue:0.565 alpha:1.0];
+   else if ([btype isEqualToString:@"PageFooter"]) bg = [NSColor colorWithRed:0.565 green:0.933 blue:0.565 alpha:1.0];
+   else if ([btype isEqualToString:@"Footer"])     bg = [NSColor colorWithRed:0.827 green:0.827 blue:0.827 alpha:1.0];
+   else                                             bg = [NSColor whiteColor];
+   [bg setFill];
+   NSRectFill(self.bounds);
+
+   NSDictionary * attrs = @{
+      NSFontAttributeName:            [NSFont systemFontOfSize:10],
+      NSForegroundColorAttributeName: [NSColor colorWithWhite:0.3 alpha:0.7]
+   };
+   NSString * label = [NSString stringWithFormat:@"[ %@ ]", btype];
+   NSSize sz = [label sizeWithAttributes:attrs];
+   CGFloat x = (self.bounds.size.width  - sz.width)  / 2;
+   CGFloat y = (self.bounds.size.height - sz.height) / 2;
+   [label drawAtPoint:NSMakePoint(x, y) withAttributes:attrs];
+
+   [[NSColor colorWithWhite:0.5 alpha:0.5] setStroke];
+   NSBezierPath * path = [NSBezierPath bezierPath];
+   [path moveToPoint:NSMakePoint(0, self.bounds.size.height - 1)];
+   [path lineToPoint:NSMakePoint(self.bounds.size.width, self.bounds.size.height - 1)];
+   [path setLineWidth:1.0];
+   [path stroke];
+}
+@end
+
+/* --- HBRulerView --- */
+/* Thin ruler strip drawn at top (horizontal) or left (vertical) of the report designer.
+ * Appears when the first CT_BAND is placed; removed when no bands remain. */
+
+static const char s_rulerHKey   = 0;   /* associated-object key for horizontal ruler */
+static const char s_rulerVKey   = 0;   /* associated-object key for vertical ruler    */
+static const char s_rulerCrnKey = 0;   /* associated-object key for corner square     */
+
+@interface HBRulerView : NSView
+@property (assign) BOOL isHorizontal;
+@end
+
+@implementation HBRulerView
+- (BOOL)isFlipped { return YES; }
+- (void)drawRect:(NSRect)dirtyRect
+{
+   (void)dirtyRect;
+   [[NSColor colorWithWhite:0.85 alpha:1.0] setFill];
+   NSRectFill(self.bounds);
+
+   NSFont * font = [NSFont systemFontOfSize:8];
+   NSDictionary * attrs = @{ NSFontAttributeName: font,
+                              NSForegroundColorAttributeName: [NSColor darkGrayColor] };
+
+   CGFloat totalLen = self.isHorizontal ? self.bounds.size.width : self.bounds.size.height;
+   CGFloat rulerW   = self.isHorizontal ? self.bounds.size.height : self.bounds.size.width;
+
+   for( int i = 0; i <= (int)totalLen; i += 10 ) {
+      CGFloat tick = (i % 100 == 0) ? rulerW * 0.6 : (i % 50 == 0) ? rulerW * 0.4 : rulerW * 0.2;
+      NSBezierPath * p = [NSBezierPath bezierPath];
+      [[NSColor colorWithWhite:0.5 alpha:1.0] setStroke];
+      if( self.isHorizontal ) {
+         [p moveToPoint:NSMakePoint(i, rulerW - tick)];
+         [p lineToPoint:NSMakePoint(i, rulerW)];
+      } else {
+         [p moveToPoint:NSMakePoint(rulerW - tick, i)];
+         [p lineToPoint:NSMakePoint(rulerW, i)];
+      }
+      [p setLineWidth:0.5];
+      [p stroke];
+      if( i % 100 == 0 && i > 0 ) {
+         NSString * label = [NSString stringWithFormat:@"%d", i];
+         NSPoint pt = self.isHorizontal ? NSMakePoint(i + 2, 1) : NSMakePoint(1, i + 1);
+         [label drawAtPoint:pt withAttributes:attrs];
+      }
+   }
+   /* Bottom/right border line */
+   [[NSColor colorWithWhite:0.4 alpha:1.0] setStroke];
+   NSBezierPath * border = [NSBezierPath bezierPath];
+   if( self.isHorizontal ) {
+      [border moveToPoint:NSMakePoint(0, rulerW - 0.5)];
+      [border lineToPoint:NSMakePoint(totalLen, rulerW - 0.5)];
+   } else {
+      [border moveToPoint:NSMakePoint(rulerW - 0.5, 0)];
+      [border lineToPoint:NSMakePoint(rulerW - 0.5, totalLen)];
+   }
+   [border setLineWidth:1.0];
+   [border stroke];
+}
+@end
+
+/* UI_BandRulersUpdate — show or hide ruler overlay views on the report designer form.
+ * Call after any CT_BAND add/remove/restack operation. */
+static void UI_BandRulersUpdate( HBControl * form )
+{
+   if( !form || ![form isKindOfClass:[HBForm class]] ) return;
+   HBForm * hbf = (HBForm *)form;
+   if( !hbf->FContentView ) return;
+
+   /* Count visible bands (FView != nil means not deleted) */
+   int nBands = 0;
+   for( int i = 0; i < form->FChildCount; i++ )
+      if( form->FChildren[i] && form->FChildren[i]->FControlType == CT_BAND
+            && form->FChildren[i]->FView )
+         nBands++;
+
+   const CGFloat RS = 20.0;
+   HBRulerView * rh = objc_getAssociatedObject(hbf->FContentView, &s_rulerHKey);
+   HBRulerView * rv = objc_getAssociatedObject(hbf->FContentView, &s_rulerVKey);
+
+   if( nBands > 0 && !rh ) {
+      /* Create rulers */
+      NSRect bounds = hbf->FContentView.bounds;
+      HBRulerView * nh = [[HBRulerView alloc] initWithFrame:
+         NSMakeRect(RS, 0, bounds.size.width - RS, RS)];
+      nh.isHorizontal   = YES;
+      nh.autoresizingMask = NSViewWidthSizable;
+      [hbf->FContentView addSubview:nh positioned:NSWindowAbove relativeTo:nil];
+
+      HBRulerView * nv = [[HBRulerView alloc] initWithFrame:
+         NSMakeRect(0, RS, RS, bounds.size.height - RS)];
+      nv.isHorizontal   = NO;
+      nv.autoresizingMask = NSViewHeightSizable;
+      [hbf->FContentView addSubview:nv positioned:NSWindowAbove relativeTo:nil];
+
+      /* Corner square */
+      NSView * corner = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, RS, RS)];
+      corner.wantsLayer = YES;
+      corner.layer.backgroundColor = [[NSColor colorWithWhite:0.75 alpha:1.0] CGColor];
+      [hbf->FContentView addSubview:corner positioned:NSWindowAbove relativeTo:nil];
+
+      objc_setAssociatedObject(hbf->FContentView, &s_rulerHKey,   nh,     OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(hbf->FContentView, &s_rulerVKey,   nv,     OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(hbf->FContentView, &s_rulerCrnKey, corner, OBJC_ASSOCIATION_RETAIN);
+   }
+   else if( nBands == 0 && rh ) {
+      /* Remove rulers */
+      [rh removeFromSuperview];
+      [rv removeFromSuperview];
+      NSView * corner = objc_getAssociatedObject(hbf->FContentView, &s_rulerCrnKey);
+      if( corner ) [corner removeFromSuperview];
+      objc_setAssociatedObject(hbf->FContentView, &s_rulerHKey,   nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(hbf->FContentView, &s_rulerVKey,   nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(hbf->FContentView, &s_rulerCrnKey, nil, OBJC_ASSOCIATION_RETAIN);
+   }
+   else if( nBands > 0 && rh ) {
+      /* Resize to match current window size */
+      NSRect bounds = hbf->FContentView.bounds;
+      rh.frame = NSMakeRect(RS, 0, bounds.size.width - RS, RS);
+      rv.frame = NSMakeRect(0, RS, RS, bounds.size.height - RS);
+      [rh setNeedsDisplay:YES];
+      [rv setNeedsDisplay:YES];
+   }
+}
+
 /* Resolve a TBitBtn NSImage from either Kind (bkOK..bkAll) via SF Symbol,
  * or cPicture file path. Returns nil for bkCustom + empty picture. */
 static NSImage * HBResolveBitBtnImage( int kind, const char * picture )
@@ -1960,6 +2136,12 @@ static NSImage * HBResolveBitBtnImage( int kind, const char * picture )
          }
 
          v = sv; break;
+      }
+      case CT_BAND: {
+         /* Report designer band: colored background + centered type label. */
+         HBBandView * bv = [[HBBandView alloc] initWithFrame:NSMakeRect(FLeft,FTop,FWidth,FHeight)];
+         bv->owner = self;
+         v = bv; break;
       }
       default: {
          /* Non-visual (Timer, Dialogs, DB components) or unknown.
@@ -2720,6 +2902,7 @@ static NSImage * HBResolveBitBtnImage( int kind, const char * picture )
    if( ctrlType == CT_MAP ) isNonVisual = 0; /* TMap is visual */
    if( ctrlType == CT_SCENE3D ) isNonVisual = 0; /* TScene3D is visual */
    if( ctrlType == CT_EARTHVIEW ) isNonVisual = 0; /* TEarthView is visual */
+   if( ctrlType == CT_BAND ) isNonVisual = 0; /* TBand is visual */
 
    NSLog(@"[HB] isNonVisual=%d", isNonVisual);
    if( isNonVisual )
@@ -2813,6 +2996,50 @@ static NSImage * HBResolveBitBtnImage( int kind, const char * picture )
       /* Select after OnComponentDrop so combobox already has the new entry */
       [targetForm selectControl:ctrl add:NO];
 
+      if( targetForm->FOverlayView )
+         [targetForm->FOverlayView setNeedsDisplay:YES];
+   }
+   else if( ctrlType == CT_BAND )
+   {
+      /* Band: immediate full-width drop, auto-stacked — no rubber-band needed */
+      /* Default type: Header if no bands exist yet, otherwise Detail */
+      int nExistingBands = 0;
+      for( int ci = 0; ci < targetForm->FChildCount; ci++ )
+         if( targetForm->FChildren[ci] && targetForm->FChildren[ci]->FControlType == CT_BAND )
+            nExistingBands++;
+      const char * defaultType = (nExistingBands == 0) ? "Header" : "Detail";
+
+      HBControl * ctrl = [[HBControl alloc] init];
+      ctrl->FControlType = CT_BAND;
+      strncpy( ctrl->FClassName, "TBand", sizeof(ctrl->FClassName) - 1 );
+      strncpy( ctrl->FText, defaultType, sizeof(ctrl->FText) - 1 );
+      ctrl->FLeft   = 0;
+      ctrl->FTop    = 0;
+      ctrl->FWidth  = targetForm->FWidth;
+      ctrl->FHeight = 24;
+
+      KeepAlive( ctrl );
+      [targetForm addChild:ctrl];
+
+      if( targetForm->FContentView )
+         [ctrl createViewInParent:targetForm->FContentView];
+
+      BandStackAll( (HBControl *)targetForm );
+
+      if( targetForm->FOnComponentDrop && HB_IS_BLOCK( targetForm->FOnComponentDrop ) )
+      {
+         hb_vmPushEvalSym();
+         hb_vmPush( targetForm->FOnComponentDrop );
+         hb_vmPushNumInt( (HB_PTRUINT)targetForm );
+         hb_vmPushInteger( CT_BAND );
+         hb_vmPushInteger( 0 );
+         hb_vmPushInteger( 0 );
+         hb_vmPushInteger( ctrl->FWidth );
+         hb_vmPushInteger( ctrl->FHeight );
+         hb_vmSend( 6 );
+      }
+
+      [targetForm selectControl:ctrl add:NO];
       if( targetForm->FOverlayView )
          [targetForm->FOverlayView setNeedsDisplay:YES];
    }
@@ -3108,6 +3335,16 @@ static HBPaletteTarget * s_palTarget = nil;
                [p setText:"GroupBox"]; p->FLeft=rx1; p->FTop=ry1; p->FWidth=rw; p->FHeight=rh;
                newCtrl = p; break;
             }
+            case CT_BAND: {
+               HBControl * p = [[HBControl alloc] init];
+               strcpy( p->FClassName, "TBand" );
+               p->FControlType = CT_BAND;
+               strcpy( p->FText, "Detail" );
+               p->FLeft = rx1; p->FTop = ry1;
+               p->FWidth  = rw > 10 ? rw : 600;
+               p->FHeight = rh > 10 ? rh : 24;
+               newCtrl = p; break;
+            }
             default: {
                /* Generic: all new control types use base HBControl */
                static struct { int type; const char * cls; const char * text; int dw; int dh; } defs[] = {
@@ -3335,6 +3572,7 @@ static HBPaletteTarget * s_palTarget = nil;
             [form->FSelected[i]->FView removeFromSuperview];
             form->FSelected[i]->FView = nil;
          }
+      UI_BandRulersUpdate( (HBControl *)form );
       [form clearSelection]; return;
    }
 
@@ -3573,6 +3811,8 @@ static HBPaletteTarget * s_palTarget = nil;
          [FContentView addSubview:grid];
       }
       [self createAllChildren];
+      if( FDesignMode )
+         BandStackAll( (HBControl *)self );
       if( !FDesignMode ) {
          [self loadAllDBGrids];
          ApplyDockAlign( self );
@@ -4020,6 +4260,7 @@ static void FlushPendingDBGrids( HBControl * node )
       FHeight = (int)fr.size.height;
    }
    ApplyDockAlign( self );
+   if( FDesignMode ) BandStackAll( (HBControl *)self );
    if( FDesignMode && FOverlayView ) [(NSView *)FOverlayView setNeedsDisplay:YES];
    if( FOnResize ) [self fireEvent:FOnResize];
 }
@@ -4720,6 +4961,96 @@ HB_FUNC( UI_WEBVIEWCANGOFORWARD )
    hb_retl( [wv isKindOfClass:[WKWebView class]] && [wv canGoForward] );
 }
 
+/* -----------------------------------------------------------------------
+ * TBand HB_FUNCs
+ * ----------------------------------------------------------------------- */
+
+/* UI_BandNew( hForm, cType, nLeft, nTop, nWidth, nHeight ) --> hCtrl */
+HB_FUNC( UI_BANDNEW )
+{
+   HBForm * pForm = GetForm(1);
+   const char * cType = HB_ISCHAR(2) ? hb_parc(2) : "Detail";
+   HBControl * p = [[HBControl alloc] init];
+   p->FControlType = CT_BAND;
+   strcpy( p->FClassName, "TBand" );
+   strncpy( p->FText, cType, sizeof(p->FText) - 1 );
+   p->FWidth = 600; p->FHeight = 24;
+   if( HB_ISNUM(3) ) p->FLeft = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FTop  = hb_parni(4);
+   if( HB_ISNUM(5) ) p->FWidth  = hb_parni(5);
+   if( HB_ISNUM(6) ) p->FHeight = hb_parni(6);
+   if( pForm ) [pForm addChild:p];
+   RetCtrl( p );
+}
+
+/* UI_BandGetType( hCtrl ) --> cType */
+HB_FUNC( UI_BANDGETTYPE )
+{
+   HBControl * p = GetCtrl(1);
+   hb_retc( p && p->FText[0] ? p->FText : "Detail" );
+}
+
+/* UI_BandSetType( hCtrl, cType ) */
+HB_FUNC( UI_BANDSETTYPE )
+{
+   HBControl * p = GetCtrl(1);
+   const char * cType = hb_parc(2);
+   if( p && cType ) {
+      strncpy( p->FText, cType, sizeof(p->FText) - 1 );
+      if( p->FView ) [p->FView setNeedsDisplay:YES];
+   }
+}
+
+/* BandStackAll — restack all CT_BAND children of parent (called on resize too) */
+static void BandStackAll( HBControl * parent )
+{
+   if( !parent ) return;
+
+   NSMutableArray * bands = [NSMutableArray array];
+   for( int i = 0; i < parent->FChildCount; i++ ) {
+      HBControl * c = parent->FChildren[i];
+      if( c && c->FControlType == CT_BAND ) [bands addObject:c];
+   }
+   if( [bands count] == 0 ) return;
+
+   NSDictionary * order = @{
+      @"Header":     @1, @"PageHeader": @2, @"Detail":     @3,
+      @"PageFooter": @4, @"Footer":     @5
+   };
+   [bands sortUsingComparator:^NSComparisonResult(HBControl * a, HBControl * b) {
+      NSString * ka = a->FText[0] ? [NSString stringWithUTF8String:a->FText] : @"Detail";
+      NSString * kb = b->FText[0] ? [NSString stringWithUTF8String:b->FText] : @"Detail";
+      NSNumber * na = order[ka] ? order[ka] : @3;
+      NSNumber * nb = order[kb] ? order[kb] : @3;
+      return [na compare:nb];
+   }];
+
+   CGFloat formW = 0;
+   if( [parent isKindOfClass:[HBForm class]] )
+      formW = ((HBForm *)parent)->FWindow.frame.size.width;
+
+   CGFloat y = 0;
+   for( HBControl * b in bands ) {
+      b->FLeft = 0;
+      b->FTop  = (int)y;
+      if( formW > 0 ) b->FWidth = (int)formW;
+      y += b->FHeight;
+      [b updateViewFrame];
+      if( b->FView ) [b->FView setNeedsDisplay:YES];
+   }
+   UI_BandRulersUpdate( parent );
+}
+
+/* UI_BandSetLayout( hCtrl )
+ * Restack all TBand siblings by band-type order (Header→Detail→Footer).
+ * Bands are sorted and repositioned vertically at x=0, stacked top-down. */
+HB_FUNC( UI_BANDSETLAYOUT )
+{
+   HBControl * band = GetCtrl(1);
+   if( !band ) return;
+   BandStackAll( band->FCtrlParent );
+}
+
 /* UI_BrowseAddCol( hBrowse, cTitle, cField, nWidth, nAlign ) --> nColIdx */
 HB_FUNC( UI_BROWSEADDCOL )
 {
@@ -5054,6 +5385,7 @@ HB_FUNC( UI_DROPNONVISUAL )
          { CT_SEMAPHORE, "TSemaphore" }, { CT_THREADPOOL, "TThreadPool" },
          { CT_PRINTER, "TPrinter" }, { CT_REPORT, "TReport" },
          { CT_COMPARRAY, "TCompArray" },
+         { CT_BAND, "TBand" },
          { CT_BROWSE, "TBrowse" }, { CT_DBGRID, "TDbGrid" },
          { CT_DBNAVIGATOR, "TDbNavigator" },
          { 112, "TPython" }, { 113, "TSwift" }, { 114, "TGo" },
@@ -5270,6 +5602,19 @@ HB_FUNC( UI_SETPROP )
             [wv loadRequest:[NSURLRequest requestWithURL:url]];
          }
       }
+   }
+   else if( p->FControlType == CT_BAND && strcasecmp(szProp,"cBandType")==0 )
+   {
+      static const char * bNames[] = { "Header","PageHeader","Detail","PageFooter","Footer" };
+      if( HB_ISNUM(3) ) {
+         int idx = hb_parni(3);
+         if( idx >= 0 && idx < 5 )
+            strncpy( p->FText, bNames[idx], sizeof(p->FText)-1 );
+      } else if( HB_ISCHAR(3) ) {
+         strncpy( p->FText, hb_parc(3), sizeof(p->FText)-1 );
+      }
+      if( p->FView ) [p->FView setNeedsDisplay:YES];
+      BandStackAll( p->FCtrlParent );
    }
    else if( p->FControlType == CT_SCENE3D &&
             ( strcasecmp(szProp,"cSceneFile")==0 || strcasecmp(szProp,"cPicture")==0 ) )
@@ -6114,6 +6459,8 @@ HB_FUNC( UI_GETPROP )
       hb_retc( p->FPicture );
    else if( strcasecmp(szProp,"nControlAlign")==0 )
       hb_retni( p->FDockAlign );
+   else if( strcasecmp(szProp,"cBandType")==0 && p->FControlType==CT_BAND )
+      hb_retc( p->FText[0] ? p->FText : "Detail" );
    else if( strcasecmp(szProp,"cUrl")==0 && p->FControlType==CT_WEBVIEW )
       hb_retc( p->FUrl );
    else if( strcasecmp(szProp,"cSceneFile")==0 && p->FControlType==CT_SCENE3D )
@@ -6492,6 +6839,14 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_N("nZoom", p->FZoom, "Location");
          ADD_D("nMapType", p->FMapType,
             "mtStandard|mtSatellite|mtHybrid|mtMutedStandard", "Appearance"); break;
+      }
+      case CT_BAND: {
+         static const char * bNames[] = { "Header","PageHeader","Detail","PageFooter","Footer" };
+         int nBIdx = 2;
+         for( int bi = 0; bi < 5; bi++ )
+            if( strcasecmp(p->FText, bNames[bi]) == 0 ) { nBIdx = bi; break; }
+         ADD_D("cBandType", nBIdx, "Header|PageHeader|Detail|PageFooter|Footer", "Design");
+         break;
       }
       case CT_WEBVIEW:
          ADD_S("cUrl", p->FUrl, "Data"); break;
@@ -7795,6 +8150,13 @@ HB_FUNC( UI_FORMREBUILDCHILDREN )
       [sv removeFromSuperview];
    }
 
+   /* Clear stale ruler associated objects so next band drop takes the create path */
+   if( pForm->FContentView ) {
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerHKey,   nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerVKey,   nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerCrnKey, nil, OBJC_ASSOCIATION_RETAIN);
+   }
+
    /* Drop FView refs so createViewInParent rebuilds them */
    for( int i = 0; i < pForm->FChildCount; i++ )
       if( pForm->FChildren[i] )
@@ -7827,6 +8189,10 @@ HB_FUNC( UI_FORMCLEARCHILDREN )
          if( [sv isKindOfClass:[HBDotGridView class]] ) continue;
          [sv removeFromSuperview];
       }
+      /* Clear stale ruler associated objects so next band drop takes the create path */
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerHKey,   nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerVKey,   nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerCrnKey, nil, OBJC_ASSOCIATION_RETAIN);
    }
 
    /* Release child objects */

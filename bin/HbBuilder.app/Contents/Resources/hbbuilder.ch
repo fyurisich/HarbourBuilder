@@ -432,13 +432,36 @@
       [; <oRpt>:cTitle := <cTitle> ] ;
       [; <oRpt>:oDataSource := <oDS> ]
 
-#xcommand DEFINE BAND <oBand> NAME <cName> ;
-      [ HEIGHT <nH> ] ;
-      OF <oRpt> ;
+#xcommand BAND <oVar> TYPE <cType> OF <oParent> HEIGHT <nH> => ;
+   <oVar> := TBand():New( <oParent>, <cType>, <nH> )
+
+#xcommand @ <nTop>, <nLeft> BAND <oCtrl> OF <oParent> SIZE <nWidth>, <nHeight> TYPE <cType> => ;
+   <oCtrl> := TBand():New( <oParent>, <cType>, <nHeight> ) ; ;
+   <oCtrl>:nLeft := <nLeft> ; <oCtrl>:nTop := <nTop>
+
+#xcommand @ <nTop>, <nLeft> BAND <oCtrl> OF <oParent> SIZE <nWidth>, <nHeight> => ;
+   <oCtrl> := TBand():New( <oParent>, "Detail", <nHeight> ) ; ;
+   <oCtrl>:nLeft := <nLeft> ; <oCtrl>:nTop := <nTop>
+
+#xcommand REPORTFIELD <oVar> TYPE <cType> ;
+      [ PROMPT <cText> ] ;
+      [ FIELD <cField> ] ;
+      [ FORMAT <cFmt> ] ;
+      OF <oBand> ;
+      AT <nTop>, <nLeft> SIZE <nW>, <nH> ;
+      [ FONT <cFont>, <nFSize> ] ;
+      [ <lBold: BOLD> ] ;
+      [ <lItalic: ITALIC> ] ;
+      [ ALIGN <nAlign> ] ;
    => ;
-      <oBand> := TReportBand():New( <cName> ) ;
-      [; <oBand>:nHeight := <nH> ] ;
-      ; <oRpt>:AddDesignBand( <oBand> )
+   <oVar> := TReportField():New() ; ;
+   <oVar>:cFieldType := <cType>   ; ;
+   <oVar>:nTop    := <nTop>       ; ;
+   <oVar>:nLeft   := <nLeft>      ; ;
+   <oVar>:nWidth  := <nW>         ; ;
+   <oVar>:nHeight := <nH>         ; ;
+   <oVar>:SetOpts( <cText>, <cField>, <cFmt>, <cFont>, <nFSize>, <.lBold.>, <.lItalic.>, <nAlign> ) ; ;
+   <oBand>:AddField( <oVar> )
 
 // REPORT TEXT - static text field with font
 #xcommand REPORT TEXT <oFld> ;

@@ -3811,6 +3811,8 @@ static HBPaletteTarget * s_palTarget = nil;
          [FContentView addSubview:grid];
       }
       [self createAllChildren];
+      if( FDesignMode )
+         BandStackAll( (HBControl *)self );
       if( !FDesignMode ) {
          [self loadAllDBGrids];
          ApplyDockAlign( self );
@@ -8148,6 +8150,13 @@ HB_FUNC( UI_FORMREBUILDCHILDREN )
       [sv removeFromSuperview];
    }
 
+   /* Clear stale ruler associated objects so next band drop takes the create path */
+   if( pForm->FContentView ) {
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerHKey,   nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerVKey,   nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerCrnKey, nil, OBJC_ASSOCIATION_RETAIN);
+   }
+
    /* Drop FView refs so createViewInParent rebuilds them */
    for( int i = 0; i < pForm->FChildCount; i++ )
       if( pForm->FChildren[i] )
@@ -8180,6 +8189,10 @@ HB_FUNC( UI_FORMCLEARCHILDREN )
          if( [sv isKindOfClass:[HBDotGridView class]] ) continue;
          [sv removeFromSuperview];
       }
+      /* Clear stale ruler associated objects so next band drop takes the create path */
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerHKey,   nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerVKey,   nil, OBJC_ASSOCIATION_RETAIN);
+      objc_setAssociatedObject(pForm->FContentView, &s_rulerCrnKey, nil, OBJC_ASSOCIATION_RETAIN);
    }
 
    /* Release child objects */
