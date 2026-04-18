@@ -1,6 +1,45 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-18 (Windows — macOS parity: bands, ControlAlign, REPORTFIELD, inspector)
+
+  REPORT DESIGNER (Windows):
+  - CT_BAND (132) visual control: colored rectangle per band type (Header=blue,
+    PageHeader/PageFooter=green, Detail=light gray, Footer=gray), centered
+    label, bottom hairline. Registered as "HBBandView" Win32 window class.
+  - UI_BandNew / UI_BandGetType / UI_BandSetType / UI_BandSetLayout / BandStackAll:
+    Windows equivalents of the macOS band functions.
+  - BandStackAll(): restacks CT_BAND children of a form in the type order
+    (Header->PageHeader->Detail->PageFooter->Footer) starting at y=20 (below ruler),
+    x=20 (right of ruler), width = formW-20.
+  - HBRulerView: horizontal (20px) + vertical (20px) ruler overlays shown
+    whenever at least one CT_BAND child is present. Tick marks every 10px,
+    labels every 100px. Corner square at origin. GDI custom-paint.
+  - UI_BandRulersUpdate(): creates/removes ruler pair automatically after
+    band add/delete on a form.
+  - Band default height 65px (matches macOS).
+  - Auto-resize: dropping first band resizes form to 850x450, sets title to "Report".
+  - Printing palette tab: Band (CT_BAND=132) entry added.
+  - RegenerateFormCode: BAND + REPORTFIELD emission (exact same format as macOS).
+  - RestoreFormFromCode: BAND and REPORTFIELD parsing (field data serialized
+    as pipe-delimited records stored in FData[4096] on the band TControl).
+  - Run button: if active form has CT_BAND children, builds TReport from design
+    bands and calls TReport:Preview() instead of compile+run pipeline.
+
+  CONTROL ALIGN (Windows):
+  - FDockAlign field added to TControl (0=alNone..5=alClient).
+  - nControlAlign property in UI_SetProp / UI_GetProp / UI_GetAllProps
+    (shown as dropdown in Inspector Layout category).
+  - ApplyDockAlign(): 5-pass dock layout (Top->Bottom->Left->Right->Client)
+    called on WM_SIZE, WM_EXITSIZEMOVE and form show. Only runs at runtime (not design mode).
+  - Code gen emits ::oCtrl:ControlAlign := n for non-zero values.
+  - RestoreFormFromCode parses ::oCtrl:ControlAlign := n assignments.
+
+  INSPECTOR (Windows):
+  - "..." button now appears for ALL string ('S') properties, not just cFileName.
+  - Clicking "..." opens a modal multiline text editor with OK/Cancel.
+    On OK the value is pushed to the control and the inspector is refreshed.
+
 2026-04-18 (Report preview, PDF export, rulers, and band improvements)
 
   FEATURES
