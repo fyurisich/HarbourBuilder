@@ -2147,6 +2147,7 @@ static function RestoreFormFromCode( hForm, cCode )
                endif
                // Create the visual C++ report control so it appears in the designer
                nCtType := if( cFldType == "image", 135, if( cFldType == "field", 134, 133 ) )
+               // nL=left, nT=top (AT parser stores top first, left second — names are inverted vs. AT convention)
                hRCtrl  := UI_ReportCtrlNew( hForm, hBandCtrl, nCtType, nL, nT, nW, nH )
                if hRCtrl != 0
                   if ! Empty( cFldName );   UI_SetProp( hRCtrl, "cName",      cFldName );   endif
