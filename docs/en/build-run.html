@@ -174,6 +174,29 @@ graph LR
   the source editor. The editor highlights the problematic line for quick identification.</p>
 </div>
 
+<h2 id="recent-build-improvements">Recent Build Improvements</h2>
+
+<p>The build system has been enhanced with several important improvements:</p>
+
+<h3 id="code-cleanup-before-assembly">Code Cleanup Before Assembly</h3>
+<ul>
+  <li><strong>Separator stripping</strong>: "----" separators are automatically removed from form files before assembly to prevent Harbour "Incomplete statement" parse errors.</li>
+  <li><strong>Duplicate header removal</strong>: Duplicate <code>#include "hbbuilder.ch"</code> and <code>#include "classes.prg"</code> statements are stripped to prevent duplicate class definitions and linker errors.</li>
+  <li><strong>Debug build support</strong>: The same cleanup is applied to debug builds (<code>TBDebugRun</code>) to ensure consistent behavior.</li>
+</ul>
+
+<h3 id="improved-project-loading">Improved Project Loading</h3>
+<ul>
+  <li><strong>Deferred control creation</strong>: The <code>UI_FormCreateChildren()</code> function creates Win32 handles for deferred controls after <code>RestoreFormFromCode</code>.</li>
+  <li><strong>Better form initialization</strong>: Forms are shown before restoring controls to ensure proper parent HWNDs exist for band creation.</li>
+</ul>
+
+<h3 id="enhanced-code-generation">Enhanced Code Generation</h3>
+<ul>
+  <li><strong>Smart launcher placement</strong>: The <code>FUNCTION FormN()</code> launcher is placed at the end of generated files, after user methods, to prevent accumulation of duplicate function definitions.</li>
+  <li><strong>Method preservation</strong>: User method implementations are properly preserved during code regeneration cycles.</li>
+</ul>
+
 <h2 id="keyboard-shortcuts">Keyboard Shortcuts</h2>
 
 <table>
@@ -264,6 +287,10 @@ You can customize this in Project Options:</p>
   <a href="#progress-dialog" class="toc-h2">Progress Dialog</a>
   <a href="#error-dialog" class="toc-h2">Error Dialog</a>
   <a href="#build-messages-panel" class="toc-h2">Build Messages Panel</a>
+  <a href="#recent-build-improvements" class="toc-h2">Recent Build Improvements</a>
+  <a href="#code-cleanup-before-assembly" class="toc-h3">Code Cleanup Before Assembly</a>
+  <a href="#improved-project-loading" class="toc-h3">Improved Project Loading</a>
+  <a href="#enhanced-code-generation" class="toc-h3">Enhanced Code Generation</a>
   <a href="#keyboard-shortcuts" class="toc-h2">Keyboard Shortcuts</a>
   <a href="#multi-compiler-support" class="toc-h2">Multi-Compiler Support</a>
   <a href="#smart-rebuild" class="toc-h2">Smart Rebuild</a>

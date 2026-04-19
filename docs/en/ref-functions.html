@@ -177,6 +177,13 @@ graph TB
     <td>Sets the title bar text of a form.</td>
     <td>Win32: <code>SetWindowText()</code><br>Cocoa: <code>[win setTitle:]</code><br>GTK3: <code>gtk_window_set_title()</code></td>
   </tr>
+  <tr>
+    <td><code>UI_FormCreateChildren</code></td>
+    <td><code>nFormHandle</code></td>
+    <td>void</td>
+    <td>Creates Win32 handles for deferred controls after RestoreFormFromCode. Called after loading a project to ensure all child controls have proper HWNDs.</td>
+    <td>Win32: <code>CreateWindowEx()</code> for deferred controls<br>Cocoa: N/A<br>GTK3: N/A</td>
+  </tr>
 </table>
 
 <h3 id="control-creation">Control Creation</h3>
@@ -357,6 +364,13 @@ graph TB
     <td>void</td>
     <td>Displays a simple information message box.</td>
     <td>Win32: <code>MessageBox()</code><br>Cocoa: <code>NSAlert</code><br>GTK3: <code>GtkMessageDialog</code></td>
+  </tr>
+  <tr>
+    <td><code>RGB</code></td>
+    <td><code>nRed, nGreen, nBlue</code></td>
+    <td><code>nColor</code></td>
+    <td>Creates a color value from red, green, and blue components (0-255 each). Returns a numeric color value suitable for use with color properties.</td>
+    <td>Pure Harbour function (no backend)</td>
   </tr>
 </table>
 

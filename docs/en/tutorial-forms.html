@@ -251,6 +251,69 @@ user entered.</p>
 
 <!-- Screenshot placeholder: Main form showing "User: Antonio" after the settings dialog was submitted -->
 
+<h2 id="class-based-form-format">Class-Based Form Format</h2>
+
+<p>HarbourBuilder also supports a class-based form format that matches the IDE designer's output. This format is useful for more complex applications:</p>
+
+<pre><span class="pp">#include</span> <span class="st">"hbbuilder.ch"</span>
+
+<span class="kw">CLASS</span> TForm1 <span class="kw">FROM</span> TForm
+
+   <span class="cm">// IDE-managed Components</span>
+   <span class="kw">DATA</span> oLblUser      <span class="cm">// TLabel</span>
+   <span class="kw">DATA</span> oBtnSettings  <span class="cm">// TButton</span>
+
+   <span class="cm">// Event handlers</span>
+   <span class="kw">METHOD</span> BtnSettingsClick()
+
+   <span class="kw">METHOD</span> CreateForm()
+
+<span class="kw">ENDCLASS</span>
+
+<span class="kw">METHOD</span> <span class="fn">CreateForm</span>() <span class="kw">CLASS</span> TForm1
+
+   ::<span class="nb">Title</span>  := <span class="st">"Multi-Form Demo"</span>
+   ::<span class="nb">Left</span>   := <span class="nb">100</span>
+   ::<span class="nb">Top</span>    := <span class="nb">100</span>
+   ::<span class="nb">Width</span>  := <span class="nb">700</span>
+   ::<span class="nb">Height</span> := <span class="nb">500</span>
+   ::<span class="nb">FontName</span> := <span class="st">"Segoe UI"</span>
+   ::<span class="nb">FontSize</span> := <span class="nb">10</span>
+
+   @ <span class="nb">30</span>, <span class="nb">50</span> <span class="cmd">LABEL</span> ::oLblUser <span class="cmd">VALUE</span> <span class="st">"User: (none)"</span> <span class="cmd">OF</span> Self <span class="cmd">SIZE</span> <span class="nb">300</span>, <span class="nb">24</span>
+   @ <span class="nb">80</span>, <span class="nb">50</span> <span class="cmd">BUTTON</span> ::oBtnSettings <span class="cmd">PROMPT</span> <span class="st">"Open Settings"</span> <span class="cmd">OF</span> Self <span class="cmd">SIZE</span> <span class="nb">140</span>, <span class="nb">36</span>
+
+   <span class="cm">// Event wiring</span>
+   ::oBtnSettings:<span class="nb">OnClick</span> := { || ::BtnSettingsClick() }
+
+<span class="kw">return</span> <span class="kw">nil</span>
+
+<span class="kw">METHOD</span> <span class="fn">BtnSettingsClick</span>() <span class="kw">CLASS</span> TForm1
+   <span class="kw">local</span> oSettings := TSettings():New()
+   oSettings:<span class="fn">ShowModal</span>( Self )
+   <span class="kw">if</span> oSettings:<span class="nb">nModalResult</span> == <span class="nb">1</span>
+      ::oLblUser:<span class="nb">cText</span> := <span class="st">"User: "</span> + oSettings:<span class="nb">cUserName</span>
+   <span class="kw">endif</span>
+<span class="kw">return</span> <span class="kw">nil</span>
+
+<span class="kw">FUNCTION</span> <span class="fn">Form1</span>()
+   <span class="kw">LOCAL</span> oForm := TForm1():<span class="fn">New</span>()
+   oForm:<span class="fn">CreateForm</span>()
+   oForm:<span class="fn">Activate</span>()
+<span class="kw">RETURN</span> oForm</pre>
+
+<h3 id="using-oncreate-for-initialization">Using OnCreate for Initialization</h3>
+
+<p>For initialization that requires child controls to have their HWNDs created, use the <code>OnCreate</code> event:</p>
+
+<pre><span class="kw">function</span> <span class="fn">Form1Create</span>( oSelf )
+   <span class="cm">// This runs after all child controls have been created</span>
+   oSelf:oList:<span class="fn">SetItems</span>( { <span class="st">"Item 1"</span>, <span class="st">"Item 2"</span>, <span class="st">"Item 3"</span> } )
+   oSelf:oLblStatus:<span class="nb">cText</span> := <span class="st">"Ready"</span>
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<p>The IDE automatically detects functions named <code>FormNCreate</code> and wires them to the form's <code>::OnCreate</code> event.</p>
+
 <h2 id="form-lifecycle-flow">Form Lifecycle Flow</h2>
 
 <div class="mermaid">
@@ -290,6 +353,8 @@ graph TD
   <a href="#step-4-implement-showmodal-and-data-passing" class="toc-h2">Step 4: Implement ShowModal and Data Passing</a>
   <a href="#step-5-form-properties-reference" class="toc-h2">Step 5: Form Properties Reference</a>
   <a href="#step-6-build-and-test" class="toc-h2">Step 6: Build and Test</a>
+  <a href="#class-based-form-format" class="toc-h2">Class-Based Form Format</a>
+  <a href="#using-oncreate-for-initialization" class="toc-h3">Using OnCreate for Initialization</a>
   <a href="#form-lifecycle-flow" class="toc-h2">Form Lifecycle Flow</a>
 </div>
 

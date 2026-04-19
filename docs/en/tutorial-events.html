@@ -256,6 +256,21 @@ unsaved-changes prompts.</p>
   (e.g. the Cancel option) so they are never trapped in a form they cannot exit.</p>
 </div>
 
+<h2 id="step-8-oncreate-form-initialization">Step 8: OnCreate &mdash; Form Initialization</h2>
+<p>The <code>OnCreate</code> event fires after all child controls have been created and have their HWNDs.
+This is useful for initialization that requires controls to be fully created, such as populating
+listboxes or setting up data bindings.</p>
+
+<pre><span class="cm">// In class-based form format, the IDE automatically wires FormNCreate functions</span>
+<span class="kw">function</span> <span class="fn">Form1Create</span>( oSelf )
+   <span class="cm">// Populate listbox after controls are created</span>
+   oSelf:oList:<span class="fn">SetItems</span>( { <span class="st">"Item 1"</span>, <span class="st">"Item 2"</span>, <span class="st">"Item 3"</span> } )
+   oSelf:oLblStatus:<span class="nb">cText</span> := <span class="st">"Ready"</span>
+<span class="kw">return</span> <span class="kw">nil</span></pre>
+
+<p>The IDE automatically detects functions named <code>FormNCreate</code> and wires them to the form's
+<code>::OnCreate</code> event. This ensures initialization runs at the right time in the form lifecycle.</p>
+
 <h2 id="event-parameters-summary">Event Parameters Summary</h2>
 <table style="width:100%; border-collapse:collapse; margin:1em 0;">
   <tr style="border-bottom:1px solid #444;">
@@ -339,6 +354,7 @@ unsaved-changes prompts.</p>
   <a href="#step-5-onkeydown-keyboard-input" class="toc-h2">Step 5: OnKeyDown &amp;mdash; Keyboard Input</a>
   <a href="#step-6-onresize-form-and-control-resizing" class="toc-h2">Step 6: OnResize &amp;mdash; Form and Control Resizing</a>
   <a href="#step-7-onclose-form-closing" class="toc-h2">Step 7: OnClose &amp;mdash; Form Closing</a>
+  <a href="#step-8-oncreate-form-initialization" class="toc-h2">Step 8: OnCreate &amp;mdash; Form Initialization</a>
   <a href="#event-parameters-summary" class="toc-h2">Event Parameters Summary</a>
   <a href="#code-block-vs-method-handler" class="toc-h2">Code Block vs. Method Handler</a>
 </div>

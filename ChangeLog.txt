@@ -1,6 +1,20 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-19f (Documentation updates for recent changes)
+
+  DOCUMENTATION UPDATES:
+  - controls-standard.html: Added lTransparent property documentation for TLabel.
+  - ref-functions.html: Added UI_FormCreateChildren() and RGB() function documentation.
+  - two-way-tools.html: Added "Recent Improvements" section covering code generation
+    enhancements, build system improvements, and new property support.
+  - build-run.html: Added "Recent Build Improvements" section with details on code
+    cleanup before assembly, improved project loading, and enhanced code generation.
+  - tutorial-forms.html: Added "Class-Based Form Format" section with examples and
+    "Using OnCreate for Initialization" subsection.
+  - tutorial-events.html: Added "Step 8: OnCreate — Form Initialization" section.
+  - All updated files include updated table of contents and cross-references.
+
 2026-04-19e (Windows — report2 sample with TDBFTable)
 
   SAMPLE PROJECT (report2):

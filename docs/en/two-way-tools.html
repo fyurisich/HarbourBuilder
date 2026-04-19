@@ -252,6 +252,29 @@ To avoid conflicts:</p>
   multiple forms in one file, mixed class-based and procedural syntax, and files with extensive comments.</p>
 </div>
 
+<h2 id="recent-improvements">Recent Improvements</h2>
+
+<p>The Two-Way Tools engine has been enhanced with several important improvements:</p>
+
+<h3 id="improved-code-generation">Improved Code Generation</h3>
+<ul>
+  <li><strong>Automatic launcher placement</strong>: The <code>FUNCTION FormN()</code> launcher is now placed at the very end of generated files, after user methods, to prevent duplicate function definitions.</li>
+  <li><strong>Better method preservation</strong>: User method implementations are properly preserved during code regeneration cycles.</li>
+  <li><strong>Duplicate header stripping</strong>: Duplicate <code>#include "hbbuilder.ch"</code> and <code>#include "classes.prg"</code> statements are automatically removed to prevent linker errors.</li>
+</ul>
+
+<h3 id="build-system-enhancements">Build System Enhancements</h3>
+<ul>
+  <li><strong>Separator stripping</strong>: "----" separators are automatically stripped from form files before assembly to prevent Harbour parse errors.</li>
+  <li><strong>Improved project loading</strong>: The <code>UI_FormCreateChildren()</code> function ensures all deferred controls get proper Win32 handles after project loading.</li>
+</ul>
+
+<h3 id="new-property-support">New Property Support</h3>
+<ul>
+  <li><strong>lTransparent for TLabel</strong>: Labels can now have transparent backgrounds, allowing form colors to show through.</li>
+  <li><strong>RGB() function</strong>: Added to <code>classes.prg</code> for creating color values from red, green, and blue components.</li>
+</ul>
+
 <h2 id="switching-between-views">Switching Between Views</h2>
 
 <p>Use the toolbar toggle or keyboard shortcut to switch between Designer and Code views:</p>
@@ -281,6 +304,10 @@ To avoid conflicts:</p>
   <a href="#workflow" class="toc-h2">Workflow</a>
   <a href="#code-parsing-rules" class="toc-h2">Code Parsing Rules</a>
   <a href="#handling-conflicts" class="toc-h2">Handling Conflicts</a>
+  <a href="#recent-improvements" class="toc-h2">Recent Improvements</a>
+  <a href="#improved-code-generation" class="toc-h3">Improved Code Generation</a>
+  <a href="#build-system-enhancements" class="toc-h3">Build System Enhancements</a>
+  <a href="#new-property-support" class="toc-h3">New Property Support</a>
   <a href="#switching-between-views" class="toc-h2">Switching Between Views</a>
 </div>
 
