@@ -461,6 +461,19 @@ HB_FUNC( UI_FORMSETDESIGN )
    if( p ) p->SetDesignMode( hb_parl(2) );
 }
 
+/* UI_FormCreateChildren( hForm ) - create Win32 handles for deferred controls
+   Call after RestoreFormFromCode so labels/buttons/listboxes get their HWNDs.
+   Bands created by UI_BandNew already have handles; TControl::CreateHandle
+   guards against double-creation with "if( FHandle ) return". */
+HB_FUNC( UI_FORMCREATECHILDREN )
+{
+   TForm * p = GetForm(1);
+   if( !p ) return;
+   p->CreateAllChildren();
+   if( p->FDesignMode )
+      p->SubclassChildren();
+}
+
 /* UI_FormRun( hForm ) - create, show, and enter message loop */
 HB_FUNC( UI_FORMRUN )
 {

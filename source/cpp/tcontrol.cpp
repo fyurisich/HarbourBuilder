@@ -98,6 +98,8 @@ void TControl::CreateParams( DWORD * pdwStyle, DWORD * pdwExStyle, const char **
 
 void TControl::CreateHandle( HWND hParent )
 {
+   if( FHandle ) return;   /* already created (e.g. CT_BAND via UI_BandNew) */
+
    DWORD dwStyle, dwExStyle;
    const char * szClass;
 

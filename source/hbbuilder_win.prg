@@ -2514,12 +2514,16 @@ static function OpenProjectFile( cFile )
       nFormX := nEditorX + Int( ( nEditorW - 400 ) / 2 ) + ( Len(aForms) ) * 20
       nFormY := nEditorTop + Int( ( nEditorH - 300 ) * 0.35 ) + ( Len(aForms) ) * 20
 
-      // Create design form — Show() first so the Win32 HWND exists,
-      // then restore controls (UI_BandNew requires a real parent HWND).
+      // Show first so pForm->FHandle exists (UI_BandNew needs a real parent HWND).
+      // After RestoreFormFromCode, call UI_FormCreateChildren so that deferred
+      // controls (labels, buttons, listboxes added without an immediate HWND)
+      // get their Win32 windows created. CT_BAND controls already have handles
+      // from UI_BandNew; TControl::CreateHandle guards against double-creation.
       CreateDesignForm( nFormX, nFormY )
       oDesignForm:Show()
       oDesignForm:SetDesign( .t. )
       RestoreFormFromCode( oDesignForm:hCpp, cFormCode )
+      UI_FormCreateChildren( oDesignForm:hCpp )
 
       // Hide all forms except the first
       if Len( aForms ) > 1
