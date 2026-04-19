@@ -777,6 +777,12 @@ static function RegenerateFormCode( cName, hForm )
          nType      := UI_GetType( hCtrl )
          if Empty( cCtrlName ); cCtrlName := "ctrl" + LTrim(Str(i)); endif
 
+         // Report controls (label/field/image inside a band) are serialized
+         // into their band's aData — skip them here to avoid duplicate COMPONENT lines
+         if nType >= 133 .and. nType <= 135
+            loop
+         endif
+
          // Build OF clause: usually "Self", but if the control belongs
          // to a TFolder page we emit "::oFolderName:aPages[N]" so the
          // page ownership round-trips through Save / Open.
@@ -1647,6 +1653,9 @@ static function SyncDesignerToCode()
       endif
    endif
 
+   // Rebuild band FData from live visual report controls
+   UI_SyncBandData( oDesignForm:hCpp )
+
    // Regenerate CLASS + CreateForm
    cNewCode := RegenerateFormCode( aForms[ nActiveForm ][ 1 ], oDesignForm:hCpp )
 
@@ -1934,6 +1943,7 @@ static function RestoreFormFromCode( hForm, cCode )
    local cFldFont, nFldFontSize, lFldBold, lFldItalic, nFldAlign
    local cFldSerial, cExistFields, hBandCtrl, nLastQ, nQpos, cTail, cBandFields
    local aBandField, cBandFldLine, aBandRec
+   local hRCtrl, nCtType
 
    if Empty( cCode ) .or. hForm == 0
       return nil
@@ -2134,6 +2144,14 @@ static function RestoreFormFromCode( hForm, cCode )
                   else
                      UI_SetProp( hBandCtrl, "aData", cExistFields + Chr(10) + cFldSerial )
                   endif
+               endif
+               // Create the visual C++ report control so it appears in the designer
+               nCtType := if( cFldType == "image", 135, if( cFldType == "field", 134, 133 ) )
+               hRCtrl  := UI_ReportCtrlNew( hForm, hBandCtrl, nCtType, nL, nT, nW, nH )
+               if hRCtrl != 0
+                  if ! Empty( cFldName );   UI_SetProp( hRCtrl, "cName",      cFldName );   endif
+                  if ! Empty( cFldPrompt ); UI_SetProp( hRCtrl, "cText",      cFldPrompt ); endif
+                  if ! Empty( cFldField );  UI_SetProp( hRCtrl, "cFieldName", cFldField );  endif
                endif
             endif
          endif
