@@ -18,6 +18,8 @@
 /* Forward declaration — defined in tform.cpp */
 void ApplyDockAlign( TForm * form );
 
+extern "C" int g_bDarkIDE;
+
 /* ---- CT_BAND helpers ---------------------------------------------------- */
 static COLORREF BandColor( const char * szType )
 {
@@ -3420,13 +3422,42 @@ batch_done:
 
 /* W32_BuildErrorDialog( cTitle, cLog ) - resizable dialog with selectable/copyable text */
 
-static HWND s_errEdit = NULL;
-static HWND s_errCopyBtn = NULL;
+static HWND   s_errEdit     = NULL;
+static HWND   s_errCopyBtn  = NULL;
+static HBRUSH s_hBEBrush    = NULL;
+static HBRUSH s_hBEEditBrush = NULL;
 
 static LRESULT CALLBACK BuildErrProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
    switch( msg )
    {
+      case WM_ERASEBKGND:
+         if( g_bDarkIDE )
+         {
+            if( !s_hBEBrush ) s_hBEBrush = CreateSolidBrush( RGB(30,30,30) );
+            RECT rc; GetClientRect( hWnd, &rc );
+            FillRect( (HDC)wParam, &rc, s_hBEBrush );
+            return 1;
+         }
+         break;
+      case WM_CTLCOLOREDIT:
+         if( g_bDarkIDE )
+         {
+            if( !s_hBEEditBrush ) s_hBEEditBrush = CreateSolidBrush( RGB(20,20,20) );
+            SetTextColor( (HDC)wParam, RGB(212,212,212) );
+            SetBkColor(   (HDC)wParam, RGB(20,20,20) );
+            return (LRESULT) s_hBEEditBrush;
+         }
+         break;
+      case WM_CTLCOLORBTN:
+         if( g_bDarkIDE )
+         {
+            if( !s_hBEBrush ) s_hBEBrush = CreateSolidBrush( RGB(30,30,30) );
+            SetTextColor( (HDC)wParam, RGB(212,212,212) );
+            SetBkColor(   (HDC)wParam, RGB(30,30,30) );
+            return (LRESULT) s_hBEBrush;
+         }
+         break;
       case WM_COMMAND:
       {
          int id = LOWORD(wParam);
@@ -3477,7 +3508,7 @@ HB_FUNC( W32_BUILDERRORDIALOG )
          wc.hInstance = GetModuleHandle(NULL);
          wc.lpszClassName = "HbBuildErr";
          wc.hCursor = LoadCursor( NULL, IDC_ARROW );
-         wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+         wc.hbrBackground = NULL;
          RegisterClassExA( &wc );
          bReg = TRUE;
       }

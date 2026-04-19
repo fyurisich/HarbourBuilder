@@ -3370,7 +3370,7 @@ static function TBRun()
    if ! lError
       W32_ProgressStep( "Compiling C++ core..." )
       cLog += "[6] Compiling C++ core..." + Chr(10)
-      aCppFiles := { "tcontrol", "tform", "tcontrols", "hbbridge" }
+      aCppFiles := { "tcontrol", "tform", "tcontrols", "hbbridge", "stubs_win" }
       if cCompiler == "msvc"
          cCppBase := "/c /O2 /W0 /EHsc" + Chr(10) + ;
                  '/I"' + cHbInc + '"' + Chr(10) + ;
@@ -3422,7 +3422,8 @@ static function TBRun()
                   cBuildDir + "\tcontrol.o " + ;
                   cBuildDir + "\tform.o " + ;
                   cBuildDir + "\tcontrols.o " + ;
-                  cBuildDir + "\hbbridge.o"
+                  cBuildDir + "\hbbridge.o " + ;
+                  cBuildDir + "\stubs_win.o"
          if File( cBuildDir + "\stddlgs.o" )
             cObjs += " " + cBuildDir + "\stddlgs.o"
          endif
@@ -3432,7 +3433,8 @@ static function TBRun()
                   cBuildDir + "\tcontrol.obj " + ;
                   cBuildDir + "\tform.obj " + ;
                   cBuildDir + "\tcontrols.obj " + ;
-                  cBuildDir + "\hbbridge.obj"
+                  cBuildDir + "\hbbridge.obj " + ;
+                  cBuildDir + "\stubs_win.obj"
          if File( cBuildDir + "\stddlgs.obj" )
             cObjs += " " + cBuildDir + "\stddlgs.obj"
          endif
@@ -4428,7 +4430,7 @@ static function TBDebugRun()
    // Step 6: Compile C++ core (same as TBRun)
    if ! lError
       cLog += "[6] Compiling C++ core..." + Chr(10)
-      aCppFiles := { "tcontrol", "tform", "tcontrols", "hbbridge" }
+      aCppFiles := { "tcontrol", "tform", "tcontrols", "hbbridge", "stubs_win" }
       if cCompiler == "msvc"
          cCppBase := "/c /Od /Zi /W0 /EHsc" + Chr(10) + ;
                  '/I"' + cHbInc + '"' + Chr(10) + ;
@@ -4479,14 +4481,16 @@ static function TBDebugRun()
                   cBuildDir + "\tcontrol.o " + ;
                   cBuildDir + "\tform.o " + ;
                   cBuildDir + "\tcontrols.o " + ;
-                  cBuildDir + "\hbbridge.o"
+                  cBuildDir + "\hbbridge.o " + ;
+                  cBuildDir + "\stubs_win.o"
       else
          cObjs := cBuildDir + "\debug_main.obj " + ;
                   cBuildDir + "\dbghook.obj " + ;
                   cBuildDir + "\tcontrol.obj " + ;
                   cBuildDir + "\tform.obj " + ;
                   cBuildDir + "\tcontrols.obj " + ;
-                  cBuildDir + "\hbbridge.obj"
+                  cBuildDir + "\hbbridge.obj " + ;
+                  cBuildDir + "\stubs_win.obj"
       endif
       if cCompiler == "msvc"
          cRsp := cBuildDir + "\link_dbg.rsp"
