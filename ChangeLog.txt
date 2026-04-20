@@ -1,6 +1,35 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-20e (Linux — WebView runtime fix, WebKit2GTK auto-detection)
+
+  WEBKIT2GTK AUTO-DETECTION IN BUILD:
+  - build_linux.sh now auto-detects webkit2gtk-4.1 (or 4.0 fallback) via
+    pkg-config and passes -DHAVE_WEBKIT2GTK + cflags/libs to gcc.
+  - Shows "WebKit2GTK 4.1 detected — WebView enabled" or install hint.
+
+  WEBVIEW RUNTIME FIX (UserApp):
+  - TBRun() steps 6 and 7 now include WebKit2GTK detection for user projects.
+    Previously only the IDE had WebKit enabled; compiled UserApps showed
+    placeholder instead of web content.
+  - HBWebView_CreateWidget loads stored FUrl on widget creation (not just
+    about:blank), so initial URL set in the designer appears at runtime.
+
+  WEBKIT2GTK INCLUDE FIX:
+  - Moved WebKit2GTK #include to top of gtk3_core.c so UI_SetProp("cUrl")
+    can use WEBKIT_IS_WEB_VIEW/WEBKIT_WEB_VIEW macros (was causing linker
+    errors when include was only at end of file).
+  - Replace deprecated webkit_web_view_run_javascript with
+    webkit_web_view_evaluate_javascript (WebKit2GTK 4.1 API).
+
+  DOCUMENTATION:
+  - docs/en/platform-linux.html: Added WebView Support section with install
+    commands (Ubuntu/Fedora/Arch), build detection, supported methods table,
+    example code, and warning about missing dev package.
+  - docs/es/platform-linux.html: Spanish translation of WebView section.
+  - Updated prerequisites and dependencies tables in both languages.
+  - Updated backend stats: ~11,800 lines, ~172 HB_FUNC functions.
+
 2026-04-20d (Linux — module system, 40 missing controls, WebView, METHOD wiring)
 
   MODULE SYSTEM (aModules / aOpenFiles):
