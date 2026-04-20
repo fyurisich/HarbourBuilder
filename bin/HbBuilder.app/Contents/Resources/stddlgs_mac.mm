@@ -288,3 +288,28 @@ HB_FUNC( MAC_EXECCOLORDIALOG )
          hb_retni( -1 );
    }
 }
+
+/* MAC_InputBox( cTitle, cPrompt, cDefault ) --> cResult or "" if cancelled */
+HB_FUNC( MAC_INPUTBOX )
+{
+   NSString * title   = HB_ISCHAR(1) ? [NSString stringWithUTF8String:hb_parc(1)] : @"Input";
+   NSString * prompt  = HB_ISCHAR(2) ? [NSString stringWithUTF8String:hb_parc(2)] : @"";
+   NSString * defVal  = HB_ISCHAR(3) ? [NSString stringWithUTF8String:hb_parc(3)] : @"";
+
+   NSAlert * alert = [[NSAlert alloc] init];
+   [alert setMessageText:title];
+   [alert setInformativeText:prompt];
+   [alert addButtonWithTitle:@"OK"];
+   [alert addButtonWithTitle:@"Cancel"];
+
+   NSTextField * input = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 0, 320, 24)];
+   [input setStringValue:defVal];
+   [alert setAccessoryView:input];
+   [alert.window setInitialFirstResponder:input];
+
+   NSModalResponse resp = [alert runModal];
+   if( resp == NSAlertFirstButtonReturn )
+      hb_retc( [[input stringValue] UTF8String] );
+   else
+      hb_retc( "" );
+}

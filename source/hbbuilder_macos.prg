@@ -38,7 +38,7 @@ static lSyncingFromCode := .f.  // Guard: true while syncing code -> designer
 
 function Main()
 
-   local oTB, oFile, oEdit, oSearch, oView, oProject, oRun, oFormat, oComp, oTools, oHelp
+   local oTB, oFile, oEdit, oSearch, oView, oProject, oRun, oFormat, oComp, oTools, oGit, oHelp
    local nBarH, nInsW, nEditorX, nEditorW, nEditorH
    local nFormX, nFormY, nInsTop, nEditorTop, nBottomY
    local cIcoDir
@@ -170,6 +170,26 @@ function Main()
    MENUITEM "Environment Options..."  OF oTools ACTION ShowEnvironmentOptions()
    MENUSEPARATOR OF oTools
    MENUITEM "AI Assistant..."         OF oTools ACTION ShowAIAssistant()
+
+   DEFINE POPUP oGit PROMPT "Git" OF oIDE
+   MENUITEM "Init Repository"    OF oGit ACTION GitInit()
+   MENUITEM "Clone..."           OF oGit ACTION GitClone()
+   MENUSEPARATOR OF oGit
+   MENUITEM "Status"             OF oGit ACTION GitStatus()
+   MENUITEM "Commit..."          OF oGit ACTION GitCommit()
+   MENUITEM "Push"               OF oGit ACTION GitPush()
+   MENUITEM "Pull"               OF oGit ACTION GitPull()
+   MENUSEPARATOR OF oGit
+   MENUITEM "Branch > Create..."  OF oGit ACTION GitBranchCreate()
+   MENUITEM "Branch > Switch..."  OF oGit ACTION GitBranchSwitch()
+   MENUITEM "Branch > Merge..."   OF oGit ACTION GitMerge()
+   MENUSEPARATOR OF oGit
+   MENUITEM "Stash"              OF oGit ACTION GitStash()
+   MENUITEM "Stash Pop"          OF oGit ACTION GitStashPop()
+   MENUSEPARATOR OF oGit
+   MENUITEM "Log / History"      OF oGit ACTION GitLogShow()
+   MENUITEM "Diff"               OF oGit ACTION GitDiffShow()
+   MENUITEM "Blame"              OF oGit ACTION GitBlameShow()
 
    DEFINE POPUP oHelp PROMPT "Help" OF oIDE
    MENUITEM "Documentation"        OF oHelp ACTION MAC_ShellExec( "open ../docs/en/index.html" )
@@ -5231,6 +5251,149 @@ static function GenerateiOSPRG()
    next
 
 return cPRG
+
+// ─── Git menu functions ──────────────────────────────────────────────────────
+
+static function GitProjectDir()
+   local cDir
+   if ! Empty( cCurrentFile )
+      cDir := hb_FNameDir( cCurrentFile )
+   else
+      cDir := hb_DirBase() + "../"
+   endif
+return cDir
+
+static function GitInit()
+   local cDir := GitProjectDir()
+   GIT_Exec( "init", cDir )
+   MsgInfo( "Git repository initialized in:" + Chr(10) + cDir )
+return nil
+
+static function GitClone()
+   local cUrl, cDest, cOut
+   cUrl := MAC_InputBox( "Clone Repository", "Enter repository URL:", "" )
+   if Empty( cUrl ); return nil; endif
+   cDest := MAC_InputBox( "Clone Repository", "Destination directory:", hb_DirBase() + "../" )
+   if Empty( cDest ); return nil; endif
+   cOut := GIT_Exec( "clone " + cUrl + " " + cDest, hb_DirBase() )
+   MsgInfo( iif( Empty(cOut), "Clone completed", cOut ), "Git Clone" )
+return nil
+
+static function GitStatus()
+   local cDir   := GitProjectDir()
+   local cBranch, aChanges, cText, i
+   if ! GIT_IsRepo( cDir )
+      MsgInfo( "Not a git repository:" + Chr(10) + cDir )
+      return nil
+   endif
+   cBranch  := GIT_CurrentBranch( cDir )
+   aChanges := GIT_Status( cDir )
+   cText    := "Branch: " + cBranch + Chr(10) + Chr(10)
+   if Len( aChanges ) == 0
+      cText += "Working tree clean"
+   else
+      for i := 1 to Len( aChanges )
+         cText += aChanges[i][1] + "  " + aChanges[i][2] + Chr(10)
+      next
+   endif
+   MsgInfo( cText, "Git Status" )
+return nil
+
+static function GitCommit()
+   local cDir := GitProjectDir()
+   local cMsg, cOut
+   if ! GIT_IsRepo( cDir )
+      MsgInfo( "Not a git repository" ); return nil
+   endif
+   cMsg := MAC_InputBox( "Git Commit", "Commit message:", "" )
+   if Empty( cMsg ); return nil; endif
+   GIT_Exec( "add -A", cDir )
+   cOut := GIT_Exec( 'commit -m "' + cMsg + '"', cDir )
+   MsgInfo( iif( Empty(cOut), "Nothing to commit", cOut ), "Git Commit" )
+return nil
+
+static function GitPush()
+   local cOut := GIT_Exec( "push", GitProjectDir() )
+   MsgInfo( iif( Empty(cOut), "Push completed", cOut ), "Git Push" )
+return nil
+
+static function GitPull()
+   local cOut := GIT_Exec( "pull", GitProjectDir() )
+   MsgInfo( iif( Empty(cOut), "Already up to date", cOut ), "Git Pull" )
+return nil
+
+static function GitBranchCreate()
+   local cDir, cName, cOut
+   cDir  := GitProjectDir()
+   cName := MAC_InputBox( "New Branch", "Branch name:", "" )
+   if Empty( cName ); return nil; endif
+   cOut := GIT_Exec( "checkout -b " + cName, cDir )
+   MsgInfo( iif( Empty(cOut), "Branch '" + cName + "' created", cOut ), "Git Branch" )
+return nil
+
+static function GitBranchSwitch()
+   local cDir, aBranches, aNames, i, nSel, cOut
+   cDir      := GitProjectDir()
+   aBranches := GIT_BranchList( cDir )
+   aNames    := {}
+   if Len( aBranches ) == 0
+      MsgInfo( "No branches found" ); return nil
+   endif
+   for i := 1 to Len( aBranches )
+      AAdd( aNames, iif( aBranches[i][2], "* ", "  " ) + AllTrim( aBranches[i][1] ) )
+   next
+   nSel := MAC_SelectFromList( "Switch Branch", aNames )
+   if nSel > 0
+      cOut := GIT_Exec( "checkout " + AllTrim( aBranches[nSel][1] ), cDir )
+      MsgInfo( iif( Empty(cOut), "Switched to " + AllTrim( aBranches[nSel][1] ), cOut ), "Git Checkout" )
+   endif
+return nil
+
+static function GitMerge()
+   local cDir, cBranch, cOut
+   cDir    := GitProjectDir()
+   cBranch := MAC_InputBox( "Git Merge", "Branch to merge into current:", "" )
+   if Empty( cBranch ); return nil; endif
+   cOut := GIT_Exec( "merge " + cBranch, cDir )
+   MsgInfo( iif( Empty(cOut), "Merge completed", cOut ), "Git Merge" )
+return nil
+
+static function GitStash()
+   GIT_Exec( "stash", GitProjectDir() )
+   MsgInfo( "Changes stashed", "Git Stash" )
+return nil
+
+static function GitStashPop()
+   local cOut := GIT_Exec( "stash pop", GitProjectDir() )
+   MsgInfo( iif( Empty(cOut), "Stash applied", cOut ), "Git Stash Pop" )
+return nil
+
+static function GitLogShow()
+   local aLog := GIT_Log( 30, GitProjectDir() )
+   local cText := "", i
+   if Len( aLog ) == 0
+      MsgInfo( "No commits found" ); return nil
+   endif
+   for i := 1 to Len( aLog )
+      cText += Left( aLog[i][1], 7 ) + "  " + aLog[i][3] + "  " + aLog[i][4] + Chr(10)
+   next
+   MsgInfo( cText, "Git Log (last 30)" )
+return nil
+
+static function GitDiffShow()
+   local cDiff := GIT_Diff( "", GitProjectDir() )
+   MsgInfo( iif( Empty(cDiff), "No changes", Left(cDiff, 3000) ), "Git Diff" )
+return nil
+
+static function GitBlameShow()
+   local cFile, cOut
+   cFile := cCurrentFile
+   if Empty( cFile )
+      MsgInfo( "No file open" ); return nil
+   endif
+   cOut := GIT_Exec( "blame " + hb_FNameNameExt( cFile ), hb_FNameDir( cFile ) )
+   MsgInfo( iif( Empty(cOut), "No blame data", Left(cOut, 3000) ), "Git Blame" )
+return nil
 
 // Framework
 #include "classes.prg"

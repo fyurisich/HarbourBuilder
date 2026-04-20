@@ -1,6 +1,24 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-20b (macOS — Git menu with 14 actions)
+
+  GIT MENU (macOS):
+  - New "Git" menu between Tools and Help with 14 items:
+    Init Repository, Clone, Status, Commit, Push, Pull,
+    Branch Create/Switch/Merge, Stash, Stash Pop,
+    Log/History, Diff, Blame.
+  - GitProjectDir(): resolves working directory from cCurrentFile
+    (open project path) or hb_DirBase()+"../" as fallback.
+  - All operations use existing GIT_Exec/GIT_IsRepo/GIT_CurrentBranch/
+    GIT_Status/GIT_BranchList/GIT_Log/GIT_Diff C functions already
+    implemented in cocoa_core.m.
+  - MAC_InputBox( cTitle, cPrompt, cDefault ) added to stddlgs_mac.mm:
+    NSAlert with NSTextField accessory view for text input dialogs
+    (used by Clone, Commit, BranchCreate, Merge).
+  - MAC_InputBox registered in hbbuilder_macos.c extern + symbol table.
+  - oGit added to local declarations in CreateIDE().
+
 2026-04-20a (macOS — Report tab, report controls, OnCreate, preview fixes)
 
   PALETTE — NEW "Report" TAB (macOS):
