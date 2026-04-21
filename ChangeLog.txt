@@ -1,6 +1,25 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-21f (macOS — Breakpoint tab switching fix, crash prevention)
+
+  BREAKPOINT TAB SWITCHING FIX:
+  - Fixed breakpoints disappearing when switching between editor tabs
+  - Added CODEEDITORRESTOREBREAKPOINTS() function to restore breakpoint markers
+  - Modified tabChanged: method to call CODEEDITORRESTOREBREAKPOINTS after SCI_SETTEXT
+  - Breakpoint markers now persist when switching between form1.prg and project1.prg files
+
+  BREAKPOINT CRASH PREVENTION:
+  - Fixed crash when hb_dynsymFind returns NULL for IDE_DEBUGADDBREAKPOINT/REMOVEBREAKPOINT
+  - Added NULL checks before calling hb_dynsymSymbol()
+  - Added debug logging to diagnose symbol lookup issues
+  - Margin click handler now safe even if Harbour functions aren't found
+
+  DEBUG OUTPUT:
+  - Added fprintf(stderr) logging to track breakpoint operations
+  - Logs when CODEEDITORRESTOREBREAKPOINTS is called during tab switch
+  - Logs when IDE_DEBUGADDBREAKPOINT/REMOVEBREAKPOINT symbols aren't found
+
 2026-04-21e (macOS — Breakpoint persistence fix, auto-run to breakpoint UI integration)
 
   BREAKPOINT IMPLEMENTATION — visual markers:

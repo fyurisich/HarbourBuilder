@@ -405,6 +405,21 @@ static void CE_ConfigureScintilla( ScintillaView * sv )
    CE_UpdateHarbourFolding( ed->sciView );
    CE_UpdateStatusBar( ed );
 
+   // Restore breakpoint markers for this file
+   if( ed->tabNames[newTab][0] ) {
+      PHB_DYNS pDyn = hb_dynsymFind( "CODEEDITORRESTOREBREAKPOINTS" );
+      fprintf(stderr, "DBG: CODEEDITORRESTOREBREAKPOINTS sym=%p\n", (void*)pDyn);
+      if( pDyn ) {
+         hb_vmPushSymbol( hb_dynsymSymbol( pDyn ) );
+         hb_vmPushNumInt( (HB_PTRUINT) ed );
+         hb_vmPushString( ed->tabNames[newTab], strlen( ed->tabNames[newTab] ) );
+         hb_vmSend( 2 );
+         fprintf(stderr, "DBG: CODEEDITORRESTOREBREAKPOINTS called\n");
+      } else {
+         fprintf(stderr, "DBG: CODEEDITORRESTOREBREAKPOINTS not found\n");
+      }
+   }
+
    if( ed->pOnTabChange && HB_IS_BLOCK( ed->pOnTabChange ) )
    {
       hb_vmPushEvalSym();
@@ -544,10 +559,15 @@ static HBDebounceTarget * s_debounceTarget = nil;
                /* Call Harbour to remove from debugger list */
                if( ed->nActiveTab >= 0 && ed->nActiveTab < ed->nTabs && ed->tabNames[ed->nActiveTab][0] )
                {
-                  hb_vmPushSymbol( hb_dynsymSymbol( hb_dynsymFind( "IDE_DEBUGREMOVEBREAKPOINT" ) ) );
-                  hb_vmPushString( ed->tabNames[ed->nActiveTab], strlen( ed->tabNames[ed->nActiveTab] ) );
-                  hb_vmPushLong( (long)line + 1 );  // Convert 0-based to 1-based
-                  hb_vmSend( 2 );
+                  PHB_DYNS pDyn = hb_dynsymFind( "IDE_DEBUGREMOVEBREAKPOINT" );
+                  if( pDyn ) {
+                     hb_vmPushSymbol( hb_dynsymSymbol( pDyn ) );
+                     hb_vmPushString( ed->tabNames[ed->nActiveTab], strlen( ed->tabNames[ed->nActiveTab] ) );
+                     hb_vmPushLong( (long)line + 1 );  // Convert 0-based to 1-based
+                     hb_vmSend( 2 );
+                  } else {
+                     fprintf(stderr, "DBG: IDE_DEBUGREMOVEBREAKPOINT symbol not found\n");
+                  }
                }
             }
             else
@@ -558,10 +578,15 @@ static HBDebounceTarget * s_debounceTarget = nil;
                /* Call Harbour to add to debugger list */
                if( ed->nActiveTab >= 0 && ed->nActiveTab < ed->nTabs && ed->tabNames[ed->nActiveTab][0] )
                {
-                  hb_vmPushSymbol( hb_dynsymSymbol( hb_dynsymFind( "IDE_DEBUGADDBREAKPOINT" ) ) );
-                  hb_vmPushString( ed->tabNames[ed->nActiveTab], strlen( ed->tabNames[ed->nActiveTab] ) );
-                  hb_vmPushLong( (long)line + 1 );  // Convert 0-based to 1-based
-                  hb_vmSend( 2 );
+                  PHB_DYNS pDyn = hb_dynsymFind( "IDE_DEBUGADDBREAKPOINT" );
+                  if( pDyn ) {
+                     hb_vmPushSymbol( hb_dynsymSymbol( pDyn ) );
+                     hb_vmPushString( ed->tabNames[ed->nActiveTab], strlen( ed->tabNames[ed->nActiveTab] ) );
+                     hb_vmPushLong( (long)line + 1 );  // Convert 0-based to 1-based
+                     hb_vmSend( 2 );
+                  } else {
+                     fprintf(stderr, "DBG: IDE_DEBUGADDBREAKPOINT symbol not found\n");
+                  }
                }
             }
          }
@@ -2552,6 +2577,7 @@ HB_FUNC( CODEEDITORCLEARBREAKPOINTS )
    SciMsg( ed->sciView, SCI_MARKERDELETEALL, 12, 0 );
 }
 
+
 HB_FUNC( CODEEDITORGETCURLINE )
 {
    CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
@@ -4336,6 +4362,27 @@ HB_FUNC( IDE_DEBUGREMOVEBREAKPOINT )
 HB_FUNC( IDE_DEBUGCLEARBREAKPOINTS )
 {
    s_nBreakpoints = 0;
+}
+
+HB_FUNC( CODEEDITORRESTOREBREAKPOINTS )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   const char * filename = HB_ISCHAR(2) ? hb_parc(2) : "";
+   if( !ed || !ed->sciView ) return;
+
+   // Clear existing breakpoint markers
+   SciMsg( ed->sciView, SCI_MARKERDELETEALL, 12, 0 );
+
+   // Add markers for breakpoints matching this file
+   for( int i = 0; i < s_nBreakpoints; i++ ) {
+      if( s_breakpoints[i].module[0] == 0 || strcmp( s_breakpoints[i].module, filename ) == 0 ) {
+         // Convert 1-based line to 0-based
+         int line = s_breakpoints[i].line - 1;
+         if( line >= 0 ) {
+            SciMsg( ed->sciView, SCI_MARKERADD, (uptr_t)line, 12 );
+         }
+      }
+   }
 }
 
 /* IDE_DebugGetLocals( nLevel ) --> aLocals */
