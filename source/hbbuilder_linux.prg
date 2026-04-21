@@ -2243,7 +2243,7 @@ static function TBRun()
 
    local cBuildDir, cOutput, cLog, i, lError
    local cHbDir, cHbBin, cHbInc, cHbLib, cProjDir
-   local cAllPrg, cCmd, cAllCode, nHash, cDestDir
+   local cAllPrg, cCmd, cAllCode, nHash, cDestDir, cAppExe, cAppTitle
    static nLastHash := 0
 
    SaveActiveFormCode()
@@ -2428,7 +2428,18 @@ static function TBRun()
       cLog += Chr(10) + "Build succeeded. Running..." + Chr(10)
       if ! Empty( cCurrentFile )
          cDestDir := Left( cCurrentFile, RAt( "/", cCurrentFile ) )
-         GTK_ShellExec( "cp " + cBuildDir + "/UserApp " + cDestDir + "UserApp 2>/dev/null" )
+         cAppTitle := ""
+         if Len( aForms ) >= 1
+            cAppTitle := UI_GetProp( aForms[1][2]:hCpp, "cAppTitle" )
+            if ValType( cAppTitle ) != "C"; cAppTitle := ""; endif
+            cAppTitle := StrTran( AllTrim( cAppTitle ), " ", "_" )
+         endif
+         if Empty( cAppTitle )
+            cAppTitle := Left( cDestDir, Len( cDestDir ) - 1 )
+            cAppTitle := SubStr( cAppTitle, RAt( "/", cAppTitle ) + 1 )
+         endif
+         cAppExe := iif( ! Empty( cAppTitle ), cAppTitle, "UserApp" )
+         GTK_ShellExec( "cp " + cBuildDir + "/UserApp " + cDestDir + cAppExe + " 2>/dev/null" )
       endif
       GTK_ShellExec( cBuildDir + "/UserApp 2>/tmp/userapp_debug.log &" )
    endif
