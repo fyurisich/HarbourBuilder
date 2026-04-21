@@ -1,7 +1,7 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
-2026-04-21d (macOS — Visual breakpoints in editor, menu fix)
+2026-04-21d (macOS — Visual breakpoints in editor, menu fix, auto-run to breakpoint)
 
   BREAKPOINT IMPLEMENTATION — visual markers:
   - Added breakpoint marker (marker 12) as red circle in editor margin
@@ -10,6 +10,14 @@ HarbourBuilder - Cross-platform visual IDE for Harbour
     CODEEDITORREMOVEBREAKPOINT, CODEEDITORCLEARBREAKPOINTS
   - Breakpoint markers use SC_MARK_CIRCLE with red foreground/dark red background
   - Margin 1 configured to show markers 0-12 (bookmarks 0-9 + breakpoint 12)
+
+  AUTO-RUN TO BREAKPOINT FEATURE:
+  - Added IDE_DEBUGRUNTOBREAK(cHrbFile, bOnPause) function
+  - Added IDE_DEBUGRUNTOBREAK2(cExePath, bOnPause) function
+  - New functions start debug sessions in DBG_RUNNING mode (vs DBG_STEPPING)
+  - Program executes automatically until first breakpoint encountered
+  - Works for both .hrb files and socket-based external executable debugging
+  - If no breakpoints set, program runs to completion
 
   MENU FIX — macOS application menu:
   - Fixed UI_MENUBARCREATE to properly create application menu
