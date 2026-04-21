@@ -103,6 +103,13 @@ HarbourBuilder - Cross-platform visual IDE for Harbour
   - Logs when CODEEDITORRESTOREBREAKPOINTS is called during tab switch
   - Logs when IDE_DEBUGADDBREAKPOINT/REMOVEBREAKPOINT symbols aren't found
 
+2026-04-21f (Linux — Copy executable to project folder after successful build)
+
+  BUILD OUTPUT:
+  - After a successful build, the executable (UserApp) is now copied to the
+    project folder alongside the .hbp file
+  - Only applies when the project has been saved (cCurrentFile is not empty)
+
 2026-04-21e (macOS — Breakpoint persistence fix, auto-run to breakpoint UI integration)
 
   BREAKPOINT IMPLEMENTATION — visual markers:

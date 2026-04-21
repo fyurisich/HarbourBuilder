@@ -2243,7 +2243,7 @@ static function TBRun()
 
    local cBuildDir, cOutput, cLog, i, lError
    local cHbDir, cHbBin, cHbInc, cHbLib, cProjDir
-   local cAllPrg, cCmd, cAllCode, nHash
+   local cAllPrg, cCmd, cAllCode, nHash, cDestDir
    static nLastHash := 0
 
    SaveActiveFormCode()
@@ -2426,6 +2426,10 @@ static function TBRun()
    else
       nLastHash := nHash
       cLog += Chr(10) + "Build succeeded. Running..." + Chr(10)
+      if ! Empty( cCurrentFile )
+         cDestDir := Left( cCurrentFile, RAt( "/", cCurrentFile ) )
+         GTK_ShellExec( "cp " + cBuildDir + "/UserApp " + cDestDir + "UserApp 2>/dev/null" )
+      endif
       GTK_ShellExec( cBuildDir + "/UserApp 2>/tmp/userapp_debug.log &" )
    endif
 
