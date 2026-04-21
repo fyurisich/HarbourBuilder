@@ -4207,6 +4207,47 @@ HB_FUNC( IDE_DEBUGRUNTOBREAK )
    hb_retl( HB_TRUE );
 }
 
+/* IDE_DEBUGRUNTOBREAK2( cExePath, bOnPause ) — socket-based debug session, run to first breakpoint */
+HB_FUNC( IDE_DEBUGRUNTOBREAK2 )
+{
+   const char * cExePath = hb_parc(1);
+   PHB_ITEM pOnPause = hb_param(2, HB_IT_BLOCK);
+
+   setbuf(stderr, NULL);  /* unbuffer stderr for debug traces */
+   fprintf(stderr, "IDE-DBG: IDE_DEBUGRUNTOBREAK2 called exe='%s'\n", cExePath ? cExePath : "(null)");
+   if( !cExePath || s_dbgState != DBG_IDLE ) { fprintf(stderr, "IDE-DBG: rejected (null=%d state=%d)\n", !cExePath, s_dbgState); hb_retl( HB_FALSE ); return; }
+
+   if( s_dbgOnPause ) { hb_itemRelease( s_dbgOnPause ); s_dbgOnPause = NULL; }
+   if( pOnPause ) s_dbgOnPause = hb_itemNew( pOnPause );
+
+   /* Start TCP server */
+   if( DbgServerStart( 19800 ) != 0 )
+   {
+      DbgOutput( "ERROR: Could not start debug server on port 19800\n" );
+      hb_retl( HB_FALSE );
+      return;
+   }
+
+   s_dbgState = DBG_RUNNING;  /* DIFFERENT FROM IDE_DEBUGSTART2: RUNNING instead of STEPPING */
+   s_nBreakpoints = 0;
+   fprintf(stderr, "IDE-DBG: server started on 19800 (run to breakpoint)\n");
+   DbgOutput( "=== Debug session started (socket, run to breakpoint) ===\n" );
+   DbgOutput( "Listening on port 19800...\n" );
+
+   /* Launch user executable */
+   {
+      char cmd[1024];
+      snprintf( cmd, sizeof(cmd), "\"%s\" 2>/tmp/hb_debugapp.txt &", cExePath );
+      fprintf(stderr, "IDE-DBG: launching: %s\n", cmd);
+      system( cmd );
+   }
+
+   if( s_dbgStatusLbl )
+      [s_dbgStatusLbl setStringValue:@"Running to breakpoint..."];
+
+   hb_retl( HB_TRUE );
+}
+
 /* IDE_DebugGo() */
 HB_FUNC( IDE_DEBUGGO )
 { if( s_dbgState == DBG_PAUSED ) s_dbgState = DBG_RUNNING; }
