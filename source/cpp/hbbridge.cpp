@@ -4480,6 +4480,28 @@ HB_FUNC( IDE_DEBUGADDBREAKPOINT )
    s_nBreakpoints++;
 }
 
+/* IDE_DebugRemoveBreakpoint( cModule, nLine ) */
+HB_FUNC( IDE_DEBUGREMOVEBREAKPOINT )
+{
+   const char * mod = HB_ISCHAR(1) ? hb_parc(1) : "";
+   int line = hb_parni(2);
+   int i, j;
+
+   for( i = 0; i < s_nBreakpoints; i++ ) {
+      if( s_breakpoints[i].line == line &&
+          ( s_breakpoints[i].module[0] == 0 ||
+            strcmp( s_breakpoints[i].module, mod ) == 0 ) ) {
+         // Shift remaining breakpoints left
+         for( j = i; j < s_nBreakpoints - 1; j++ ) {
+            strcpy( s_breakpoints[j].module, s_breakpoints[j+1].module );
+            s_breakpoints[j].line = s_breakpoints[j+1].line;
+         }
+         s_nBreakpoints--;
+         break;
+      }
+   }
+}
+
 /* IDE_DebugClearBreakpoints() */
 HB_FUNC( IDE_DEBUGCLEARBREAKPOINTS )
 {

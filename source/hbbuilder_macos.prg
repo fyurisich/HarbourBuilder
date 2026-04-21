@@ -3779,16 +3779,34 @@ return nil
 // === Debugger ===
 
 static function ToggleBreakpoint()
-   static aBreakpoints := {}
-   local cFile := aForms[ nActiveForm ][ 1 ] + ".prg"
-   AAdd( aBreakpoints, { cFile, 1 } )
-   IDE_DebugAddBreakpoint( cFile, 1 )
-   MAC_DebugSetStatus( "Breakpoints: " + LTrim(Str(Len(aBreakpoints))) )
+   // TODO: Implement breakpoint functionality
+   // Temporarily disabled to test menu functionality
+   MAC_DebugSetStatus( "Breakpoint functionality coming soon" )
 return nil
 
 static function ClearBreakpoints()
-   IDE_DebugClearBreakpoints()
-   MAC_DebugSetStatus( "All breakpoints cleared" )
+   // TODO: Implement clear breakpoints functionality
+   // Temporarily disabled to test menu functionality
+   MAC_DebugSetStatus( "Clear breakpoints functionality coming soon" )
+return nil
+
+static function GetCurrentFileName()
+   local cFile
+   if nActiveForm > 0 .and. nActiveForm <= Len( aForms )
+      cFile := aForms[ nActiveForm ][ 1 ] + ".prg"
+   else
+      cFile := "main.prg"
+   endif
+return cFile
+
+static function RestoreBreakpoints( cFile )
+   // This function would restore breakpoints from a saved configuration
+   // For now, it's a placeholder
+   local aBreakpoints := {}
+   local i, nLine
+
+   // In a real implementation, we would load breakpoints from a config file
+   // and call CodeEditorAddBreakpoint for each one
 return nil
 
 static function ShowDebugger()

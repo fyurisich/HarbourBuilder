@@ -350,10 +350,15 @@ static void CE_ConfigureScintilla( ScintillaView * sv )
    SciMsg( sv, SCI_MARKERDEFINE, 11, SC_MARK_BACKGROUND );
    SciMsg( sv, 2042, 11, SCIRGB(60,60,0) );  /* SCI_MARKERSETBACK: yellow-brown */
 
+   /* Breakpoint marker: red circle (marker 12) */
+   SciMsg( sv, SCI_MARKERDEFINE, 12, SC_MARK_CIRCLE );
+   SciMsg( sv, 2041, 12, SCIRGB(255,80,80) );  /* SCI_MARKERSETFORE: red */
+   SciMsg( sv, 2042, 12, SCIRGB(40,20,20) );   /* SCI_MARKERSETBACK: dark red */
+
    /* Bookmarks: markers 0-9 using circles in margin 1 */
    SciMsg( sv, SCI_SETMARGINTYPEN, 1, SC_MARGIN_SYMBOL );
    SciMsg( sv, SCI_SETMARGINWIDTHN, 1, 16 );
-   SciMsg( sv, SCI_SETMARGINMASKN, 1, 0x3FF );  /* bits 0-9 */
+   SciMsg( sv, SCI_SETMARGINMASKN, 1, 0x1FFF );  /* bits 0-12 (0-9 bookmarks, 12 breakpoint) */
    SciMsg( sv, SCI_SETMARGINSENSITIVEN, 1, 1 );
    for( int m = 0; m <= 9; m++ ) {
       SciMsg( sv, SCI_MARKERDEFINE, m, SC_MARK_SHORTARROW );
@@ -518,11 +523,29 @@ static HBDebounceTarget * s_debounceTarget = nil;
 
       case SCN_MARGINCLICK:
       {
-         /* Fold/unfold on margin click */
-         if( scn->margin == 2 )
+         sptr_t line = SciMsg( ed->sciView, SCI_LINEFROMPOSITION,
+                               (uptr_t)scn->position, 0 );
+
+         /* Breakpoint toggle on margin 1 */
+         if( scn->margin == 1 )
          {
-            sptr_t line = SciMsg( ed->sciView, SCI_LINEFROMPOSITION,
-                                  (uptr_t)scn->position, 0 );
+            sptr_t markers = SciMsg( ed->sciView, SCI_MARKERGET, (uptr_t)line, 0 );
+            if( markers & (1 << 12) )  /* Breakpoint marker (12) */
+            {
+               /* Remove breakpoint */
+               SciMsg( ed->sciView, SCI_MARKERDELETE, (uptr_t)line, 12 );
+               /* TODO: call Harbour to remove from debugger list */
+            }
+            else
+            {
+               /* Add breakpoint */
+               SciMsg( ed->sciView, SCI_MARKERADD, (uptr_t)line, 12 );
+               /* TODO: call Harbour to add to debugger list */
+            }
+         }
+         /* Fold/unfold on margin 2 */
+         else if( scn->margin == 2 )
+         {
             SciMsg( ed->sciView, SCI_TOGGLEFOLD, (uptr_t)line, 0 );
          }
          break;
@@ -2459,6 +2482,84 @@ HB_FUNC( CODEEDITORPASTE )
    if( ed && ed->sciView ) SciMsg( ed->sciView, SCI_PASTE, 0, 0 );
 }
 
+/* Breakpoint functions */
+HB_FUNC( CODEEDITORTOGGLEBREAKPOINT )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   if( !ed || !ed->sciView ) { hb_retni( -1 ); return; }
+
+   sptr_t pos = SciMsg0( ed->sciView, SCI_GETCURRENTPOS );
+   sptr_t line = SciMsg( ed->sciView, SCI_LINEFROMPOSITION, (uptr_t)pos, 0 );
+
+   // Check if line already has breakpoint marker
+   int markers = SciMsg( ed->sciView, SCI_MARKERGET, (uptr_t)line, 0 );
+   if( markers & (1 << 12) ) {
+      // Remove breakpoint
+      SciMsg( ed->sciView, SCI_MARKERDELETE, (uptr_t)line, 12 );
+      hb_retni( 0 );  // Removed
+   } else {
+      // Add breakpoint
+      SciMsg( ed->sciView, SCI_MARKERADD, (uptr_t)line, 12 );
+      hb_retni( 1 );  // Added
+   }
+}
+
+HB_FUNC( CODEEDITORADDBREAKPOINT )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   int line = hb_parni(2) - 1;  // Convert 1-based to 0-based
+   if( !ed || !ed->sciView || line < 0 ) return;
+
+   SciMsg( ed->sciView, SCI_MARKERADD, (uptr_t)line, 12 );
+}
+
+HB_FUNC( CODEEDITORREMOVEBREAKPOINT )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   int line = hb_parni(2) - 1;  // Convert 1-based to 0-based
+   if( !ed || !ed->sciView || line < 0 ) return;
+
+   SciMsg( ed->sciView, SCI_MARKERDELETE, (uptr_t)line, 12 );
+}
+
+HB_FUNC( CODEEDITORCLEARBREAKPOINTS )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   if( !ed || !ed->sciView ) return;
+
+   SciMsg( ed->sciView, SCI_MARKERDELETEALL, 12, 0 );
+}
+
+HB_FUNC( CODEEDITORGETCURLINE )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   if( !ed || !ed->sciView ) { hb_retni( 0 ); return; }
+
+   sptr_t pos = SciMsg0( ed->sciView, SCI_GETCURRENTPOS );
+   sptr_t line = SciMsg( ed->sciView, SCI_LINEFROMPOSITION, (uptr_t)pos, 0 );
+   hb_retni( (int)line + 1 );  // Return 1-based line number
+}
+
+HB_FUNC( CODEEDITORGETBREAKPOINTS )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   if( !ed || !ed->sciView ) { hb_reta( 0 ); return; }
+
+   PHB_ITEM pArray = hb_itemArrayNew( 0 );
+   sptr_t totalLines = SciMsg( ed->sciView, SCI_GETLINECOUNT, 0, 0 );
+
+   for( sptr_t line = 0; line < totalLines; line++ ) {
+      int markers = SciMsg( ed->sciView, SCI_MARKERGET, (uptr_t)line, 0 );
+      if( markers & (1 << 12) ) {
+         PHB_ITEM pLine = hb_itemPutNI( NULL, (int)line + 1 );  // 1-based
+         hb_arrayAdd( pArray, pLine );
+         hb_itemRelease( pLine );
+      }
+   }
+
+   hb_itemReturnRelease( pArray );
+}
+
 /* CodeEditorFind / CodeEditorReplace — reusable Find/Replace dialog */
 HB_FUNC( CODEEDITORFIND )
 {
@@ -4095,6 +4196,28 @@ HB_FUNC( IDE_DEBUGADDBREAKPOINT )
       strncpy( s_breakpoints[s_nBreakpoints].module, hb_parc(1), 255 );
       s_breakpoints[s_nBreakpoints].line = hb_parni(2);
       s_nBreakpoints++;
+   }
+}
+
+/* IDE_DebugRemoveBreakpoint( cModule, nLine ) */
+HB_FUNC( IDE_DEBUGREMOVEBREAKPOINT )
+{
+   const char * mod = HB_ISCHAR(1) ? hb_parc(1) : "";
+   int line = hb_parni(2);
+   int i, j;
+
+   for( i = 0; i < s_nBreakpoints; i++ ) {
+      if( s_breakpoints[i].line == line &&
+          ( s_breakpoints[i].module[0] == 0 ||
+            strcmp( s_breakpoints[i].module, mod ) == 0 ) ) {
+         // Shift remaining breakpoints left
+         for( j = i; j < s_nBreakpoints - 1; j++ ) {
+            strcpy( s_breakpoints[j].module, s_breakpoints[j+1].module );
+            s_breakpoints[j].line = s_breakpoints[j+1].line;
+         }
+         s_nBreakpoints--;
+         break;
+      }
    }
 }
 

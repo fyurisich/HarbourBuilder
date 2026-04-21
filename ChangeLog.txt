@@ -1,6 +1,26 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-21d (macOS — Visual breakpoints in editor, menu fix)
+
+  BREAKPOINT IMPLEMENTATION — visual markers:
+  - Added breakpoint marker (marker 12) as red circle in editor margin
+  - Clicking in left margin (margin 1) toggles breakpoint markers
+  - Added HB_FUNC functions: CODEEDITORTOGGLEBREAKPOINT, CODEEDITORADDBREAKPOINT,
+    CODEEDITORREMOVEBREAKPOINT, CODEEDITORCLEARBREAKPOINTS
+  - Breakpoint markers use SC_MARK_CIRCLE with red foreground/dark red background
+  - Margin 1 configured to show markers 0-12 (bookmarks 0-9 + breakpoint 12)
+
+  MENU FIX — macOS application menu:
+  - Fixed UI_MENUBARCREATE to properly create application menu
+  - Added debug logging to menu functions for troubleshooting
+  - Fixed duplicate menu initialization issue that prevented menu from opening
+
+  HARBOUR COMPILATION FIX — STATIC declaration:
+  - Fixed Harbour compilation error E0004 "STATIC declaration follows executable statement"
+  - Wrapped s_cHixRoot static variable in HIX_StaticStorage() function in hix_runtime.prg
+  - Changed from module-level STATIC to function-level STATIC to comply with Harbour rules
+
 2026-04-21c (Windows — IDE no longer hangs on exit while project runs)
 
   BUG FIX — exit-while-running:
