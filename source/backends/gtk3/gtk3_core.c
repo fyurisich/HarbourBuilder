@@ -4748,7 +4748,9 @@ HB_FUNC( GTK_GETWINDOWBOTTOM )
 #define SCI_MARKERDELETEALL    2046
 #define SCI_GETFIRSTVISIBLELINE 2152
 #define SCI_SETFIRSTVISIBLELINE 2613
+#define SC_MARK_CIRCLE         0
 #define SC_MARK_BACKGROUND     22
+#define SCI_MARKERGET          2035
 #define SCI_SETAUTOMATICFOLD   2663
 #define SC_AUTOMATICFOLD_SHOW  0x01
 #define SC_AUTOMATICFOLD_CLICK 0x02
@@ -4981,6 +4983,13 @@ static void ConfigureScintilla( GtkWidget * sci )
    SciMsg( sci, SCI_STYLESETFORE, STYLE_LINENUMBER, SciRGB(133,133,133) );
    SciMsg( sci, SCI_STYLESETBACK, STYLE_LINENUMBER, SciRGB(37,37,38) );
 
+   /* Breakpoint margin (margin 1) — clickable symbol strip */
+   SciMsg( sci, SCI_SETMARGINTYPEN, 1, SC_MARGIN_SYMBOL );
+   SciMsg( sci, SCI_SETMARGINMASKN, 1, 1 << 12 );   /* only marker 12 */
+   SciMsg( sci, SCI_SETMARGINWIDTHN, 1, 14 );
+   SciMsg( sci, SCI_SETMARGINSENSITIVEN, 1, 1 );
+   SciMsg( sci, SCI_STYLESETBACK, 33, SciRGB(37,37,38) );  /* margin 1 background */
+
    /* Folding margin */
    SciMsg( sci, SCI_SETMARGINTYPEN, 2, SC_MARGIN_SYMBOL );
    SciMsg( sci, SCI_SETMARGINMASKN, 2, SC_MASK_FOLDERS );
@@ -5008,6 +5017,11 @@ static void ConfigureScintilla( GtkWidget * sci )
    /* Debug execution line marker (marker 11) - yellow background */
    SciMsg( sci, SCI_MARKERDEFINE, 11, SC_MARK_BACKGROUND );
    SciMsg( sci, SCI_MARKERSETBACK, 11, SciRGB(60,60,0) );
+
+   /* Breakpoint marker (marker 12) - red circle */
+   SciMsg( sci, SCI_MARKERDEFINE, 12, SC_MARK_CIRCLE );
+   SciMsg( sci, SCI_MARKERSETFORE, 12, SciRGB(180,0,0) );
+   SciMsg( sci, SCI_MARKERSETBACK, 12, SciRGB(220,30,30) );
 
    /* Enable folding property */
    SciMsg( sci, SCI_SETPROPERTY, (uintptr_t) "fold",              (intptr_t) "1" );
@@ -6115,6 +6129,12 @@ static gboolean on_debounce_fire( gpointer data )
    return G_SOURCE_REMOVE;
 }
 
+/* Breakpoint storage — defined here so the Scintilla margin-click handler can access it */
+#define DBG_MAX_BP 64
+typedef struct { char module[256]; int line; } DBGBP;
+static DBGBP s_breakpoints[DBG_MAX_BP];
+static int   s_nBreakpoints = 0;
+
 /* Scintilla notification handler via GtkWidget "sci-notify" signal */
 static void on_sci_notify( GtkWidget * sci, gint id, gpointer scnPtr, gpointer data )
 {
@@ -6144,7 +6164,38 @@ static void on_sci_notify( GtkWidget * sci, gint id, gpointer scnPtr, gpointer d
 
    if( scn->code == SCN_MARGINCLICK ) {
       int line = (int) SciMsg( sci, SCI_LINEFROMPOSITION, scn->position, 0 );
-      SciMsg( sci, SCI_TOGGLEFOLD, line, 0 );
+      if( scn->margin == 1 ) {
+         /* Breakpoint margin — toggle marker 12 and update s_breakpoints[] */
+         int lineNum = line + 1;  /* Scintilla is 0-based, breakpoints are 1-based */
+         const char * fileName = (ed->nActiveTab >= 0 && ed->nActiveTab < ed->nTabs)
+                                 ? ed->tabNames[ed->nActiveTab] : "";
+         int hasMarker = (int) SciMsg( sci, SCI_MARKERGET, line, 0 ) & (1 << 12);
+         if( hasMarker ) {
+            /* Remove breakpoint */
+            SciMsg( sci, SCI_MARKERDELETE, line, 12 );
+            int i;
+            for( i = 0; i < s_nBreakpoints; i++ ) {
+               if( s_breakpoints[i].line == lineNum &&
+                   strcasecmp( s_breakpoints[i].module, fileName ) == 0 ) {
+                  s_nBreakpoints--;
+                  if( i < s_nBreakpoints )
+                     s_breakpoints[i] = s_breakpoints[s_nBreakpoints];
+                  break;
+               }
+            }
+         } else {
+            /* Add breakpoint */
+            SciMsg( sci, SCI_MARKERADD, line, 12 );
+            if( s_nBreakpoints < DBG_MAX_BP ) {
+               strncpy( s_breakpoints[s_nBreakpoints].module, fileName, 255 );
+               s_breakpoints[s_nBreakpoints].module[255] = 0;
+               s_breakpoints[s_nBreakpoints].line = lineNum;
+               s_nBreakpoints++;
+            }
+         }
+      } else {
+         SciMsg( sci, SCI_TOGGLEFOLD, line, 0 );
+      }
    }
 
    if( scn->code == SCN_CHARADDED ) {
@@ -8715,12 +8766,6 @@ static int           s_dbgStepDepth = 0;
 static char          s_dbgModule[256] = "";
 static GtkWidget *   s_dbgOutputTV = NULL;
 static PHB_ITEM      s_dbgOnPause = NULL;
-
-/* Breakpoints */
-#define DBG_MAX_BP 64
-typedef struct { char module[256]; int line; } DBGBP;
-static DBGBP s_breakpoints[DBG_MAX_BP];
-static int   s_nBreakpoints = 0;
 
 static int DbgIsBreakpoint( const char * module, int line )
 {
