@@ -9269,8 +9269,9 @@ HB_FUNC( IDE_DEBUGSTART2 )
             continue;
          }
 
-         /* Save stepping flag BEFORE overwriting state — IDE_DbgIsStepping() reads it */
-         s_dbgWasStepping = (s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER);
+         /* s_dbgWasStepping is set by IDE_DEBUGSTEP/STEPOVER and cleared by IDE_DEBUGGO.
+          * Do NOT recompute it here — by the time PAUSE arrives, s_dbgState is already
+          * DBG_PAUSED (set after sending STEP), which would wrongly clear the flag. */
          s_dbgState = DBG_PAUSED;
 
          /* Call Harbour callback: ( cFuncName, nLine, cLocals, cStack )
