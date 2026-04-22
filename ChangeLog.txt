@@ -1,6 +1,38 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-22 (macOS — Debugger step mode, correct breakpoint matching, UI fixes)
+
+  STEP MODE DEBUGGER:
+  - Step button now pauses at the correct next user-code line (not framework code)
+  - OnDebugPause uses aDbgOffsets to map debug_main.prg lines → source file/line
+  - Added IDE_IsBreakpoint(cFile, nLine) C function for accurate breakpoint matching
+  - Added IDE_DbgIsStepping() C function to detect step/stepover mode
+  - Added IDE_DebugPauseAtStep() C function — called by OnDebugPause to signal pause
+  - Breakpoints now match by source filename AND line number (previously ignored module)
+  - Eliminated false breakpoint hits caused by coincidental line number matches
+
+  BREAKPOINT MOUSE CLICK FIX:
+  - Fixed double SCN_MARGINCLICK: hb_vmDo() inside Scintilla notification handlers
+    caused Cocoa event loop re-entry, firing the notification twice (add + remove)
+  - Replaced Harbour VM calls with direct C helper functions: CE_AddBreakpointDirect,
+    CE_RemoveBreakpointDirect, CE_RestoreBreakpointMarkers
+  - Breakpoint array (s_breakpoints[]) now managed in pure C, no VM re-entrancy
+  - Tab-change handler also uses direct C call instead of hb_vmDo
+
+  IDE EXIT / UI RESPONSIVENESS FIX:
+  - IDE_DEBUGRUNTOBREAK2 while-loop now pumps NSApp events every 100ms
+  - All toolbar buttons and menus (including Exit) remain responsive during debugging
+  - IDE OnClose now calls IDE_DebugStop() to cleanly abort active debug sessions
+  - Debugger loop exits immediately on DBG_IDLE or DBG_STOPPED state
+
+  INSPECTOR MODULE REGISTRATION:
+  - Created cocoa_inspector_reg.c to register INS_* functions in the Harbour symbol table
+  - Fixes: INS_SetDebugMode, INS_BringToFront, INS_SetDebugLocals, INS_SetDebugStack
+    were not being called (symbols not found via hb_dynsymFind)
+  - Added build step [3f/4] and linker inclusion for cocoa_inspector_reg.o
+  - Inspector window now correctly switches to debug mode and shows Variables/Call Stack
+
 2026-04-21f (macOS — Breakpoint tab switching fix, crash prevention)
 
   BREAKPOINT TAB SWITCHING FIX:

@@ -28,11 +28,15 @@
 #include "hbvm.h"
 #include "hbapidbg.h"
 #include "hbapierr.h"
+#include "hbstack.h"
 
 /* Socket debug server */
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
+#include <errno.h>
+#include <fcntl.h>
+#include <sys/wait.h>
 
 /* Lexilla CreateLexer (linked statically from liblexilla.a) */
 extern "C" Scintilla::ILexer5 * CreateLexer(const char *name);
@@ -368,6 +372,53 @@ static void CE_ConfigureScintilla( ScintillaView * sv )
 }
 
 /* -----------------------------------------------------------------------
+ * Breakpoint storage — declared here so tab-change and margin-click handlers
+ * can call C helpers directly without going through the Harbour VM.
+ * ----------------------------------------------------------------------- */
+#define DBG_MAX_BP 64
+typedef struct { char module[256]; int line; } DBGBP;
+static DBGBP  s_breakpoints[DBG_MAX_BP];
+static int    s_nBreakpoints = 0;
+
+static void CE_AddBreakpointDirect( const char * module, int line )
+{
+   if( s_nBreakpoints < DBG_MAX_BP ) {
+      strncpy( s_breakpoints[s_nBreakpoints].module, module, 255 );
+      s_breakpoints[s_nBreakpoints].module[255] = 0;
+      s_breakpoints[s_nBreakpoints].line = line;
+      s_nBreakpoints++;
+   }
+}
+
+static void CE_RemoveBreakpointDirect( const char * module, int line )
+{
+   for( int i = 0; i < s_nBreakpoints; i++ ) {
+      if( s_breakpoints[i].line == line &&
+          ( s_breakpoints[i].module[0] == 0 ||
+            strcmp( s_breakpoints[i].module, module ) == 0 ) ) {
+         for( int j = i; j < s_nBreakpoints - 1; j++ ) {
+            strcpy( s_breakpoints[j].module, s_breakpoints[j+1].module );
+            s_breakpoints[j].line = s_breakpoints[j+1].line;
+         }
+         s_nBreakpoints--;
+         break;
+      }
+   }
+}
+
+static void CE_RestoreBreakpointMarkers( CODEEDITOR * ed, const char * filename )
+{
+   if( !ed || !ed->sciView || !filename ) return;
+   SciMsg( ed->sciView, SCI_MARKERDELETEALL, 12, 0 );
+   for( int i = 0; i < s_nBreakpoints; i++ ) {
+      if( s_breakpoints[i].module[0] == 0 || strcmp( s_breakpoints[i].module, filename ) == 0 ) {
+         int l = s_breakpoints[i].line - 1;
+         if( l >= 0 ) SciMsg( ed->sciView, SCI_MARKERADD, (uptr_t)l, 12 );
+      }
+   }
+}
+
+/* -----------------------------------------------------------------------
  * Tab bar target
  * ----------------------------------------------------------------------- */
 
@@ -405,20 +456,9 @@ static void CE_ConfigureScintilla( ScintillaView * sv )
    CE_UpdateHarbourFolding( ed->sciView );
    CE_UpdateStatusBar( ed );
 
-   // Restore breakpoint markers for this file
-   if( ed->tabNames[newTab][0] ) {
-      PHB_DYNS pDyn = hb_dynsymFind( "CODEEDITORRESTOREBREAKPOINTS" );
-      fprintf(stderr, "DBG: CODEEDITORRESTOREBREAKPOINTS sym=%p\n", (void*)pDyn);
-      if( pDyn ) {
-         hb_vmPushSymbol( hb_dynsymSymbol( pDyn ) );
-         hb_vmPushNumInt( (HB_PTRUINT) ed );
-         hb_vmPushString( ed->tabNames[newTab], strlen( ed->tabNames[newTab] ) );
-         hb_vmSend( 2 );
-         fprintf(stderr, "DBG: CODEEDITORRESTOREBREAKPOINTS called\n");
-      } else {
-         fprintf(stderr, "DBG: CODEEDITORRESTOREBREAKPOINTS not found\n");
-      }
-   }
+   // Restore breakpoint markers for this file (direct C call — no Harbour VM)
+   if( ed->tabNames[newTab][0] )
+      CE_RestoreBreakpointMarkers( ed, ed->tabNames[newTab] );
 
    if( ed->pOnTabChange && HB_IS_BLOCK( ed->pOnTabChange ) )
    {
@@ -538,56 +578,24 @@ static HBDebounceTarget * s_debounceTarget = nil;
 
       case SCN_MARGINCLICK:
       {
-         fprintf(stderr, "DBG: SCN_MARGINCLICK margin=%d position=%lld\n",
-                 scn->margin, (long long)scn->position);
          sptr_t line = SciMsg( ed->sciView, SCI_LINEFROMPOSITION,
                                (uptr_t)scn->position, 0 );
-         fprintf(stderr, "DBG: Click on line %lld\n", (long long)line);
 
          /* Breakpoint toggle on margin 1 */
          if( scn->margin == 1 )
          {
-            fprintf(stderr, "DBG: Margin 1 click, checking markers\n");
             sptr_t markers = SciMsg( ed->sciView, SCI_MARKERGET, (uptr_t)line, 0 );
-            fprintf(stderr, "DBG: Current markers on line %lld: 0x%llx\n",
-                    (long long)line, (long long)markers);
             if( markers & (1 << 12) )  /* Breakpoint marker (12) */
             {
-               fprintf(stderr, "DBG: Removing breakpoint marker 12\n");
-               /* Remove breakpoint */
                SciMsg( ed->sciView, SCI_MARKERDELETE, (uptr_t)line, 12 );
-               /* Call Harbour to remove from debugger list */
                if( ed->nActiveTab >= 0 && ed->nActiveTab < ed->nTabs && ed->tabNames[ed->nActiveTab][0] )
-               {
-                  PHB_DYNS pDyn = hb_dynsymFind( "IDE_DEBUGREMOVEBREAKPOINT" );
-                  if( pDyn ) {
-                     hb_vmPushSymbol( hb_dynsymSymbol( pDyn ) );
-                     hb_vmPushString( ed->tabNames[ed->nActiveTab], strlen( ed->tabNames[ed->nActiveTab] ) );
-                     hb_vmPushLong( (long)line + 1 );  // Convert 0-based to 1-based
-                     hb_vmSend( 2 );
-                  } else {
-                     fprintf(stderr, "DBG: IDE_DEBUGREMOVEBREAKPOINT symbol not found\n");
-                  }
-               }
+                  CE_RemoveBreakpointDirect( ed->tabNames[ed->nActiveTab], (int)line + 1 );
             }
             else
             {
-               fprintf(stderr, "DBG: Adding breakpoint marker 12\n");
-               /* Add breakpoint */
                SciMsg( ed->sciView, SCI_MARKERADD, (uptr_t)line, 12 );
-               /* Call Harbour to add to debugger list */
                if( ed->nActiveTab >= 0 && ed->nActiveTab < ed->nTabs && ed->tabNames[ed->nActiveTab][0] )
-               {
-                  PHB_DYNS pDyn = hb_dynsymFind( "IDE_DEBUGADDBREAKPOINT" );
-                  if( pDyn ) {
-                     hb_vmPushSymbol( hb_dynsymSymbol( pDyn ) );
-                     hb_vmPushString( ed->tabNames[ed->nActiveTab], strlen( ed->tabNames[ed->nActiveTab] ) );
-                     hb_vmPushLong( (long)line + 1 );  // Convert 0-based to 1-based
-                     hb_vmSend( 2 );
-                  } else {
-                     fprintf(stderr, "DBG: IDE_DEBUGADDBREAKPOINT symbol not found\n");
-                  }
-               }
+                  CE_AddBreakpointDirect( ed->tabNames[ed->nActiveTab], (int)line + 1 );
             }
          }
          /* Fold/unfold on margin 2 */
@@ -3506,16 +3514,12 @@ HB_FUNC( MAC_PROJECTOPTIONSDIALOG )
 #define DBG_STOPPED   5
 
 static int    s_dbgState = DBG_IDLE;
+static int    s_prevDbgState = DBG_IDLE;
 static int    s_dbgLine = 0;
 static int    s_dbgStepDepth = 0;
 static char   s_dbgModule[256] = "";
 static PHB_ITEM s_dbgOnPause = NULL;
-
-/* Breakpoints */
-#define DBG_MAX_BP 64
-typedef struct { char module[256]; int line; } DBGBP;
-static DBGBP  s_breakpoints[DBG_MAX_BP];
-static int    s_nBreakpoints = 0;
+static int    s_dbgPauseAtStep = 0; /* set by IDE_DebugPauseAtStep() from Harbour */
 
 /* Debugger UI widgets */
 static NSWindow *    s_dbgWindow = nil;
@@ -3534,23 +3538,36 @@ static int  s_dbgRecvLen = 0;
 
 static int DbgServerStart( int port )
 {
+   fprintf(stderr, "IDE-DBG: DbgServerStart(%d) called\n", port);
    int fd = socket( AF_INET, SOCK_STREAM, 0 );
-   if( fd < 0 ) return -1;
+   if( fd < 0 ) { fprintf(stderr, "IDE-DBG: socket() failed\n"); return -1; }
    int yes = 1;
    setsockopt( fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes) );
+   /* Set close-on-exec to prevent inheritance by DebugApp */
+   fcntl( fd, F_SETFD, FD_CLOEXEC );
    struct sockaddr_in addr;
    memset( &addr, 0, sizeof(addr) );
    addr.sin_family = AF_INET;
    addr.sin_addr.s_addr = htonl( INADDR_LOOPBACK );
    addr.sin_port = htons( (uint16_t)port );
-   if( bind( fd, (struct sockaddr *)&addr, sizeof(addr) ) < 0 ||
-       listen( fd, 1 ) < 0 ) { close( fd ); return -1; }
+   if( bind( fd, (struct sockaddr *)&addr, sizeof(addr) ) < 0 )
+   {
+      fprintf(stderr, "IDE-DBG: bind() failed, errno=%d\n", errno);
+      close( fd ); return -1;
+   }
+   if( listen( fd, 1 ) < 0 )
+   {
+      fprintf(stderr, "IDE-DBG: listen() failed, errno=%d\n", errno);
+      close( fd ); return -1;
+   }
    s_dbgServerFD = fd;
+   fprintf(stderr, "IDE-DBG: DbgServerStart succeeded, fd=%d\n", fd);
    return 0;
 }
 
 static int DbgServerAccept( double timeoutSec )
 {
+   fprintf(stderr, "IDE-DBG: DbgServerAccept(%.1f) called, serverFD=%d\n", timeoutSec, s_dbgServerFD);
    fd_set fds;
    struct timeval tv;
    double elapsed = 0;
@@ -3559,10 +3576,16 @@ static int DbgServerAccept( double timeoutSec )
       FD_ZERO( &fds );
       FD_SET( s_dbgServerFD, &fds );
       tv.tv_sec = 0; tv.tv_usec = 200000;
+      fprintf(stderr, "IDE-DBG: select() waiting for connection...\n");
       if( select( s_dbgServerFD + 1, &fds, NULL, NULL, &tv ) > 0 )
       {
+         fprintf(stderr, "IDE-DBG: select() returned >0, accepting connection\n");
          s_dbgClientFD = accept( s_dbgServerFD, NULL, NULL );
-         if( s_dbgClientFD >= 0 ) return 0;
+         fprintf(stderr, "IDE-DBG: accept() returned fd=%d\n", s_dbgClientFD);
+         if( s_dbgClientFD >= 0 ) {
+            fprintf(stderr, "IDE-DBG: connection accepted successfully\n");
+            return 0;
+         }
       }
       @autoreleasepool {
          NSEvent * ev = [NSApp nextEventMatchingMask:NSEventMaskAny
@@ -3570,18 +3593,27 @@ static int DbgServerAccept( double timeoutSec )
             inMode:NSDefaultRunLoopMode dequeue:YES];
          if( ev ) [NSApp sendEvent:ev];
       }
-      if( s_dbgState == DBG_STOPPED ) return -1;
+      if( s_dbgState == DBG_STOPPED ) {
+         fprintf(stderr, "IDE-DBG: debug stopped while waiting\n");
+         return -1;
+      }
       elapsed += 0.25;
    }
+   fprintf(stderr, "IDE-DBG: timeout after %.1f seconds\n", elapsed);
    return -1;
 }
 
 static void DbgServerSend( const char * cmd )
 {
-   if( s_dbgClientFD < 0 ) return;
+   fprintf(stderr, "IDE-DBG: DbgServerSend called: cmd='%s', clientFD=%d\n", cmd, s_dbgClientFD);
+   if( s_dbgClientFD < 0 ) {
+      fprintf(stderr, "IDE-DBG: DbgServerSend aborting (clientFD < 0)\n");
+      return;
+   }
    char buf[512];
    snprintf( buf, sizeof(buf), "%s\n", cmd );
-   send( s_dbgClientFD, buf, strlen(buf), 0 );
+   int n = send( s_dbgClientFD, buf, strlen(buf), 0 );
+   fprintf(stderr, "IDE-DBG: DbgServerSend sent %d bytes, cmd='%s'\n", n, cmd);
 }
 
 /* Receive one complete line from the debug client (line-buffered).
@@ -3647,14 +3679,35 @@ static void DbgServerStop(void)
  * Breakpoint check
  * ----------------------------------------------------------------------- */
 
+/* IDE_IsBreakpoint( cSourceFile, nSourceLine ) — called from Harbour OnDebugPause
+ * after mapping debug_main.prg line → user source file/line via aDbgOffsets. */
+HB_FUNC( IDE_ISBREAKPOINT )
+{
+   const char * srcFile = HB_ISCHAR(1) ? hb_parc(1) : "";
+   int srcLine = hb_parni(2);
+   for( int i = 0; i < s_nBreakpoints; i++ )
+   {
+      if( s_breakpoints[i].line == srcLine )
+      {
+         if( s_breakpoints[i].module[0] == 0 ||
+             strcasecmp( s_breakpoints[i].module, srcFile ) == 0 )
+         {
+            hb_retl( HB_TRUE );
+            return;
+         }
+      }
+   }
+   hb_retl( HB_FALSE );
+}
+
+/* IDE_DbgIsStepping() → .T. when debugger is in step/stepover mode */
+HB_FUNC( IDE_DBGISSTEPPING )
+{ hb_retl( s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER ); }
+
 static int DbgIsBreakpoint( const char * module, int line )
 {
-   for( int i = 0; i < s_nBreakpoints; i++ )
-      if( s_breakpoints[i].line == line &&
-          ( s_breakpoints[i].module[0] == 0 ||
-            strcasestr( module, s_breakpoints[i].module ) ) )
-         return 1;
-   return 0;
+   (void)module; (void)line;
+   return 0; /* Now handled by Harbour via IDE_IsBreakpoint */
 }
 
 /* Append text to debug output */
@@ -4038,9 +4091,11 @@ HB_FUNC( IDE_DEBUGSTART2 )
    /* Launch user executable */
    {
       char cmd[1024];
-      snprintf( cmd, sizeof(cmd), "\"%s\" 2>/tmp/hb_debugapp.txt &", cExePath );
+      snprintf( cmd, sizeof(cmd), "%s 2>/tmp/hb_debugapp.txt &", cExePath );
       fprintf(stderr, "IDE-DBG: launching: %s\n", cmd);
-      system( cmd );
+      int ret = system( cmd );
+      fprintf(stderr, "IDE-DBG: system() returned %d (WIFEXITED=%d WEXITSTATUS=%d)\n",
+              ret, WIFEXITED(ret), WIFEXITED(ret) ? WEXITSTATUS(ret) : 0);
    }
    fprintf(stderr, "IDE-DBG: waiting for connection...\n");
    DbgOutput( "Launched debug process. Waiting for connection...\n" );
@@ -4263,20 +4318,31 @@ HB_FUNC( IDE_DEBUGRUNTOBREAK2 )
 
    setbuf(stderr, NULL);  /* unbuffer stderr for debug traces */
    fprintf(stderr, "IDE-DBG: IDE_DEBUGRUNTOBREAK2 called exe='%s'\n", cExePath ? cExePath : "(null)");
-   if( !cExePath || s_dbgState != DBG_IDLE ) { fprintf(stderr, "IDE-DBG: rejected (null=%d state=%d)\n", !cExePath, s_dbgState); hb_retl( HB_FALSE ); return; }
+   fprintf(stderr, "IDE-DBG: Current debug state: %d (DBG_IDLE=%d)\n", s_dbgState, DBG_IDLE);
+   fprintf(stderr, "IDE-DBG: s_nBreakpoints=%d\n", s_nBreakpoints);
+   if( !cExePath || s_dbgState != DBG_IDLE ) {
+      fprintf(stderr, "IDE-DBG: rejected (null=%d state=%d != DBG_IDLE)\n", !cExePath, s_dbgState);
+      hb_retl( HB_FALSE );
+      return;
+   }
 
    if( s_dbgOnPause ) { hb_itemRelease( s_dbgOnPause ); s_dbgOnPause = NULL; }
    if( pOnPause ) s_dbgOnPause = hb_itemNew( pOnPause );
 
    /* Start TCP server */
-   if( DbgServerStart( 19800 ) != 0 )
+   fprintf(stderr, "IDE-DBG: calling DbgServerStart(19800)\n");
+   int serverRet = DbgServerStart( 19800 );
+   fprintf(stderr, "IDE-DBG: DbgServerStart returned %d\n", serverRet);
+   if( serverRet != 0 )
    {
+      fprintf(stderr, "IDE-DBG: DbgServerStart FAILED with errno=%d\n", errno);
       DbgOutput( "ERROR: Could not start debug server on port 19800\n" );
       hb_retl( HB_FALSE );
       return;
    }
 
    s_dbgState = DBG_RUNNING;  /* DIFFERENT FROM IDE_DEBUGSTART2: RUNNING instead of STEPPING */
+   s_prevDbgState = DBG_RUNNING;
    // s_nBreakpoints = 0;  // Keep existing breakpoints
    fprintf(stderr, "IDE-DBG: server started on 19800 (run to breakpoint)\n");
    DbgOutput( "=== Debug session started (socket, run to breakpoint) ===\n" );
@@ -4285,24 +4351,194 @@ HB_FUNC( IDE_DEBUGRUNTOBREAK2 )
    /* Launch user executable */
    {
       char cmd[1024];
-      snprintf( cmd, sizeof(cmd), "\"%s\" 2>/tmp/hb_debugapp.txt &", cExePath );
+      snprintf( cmd, sizeof(cmd), "%s 2>/tmp/hb_debugapp.txt &", cExePath );
       fprintf(stderr, "IDE-DBG: launching: %s\n", cmd);
-      system( cmd );
+      int ret = system( cmd );
+      fprintf(stderr, "IDE-DBG: system() returned %d (WIFEXITED=%d WEXITSTATUS=%d)\n",
+              ret, WIFEXITED(ret), WIFEXITED(ret) ? WEXITSTATUS(ret) : 0);
    }
 
+   /* Accept connection */
+   fprintf(stderr, "IDE-DBG: waiting for client connection...\n");
+   if( DbgServerAccept( 30.0 ) != 0 )
+   {
+      fprintf(stderr, "IDE-DBG: accept FAILED\n");
+      DbgOutput( "ERROR: Client did not connect within 30s\n" );
+      DbgServerStop();
+      s_dbgState = DBG_IDLE;
+      hb_retl( HB_FALSE );
+      return;
+   }
+   fprintf(stderr, "IDE-DBG: client connected!\n");
+   DbgOutput( "Client connected.\n" );
+
+   /* Command loop */
+   char recvBuf[4096];
+   fprintf(stderr, "IDE-DBG: entering command loop (run to breakpoint)\n");
+
+   while( s_dbgState != DBG_IDLE && s_dbgState != DBG_STOPPED )
+   {
+      // Use select with timeout to periodically check state changes
+      fd_set fds;
+      struct timeval tv;
+      FD_ZERO( &fds );
+      FD_SET( s_dbgClientFD, &fds );
+      tv.tv_sec = 0;
+      tv.tv_usec = 100000; // 100ms timeout
+
+      int sel = select( s_dbgClientFD + 1, &fds, NULL, NULL, &tv );
+      if( sel < 0 ) {
+         fprintf(stderr, "IDE-DBG: select error\n");
+         break;
+      }
+
+      if( sel == 0 ) {
+         /* Process pending UI events so buttons/menus remain responsive */
+         NSEvent * ev;
+         while( (ev = [NSApp nextEventMatchingMask:NSEventMaskAny
+                    untilDate:[NSDate dateWithTimeIntervalSinceNow:0.0]
+                    inMode:NSDefaultRunLoopMode dequeue:YES]) != nil )
+            [NSApp sendEvent:ev];
+
+         /* Check for state changes driven by Step/Continue/Stop buttons */
+         if( s_dbgState == DBG_IDLE || s_dbgState == DBG_STOPPED )
+            break;
+         if( s_dbgState == DBG_RUNNING && s_prevDbgState == DBG_PAUSED ) {
+            DbgServerSend( "GO" );
+            s_prevDbgState = s_dbgState;
+         } else if( s_dbgState == DBG_STEPPING && s_prevDbgState == DBG_PAUSED ) {
+            DbgServerSend( "STEP" );
+            s_prevDbgState = s_dbgState;
+         }
+         continue;
+      }
+
+      // Data available to receive
+      int n = recv( s_dbgClientFD, recvBuf, sizeof(recvBuf) - 1, 0 );
+      fprintf(stderr, "IDE-DBG: recv n=%d buf='%.80s'\n", n, n > 0 ? recvBuf : "");
+      if( n <= 0 ) {
+         fprintf(stderr, "IDE-DBG: client disconnected\n");
+         DbgOutput( "Client disconnected.\n" );
+         break;
+      }
+      recvBuf[n] = 0;
+      s_prevDbgState = s_dbgState;
+
+      if( strncmp( recvBuf, "HELLO", 5 ) == 0 )
+      {
+         fprintf(stderr, "IDE-DBG: got HELLO, sending STEP (run to breakpoint mode)\n");
+         DbgOutput( recvBuf ); DbgOutput( "\n" );
+         DbgServerSend( "STEP" );
+         // In run-to-breakpoint mode, we start in RUNNING state (not PAUSED)
+         // s_dbgState remains DBG_RUNNING as set earlier
+         continue;
+      }
+
+      if( strncmp( recvBuf, "PAUSE ", 6 ) == 0 )
+      {
+         /* Format: PAUSE filepath:FUNCNAME:line|LOCALS ...|STACK ...
+          * Split at '|' first to extract locals and stack */
+         char localsStr[4096] = "LOCALS";
+         char stackStr[4096] = "STACK";
+
+         char * pipe1 = strchr( recvBuf, '|' );
+         if( pipe1 ) {
+            *pipe1 = 0;
+            char * pipe2 = strchr( pipe1 + 1, '|' );
+            if( pipe2 ) {
+               *pipe2 = 0;
+               strncpy( localsStr, pipe1 + 1, sizeof(localsStr) - 1 );
+               strncpy( stackStr, pipe2 + 1, sizeof(stackStr) - 1 );
+            } else {
+               strncpy( localsStr, pipe1 + 1, sizeof(localsStr) - 1 );
+            }
+         }
+
+         /* Now parse PAUSE filepath:FUNCNAME:line
+          * Format could be: module:line OR module:funcname:line
+          * Handle both cases */
+         char * lastColon = strrchr( recvBuf + 6, ':' );
+         if( !lastColon ) continue;
+         int line = atoi( lastColon + 1 );
+         *lastColon = 0;
+
+         // Check if there's another colon (function name)
+         char * funcColon = strrchr( recvBuf + 6, ':' );
+         char * funcName;
+         char * module;
+         if( funcColon )
+         {
+            funcName = funcColon + 1;
+            *funcColon = 0;
+            module = recvBuf + 6;
+         }
+         else
+         {
+            // No function name, use module as both
+            funcName = recvBuf + 6;
+            module = recvBuf + 6;
+         }
+
+         fprintf(stderr, "IDE-DBG: PAUSE at %s:%s:%d\n", module, funcName, line );
+         fprintf(stderr, "IDE-DBG: s_dbgState=%d (DBG_RUNNING=%d)\n", s_dbgState, DBG_RUNNING);
+
+         /* Delegate all pause decisions to OnDebugPause (Harbour side).
+          * It maps debug_main.prg lines → user source via aDbgOffsets,
+          * checks breakpoints with IDE_IsBreakpoint, and calls
+          * IDE_DebugPauseAtStep() to signal a pause. */
+         s_dbgPauseAtStep = 0;
+         if( s_dbgOnPause )
+         {
+            hb_vmPushEvalSym();
+            hb_vmPush( s_dbgOnPause );
+            hb_vmPushString( (const char *)funcName, strlen(funcName) );
+            hb_vmPushLong( (long)line );
+            hb_vmPushString( localsStr, strlen(localsStr) );
+            hb_vmPushString( stackStr, strlen(stackStr) );
+            hb_vmSend( 4 );
+         }
+
+         if( s_dbgPauseAtStep )
+         {
+            s_prevDbgState = s_dbgState;
+            s_dbgState = DBG_PAUSED;
+            strncpy( s_dbgModule, module, sizeof(s_dbgModule) - 1 );
+            s_dbgModule[ sizeof(s_dbgModule) - 1 ] = 0;
+            s_dbgLine = line;
+            if( s_dbgStatusLbl )
+               [s_dbgStatusLbl setStringValue:@"Paused"];
+            /* Don't send response — client waits for Step/Continue/Stop */
+         }
+         else
+         {
+            /* Not a pause point — keep stepping */
+            DbgServerSend( "STEP" );
+         }
+
+         continue;
+      }
+
+      // Unknown command
+      fprintf(stderr, "IDE-DBG: unknown command '%.80s'\n", recvBuf);
+   }
+
+   fprintf(stderr, "IDE-DBG: command loop ended, state=%d\n", s_dbgState);
+   DbgServerStop();
+   s_dbgState = DBG_IDLE;
+
    if( s_dbgStatusLbl )
-      [s_dbgStatusLbl setStringValue:@"Running to breakpoint..."];
+      [s_dbgStatusLbl setStringValue:@"Debug session ended"];
 
    hb_retl( HB_TRUE );
 }
 
 /* IDE_DebugGo() */
 HB_FUNC( IDE_DEBUGGO )
-{ if( s_dbgState == DBG_PAUSED ) s_dbgState = DBG_RUNNING; }
+{ if( s_dbgState == DBG_PAUSED ) { s_prevDbgState = s_dbgState; s_dbgState = DBG_RUNNING; } }
 
 /* IDE_DebugStep() */
 HB_FUNC( IDE_DEBUGSTEP )
-{ if( s_dbgState == DBG_PAUSED ) s_dbgState = DBG_STEPPING; }
+{ if( s_dbgState == DBG_PAUSED ) { s_prevDbgState = s_dbgState; s_dbgState = DBG_STEPPING; } }
 
 /* IDE_DebugStepOver() */
 HB_FUNC( IDE_DEBUGSTEPOVER )
@@ -4317,6 +4553,10 @@ HB_FUNC( IDE_DEBUGSTEPOVER )
 HB_FUNC( IDE_DEBUGSTOP )
 { if( s_dbgState != DBG_IDLE ) s_dbgState = DBG_STOPPED; }
 
+/* IDE_DebugPauseAtStep() — called from OnDebugPause when user code reached in step mode */
+HB_FUNC( IDE_DEBUGPAUSEATSTEP )
+{ s_dbgPauseAtStep = 1; }
+
 /* IDE_IsDebugMode() --> .T. if debugger is active (state != IDLE) */
 HB_FUNC( IDE_ISDEBUGMODE )
 { hb_retl( s_dbgState != DBG_IDLE ); }
@@ -4328,34 +4568,15 @@ HB_FUNC( IDE_DEBUGGETSTATE )
 /* IDE_DebugAddBreakpoint( cModule, nLine ) */
 HB_FUNC( IDE_DEBUGADDBREAKPOINT )
 {
-   if( s_nBreakpoints < DBG_MAX_BP && HB_ISCHAR(1) && HB_ISNUM(2) )
-   {
-      strncpy( s_breakpoints[s_nBreakpoints].module, hb_parc(1), 255 );
-      s_breakpoints[s_nBreakpoints].line = hb_parni(2);
-      s_nBreakpoints++;
-   }
+   if( HB_ISCHAR(1) && HB_ISNUM(2) )
+      CE_AddBreakpointDirect( hb_parc(1), hb_parni(2) );
 }
 
 /* IDE_DebugRemoveBreakpoint( cModule, nLine ) */
 HB_FUNC( IDE_DEBUGREMOVEBREAKPOINT )
 {
-   const char * mod = HB_ISCHAR(1) ? hb_parc(1) : "";
-   int line = hb_parni(2);
-   int i, j;
-
-   for( i = 0; i < s_nBreakpoints; i++ ) {
-      if( s_breakpoints[i].line == line &&
-          ( s_breakpoints[i].module[0] == 0 ||
-            strcmp( s_breakpoints[i].module, mod ) == 0 ) ) {
-         // Shift remaining breakpoints left
-         for( j = i; j < s_nBreakpoints - 1; j++ ) {
-            strcpy( s_breakpoints[j].module, s_breakpoints[j+1].module );
-            s_breakpoints[j].line = s_breakpoints[j+1].line;
-         }
-         s_nBreakpoints--;
-         break;
-      }
-   }
+   if( HB_ISCHAR(1) && HB_ISNUM(2) )
+      CE_RemoveBreakpointDirect( hb_parc(1), hb_parni(2) );
 }
 
 /* IDE_DebugClearBreakpoints() */
@@ -4368,21 +4589,7 @@ HB_FUNC( CODEEDITORRESTOREBREAKPOINTS )
 {
    CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
    const char * filename = HB_ISCHAR(2) ? hb_parc(2) : "";
-   if( !ed || !ed->sciView ) return;
-
-   // Clear existing breakpoint markers
-   SciMsg( ed->sciView, SCI_MARKERDELETEALL, 12, 0 );
-
-   // Add markers for breakpoints matching this file
-   for( int i = 0; i < s_nBreakpoints; i++ ) {
-      if( s_breakpoints[i].module[0] == 0 || strcmp( s_breakpoints[i].module, filename ) == 0 ) {
-         // Convert 1-based line to 0-based
-         int line = s_breakpoints[i].line - 1;
-         if( line >= 0 ) {
-            SciMsg( ed->sciView, SCI_MARKERADD, (uptr_t)line, 12 );
-         }
-      }
-   }
+   CE_RestoreBreakpointMarkers( ed, filename );
 }
 
 /* IDE_DebugGetLocals( nLevel ) --> aLocals */

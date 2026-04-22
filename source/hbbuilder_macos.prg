@@ -18,6 +18,35 @@
 
 #include "../include/hbbuilder.ch"
 
+// Force symbol registration for C functions called via hb_dynsymFindName
+EXTERNAL CODEEDITORRESTOREBREAKPOINTS
+EXTERNAL CODEEDITORTOGGLEBREAKPOINT
+EXTERNAL CODEEDITORADDBREAKPOINT
+EXTERNAL CODEEDITORREMOVEBREAKPOINT
+EXTERNAL CODEEDITORCLEARBREAKPOINTS
+EXTERNAL CODEEDITORGETBREAKPOINTS
+EXTERNAL IDE_DEBUGADDBREAKPOINT
+EXTERNAL IDE_DEBUGREMOVEBREAKPOINT
+EXTERNAL IDE_DEBUGCLEARBREAKPOINTS
+EXTERNAL IDE_DEBUGSTART
+EXTERNAL IDE_DEBUGSTART2
+EXTERNAL IDE_DEBUGRUNTOBREAK
+EXTERNAL IDE_DEBUGRUNTOBREAK2
+EXTERNAL IDE_DEBUGGO
+EXTERNAL IDE_DEBUGSTEP
+EXTERNAL IDE_DEBUGSTEPOVER
+EXTERNAL IDE_DEBUGSTOP
+EXTERNAL IDE_ISDEBUGMODE
+EXTERNAL IDE_DEBUGGETSTATE
+EXTERNAL MAC_DEBUGPANEL
+EXTERNAL INS_BRINGTOFRONT
+EXTERNAL INS_SETDEBUGMODE
+EXTERNAL INS_SETDEBUGLOCALS
+EXTERNAL INS_SETDEBUGSTACK
+EXTERNAL IDE_DEBUGPAUSEATSTEP
+EXTERNAL IDE_ISBREAKPOINT
+EXTERNAL IDE_DBGISSTEPPING
+
 static oIDE          // Main IDE bar (top strip)
 static oDesignForm   // Design form (active, floats on top of editor)
 static hCodeEditor   // Code editor (background, right of inspector)
@@ -276,8 +305,6 @@ function Main()
    BUTTON "Over"  OF oTB2 TOOLTIP "Step Over (F8)"          ACTION DebugStepOver()
    BUTTON "Go"    OF oTB2 TOOLTIP "Continue (F5)"           ACTION IDE_DebugGo()
    BUTTON "Stop"  OF oTB2 TOOLTIP "Stop Debugging"          ACTION IDE_DebugStop()
-   SEPARATOR OF oTB2
-   BUTTON "Exit"  OF oTB2 TOOLTIP "Exit IDE"                ACTION oIDE:Close()
 
    UI_ToolBarLoadImages( oTB2:hCpp, ResPath( "toolbar_debug.bmp" ) )
 
@@ -326,7 +353,7 @@ function Main()
    MAC_SetAppDarkMode( .T. )
 
    // When IDE closes, destroy all secondary windows
-   oIDE:OnClose := { || DestroyAllForms(), InspectorClose(), ;
+   oIDE:OnClose := { || IDE_DebugStop(), DestroyAllForms(), InspectorClose(), ;
                        CodeEditorDestroy( hCodeEditor ) }
 
    // IDE enters the message loop (dispatches for ALL windows)
@@ -3825,9 +3852,10 @@ static function TBDebugRun( lRunToBreakpoint )
    local cBackends, cSciInc, cSciCocoa, cLexInc, cSciLib, cResDir
    local nCurLine, cSection
 
-   // Default parameter
+   // Parameter kept for compatibility but not used anymore
+   // Always uses run-to-breakpoint mode
    if lRunToBreakpoint == NIL
-      lRunToBreakpoint := .F.
+      lRunToBreakpoint := .T.
    endif
 
    SaveActiveFormCode()
@@ -4065,16 +4093,17 @@ static function TBDebugRun( lRunToBreakpoint )
       UI_ToolBtnHighlight( oTB2:hCpp, 1, .t. )  // highlight Debug button
    endif
    InspectorOpen()
+   OutErr( "DEBUG: Calling INS_SetDebugMode(.t.)" + Chr(10) )
    INS_SetDebugMode( _InsGetData(), .t. )
+   OutErr( "DEBUG: Calling INS_BringToFront" + Chr(10) )
+   INS_BringToFront( _InsGetData() )
    CodeEditorSelectTab( hCodeEditor, 1 )  // switch to Project1.prg
 
-   if lRunToBreakpoint == .T.
-      IDE_DEBUGRUNTOBREAK2( cBuildDir + "/DebugApp", ;
-         { |cFunc, nLine, cLocals, cStack| OnDebugPause( cFunc, nLine, cLocals, cStack ) } )
-   else
-      IDE_DebugStart2( cBuildDir + "/DebugApp", ;
-         { |cFunc, nLine, cLocals, cStack| OnDebugPause( cFunc, nLine, cLocals, cStack ) } )
-   endif
+   // Always use run-to-breakpoint mode
+   // If there are breakpoints: stops at first breakpoint
+   // If no breakpoints: runs completely (doesn't stop at first line)
+   IDE_DEBUGRUNTOBREAK2( cBuildDir + "/DebugApp", ;
+      { |cFunc, nLine, cLocals, cStack| OnDebugPause( cFunc, nLine, cLocals, cStack ) } )
 
    // Restore: unhighlight, show design form, switch inspector back
    if oTB2 != nil
@@ -4087,10 +4116,10 @@ static function TBDebugRun( lRunToBreakpoint )
 
 return nil
 
-// === Debug Run to Breakpoint (same as TBDebugRun but uses IDE_DEBUGRUNTOBREAK2) ===
+// === Debug Run to Breakpoint (now same as regular Debug) ===
 
 static function TBDebugRunToBreak()
-   // Simple wrapper that calls TBDebugRun with run-to-breakpoint flag
+   // Now identical to TBDebugRun() since both use run-to-breakpoint mode
    return TBDebugRun(.T.)
 
 // Convert stack line numbers from debug_main.prg to editor tab line numbers
@@ -4227,38 +4256,43 @@ return n
 
 static function OnDebugPause( cFunc, nLine, cLocals, cStack )
 
-   local i, nTab, nTabLine, hIns
+   local i, nTab, nTabLine, cTabFile, hIns
 
-   // Map debug_main.prg line number to the correct editor tab and line
+   // Map debug_main.prg line → user source file/line via aDbgOffsets
    nTab := 0
    nTabLine := 0
+   cTabFile := ""
    if aDbgOffsets != nil
       for i := Len( aDbgOffsets ) to 1 step -1
          if nLine >= aDbgOffsets[i][1]
-            nTab := aDbgOffsets[i][3]
+            nTab     := aDbgOffsets[i][3]
             nTabLine := nLine - aDbgOffsets[i][1] + aDbgOffsets[i][4]
+            cTabFile := aDbgOffsets[i][2]
             exit
          endif
       next
    endif
 
-   // Framework code (nTab == 0) — skip, don't pause, don't update inspector
+   // Framework code — don't pause
    if nTab == 0
       return .f.
    endif
 
-   // Select the tab and highlight the line
-   if nTabLine > 0
-      CodeEditorSelectTab( hCodeEditor, nTab )
-      CodeEditorShowDebugLine( hCodeEditor, nTabLine )
+   // Decide whether to pause: breakpoint hit OR step mode
+   if !IDE_IsBreakpoint( cTabFile, nTabLine ) .and. !IDE_DbgIsStepping()
+      return .f.
    endif
 
-   // Map local index names to real names from source code
-   if cLocals != nil .and. nTab > 0
+   // Switch tab and highlight current line
+   CodeEditorSelectTab( hCodeEditor, nTab )
+   CodeEditorShowDebugLine( hCodeEditor, nTabLine )
+
+   // Map local variable names from index to source names
+   if cLocals != nil
       cLocals := DbgMapLocalNames( cLocals, cFunc, nTab )
    endif
 
-   // Update inspector with locals and call stack (convert line numbers)
+   // Update inspector
    hIns := _InsGetData()
    if hIns != 0
       if cLocals != nil
@@ -4269,7 +4303,10 @@ static function OnDebugPause( cFunc, nLine, cLocals, cStack )
       endif
    endif
 
-return .t.  // pause here — user code
+   // Signal C layer to pause
+   IDE_DebugPauseAtStep()
+
+return .t.
 
 // === AI Assistant ===
 

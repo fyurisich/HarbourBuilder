@@ -196,6 +196,28 @@ else
    echo "[3b/4] cocoa_editor.o — up to date"
 fi
 
+# [3e/4] Cocoa editor registration module
+if needs_rebuild "$PROJDIR/source/backends/cocoa/cocoa_editor_reg.c" cocoa_editor_reg.o; then
+   echo "[3e/4] Compiling cocoa_editor_reg.c..."
+   clang -c -O2 -mmacosx-version-min=10.15 \
+      -I"$HBINC" \
+      "$PROJDIR/source/backends/cocoa/cocoa_editor_reg.c" -o cocoa_editor_reg.o
+   NEED_LINK=1
+else
+   echo "[3e/4] cocoa_editor_reg.o — up to date"
+fi
+
+# [3f/4] Cocoa inspector registration module
+if needs_rebuild "$PROJDIR/source/backends/cocoa/cocoa_inspector_reg.c" cocoa_inspector_reg.o; then
+   echo "[3f/4] Compiling cocoa_inspector_reg.c..."
+   clang -c -O2 -mmacosx-version-min=10.15 \
+      -I"$HBINC" \
+      "$PROJDIR/source/backends/cocoa/cocoa_inspector_reg.c" -o cocoa_inspector_reg.o
+   NEED_LINK=1
+else
+   echo "[3f/4] cocoa_inspector_reg.o — up to date"
+fi
+
 # [3c/4] Standard dialog backends (TOpenDialog/TSaveDialog/TFontDialog/TColorDialog)
 if needs_rebuild "$PROJDIR/resources/stddlgs_mac.mm" stddlgs_mac.o; then
    echo "[3c/4] Compiling stddlgs_mac.mm..."
@@ -220,7 +242,7 @@ fi
 
 echo "[4/4] Linking ${PROG}..."
 clang++ -o ${PROG} \
-   ${SRC}.o cocoa_core.o cocoa_inspector.o cocoa_webserver.o cocoa_editor.o stddlgs_mac.o \
+   ${SRC}.o cocoa_core.o cocoa_inspector.o cocoa_webserver.o cocoa_editor.o cocoa_editor_reg.o cocoa_inspector_reg.o stddlgs_mac.o \
    hix_runtime.o hix_template.o \
    -L"$HBLIB" \
    -L"$SCIBUILD" \

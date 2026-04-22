@@ -244,13 +244,14 @@ void EnsureNSApp( void )
       [NSApplication sharedApplication];
       [NSApp setActivationPolicy:NSApplicationActivationPolicyRegular];
 
-      NSMenu * menuBar = [[NSMenu alloc] init];
-      NSMenuItem * appMenuItem = [[NSMenuItem alloc] init];
-      NSMenu * appMenu = [[NSMenu alloc] initWithTitle:@"HbBuilder"];
-      [appMenu addItemWithTitle:@"Quit" action:@selector(terminate:) keyEquivalent:@"q"];
-      [appMenuItem setSubmenu:appMenu];
-      [menuBar addItem:appMenuItem];
-      [NSApp setMainMenu:menuBar];
+      // Don't create default menu - let Harbour create it via UI_MENUBARCREATE
+      // NSMenu * menuBar = [[NSMenu alloc] init];
+      // NSMenuItem * appMenuItem = [[NSMenuItem alloc] init];
+      // NSMenu * appMenu = [[NSMenu alloc] initWithTitle:@"HbBuilder"];
+      // [appMenu addItemWithTitle:@"Quit" action:@selector(terminate:) keyEquivalent:@"q"];
+      // [appMenuItem setSubmenu:appMenu];
+      // [menuBar addItem:appMenuItem];
+      // [NSApp setMainMenu:menuBar];
 
       s_appInitialized = YES;
    }
@@ -7503,15 +7504,28 @@ static NSMenu * s_currentMenuBar = nil;
 HB_FUNC( UI_MENUBARCREATE )
 {
    /* On macOS, we use the application menu bar */
+   fprintf(stderr, "DEBUG: UI_MENUBARCREATE called\n");
    EnsureNSApp();
+
    NSMenu * menuBar = [[NSMenu alloc] init];
+
+   // Add application menu (required for macOS)
+   NSMenuItem * appMenuItem = [[NSMenuItem alloc] init];
+   NSMenu * appMenu = [[NSMenu alloc] initWithTitle:@"HbBuilder"];
+   [appMenu addItemWithTitle:@"Quit HbBuilder" action:@selector(terminate:) keyEquivalent:@"q"];
+   [appMenuItem setSubmenu:appMenu];
+   [menuBar addItem:appMenuItem];
+
    [NSApp setMainMenu:menuBar];
    s_currentMenuBar = menuBar;
+   fprintf(stderr, "DEBUG: UI_MENUBARCREATE done (with app menu)\n");
 }
 
 HB_FUNC( UI_MENUPOPUPADD )
 {
    HBForm * pForm = GetForm(1);
+   fprintf(stderr, "DEBUG: UI_MENUPOPUPADD called, form=%p, title=%s\n",
+           (void*)(__bridge void*)pForm, hb_parc(2) ? hb_parc(2) : "(null)");
    EnsureNSApp();
    NSMenu * menuBar = [NSApp mainMenu];
    if( !menuBar ) { menuBar = [[NSMenu alloc] init]; [NSApp setMainMenu:menuBar]; }
@@ -7519,6 +7533,7 @@ HB_FUNC( UI_MENUPOPUPADD )
    NSMenu * popup = [[NSMenu alloc] initWithTitle:[NSString stringWithUTF8String:hb_parc(2)]];
    [item setSubmenu:popup];
    [menuBar addItem:item];
+   fprintf(stderr, "DEBUG: UI_MENUPOPUPADD added menu '%s'\n", hb_parc(2) ? hb_parc(2) : "(null)");
    hb_retnint( (HB_PTRUINT) popup );
 }
 
@@ -7544,6 +7559,9 @@ HB_FUNC( UI_MENUITEMADDEX )
    HBForm * pForm = GetForm(1);
    NSMenu * popup = (__bridge NSMenu *)(void *)(HB_PTRUINT)hb_parnint(2);
    PHB_ITEM pBlock = hb_param(4, HB_IT_BLOCK);
+
+   fprintf(stderr, "DEBUG: UI_MENUITEMADDEX called, popup=%p, title=%s, hasBlock=%d\n",
+           (void*)(__bridge void*)popup, hb_parc(3) ? hb_parc(3) : "(null)", pBlock ? 1 : 0);
 
    if( !popup || !HB_ISCHAR(3) ) { hb_retni(-1); return; }
 
