@@ -2653,8 +2653,7 @@ static function TBDebugRun( lRunToBreak )
    GTK_ProcessEvents()
 
    IDE_DebugStart2( cBuildDir + "/DebugApp", ;
-      { |cFunc, nLine, cLocals, cStack| OnDebugPause( cFunc, nLine, cLocals, cStack, lRunToBreak ) }, ;
-      lRunToBreak )
+      { |cFunc, nLine, cLocals, cStack| OnDebugPause( cFunc, nLine, cLocals, cStack ) } )
 
    // Restore: clear debug marker, unhighlight, restore inspector, show design form
    CodeEditorShowDebugLine( hCodeEditor, 0 )  // clear yellow marker
@@ -2799,7 +2798,7 @@ return n
 
 // === Debug Pause Callback (called from socket command loop) ===
 
-static function OnDebugPause( cFunc, nLine, cLocals, cStack, lRunToBreak )
+static function OnDebugPause( cFunc, nLine, cLocals, cStack )
 
    local i, nTab, nTabLine, hIns, cFile
 
@@ -2818,16 +2817,14 @@ static function OnDebugPause( cFunc, nLine, cLocals, cStack, lRunToBreak )
       next
    endif
 
-   // Framework code (nTab == 0) — skip, don't pause, don't update
+   // Framework code (nTab == 0) — skip, don't pause
    if nTab == 0
       return .f.
    endif
 
-   // In "run to BP" mode: only pause at actual breakpoints or when stepping line-by-line
-   if lRunToBreak
-      if ! IDE_IsBreakpoint( cFile, nTabLine ) .and. ! IDE_DbgIsStepping()
-         return .f.
-      endif
+   // Only pause at breakpoints or when user is stepping line-by-line
+   if ! IDE_IsBreakpoint( cFile, nTabLine ) .and. ! IDE_DbgIsStepping()
+      return .f.
    endif
 
    // Select the tab and highlight the line

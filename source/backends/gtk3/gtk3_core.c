@@ -8758,6 +8758,7 @@ HB_FUNC( GTK_PROJECTOPTIONSDIALOG )
 #define DBG_STOPPED   5
 
 static int           s_dbgState = DBG_IDLE;
+static int           s_dbgWasStepping = 0;  /* .T. if last PAUSE arrived while in STEPPING mode */
 
 /* Provide pointer to s_dbgState for the debug panel toolbar buttons */
 static int * _dbg_state_ptr(void) { return &s_dbgState; }
@@ -8885,10 +8886,11 @@ HB_FUNC( IDE_DEBUGSTART )
 }
 
 /* Debug control commands */
-HB_FUNC( IDE_DEBUGGO )       { if( s_dbgState == DBG_PAUSED ) s_dbgState = DBG_RUNNING; }
-HB_FUNC( IDE_DEBUGSTEP )     { if( s_dbgState == DBG_PAUSED ) s_dbgState = DBG_STEPPING; }
+HB_FUNC( IDE_DEBUGGO )       { if( s_dbgState == DBG_PAUSED ) { s_dbgWasStepping = 0; s_dbgState = DBG_RUNNING; } }
+HB_FUNC( IDE_DEBUGSTEP )     { if( s_dbgState == DBG_PAUSED ) { s_dbgWasStepping = 1; s_dbgState = DBG_STEPPING; } }
 HB_FUNC( IDE_DEBUGSTEPOVER ) {
    if( s_dbgState == DBG_PAUSED ) {
+      s_dbgWasStepping = 1;
       s_dbgStepDepth = (int) hb_dbg_ProcLevel();
       s_dbgState = DBG_STEPOVER;
    }
@@ -8927,7 +8929,7 @@ HB_FUNC( IDE_ISBREAKPOINT )
 
 HB_FUNC( IDE_DBGISSTEPPING )
 {
-   hb_retl( s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER );
+   hb_retl( s_dbgWasStepping );
 }
 
 /* Always .F. on Linux — no NSApp-style run loop to detect */
@@ -9133,12 +9135,11 @@ static void DbgServerStop(void)
    s_dbgRecvLen = 0;
 }
 
-/* IDE_DebugStart2( cExePath, bOnPause [, lRunToBreak] ) — socket-based debug session */
+/* IDE_DebugStart2( cExePath, bOnPause ) — socket-based debug session */
 HB_FUNC( IDE_DEBUGSTART2 )
 {
    const char * cExePath = hb_parc(1);
    PHB_ITEM pOnPause = hb_param(2, HB_IT_BLOCK);
-   int lRunToBreak = HB_ISLOG(3) ? hb_parl(3) : HB_FALSE;
 
    setbuf(stderr, NULL);
    fprintf(stderr, "IDE-DBG: IDE_DebugStart2 called exe='%s'\n", cExePath ? cExePath : "(null)");
@@ -9257,19 +9258,19 @@ HB_FUNC( IDE_DEBUGSTART2 )
 
          s_dbgLine = line;
 
-         /* In RUNNING mode: GO for normal debug, STEP for run-to-BP (keeps breakpoint checks active) */
+         /* In RUNNING mode: always send STEP so subprocess keeps sending PAUSE.
+          * The callback (OnDebugPause) decides whether to actually stop, based on
+          * IDE_IsBreakpoint() and IDE_DbgIsStepping(). This matches macOS behaviour. */
          if( s_dbgState == DBG_RUNNING )
          {
-            if( lRunToBreak ) {
-               DbgServerSend( "STEP" );
-               s_dbgState = DBG_PAUSED;
-            } else {
-               DbgServerSend( "GO" );
-            }
+            s_dbgWasStepping = 0;
+            DbgServerSend( "STEP" );
+            s_dbgState = DBG_PAUSED;
             continue;
          }
 
-         /* === STEPPING/PAUSED: show state and wait for user === */
+         /* Save stepping flag BEFORE overwriting state — IDE_DbgIsStepping() reads it */
+         s_dbgWasStepping = (s_dbgState == DBG_STEPPING || s_dbgState == DBG_STEPOVER);
          s_dbgState = DBG_PAUSED;
 
          /* Call Harbour callback: ( cFuncName, nLine, cLocals, cStack )
