@@ -86,14 +86,15 @@ static function DbgHook( nLine, cModule, cProcName )
       return nil
    endif
 
-   // Check BEFORE the RUNNING branch: if the main form was closed (user
-   // pressed X after Continue), the flag is set but otherwise we'd never
-   // notice until a STEP arrived — which it won't if IDE is idle.
+   // When the main form is destroyed (user clicked X), force stepping mode
+   // so the IDE pauses at the next user-code line — typically the `return`
+   // at the end of Main in Project1.prg. Previously we sent DONE here, but
+   // the user wants to see execution resume cleanly and pause there so the
+   // debug session ends with a visible stop, not an abrupt kill.
    if IDE_DbgRunLoopEnded()
-      DbgSend( "DONE" )
-      aS[ DBG_CONNECTED ] := .f.
-      hb_socketClose( aS[ DBG_SOCKET ] )
-      return nil
+      aS[ DBG_RUNNING ] := .f.
+      // Fall through to send PAUSE — the IDE's OnDebugPause callback will
+      // skip framework lines and stop at the first user-code line.
    endif
 
    // In RUNNING mode: don't block — just check for STEP/QUIT non-blocking
@@ -115,8 +116,9 @@ static function DbgHook( nLine, cModule, cProcName )
       endif
    endif
 
-   // Second check (redundant with the early check above, kept for clarity)
-   if IDE_DbgRunLoopEnded()
+   // Legacy DONE path — kept as fallback, e.g. if the IDE can't handle the
+   // pause-at-return flow for some reason.
+   if .f. .and. IDE_DbgRunLoopEnded()
       DbgSend( "DONE" )
       aS[ DBG_CONNECTED ] := .f.
       hb_socketClose( aS[ DBG_SOCKET ] )
@@ -353,13 +355,15 @@ static function DbgRecv()
          return nil
       endif
       IDE_DbgPumpEvents()
-      // If the main form was destroyed (user clicked X during pause),
-      // signal IDE and bail out of the wait loop.
+      // If the main form was destroyed during a pause (user clicked X
+      // while the debugger was waiting for STEP/GO), return a synthetic
+      // STEP so the caller unblocks. The next DbgHook invocation will
+      // detect IDE_DbgRunLoopEnded at the top and force DBG_RUNNING=false,
+      // producing a natural PAUSE at the next user-code line — the IDE's
+      // OnDebugPause filters framework, so control stops at the `return`
+      // of Main in Project1.prg.
       if IDE_DbgRunLoopEnded()
-         DbgSend( "DONE" )
-         aS[ DBG_CONNECTED ] := .f.
-         hb_socketClose( aS[ DBG_SOCKET ] )
-         return nil
+         return "STEP"
       endif
    enddo
 

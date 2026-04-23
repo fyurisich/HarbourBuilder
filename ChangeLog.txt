@@ -1,6 +1,24 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-23c (Windows — form close during debug now pauses at Main's `return`)
+
+  FORM CLOSE → PAUSE AT POST-RUN-LOOP USER LINE:
+  - Previously when the user closed the executed form during a debug
+    session, dbgclient.prg sent "DONE" and cleanly killed the subprocess
+  - New behaviour: when CE_NotifyRunLoopEnded sets the flag, dbgclient
+    forces DBG_RUNNING := .F. and falls through to the normal PAUSE flow
+    instead of sending DONE. The subprocess then keeps executing with
+    per-line PAUSE reports, and the IDE's OnDebugPause (which filters
+    framework lines via nTab == 0) stops at the first user-code line
+    reached after the message loop ends — typically the `return` at the
+    end of Main() in Project1.prg. The user can then Step / Continue /
+    Stop to finish the session with a visible end point.
+  - DbgRecv poll loop: if the flag fires while the subprocess is paused
+    waiting for STEP/GO, returns a synthetic "STEP" to unblock DbgHook
+    without sending DONE. The next hook invocation observes the flag and
+    triggers the same pause-at-next-user-line flow.
+
 2026-04-23b (Windows — IDE responsiveness during Debug build, Debug vs Debug-to-BP split, form-close in RUNNING mode)
 
   ROOT CAUSE OF THE "IDE DEFORMATION" AT 125% DPI:
