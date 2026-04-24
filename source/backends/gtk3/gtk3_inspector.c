@@ -209,6 +209,10 @@ static void InsBuildRows( INSDATA * d, PHB_ITEM pArray )
             /* Store raw pipe-separated value; InsRebuildStore shows "(N items)" */
             strncpy( d->rows[d->nRows].szValue, hb_arrayGetCPtr(pRow,2), 255 );
          }
+         else if( d->rows[d->nRows].cType == 'M' )
+         {
+            strncpy( d->rows[d->nRows].szValue, hb_arrayGetCPtr(pRow,2), 255 );
+         }
 
          d->nRows++;
       }
@@ -296,6 +300,14 @@ static void InsRebuildStore( INSDATA * d )
             snprintf( arrayDisp, sizeof(arrayDisp), "(%d items)  ...", nItems );
             dispValue = arrayDisp;
          }
+         else if( d->rows[nReal].cType == 'M' )
+         {
+            const char * raw = d->rows[nReal].szValue;
+            int nNodes = 0;
+            if( raw[0] ) { nNodes = 1; for( const char * p = raw; *p; p++ ) if( *p == '|' ) nNodes++; }
+            snprintf( arrayDisp, sizeof(arrayDisp), "(%d nodes)  ...", nNodes );
+            dispValue = arrayDisp;
+         }
          else if( d->rows[nReal].cType == 'N' )
          {
             pEnumRow = InsGetEnum( d->rows[nReal].szName );
@@ -314,7 +326,7 @@ static void InsRebuildStore( INSDATA * d )
          /* Enum 'N' properties are not inline-editable (no dropdown yet) */
          gboolean editable = (d->nTab == 0) &&
             (d->rows[nReal].cType != 'C' && d->rows[nReal].cType != 'F' &&
-             d->rows[nReal].cType != 'A' &&
+             d->rows[nReal].cType != 'A' && d->rows[nReal].cType != 'M' &&
              !(d->rows[nReal].cType == 'N' && pEnumRow != NULL));
 
          gtk_list_store_set( d->store, &iter,
@@ -361,7 +373,7 @@ static void InsApplyValue( INSDATA * d, int nReal )
       hb_vmPushString( d->rows[nReal].szName, strlen(d->rows[nReal].szName) );
 
       if( d->rows[nReal].cType == 'S' || d->rows[nReal].cType == 'F' ||
-          d->rows[nReal].cType == 'A' )
+          d->rows[nReal].cType == 'A' || d->rows[nReal].cType == 'M' )
          hb_vmPushString( d->rows[nReal].szValue, strlen(d->rows[nReal].szValue) );
       else if( d->rows[nReal].cType == 'N' )
          hb_vmPushInteger( atoi(d->rows[nReal].szValue) );
