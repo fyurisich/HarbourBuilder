@@ -842,7 +842,7 @@ static function RegenerateFormCode( cName, hForm )
                      do while Len( nPendingLevels ) > 0 .and. ;
                                ATail( nPendingLevels ) >= nLv
                         nPL := ATail( nPendingLevels )
-                        cCreate += Replicate( "   ", nPL + 1 ) + 'END POPUP' + e
+                        cCreate += Replicate( "   ", nPL + 2 ) + 'END POPUP' + e
                         ASize( nPendingLevels, Len( nPendingLevels ) - 1 )
                      enddo
                      cInd := Replicate( "   ", nLv + 2 )  // 2 base levels (DEFINE MENUBAR indent)
@@ -875,7 +875,7 @@ static function RegenerateFormCode( cName, hForm )
                   // Close remaining open popups
                   do while Len( nPendingLevels ) > 0
                      nPL := ATail( nPendingLevels )
-                     cCreate += Replicate( "   ", nPL + 1 ) + 'END POPUP' + e
+                     cCreate += Replicate( "   ", nPL + 2 ) + 'END POPUP' + e
                      ASize( nPendingLevels, Len( nPendingLevels ) - 1 )
                   enddo
                   cCreate += '   END MENUBAR' + e
