@@ -11026,6 +11026,7 @@ HB_FUNC( UI_FORMPASTECONTROLS )
       else if( t == CT_COMBOBOX || t == CT_LISTBOX ) sz = sizeof(HBComboBox);
       else if( t == CT_GROUPBOX ) sz = sizeof(HBGroupBox);
       else if( t == CT_TIMER )    sz = sizeof(HBTimer);
+      else if( t == CT_MAINMENU ) sz = sizeof(HBMainMenu);
 
       c = (HBControl *) calloc( 1, sz );
       if( !c ) continue;
