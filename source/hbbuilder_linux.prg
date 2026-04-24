@@ -3318,6 +3318,7 @@ static function ComponentTypeFromName( cName )
       case cName == "CT_WEBSOCKET";     return 64
       case cName == "CT_HTTPCLIENT";    return 65
       case cName == "CT_COMPARRAY";     return 131
+      case cName == "CT_MAINMENU";      return 132
    endcase
 return 0
 
