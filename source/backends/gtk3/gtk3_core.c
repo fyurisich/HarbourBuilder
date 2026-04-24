@@ -144,6 +144,7 @@
 #define CT_SCENE3D    110
 #define CT_EARTHVIEW  111
 #define CT_MAP        112
+#define CT_MAINMENU   132
 
 #define MAX_CHILDREN  256
 
@@ -345,6 +346,24 @@ typedef struct {
    int  FBevelStyle;   /* 0=raised, 1=lowered */
    int  FBevelShape;   /* 0=box, 1=frame, 2=topLine, 3=bottomLine */
 } HBBevel;
+
+#define MAX_MENU_NODES 128
+
+typedef struct {
+   char  szCaption[128];
+   char  szShortcut[32];
+   char  szHandler[128];
+   int   bSeparator;
+   int   bEnabled;
+   int   nParent;
+   int   nLevel;
+} HBMenuNode;
+
+typedef struct {
+   HBControl   base;
+   HBMenuNode  FNodes[MAX_MENU_NODES];
+   int         FNodeCount;
+} HBMainMenu;
 
 typedef struct {
    HBControl base;
@@ -1966,6 +1985,7 @@ static HBControl * HBForm_CreateControlOfType( HBForm * form, int ctrlType,
             { CT_MONTHCALENDAR,"TMonthCalendar","",            227, 155 },
             { CT_PAINTBOX,   "TPaintBox",       "",           105, 105 },
             { CT_TIMER,      "TTimer",          "",            32,  32 },
+            { CT_MAINMENU,   "TMainMenu",       "",            32,  32 },
             { CT_OPENDIALOG, "TOpenDialog",     "",            32,  32 },
             { CT_SAVEDIALOG, "TSaveDialog",     "",            32,  32 },
             { CT_FONTDIALOG, "TFontDialog",     "",            32,  32 },
@@ -2057,6 +2077,7 @@ static HBControl * HBForm_CreateControlOfType( HBForm * form, int ctrlType,
                   case CT_SHAPE:    sz = sizeof(HBShape); break;
                   case CT_BEVEL:    sz = sizeof(HBBevel); break;
                   case CT_TIMER:    sz = sizeof(HBTimer); break;
+                  case CT_MAINMENU: sz = sizeof(HBMainMenu); break;
                   case CT_TABCONTROL2: sz = sizeof(HBTabControl2); break;
                   /* CT_SPEEDBTN uses base HBControl */
                }
