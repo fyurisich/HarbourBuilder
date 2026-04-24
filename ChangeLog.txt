@@ -1,6 +1,23 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-24d (Linux — items del ListBox no aparecen en runtime)
+
+  ROOT CAUSE — ITEMS DEL LISTBOX NO VISIBLES AL EJECUTAR FORM:
+  - HBListBox_CreateWidget() creaba un GtkListStore vacío y nunca leía
+    FItems[] de la struct HBComboBox. A diferencia de HBComboBox_CreateWidget()
+    que sí itera FItems[] al crear el widget, HBListBox_CreateWidget()
+    ignoraba completamente los ítems ya almacenados en el struct.
+  - Secuencia del fallo: TListBox():New() asigna FWidget=NULL →
+    SetItems() llama UI_SetProp que popula FItems[] pero el bloque de
+    actualización GTK se saltea (FWidget==NULL) → HBListBox_CreateWidget()
+    crea el store vacío sin leer FItems[]
+
+  FIX (gtk3_core.c — HBListBox_CreateWidget):
+  - Castear HBControl* a HBComboBox* al inicio de la función
+  - Iterar cb->FItems[0..cb->FItemCount-1] al crear el GtkListStore,
+    igual que hace HBComboBox_CreateWidget()
+
 2026-04-24c (Linux — crash "No exported variable" en oFont al run con ListBox/ComboBox)
 
   ROOT CAUSE — CRASH AL EJECUTAR FORM CON LISTBOX O COMBOBOX:

@@ -1228,12 +1228,19 @@ static void HBPanel_CreateWidget( HBControl * p, GtkWidget * container )
 
 static void HBListBox_CreateWidget( HBControl * p, GtkWidget * container )
 {
+   HBComboBox * cb = (HBComboBox *)p;
    GtkWidget * sw = gtk_scrolled_window_new( NULL, NULL );
    GtkListStore * store = gtk_list_store_new( 1, G_TYPE_STRING );
    GtkWidget * tv = gtk_tree_view_new_with_model( GTK_TREE_MODEL(store) );
    GtkCellRenderer * r = gtk_cell_renderer_text_new();
    gtk_tree_view_insert_column_with_attributes( GTK_TREE_VIEW(tv), -1, "Items", r, "text", 0, NULL );
    gtk_tree_view_set_headers_visible( GTK_TREE_VIEW(tv), FALSE );
+   for( int i = 0; i < cb->FItemCount; i++ )
+   {
+      GtkTreeIter iter;
+      gtk_list_store_append( store, &iter );
+      gtk_list_store_set( store, &iter, 0, cb->FItems[i], -1 );
+   }
    gtk_container_add( GTK_CONTAINER(sw), tv );
    gtk_scrolled_window_set_shadow_type( GTK_SCROLLED_WINDOW(sw), GTK_SHADOW_IN );
    g_object_unref( store );
