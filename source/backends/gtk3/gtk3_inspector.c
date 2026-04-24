@@ -17,6 +17,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 /* From gtk3_core.c */
 extern int GTK_IsDark(void);
@@ -659,6 +660,25 @@ static void on_mei_handler_changed( GtkEditable * e, gpointer data )
    strncpy( d->nodes[d->nSel].szHandler, gtk_entry_get_text(GTK_ENTRY(e)), 127 );
 }
 
+static gboolean on_mei_handler_dblclick( GtkWidget * widget, GdkEventButton * ev, gpointer data )
+{
+   if( ev->type != GDK_2BUTTON_PRESS ) return FALSE;
+   MEIDATA * d = (MEIDATA *)data;
+   if( d->nSel < 0 || d->nodes[d->nSel].bSeparator ) return FALSE;
+   const char * cur = gtk_entry_get_text( GTK_ENTRY(widget) );
+   if( cur && cur[0] ) return FALSE;   /* already has a handler */
+   const char * cap = d->nodes[d->nSel].szCaption;
+   if( !cap || !cap[0] ) return FALSE;
+   /* Build identifier: keep alnum chars from caption, append "Click" */
+   char name[128]; int ni = 0;
+   for( int i = 0; cap[i] && ni < 120; i++ )
+      if( isalnum((unsigned char)cap[i]) ) name[ni++] = cap[i];
+   if( ni == 0 ) return FALSE;
+   strcpy( name + ni, "Click" );
+   gtk_entry_set_text( GTK_ENTRY(widget), name );
+   return FALSE;
+}
+
 static void on_mei_enabled_toggled( GtkToggleButton * tb, gpointer data )
 {
    MEIDATA * d = (MEIDATA *)data;
@@ -852,6 +872,7 @@ static void OpenMenuEditor( INSDATA * ins, int nReal )
    g_signal_connect( d.eCaption,  "changed", G_CALLBACK(on_mei_caption_changed),  &d );
    g_signal_connect( d.eShortcut, "changed", G_CALLBACK(on_mei_shortcut_changed), &d );
    g_signal_connect( d.eHandler,  "changed", G_CALLBACK(on_mei_handler_changed),  &d );
+   g_signal_connect( d.eHandler,  "button-press-event", G_CALLBACK(on_mei_handler_dblclick), &d );
    g_signal_connect( d.cbEnabled, "toggled", G_CALLBACK(on_mei_enabled_toggled),  &d );
 
    gtk_container_add( GTK_CONTAINER(propSw), grid );

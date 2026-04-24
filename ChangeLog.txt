@@ -1,6 +1,21 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-24k
+
+  - feat: TMainMenu action handlers now execute correctly with Self
+    - Added FOnClickArray (PHB_ITEM) to HBMainMenu C struct
+    - Added nNodeIdx + pMenu to HBMenuCBData so each GTK signal knows its node index
+    - on_mainmenu_item_activated evaluates Harbour codeblock from FOnClickArray[nNodeIdx]
+      (captures Self), falling back to hb_dynsymFindName if no array is set
+    - Added aOnClick ASSIGN to TMainMenu class: calls UI_SetProp "aOnClick" to store array
+    - RegenerateFormCode generates ::oMenu:aOnClick := { nil, {||Handler(Self)}, ... }
+      with one entry per node (nil for popups/separators/no-handler nodes)
+    - FOnClickArray released in UI_FormClearChildren and when a new value is assigned
+  - feat: double-click on OnClick field in Menu Items Editor auto-generates handler name
+    - Double-clicking eHandler when empty fills it with CaptionClick (e.g. "NewClick")
+    - Matches the behavior of double-clicking event rows in the property inspector
+
 2026-04-24j
 
   - feat: menu item action handlers auto-generated as static functions

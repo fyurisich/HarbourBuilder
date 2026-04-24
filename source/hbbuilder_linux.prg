@@ -628,7 +628,7 @@ static function RegenerateFormCode( cName, hForm )
    local aExLines, lInClass, cExLine
    local aMenuNodes, nMI, cMNode, aMFields, nLv, cCap, cScut, cHndl
    local nPendingLevels, nPL, cInd, bIsPopup, aNextF
-   local aMenuHandlers := {}
+   local aMenuHandlers := {}, lHasHandlers
 
    // Read existing code to find declared event handlers
    cExistingCode := ""
@@ -832,6 +832,28 @@ static function RegenerateFormCode( cName, hForm )
                   // Runtime data transfer: encode Chr(1) field separators as Harbour source expressions
                   cCreate += '   ::o' + cCtrlName + ':aMenuItems := "' + ;
                              StrTran( cVal, Chr(1), '"+Chr(1)+"' ) + '"' + e
+                  // Generate aOnClick array of codeblocks (one per node), capturing Self
+                  aMenuNodes := HB_ATokens( cVal, "|" )
+                  lHasHandlers := .F.
+                  for nMI := 1 to Len( aMenuNodes )
+                     aMFields := HB_ATokens( aMenuNodes[nMI], Chr(1) )
+                     cHndl := iif( Len(aMFields) >= 3, aMFields[3], "" )
+                     if ! Empty( cHndl ); lHasHandlers := .T.; exit; endif
+                  next
+                  if lHasHandlers
+                     cCreate += '   ::o' + cCtrlName + ':aOnClick := { '
+                     for nMI := 1 to Len( aMenuNodes )
+                        aMFields := HB_ATokens( aMenuNodes[nMI], Chr(1) )
+                        cHndl := iif( Len(aMFields) >= 3, aMFields[3], "" )
+                        if nMI > 1; cCreate += ", "; endif
+                        if ! Empty( cHndl )
+                           cCreate += '{|| ' + cHndl + '( Self )}'
+                        else
+                           cCreate += 'nil'
+                        endif
+                     next
+                     cCreate += ' }' + e
+                  endif
                endif
                if ValType( cVal ) == "C" .and. ! Empty( cVal )
                   aMenuNodes := HB_ATokens( cVal, "|" )

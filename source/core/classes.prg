@@ -1310,6 +1310,7 @@ CLASS TMainMenu
    DATA hCpp    INIT 0
    DATA oParent INIT nil
    ASSIGN aMenuItems( c ) INLINE iif( ::hCpp != 0, UI_SetProp( ::hCpp, "aMenuItems", c ), nil )
+   ASSIGN aOnClick( a )   INLINE iif( ::hCpp != 0, UI_SetProp( ::hCpp, "aOnClick", a ), nil )
    METHOD New() CONSTRUCTOR
 ENDCLASS
 

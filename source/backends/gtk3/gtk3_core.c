@@ -363,6 +363,7 @@ typedef struct {
    HBControl   base;
    HBMenuNode  FNodes[MAX_MENU_NODES];
    int         FNodeCount;
+   PHB_ITEM    FOnClickArray;  /* Harbour array of blocks indexed by node, set by aOnClick ASSIGN */
 } HBMainMenu;
 
 typedef struct {
@@ -3822,6 +3823,13 @@ HB_FUNC( UI_SETPROP )
          raw = pipe + 1;
       }
    }
+   else if( strcasecmp(szProp,"aOnClick")==0 && p->FControlType == CT_MAINMENU )
+   {
+      HBMainMenu * m = (HBMainMenu *)p;
+      PHB_ITEM pArr = hb_param(3, HB_IT_ARRAY);
+      if( m->FOnClickArray ) { hb_itemRelease( m->FOnClickArray ); m->FOnClickArray = NULL; }
+      if( pArr ) m->FOnClickArray = hb_itemNew( pArr );
+   }
 }
 
 /* Stubs for controls not yet implemented on Linux */
@@ -4477,14 +4485,36 @@ static void ParseShortcut( const char * sz, GdkModifierType * mod, guint * key )
 }
 
 typedef struct {
-   char szHandler[128];
+   char         szHandler[128];
+   HBMainMenu * pMenu;
+   int          nNodeIdx;
 } HBMenuCBData;
 
 static void on_mainmenu_item_activated( GtkMenuItem * item, gpointer data )
 {
    (void)item;
    HBMenuCBData * cbd = (HBMenuCBData *)data;
-   if( !cbd || !cbd->szHandler[0] ) return;
+   if( !cbd ) return;
+
+   /* Preferred path: evaluate the Harbour codeblock (captures Self) */
+   if( cbd->pMenu && cbd->pMenu->FOnClickArray )
+   {
+      HB_SIZE nIdx = (HB_SIZE)(cbd->nNodeIdx + 1);
+      if( nIdx >= 1 && nIdx <= hb_arrayLen( cbd->pMenu->FOnClickArray ) )
+      {
+         PHB_ITEM pBlock = hb_arrayGetItemPtr( cbd->pMenu->FOnClickArray, nIdx );
+         if( pBlock && HB_IS_BLOCK( pBlock ) )
+         {
+            hb_vmPushEvalSym();
+            hb_vmPush( pBlock );
+            hb_vmSend( 0 );
+            return;
+         }
+      }
+   }
+
+   /* Fallback: call handler by name with no args */
+   if( !cbd->szHandler[0] ) return;
    char sym[128]; int i;
    for(i=0;cbd->szHandler[i]&&i<127;i++) sym[i]=(char)toupper((unsigned char)cbd->szHandler[i]);
    sym[i]=0;
@@ -4557,9 +4587,11 @@ static void HBMainMenu_Attach( HBControl * p, HBForm * form )
             if( !n->bEnabled )
                gtk_widget_set_sensitive( mi, FALSE );
 
-            if( n->szHandler[0] ) {
+            if( n->szHandler[0] || m->FOnClickArray ) {
                HBMenuCBData * cbd = (HBMenuCBData *)malloc(sizeof(HBMenuCBData));
                strncpy( cbd->szHandler, n->szHandler, 127 );
+               cbd->pMenu     = m;
+               cbd->nNodeIdx  = i;
                g_signal_connect_data( mi, "activate",
                   G_CALLBACK(on_mainmenu_item_activated), cbd,
                   (GClosureNotify)free, 0 );
@@ -7397,10 +7429,19 @@ HB_FUNC( UI_FORMCLEARCHILDREN )
       g_list_free( children );
    }
 
-   /* Release child objects */
+   /* Release child objects (free type-specific Harbour items first) */
    for( int i = 0; i < pForm->base.FChildCount; i++ )
    {
-      RemoveControl( pForm->base.FChildren[i] );
+      HBControl * c = pForm->base.FChildren[i];
+      if( c->FControlType == CT_MAINMENU ) {
+         HBMainMenu * m = (HBMainMenu *)c;
+         if( m->FOnClickArray ) { hb_itemRelease( m->FOnClickArray ); m->FOnClickArray = NULL; }
+      }
+      if( c->FControlType == CT_TIMER ) {
+         HBTimer * t = (HBTimer *)c;
+         if( t->FOnTimer ) { hb_itemRelease( t->FOnTimer ); t->FOnTimer = NULL; }
+      }
+      RemoveControl( c );
       pForm->base.FChildren[i] = NULL;
    }
    pForm->base.FChildCount = 0;
