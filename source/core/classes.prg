@@ -1303,6 +1303,20 @@ return Self
 
 //----------------------------------------------------------------------------//
 // TCompArray - Non-visual array data container
+// TMainMenu - non-visual menu bar component
+//----------------------------------------------------------------------------//
+
+CLASS TMainMenu
+   DATA hCpp    INIT 0
+   DATA oParent INIT nil
+   ASSIGN aMenuItems( c ) INLINE iif( ::hCpp != 0, UI_SetProp( ::hCpp, "aMenuItems", c ), nil )
+   METHOD New() CONSTRUCTOR
+ENDCLASS
+
+METHOD New() CLASS TMainMenu
+return Self
+
+//----------------------------------------------------------------------------//
 // TTimer - non-visual timer component
 //----------------------------------------------------------------------------//
 
@@ -3736,6 +3750,13 @@ function HB_CreateComponent( nType, oParent )
          oComp := TTimer():New()
          if oParent != nil .and. __objHasMsg( oParent, "HCPP" ) .and. oParent:hCpp != 0
             oComp:hCpp := UI_TimerNew( oParent:hCpp, 1000 )
+         endif
+         return oComp
+      case nType == 132  // CT_MAINMENU (Linux non-visual menu bar)
+         oComp := TMainMenu():New()
+         oComp:oParent := oParent
+         if oParent != nil .and. __objHasMsg( oParent, "HCPP" ) .and. oParent:hCpp != 0
+            oComp:hCpp := UI_MainMenuNew( oParent:hCpp )
          endif
          return oComp
       case nType == CT_WEBSERVER;  return TWebServer():New()

@@ -3880,6 +3880,21 @@ HB_FUNC( UI_TIMERNEW )
    RetCtrl( &p->base );
 }
 
+HB_FUNC( UI_MAINMENUNEW )
+{
+   HBForm    * pForm = GetForm(1);
+   HBMainMenu * p = (HBMainMenu *) calloc( 1, sizeof(HBMainMenu) );
+   HBControl_Init( &p->base );
+   strcpy( p->base.FClassName, "TMainMenu" );
+   strcpy( p->base.FName,      "MainMenu" );
+   p->base.FControlType = CT_MAINMENU;
+   p->base.FWidth  = 0; p->base.FHeight = 0;
+   p->base.FEnabled = 1;
+   p->FNodeCount = 0;
+   if( pForm ) HBControl_AddChild( &pForm->base, &p->base );
+   RetCtrl( &p->base );
+}
+
 /* macOS-only stubs (called from classes.prg error handler) */
 HB_FUNC( MAC_RUNTIMEERRORDIALOG ) { hb_retni(0); }
 HB_FUNC( MAC_APPTERMINATE ) { }
