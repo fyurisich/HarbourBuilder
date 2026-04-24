@@ -1,6 +1,24 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-24b (Linux — ListBox y ComboBox: propiedad aItems en inspector)
+
+  LISTBOX / COMBOBOX — aItems FALTANTE EN INSPECTOR:
+  - UI_GetAllProps para CT_COMBOBOX solo emitía nItemIndex/nItemCount;
+    ahora emite aItems (pipe-separated) tipo 'A', igual que Windows
+  - CT_LISTBOX no tenía ningún case en UI_GetAllProps; ahora comparte el
+    mismo bloque que CT_COMBOBOX y también emite aItems
+  - UI_GetProp: agrega getter de aItems para CT_COMBOBOX y CT_LISTBOX
+  - UI_SetProp: agrega handler de aItems para ambos; parsea el string
+    pipe-separated en FItems/FItemCount y reconstruye el widget GTK
+    (gtk_combo_box_text_remove_all + re-append para combo;
+     gtk_list_store_clear + re-populate para listbox)
+  - UI_LISTBOXNEW: cambia a alloc sizeof(HBComboBox) para que el
+    TListBox tenga FItems/FItemCount/FItemIndex (era stub HBControl)
+  - Los dos switch de tamaño de alloc (design-drop y paste) añaden
+    CT_LISTBOX → sizeof(HBComboBox)
+  - JSON serializer: CT_LISTBOX ahora emite "items":[] igual que combo
+
 2026-04-24a (Linux — inspector: enum literals y dropdown para propiedades numéricas)
 
   INSPECTOR GTK: LITERALES EN LUGAR DE NÚMEROS:

@@ -2025,7 +2025,7 @@ static HBControl * HBForm_CreateControlOfType( HBForm * form, int ctrlType,
                   case CT_BUTTON: case CT_BITBTN:
                                     sz = sizeof(HBButton); break;
                   case CT_CHECKBOX: sz = sizeof(HBCheckBox); break;
-                  case CT_COMBOBOX: sz = sizeof(HBComboBox); break;
+                  case CT_COMBOBOX: case CT_LISTBOX: sz = sizeof(HBComboBox); break;
                   case CT_GROUPBOX: sz = sizeof(HBGroupBox); break;
                   case CT_LISTVIEW: sz = sizeof(HBListView); break;
                   case CT_RICHEDIT: sz = sizeof(HBRichEdit); break;
@@ -3662,6 +3662,54 @@ HB_FUNC( UI_SETPROP )
          }
       }
    }
+   else if( strcasecmp(szProp,"aItems")==0 && HB_ISCHAR(3) &&
+            (p->FControlType==CT_COMBOBOX || p->FControlType==CT_LISTBOX) )
+   {
+      HBComboBox * cb = (HBComboBox *)p;
+      const char * raw = hb_parc(3);
+      /* Parse pipe-separated items into FItems */
+      cb->FItemCount = 0;
+      memset( cb->FItems, 0, sizeof(cb->FItems) );
+      while( *raw && cb->FItemCount < 32 )
+      {
+         const char * pipe = strchr( raw, '|' );
+         int len = pipe ? (int)(pipe - raw) : (int)strlen(raw);
+         if( len > 63 ) len = 63;
+         memcpy( cb->FItems[cb->FItemCount], raw, len );
+         cb->FItems[cb->FItemCount][len] = 0;
+         cb->FItemCount++;
+         if( !pipe ) break;
+         raw = pipe + 1;
+      }
+      /* Rebuild live widget */
+      if( p->FControlType == CT_COMBOBOX && p->FWidget &&
+          GTK_IS_COMBO_BOX_TEXT(p->FWidget) )
+      {
+         gtk_combo_box_text_remove_all( GTK_COMBO_BOX_TEXT(p->FWidget) );
+         for( int i = 0; i < cb->FItemCount; i++ )
+            gtk_combo_box_text_append_text( GTK_COMBO_BOX_TEXT(p->FWidget), cb->FItems[i] );
+      }
+      else if( p->FControlType == CT_LISTBOX && p->FWidget &&
+               GTK_IS_SCROLLED_WINDOW(p->FWidget) )
+      {
+         GtkWidget * tv = gtk_bin_get_child( GTK_BIN(p->FWidget) );
+         if( tv && GTK_IS_TREE_VIEW(tv) )
+         {
+            GtkListStore * store = GTK_LIST_STORE(
+               gtk_tree_view_get_model( GTK_TREE_VIEW(tv) ) );
+            if( store )
+            {
+               gtk_list_store_clear( store );
+               for( int i = 0; i < cb->FItemCount; i++ )
+               {
+                  GtkTreeIter iter;
+                  gtk_list_store_append( store, &iter );
+                  gtk_list_store_set( store, &iter, 0, cb->FItems[i], -1 );
+               }
+            }
+         }
+      }
+   }
 }
 
 /* Stubs for controls not yet implemented on Linux */
@@ -3683,17 +3731,21 @@ HB_FUNC( UI_MEMONEW )
 
 HB_FUNC( UI_LISTBOXNEW )
 {
-   /* TListBox — stub, reuse combo for now */
    HBForm * pForm = GetForm(1);
-   HBControl * p = (HBControl *) calloc( 1, sizeof(HBControl) );
-   HBControl_Init( p );
-   strcpy( p->FClassName, "TListBox" );
-   p->FControlType = CT_LISTBOX; p->FWidth = 120; p->FHeight = 100;
-   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
-   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);  if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
-   if( pForm ) HBControl_AddChild( &pForm->base, p );
-   KeepAlive( p );
-   RetCtrl( p );
+   HBComboBox * p = (HBComboBox *) calloc( 1, sizeof(HBComboBox) );
+   HBControl_Init( &p->base );
+   strcpy( p->base.FClassName, "TListBox" );
+   p->base.FControlType = CT_LISTBOX;
+   p->base.FWidth = 120; p->base.FHeight = 100;
+   p->FItemIndex = 0; p->FItemCount = 0;
+   memset( p->FItems, 0, sizeof(p->FItems) );
+   if( HB_ISNUM(2) ) p->base.FLeft = hb_parni(2);
+   if( HB_ISNUM(3) ) p->base.FTop  = hb_parni(3);
+   if( HB_ISNUM(4) ) p->base.FWidth  = hb_parni(4);
+   if( HB_ISNUM(5) ) p->base.FHeight = hb_parni(5);
+   if( pForm ) HBControl_AddChild( &pForm->base, &p->base );
+   KeepAlive( &p->base );
+   RetCtrl( &p->base );
 }
 
 /* UI_TimerNew( hForm, nInterval ) --> hCtrl - create runtime timer (non-visual) */
@@ -3783,8 +3835,20 @@ HB_FUNC( UI_GETPROP )
    }
    else if( strcasecmp(szProp,"nInterval")==0 && p->FControlType==CT_TIMER )
       hb_retni( ((HBTimer *)p)->FInterval );
-   else if( strcasecmp(szProp,"nItemIndex")==0 && p->FControlType==CT_COMBOBOX )
+   else if( strcasecmp(szProp,"nItemIndex")==0 &&
+            (p->FControlType==CT_COMBOBOX || p->FControlType==CT_LISTBOX) )
       hb_retni( ((HBComboBox *)p)->FItemIndex );
+   else if( strcasecmp(szProp,"aItems")==0 &&
+            (p->FControlType==CT_COMBOBOX || p->FControlType==CT_LISTBOX) )
+   {
+      HBComboBox * cb = (HBComboBox *)p;
+      char szAll[4096] = "";
+      for( int ci = 0; ci < cb->FItemCount; ci++ ) {
+         if( ci > 0 ) strcat( szAll, "|" );
+         strncat( szAll, cb->FItems[ci], sizeof(szAll) - strlen(szAll) - 1 );
+      }
+      hb_retc( szAll );
+   }
    else if( strcasecmp(szProp,"cDataSource")==0 &&
             ( p->FControlType==CT_BROWSE || p->FControlType==CT_DBGRID ) )
       hb_retc( ((HBBrowse *)p)->FDataSourceName );
@@ -4006,8 +4070,24 @@ HB_FUNC( UI_GETALLPROPS )
          ADD_L("lReadOnly",((HBEdit*)p)->FReadOnly,"Behavior");
          ADD_L("lPassword",((HBEdit*)p)->FPassword,"Behavior"); break;
       case CT_COMBOBOX:
-         ADD_N("nItemIndex",((HBComboBox*)p)->FItemIndex,"Data");
-         ADD_N("nItemCount",((HBComboBox*)p)->FItemCount,"Data"); break;
+      case CT_LISTBOX:
+      {
+         HBComboBox * cb = (HBComboBox *)p;
+         char szAll[4096] = ""; int ci;
+         for( ci = 0; ci < cb->FItemCount; ci++ ) {
+            if( ci > 0 ) strcat( szAll, "|" );
+            strncat( szAll, cb->FItems[ci], sizeof(szAll) - strlen(szAll) - 1 );
+         }
+         pRow = hb_itemArrayNew(4);
+         hb_arraySetC( pRow, 1, "aItems" );
+         hb_arraySetC( pRow, 2, szAll );
+         hb_arraySetC( pRow, 3, "Data" );
+         hb_arraySetC( pRow, 4, "A" );
+         hb_arrayAdd( pArray, pRow );
+         hb_itemRelease( pRow );
+         ADD_N("nItemIndex", cb->FItemIndex, "Data");
+         break;
+      }
       case CT_RADIO:
          ADD_L("lChecked",((HBRadioButton*)p)->FChecked,"Data");
          ADD_S("cGroupName",((HBRadioButton*)p)->FGroupName,"Behavior");
@@ -4128,7 +4208,7 @@ HB_FUNC( UI_FORMTOJSON )
          sprintf(tmp,",\"default\":%s,\"cancel\":%s",((HBButton*)p)->FDefault?"true":"false",((HBButton*)p)->FCancel?"true":"false"); ADDC(tmp) }
       if( p->FControlType==CT_CHECKBOX ) {
          sprintf(tmp,",\"checked\":%s",((HBCheckBox*)p)->FChecked?"true":"false"); ADDC(tmp) }
-      if( p->FControlType==CT_COMBOBOX ) {
+      if( p->FControlType==CT_COMBOBOX || p->FControlType==CT_LISTBOX ) {
          HBComboBox * cb=(HBComboBox*)p;
          sprintf(tmp,",\"sel\":%d,\"items\":[",cb->FItemIndex); ADDC(tmp)
          for( int j=0; j<cb->FItemCount; j++ ) { if(j>0) ADDC(",") sprintf(tmp,"\"%s\"",cb->FItems[j]); ADDC(tmp) }
@@ -10887,7 +10967,7 @@ HB_FUNC( UI_FORMPASTECONTROLS )
       else if( t == CT_EDIT )     sz = sizeof(HBEdit);
       else if( t == CT_BUTTON )   sz = sizeof(HBButton);
       else if( t == CT_CHECKBOX ) sz = sizeof(HBCheckBox);
-      else if( t == CT_COMBOBOX ) sz = sizeof(HBComboBox);
+      else if( t == CT_COMBOBOX || t == CT_LISTBOX ) sz = sizeof(HBComboBox);
       else if( t == CT_GROUPBOX ) sz = sizeof(HBGroupBox);
       else if( t == CT_TIMER )    sz = sizeof(HBTimer);
 
