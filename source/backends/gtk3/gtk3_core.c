@@ -455,6 +455,7 @@ static int IsNonVisualControl( int t )
       case CT_AUDITLOG: case CT_PERMISSIONS: case CT_CURRENCY: case CT_TAXENGINE:
       case CT_PRINTER: case CT_REPORT: case CT_LABELS: case CT_PAGESETUP:
       case CT_PRINTDIALOG: case CT_BARCODEPRINTER:
+      case CT_MAINMENU:
          return 1;
       default:
          return 0;
