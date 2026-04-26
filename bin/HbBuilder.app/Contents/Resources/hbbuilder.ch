@@ -410,8 +410,13 @@
    <oPal> := TComponentPalette():New( <oForm> )
 
 // TMainMenu DSL — DEFINE MENUBAR <oMenu> builds aMenuItems via helper functions
+// MENUITEM split into fixed-arg forms so bAction codeblock keeps stable position.
+// Block declares oMenuItem param (backend may pass item ref; nil if not).
 #xcommand DEFINE MENUBAR <oMenu>                          => _HBMenuStart( <oMenu> )
-#xcommand MENUITEM <x> [ ACTION <a> ] [ ACCEL <k> ]      => _HBMenuAdd( <x> [,<"a">] [,<"k">] )
+#xcommand MENUITEM <x> ACTION <a> ACCEL <k>               => _HBMenuAdd( <x>, <"a">, {|oMenuItem| <a> }, <k> )
+#xcommand MENUITEM <x> ACTION <a>                         => _HBMenuAdd( <x>, <"a">, {|oMenuItem| <a> }, nil )
+#xcommand MENUITEM <x> ACCEL <k>                          => _HBMenuAdd( <x>, nil, nil, <k> )
+#xcommand MENUITEM <x>                                    => _HBMenuAdd( <x>, nil, nil, nil )
 #xcommand MENUSEPARATOR                                   => _HBMenuSep()
 #xcommand DEFINE POPUP <x>                                => _HBMenuPopup( <x> )
 #xcommand END POPUP                                       => _HBMenuEndPopup()

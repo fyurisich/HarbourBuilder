@@ -1,6 +1,48 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-26a
+
+  - refactor(menu): TMenuItem now carries its own bAction codeblock —
+    aOnClick parallel array is no longer the source of truth. New flow:
+    DEFINE MENUBAR DSL captures `{|oMenuItem| <action>}` per MENUITEM
+    via the xcommand translator, _HBMenuAdd stores it in TMenuItem:bAction,
+    and _HBMenuEnd auto-builds the runtime aOnClick array from items.
+    Backends (cocoa/gtk3/win32/hbbridge) untouched — they still receive
+    aOnClick via UI_SetProp, just auto-populated instead of user-written.
+    IDE codegen on macOS, Linux, Windows drops the redundant
+    `::oMenu:aOnClick := { ... }` emission (3 sites — mac CT_MAINMENU=200,
+    linux CT_MAINMENU=132, win primary 200 + legacy 132 paths).
+    MENUITEM xcommand split into 4 fixed-arg forms (ACTION+ACCEL,
+    ACTION-only, ACCEL-only, bare) so the bAction position stays stable.
+    Block declares `oMenuItem` param so codegen-emitted
+    `ACTION FuncName( Self, oMenuItem )` for bare-name handlers compiles
+    cleanly. Sample samples/projects/mainmenu/Form1.prg drops manual
+    aOnClick; menu wiring now lives entirely inside DEFINE MENUBAR.
+
+  - fix(ide-parser/mac): RestoreFormFromCode left trailing CR on every
+    line when reading CRLF-saved Form1.prg, so exact-match checks
+    (`cMLU == "END POPUP"`, `"END MENUBAR"`) silently failed. Result:
+    nMenuLevel never decremented between popups, parser produced a
+    serial with sibling popups stamped at deeper and deeper levels,
+    and codegen-on-Build re-emitted nested `DEFINE POPUP "&Edit"` etc
+    inside the previous popup. Now strip Chr(13) before tokenizing,
+    matching the linux parser's existing behavior.
+
+  - fix(ide-parser/mac+linux): MENUITEM ACTION parser truncated the
+    handler at the first space inside the expression, so
+    `FileNew( Self )` became `FileNew(` — codegen then re-emitted
+    `ACTION FileNew(` (unbalanced paren, syntax error). Capture the
+    full expression up to ` ACCEL "` instead of first whitespace; only
+    strip a trailing `()` when the bare name has no other parens.
+
+  - fix(ide-parser/mac+linux): DEFINE MENUBAR detection used exact
+    match against "DEFINE MENUBAR" but codegen emits
+    `DEFINE MENUBAR ::oMenu1`. Parser silently skipped the block and
+    aMenuItems stayed empty after Open. Accept either bare or
+    `DEFINE MENUBAR <oMenu>` form (win parser already used a prefix
+    match).
+
 2026-04-25e
 
   - fix(dsl): TMainMenu DEFINE MENUBAR DSL emitted MENUITEM nodes one

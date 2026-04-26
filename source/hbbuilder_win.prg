@@ -962,32 +962,7 @@ static function RegenerateFormCode( cName, hForm )
                cCreate += '   COMPONENT ::o' + cCtrlName + ' TYPE CT_MAINMENU OF Self  // TMainMenu' + e
                if ValType( cVal ) == "C" .and. ! Empty( cVal )
                   aMenuNodes := HB_ATokens( cVal, "|" )
-                  lHasHandlers := .F.
-                  for nMI := 1 to Len( aMenuNodes )
-                     aMFields := HB_ATokens( aMenuNodes[nMI], Chr(1) )
-                     cHndl := iif( Len(aMFields) >= 3, aMFields[3], "" )
-                     if ! Empty( cHndl ); lHasHandlers := .T.; exit; endif
-                  next
-                  if lHasHandlers
-                     cCreate += '   ::o' + cCtrlName + ':aOnClick := { '
-                     for nMI := 1 to Len( aMenuNodes )
-                        aMFields := HB_ATokens( aMenuNodes[nMI], Chr(1) )
-                        cHndl := iif( Len(aMFields) >= 3, aMFields[3], "" )
-                        if nMI > 1; cCreate += ", "; endif
-                        if ! Empty( cHndl )
-                           if ":" $ cHndl .or. "(" $ cHndl
-                              cCreate += '{|| ' + cHndl
-                              if !( "(" $ cHndl ); cCreate += '()'; endif
-                              cCreate += '}'
-                           else
-                              cCreate += '{|| ' + cHndl + '( Self, nil )}'
-                           endif
-                        else
-                           cCreate += 'nil'
-                        endif
-                     next
-                     cCreate += ' }' + e
-                  endif
+                  // aOnClick auto-built by _HBMenuEnd from per-item bAction
                   nPendingLevels := {}
                   cCreate += '   DEFINE MENUBAR ::o' + cCtrlName + e
                   for nMI := 1 to Len( aMenuNodes )
@@ -1052,36 +1027,8 @@ static function RegenerateFormCode( cName, hForm )
                   if ! Empty( cVal )
                      cCreate += '   ::o' + cCtrlName + ':aMenuItems := "' + ;
                                 StrTran( cVal, Chr(1), '"+Chr(1)+"' ) + '"' + e
-                     aMenuNodes := HB_ATokens( cVal, "|" )
-                     lHasHandlers := .F.
-                     for nMI := 1 to Len( aMenuNodes )
-                        aMFields := HB_ATokens( aMenuNodes[nMI], Chr(1) )
-                        cHndl := iif( Len(aMFields) >= 3, aMFields[3], "" )
-                        if ! Empty( cHndl ); lHasHandlers := .T.; exit; endif
-                     next
-                     if lHasHandlers
-                        cCreate += '   ::o' + cCtrlName + ':aOnClick := { '
-                        for nMI := 1 to Len( aMenuNodes )
-                           aMFields := HB_ATokens( aMenuNodes[nMI], Chr(1) )
-                           cHndl := iif( Len(aMFields) >= 3, aMFields[3], "" )
-                           if nMI > 1; cCreate += ", "; endif
-                           if ! Empty( cHndl )
-                              if ":" $ cHndl .or. "(" $ cHndl
-                                 cCreate += '{|| ' + cHndl
-                                 if !( "(" $ cHndl ); cCreate += '()'; endif
-                                 cCreate += '}'
-                              else
-                                 cCreate += '{|| ' + cHndl + '( Self, nil )}'
-                                 if AScan( aMenuHandlers, cHndl ) == 0
-                                    AAdd( aMenuHandlers, cHndl )
-                                 endif
-                              endif
-                           else
-                              cCreate += 'nil'
-                           endif
-                        next
-                        cCreate += ' }' + e
-                     endif
+                     // aOnClick auto-built by _HBMenuEnd from per-item bAction
+                     // (this legacy string-assign path skips DEFINE MENUBAR — no auto-build)
                   endif
                else  // CT_BAND (report designer)
                   cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;

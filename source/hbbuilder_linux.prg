@@ -832,34 +832,7 @@ static function RegenerateFormCode( cName, hForm )
                   // Runtime data transfer: encode Chr(1) field separators as Harbour source expressions
                   cCreate += '   ::o' + cCtrlName + ':aMenuItems := "' + ;
                              StrTran( cVal, Chr(1), '"+Chr(1)+"' ) + '"' + e
-                  // Generate aOnClick array of codeblocks (one per node), capturing Self
-                  aMenuNodes := HB_ATokens( cVal, "|" )
-                  lHasHandlers := .F.
-                  for nMI := 1 to Len( aMenuNodes )
-                     aMFields := HB_ATokens( aMenuNodes[nMI], Chr(1) )
-                     cHndl := iif( Len(aMFields) >= 3, aMFields[3], "" )
-                     if ! Empty( cHndl ); lHasHandlers := .T.; exit; endif
-                  next
-                  if lHasHandlers
-                     cCreate += '   ::o' + cCtrlName + ':aOnClick := { '
-                     for nMI := 1 to Len( aMenuNodes )
-                        aMFields := HB_ATokens( aMenuNodes[nMI], Chr(1) )
-                        cHndl := iif( Len(aMFields) >= 3, aMFields[3], "" )
-                        if nMI > 1; cCreate += ", "; endif
-                        if ! Empty( cHndl )
-                           if ":" $ cHndl .or. "(" $ cHndl
-                              cCreate += '{|| ' + cHndl
-                              if !( "(" $ cHndl ); cCreate += '()'; endif
-                              cCreate += '}'
-                           else
-                              cCreate += '{|| ' + cHndl + '( Self, nil )}'
-                           endif
-                        else
-                           cCreate += 'nil'
-                        endif
-                     next
-                     cCreate += ' }' + e
-                  endif
+                  // aOnClick auto-built by _HBMenuEnd from per-item bAction
                endif
                if ValType( cVal ) == "C" .and. ! Empty( cVal )
                   aMenuNodes := HB_ATokens( cVal, "|" )
@@ -1916,7 +1889,8 @@ static function RestoreFormFromCode( hForm, cCode )
       endif
 
       // Parse DEFINE MENUBAR block for TMainMenu
-      if Upper( AllTrim( cTrim ) ) == "DEFINE MENUBAR"
+      if Upper( AllTrim( cTrim ) ) == "DEFINE MENUBAR" .or. ;
+         Left( Upper( AllTrim( cTrim ) ), 15 ) == "DEFINE MENUBAR "
          cMenuSerial := ""
          nMenuLevel  := 0
          aParentStack := {}
@@ -1958,9 +1932,14 @@ static function RestoreFormFromCode( hForm, cCode )
                nAct := At( "ACTION ", cMLU )
                if nAct > 0
                   cItHndl := SubStr( cML, nAct + 7 )
-                  nSpc := At( " ", cItHndl )
-                  if nSpc > 0; cItHndl := Left(cItHndl,nSpc-1); endif
-                  if Right(cItHndl,2) == "()"; cItHndl := Left(cItHndl,Len(cItHndl)-2); endif
+                  // Truncate at " ACCEL " clause if present (action expr may contain spaces)
+                  nSpc := At( ' ACCEL "', Upper( cItHndl ) )
+                  if nSpc > 0; cItHndl := Left( cItHndl, nSpc - 1 ); endif
+                  cItHndl := AllTrim( cItHndl )
+                  // Strip empty trailing "()" only for bare names without args
+                  if Right(cItHndl,2) == "()" .and. ! "(" $ Left(cItHndl,Len(cItHndl)-2)
+                     cItHndl := Left(cItHndl,Len(cItHndl)-2)
+                  endif
                endif
                nAccl := At( 'ACCEL "', cML )
                if nAccl > 0

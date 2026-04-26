@@ -1309,19 +1309,21 @@ CLASS TMenuItem
    DATA cCaption  INIT "NewItem"
    DATA cShortcut INIT ""
    DATA cAction   INIT ""
+   DATA bAction   INIT nil   // runtime codeblock; designer keeps cAction string
    DATA lEnabled  INIT .T.
    DATA nLevel    INIT 1
    DATA nParent   INIT -1
-   METHOD New( cCap, cScut, cAct, lEn, nLv, nPar ) CONSTRUCTOR
+   METHOD New( cCap, cScut, cAct, lEn, nLv, nPar, bAct ) CONSTRUCTOR
 ENDCLASS
 
-METHOD New( cCap, cScut, cAct, lEn, nLv, nPar ) CLASS TMenuItem
+METHOD New( cCap, cScut, cAct, lEn, nLv, nPar, bAct ) CLASS TMenuItem
    if cCap  != nil; ::cCaption  := cCap;  endif
    if cScut != nil; ::cShortcut := cScut; endif
    if cAct  != nil; ::cAction   := cAct;  endif
    if lEn   != nil; ::lEnabled  := lEn;   endif
    if nLv   != nil; ::nLevel    := nLv;   endif
    if nPar  != nil; ::nParent   := nPar;  endif
+   if bAct  != nil; ::bAction   := bAct;  endif
 return Self
 
 FUNCTION TMainMenu_Serialize( aItems )
@@ -1372,12 +1374,13 @@ PROCEDURE _HBMenuStart( oMenu )
    _HBMenuCtx( 0, oMenu )
 RETURN
 
-PROCEDURE _HBMenuAdd( cText, cAction, cAccel )
+PROCEDURE _HBMenuAdd( cText, cAction, bAction, cAccel )
    local oMenu := _HBMenuCtx( 1 )
    if oMenu != nil
       AAdd( oMenu:_aBuilding, ;
          TMenuItem():New( cText, iif(cAccel!=nil,cAccel,""), ;
-                          iif(cAction!=nil,cAction,""), .T., _HBMenuCtx(2), -1 ) )
+                          iif(cAction!=nil,cAction,""), .T., _HBMenuCtx(2), -1, ;
+                          bAction ) )
    endif
 RETURN
 
@@ -1402,8 +1405,16 @@ RETURN
 
 PROCEDURE _HBMenuEnd()
    local oMenu := _HBMenuCtx( 1 )
+   local aItems, aBlocks, i
    if oMenu != nil
-      oMenu:aMenuItems := oMenu:_aBuilding
+      aItems := oMenu:_aBuilding
+      oMenu:aMenuItems := aItems
+      // Auto-build aOnClick array from per-item bAction codeblocks
+      aBlocks := Array( Len( aItems ) )
+      for i := 1 to Len( aItems )
+         aBlocks[i] := aItems[i]:bAction   // nil for popups/separators
+      next
+      oMenu:aOnClick := aBlocks
       oMenu:_aBuilding := nil
       _HBMenuCtx( 5 )
    endif
