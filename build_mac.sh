@@ -274,6 +274,8 @@ cp "$PROJDIR/resources/toolbar.bmp" "$APP/Contents/Resources/" 2>/dev/null
 cp "$PROJDIR/resources/toolbar_debug.bmp" "$APP/Contents/Resources/" 2>/dev/null
 cp "$PROJDIR/resources/palette.bmp" "$APP/Contents/Resources/" 2>/dev/null
 cp "$PROJDIR/resources/harbour_logo.png" "$APP/Contents/Resources/" 2>/dev/null
+cp "$PROJDIR/resources/tmainmenu.png" "$APP/Contents/Resources/" 2>/dev/null
+cp "$PROJDIR/resources/tpopupmenu.png" "$APP/Contents/Resources/" 2>/dev/null
 cp -R "$PROJDIR/resources/menu_icons" "$APP/Contents/Resources/" 2>/dev/null
 # Copy Harbour source files needed for building user projects
 cp "$PROJDIR/source/core/classes.prg" "$APP/Contents/Resources/" 2>/dev/null

@@ -1,6 +1,22 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-26i
+
+  - feat(macos-palette): Per-component PNG icon overrides on the
+    component palette. Added new HB_FUNC UI_PaletteSetCompIcon(
+    nControlType, cPngPath ) in cocoa_core.m that loads a PNG from
+    disk, draws it centered on a transparent 32x32 canvas (no grey tile
+    background), and replaces the palette image for every button whose
+    nControlType matches. Wired up in hbbuilder_macos.prg right after
+    UI_PaletteLoadImages to override:
+      * CT_MAINMENU  (200) -> tmainmenu.png
+      * CT_POPUPMENU (201) -> tpopupmenu.png
+    PNG files added to resources/ and copied to the .app bundle by
+    build_mac.sh. Replaces the previous SF Symbol fallback for these
+    two non-visual menu components with the official-looking VCL-style
+    icons.
+
 2026-04-26h
 
   - fix(linux-popup): TPopupMenu items declared with ACCEL "Ctrl+X"

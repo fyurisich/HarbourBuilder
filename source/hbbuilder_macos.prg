@@ -550,6 +550,10 @@ static function CreatePalette()
    // Load palette icons (Silk icon set by famfamfam, CC BY 2.5)
    UI_PaletteLoadImages( oPal:hCpp, ResPath( "palette.bmp" ) )
 
+   // Per-component PNG overrides
+   UI_PaletteSetCompIcon( 200, ResPath( "tmainmenu.png"  ) )  // CT_MAINMENU
+   UI_PaletteSetCompIcon( 201, ResPath( "tpopupmenu.png" ) )  // CT_POPUPMENU
+
 return nil
 
 static function CreateDesignForm( nX, nY )
