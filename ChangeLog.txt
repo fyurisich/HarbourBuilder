@@ -1,6 +1,39 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-26f
+
+  - feat(macos): TPopupMenu — port of the Linux non-visual context-menu
+    component to Cocoa. Palette entry sits next to TMainMenu. Same
+    Chr(1)+pipe-serialized aMenuItems as TMainMenu, same MENUITEM/POPUP/
+    MENUSEPARATOR DSL with DEFINE POPUPMENU <oPop> / END POPUPMENU
+    bookends. CT_POPUPMENU = 201 on macOS (paired with CT_MAINMENU=200);
+    classes.prg HB_CreateComponent now accepts both 136 (Linux) and 201
+    (Mac). HBPopupMenu_Build assembles a standalone NSMenu on demand and
+    pops it via popUpMenuPositioningItem at [NSEvent mouseLocation].
+    UI_PopupMenuNew/UI_PopupMenuShow are the Harbour entry points.
+    UI_SetProp/GetProp/GetAllProps extended so aMenuItems and aOnClick
+    work for both CT_MAINMENU and CT_POPUPMENU. RegenerateFormCode and
+    RestoreFormFromCode emit/parse DEFINE POPUPMENU blocks. SF Symbol
+    "contextualmenu.and.cursorarrow" for the palette icon on macOS 11+.
+
+  - fix(macos-menu): Captions like "Cu&t" rendered the literal ampersand
+    in NSMenu items because Cocoa has no equivalent of Win/GTK mnemonic
+    underlines. Added HB_StripMnemonic helper that drops single "&" and
+    collapses "&&" to a literal "&". Applied at all three caption sites
+    in HBMainMenu_Attach (root popup, sub-popup, leaf item) and the new
+    HBPopupMenu_Build, so menu titles display cleanly without the marker
+    chars on macOS while staying source-compatible with Win/Linux DSL.
+
+  - fix(macos-form): ::Left/::Top assignments in CreateForm() were lost
+    at runtime — the form always centered on screen even when the
+    designer had placed it elsewhere. The nLeft/nTop UI_SetProp branches
+    only flipped FCenter=NO/FPosition=POS_DESIGNED when FWindow already
+    existed, but during CreateForm the NSWindow has not been created yet
+    (it is built later by createWindowWithRunLoop). Moved the flag-flip
+    out of the FWindow guard so the designed origin survives, and only
+    the live setFrameOrigin call stays gated on FWindow != nil.
+
 2026-04-26e
 
   - fix(ide-linux): Forms loaded from a project (vs. forms created via

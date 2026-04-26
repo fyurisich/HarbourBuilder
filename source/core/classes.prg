@@ -3878,7 +3878,7 @@ function HB_CreateComponent( nType, oParent )
             oComp:hCpp := UI_MainMenuNew( oParent:hCpp )
          endif
          return oComp
-      case nType == 136  // CT_POPUPMENU (Linux only for now)
+      case nType == 136 .or. nType == 201  // CT_POPUPMENU (136=Linux, 201=macOS)
          oComp := TPopupMenu():New()
          oComp:oParent := oParent
          if oParent != nil .and. __objHasMsg( oParent, "HCPP" ) .and. oParent:hCpp != 0

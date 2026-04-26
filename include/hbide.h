@@ -159,6 +159,8 @@ class TComponentPalette;
 #define CT_BAND       132
 /* Main menu bar (non-visual; same value as macOS CT_MAINMENU) */
 #define CT_MAINMENU   200
+/* Popup (context) menu (non-visual; macOS CT_POPUPMENU) */
+#define CT_POPUPMENU  201
 #define CT_REPORTLABEL  133
 #define CT_REPORTFIELD  134
 #define CT_REPORTIMAGE  135
