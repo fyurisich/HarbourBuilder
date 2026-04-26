@@ -1,6 +1,18 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-26l
+
+  - fix(macos-palette): UI_PaletteSetCompIcon overrides now apply to
+    components placed past slot 110 of palette.bmp (Connectivity, Git,
+    later AI/Internet entries). The old guard `flat < count` silently
+    dropped overrides whose flat index exceeded the BMP-derived
+    palImages count, so Connectivity rendered text labels for Go..Ruby
+    while Python/Swift (within the BMP range) worked. Fix extends
+    palImages with NSNull placeholders on demand and PalShowTab
+    treats NSNull as "no image" so untouched late slots fall back to
+    text instead of drawing a null cell.
+
 2026-04-26k
 
   - feat(ide-win): Proportional Windows IDE layout. Introduced
