@@ -1,6 +1,22 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-26b
+
+  - fix(ide-codegen/linux): TMainMenu generation produced two bugs in
+    main.prg. (1) A redundant `::oMenu:aMenuItems := "<serialized>"`
+    line was emitted before the DEFINE MENUBAR DSL; when action
+    strings contained literal `"` chars (e.g. `EditAction(Self,"Undo")`)
+    those quotes broke out of the surrounding string literal, leaking
+    `UNDO`/`MENUBAR` as bare tokens — Harbour reported syntax errors
+    at lines 48-49. (2) The DSL header was emitted as bare
+    `DEFINE MENUBAR` instead of `DEFINE MENUBAR ::oMenuN`, but the
+    xcommand `DEFINE MENUBAR <oMenu> => _HBMenuStart(<oMenu>)` requires
+    the menu argument. Drop the redundant aMenuItems assignment (the
+    DSL already sets it via _HBMenuEnd → TMainMenu_Serialize → ASSIGN
+    aMenuItems → UI_SetProp) and add the `::o<ctrl>` argument to the
+    DEFINE MENUBAR header, matching the existing macOS/Win32 codegen.
+
 2026-04-26a
 
   - refactor(menu): TMenuItem now carries its own bAction codeblock —

@@ -829,15 +829,9 @@ static function RegenerateFormCode( cName, hForm )
                cCreate += '   COMPONENT ::o' + cCtrlName + ' TYPE CT_MAINMENU OF Self  // TMainMenu' + e
                cVal := UI_GetProp( hCtrl, "aMenuItems" )
                if ValType( cVal ) == "C" .and. ! Empty( cVal )
-                  // Runtime data transfer: encode Chr(1) field separators as Harbour source expressions
-                  cCreate += '   ::o' + cCtrlName + ':aMenuItems := "' + ;
-                             StrTran( cVal, Chr(1), '"+Chr(1)+"' ) + '"' + e
-                  // aOnClick auto-built by _HBMenuEnd from per-item bAction
-               endif
-               if ValType( cVal ) == "C" .and. ! Empty( cVal )
                   aMenuNodes := HB_ATokens( cVal, "|" )
                   nPendingLevels := {}
-                  cCreate += '   DEFINE MENUBAR' + e
+                  cCreate += '   DEFINE MENUBAR ::o' + cCtrlName + e
                   for nMI := 1 to Len( aMenuNodes )
                      cMNode := aMenuNodes[nMI]
                      aMFields := HB_ATokens( cMNode, Chr(1) )
