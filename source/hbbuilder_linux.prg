@@ -2444,10 +2444,10 @@ static function OpenProjectFile( cFile )
       CodeEditorAddTab( hCodeEditor, cFormName + ".prg" )
       CodeEditorSetTabText( hCodeEditor, Len(aForms) + 1, cFormCode )
 
-      UI_OnSelChange( oDesignForm:hCpp, ;
-         { |hCtrl| OnDesignSelChange( hCtrl ) } )
-      UI_FormOnComponentDrop( oDesignForm:hCpp, ;
-         { |hForm, nType, nL, nT, nW, nH| OnComponentDrop( hForm, nType, nL, nT, nW, nH ) } )
+      // Wire SelChange + ComponentDrop + OnResize. Without OnResize the
+      // form's editor/inspector coordinates would not refresh when the
+      // user moves or resizes the design form.
+      WireDesignForm()
    next
 
    // Load modules

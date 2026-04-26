@@ -1,6 +1,17 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-26e
+
+  - fix(ide-linux): Forms loaded from a project (vs. forms created via
+    File > New) did not refresh the code editor or inspector when moved
+    or resized in the designer. OpenProjectFile was wiring SelChange
+    and ComponentDrop manually but skipping OnResize — the existing
+    WireDesignForm() helper sets all three. Replaced the manual wiring
+    with the helper. Now after opening a project, dragging the design
+    form updates ::Left/::Top in the code tab and the inspector cells
+    in real time, same as for newly created forms.
+
 2026-04-26d
 
   - feat(linux): TPopupMenu — non-visual context-menu component, palette

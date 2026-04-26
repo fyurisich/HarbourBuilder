@@ -18,8 +18,8 @@ ENDCLASS
 METHOD CreateForm() CLASS TForm1
 
    ::Title  := "TPopupMenu Sample"
-   ::Left   := 807
-   ::Top    := 313
+   ::Left   := 1042
+   ::Top    := 323
    ::Width  := 480
    ::Height := 280
 
