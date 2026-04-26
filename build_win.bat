@@ -32,22 +32,39 @@ for %%d in (C:\bcc77c C:\bcc77 C:\bcc C:\Embarcadero\BCC77 C:\Embarcadero\BCC) d
    )
 )
 
-REM --- Check MSVC x86 (via vswhere) ---
+REM --- Check MSVC (x86 / x64 via vswhere) ---
+REM Offers each arch as a separate entry when both cl.exe and the matching
+REM Harbour lib dir (lib\win\msvc or lib\win\msvc64) exist.
 set MSVC_FOUND=0
 set VSWHERE="%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if not exist %VSWHERE% set VSWHERE="%ProgramFiles%\Microsoft Visual Studio\Installer\vswhere.exe"
 if exist %VSWHERE% (
    for /f "usebackq tokens=*" %%i in (`%VSWHERE% -latest -property installationPath`) do set VSDIR=%%i
    if defined VSDIR (
       REM Find MSVC tools version
       for /d %%v in ("!VSDIR!\VC\Tools\MSVC\*") do set MSVC_VER_DIR=%%v
       if defined MSVC_VER_DIR (
+         REM x86
          if exist "!MSVC_VER_DIR!\bin\Hostx86\x86\cl.exe" (
-            set MSVC_FOUND=1
-            set MSVC_BASE=!MSVC_VER_DIR!
-            set /a N_COMPILERS+=1
-            set COMP_!N_COMPILERS!=msvc
-            set COMP_!N_COMPILERS!_NAME=MSVC x86 [!MSVC_VER_DIR!]
-            set COMP_!N_COMPILERS!_DIR=!MSVC_VER_DIR!
+            if exist "%HBDIR%\lib\win\msvc\hbvm.lib" (
+               set MSVC_FOUND=1
+               set /a N_COMPILERS+=1
+               set COMP_!N_COMPILERS!=msvc
+               set COMP_!N_COMPILERS!_ARCH=x86
+               set COMP_!N_COMPILERS!_NAME=MSVC x86 [!MSVC_VER_DIR!]
+               set COMP_!N_COMPILERS!_DIR=!MSVC_VER_DIR!
+            )
+         )
+         REM x64
+         if exist "!MSVC_VER_DIR!\bin\Hostx64\x64\cl.exe" (
+            if exist "%HBDIR%\lib\win\msvc64\hbvm.lib" (
+               set MSVC_FOUND=1
+               set /a N_COMPILERS+=1
+               set COMP_!N_COMPILERS!=msvc
+               set COMP_!N_COMPILERS!_ARCH=x64
+               set COMP_!N_COMPILERS!_NAME=MSVC x64 [!MSVC_VER_DIR!]
+               set COMP_!N_COMPILERS!_DIR=!MSVC_VER_DIR!
+            )
          )
       )
    )
@@ -88,6 +105,7 @@ REM ============================================================
 if %N_COMPILERS%==1 (
    set COMPILER=!COMP_1!
    set COMPILER_DIR=!COMP_1_DIR!
+   set COMPILER_ARCH=!COMP_1_ARCH!
    echo Using: !COMP_1_NAME!
    goto :build
 )
@@ -107,6 +125,7 @@ if %CHOICE% GTR %N_COMPILERS% set CHOICE=%N_COMPILERS%
 
 set COMPILER=!COMP_%CHOICE%!
 set COMPILER_DIR=!COMP_%CHOICE%_DIR!
+set COMPILER_ARCH=!COMP_%CHOICE%_ARCH!
 echo.
 echo Using: !COMP_%CHOICE%_NAME!
 
@@ -158,11 +177,22 @@ goto :copy_dlls
 REM ============================================================
 :build_msvc
 REM ============================================================
-set HBBIN=%HBDIR%\bin\win\msvc
-set HBLIB=%HBDIR%\lib\win\msvc
-set MSVC_BIN=%COMPILER_DIR%\bin\Hostx86\x86
+REM Default to x64 when ARCH not set (e.g. legacy callers)
+if not defined COMPILER_ARCH set COMPILER_ARCH=x64
+
+set HBBIN=%HBDIR%\bin
+if /i "%COMPILER_ARCH%"=="x64" (
+   set HBLIB=%HBDIR%\lib\win\msvc64
+   set MSVC_BIN=%COMPILER_DIR%\bin\Hostx64\x64
+   set MSVC_LIB=%COMPILER_DIR%\lib\x64
+   set SDK_ARCH=x64
+) else (
+   set HBLIB=%HBDIR%\lib\win\msvc
+   set MSVC_BIN=%COMPILER_DIR%\bin\Hostx86\x86
+   set MSVC_LIB=%COMPILER_DIR%\lib\x86
+   set SDK_ARCH=x86
+)
 set MSVC_INC=%COMPILER_DIR%\include
-set MSVC_LIB=%COMPILER_DIR%\lib\x86
 
 REM Find Windows SDK
 set WINKITDIR=C:\Program Files (x86)\Windows Kits\10
@@ -175,8 +205,8 @@ if not defined WINKITVER (
 set UCRT_INC=%WINKITDIR%\Include\%WINKITVER%\ucrt
 set UM_INC=%WINKITDIR%\Include\%WINKITVER%\um
 set SHARED_INC=%WINKITDIR%\Include\%WINKITVER%\shared
-set UCRT_LIB=%WINKITDIR%\Lib\%WINKITVER%\ucrt\x86
-set UM_LIB=%WINKITDIR%\Lib\%WINKITVER%\um\x86
+set UCRT_LIB=%WINKITDIR%\Lib\%WINKITVER%\ucrt\%SDK_ARCH%
+set UM_LIB=%WINKITDIR%\Lib\%WINKITVER%\um\%SDK_ARCH%
 
 echo === Step 1: Compile Harbour PRG ===
 cd /d "%SRCDIR%"

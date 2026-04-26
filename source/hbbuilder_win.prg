@@ -25,6 +25,8 @@ static oDesignForm   // Design form (active, floats on top of editor)
 static hCodeEditor   // Code editor (background, right of inspector)
 static nScreenW      // Screen width
 static nScreenH      // Screen height
+static nUIScale      // Proportional UI scale (1.0 = 1920x1080 reference)
+static nUIFont       // Default UI font size in pt (scaled)
 static cCurrentFile  // Current file path (empty = untitled)
 static lSwitching := .f.  // Guard against re-entrant SwitchToForm
 static lSyncingFromCode := .f.  // Guard: true while syncing code editor -> form
@@ -46,6 +48,7 @@ function Main()
    local nBarH, nInsW, nEditorX, nEditorW, nEditorH
    local nFormX, nFormY, nInsTop, nEditorTop, nBottomY
    local cIcoDir, aCI0, cCompLabel
+   local nDFW, nDFH
 
    // Install global error handler as early as possible so any runtime
    // error (including from Win32 callbacks like designer clicks, menu
@@ -76,16 +79,23 @@ function Main()
    aForms := {}
    nActiveForm := 0
 
+   // Proportional scale: reference 1920x1080 physical. Clamp + dampen so
+   // high-DPI screens don't blow widgets up to absurd sizes.
+   nUIScale := Max( 0.85, Min( 1.20, nScreenW / 1920.0 ) )
+   nUIFont  := Max( 9, Int( 11 * nUIScale ) )
+
    // C++Builder classic proportions scaled to current screen
    // Reference: 1024x768 -> Inspector 250px (24.4%), Bar 140px
-   nBarH    := 160                           // title + menu + 2 toolbars(40+40) + palette
-   nInsW    := Max( 270, Int( nScreenW * 0.18 ) )  // at least 270px to show property values
+   nBarH    := Max( 120, Int( 160 * nUIScale ) )   // title + menu + 2 toolbars + palette
+   // Inspector: wide enough for long property names ("nAlphaBlendValue" etc.)
+   // at the scaled font size. Grows with screen and DPI.
+   nInsW    := Max( Int( 320 * nUIScale ), Int( nScreenW * 0.20 ) )
 
    // === Window 1: Main Bar (full screen width) ===
    cCompLabel := "Visual IDE for Harbour"
 
    DEFINE FORM oIDE TITLE "HbBuilder 1.0 - " + cCompLabel ;
-      SIZE nScreenW, nBarH FONT "Segoe UI", 12 APPBAR
+      SIZE nScreenW, nBarH FONT "Segoe UI", nUIFont APPBAR
 
    UI_FormSetPos( oIDE:hCpp, 0, 0 )
    oIDE:Show()
@@ -105,9 +115,14 @@ function Main()
    nBottomY := W32_GetWorkAreaHeight() + 16  // +16 to cover bottom DWM border
    nEditorH := nBottomY - nEditorTop
 
-   // Form Designer: default position
-   nFormX := 1129
-   nFormY := 456
+   // Form Designer: default position centered in editor area, clamped to work area.
+   // Use proportional designer footprint (matches CreateDesignForm sizing).
+   nDFW := Min( Max( 480, Int( 650 * nUIScale ) ), nScreenW - 80 )
+   nDFH := Min( Max( 320, Int( 421 * nUIScale ) ), W32_GetWorkAreaHeight() - 120 )
+   nFormX := nEditorX + Int( ( nEditorW - nDFW ) / 2 )
+   nFormY := nEditorTop + Int( ( nEditorH - nDFH ) * 0.35 )
+   nFormX := Max( nEditorX + 10, Min( nFormX, nScreenW - nDFW - 20 ) )
+   nFormY := Max( nEditorTop + 10, Min( nFormY, W32_GetWorkAreaHeight() - nDFH - 20 ) )
 
    // Menu bar
    DEFINE MENUBAR OF oIDE
@@ -698,14 +713,27 @@ return { ;
 
 static function CreateDesignForm( nX, nY )
 
-   local cName, nIdx
+   local cName, nIdx, nScrW, nWorkH, nFW, nFH, nFont
 
    // Generate form name: Form1, Form2, Form3...
    nIdx := Len( aForms ) + 1
    cName := "Form" + LTrim( Str( nIdx ) )
 
+   // Proportional design-form size & font, capped by available work area.
+   nScrW  := W32_GetScreenWidth()
+   nWorkH := W32_GetWorkAreaHeight()
+   nFW := Min( Int( 650 * iif( nUIScale != nil, nUIScale, 1.0 ) ), nScrW  - 80 )
+   nFH := Min( Int( 421 * iif( nUIScale != nil, nUIScale, 1.0 ) ), nWorkH - 120 )
+   nFW := Max( 480, nFW )
+   nFH := Max( 320, nFH )
+   nFont := iif( nUIFont != nil, nUIFont, 12 )
+
+   // Clamp position so the designer fits in the visible work area.
+   nX := Max( 0, Min( nX, nScrW  - nFW - 10 ) )
+   nY := Max( 0, Min( nY, nWorkH - nFH - 10 ) )
+
    // Create new empty form (like C++Builder File > New > VCL Forms Application)
-   DEFINE FORM oDesignForm TITLE cName SIZE 650, 421 FONT "Segoe UI", 12 SIZABLE
+   DEFINE FORM oDesignForm TITLE cName SIZE nFW, nFH FONT "Segoe UI", nFont SIZABLE
    UI_FormSetPos( oDesignForm:hCpp, nX, nY )
    if lDarkMode
       UI_FormSetBgColor( oDesignForm:hCpp, 45 + 45 * 256 + 45 * 65536 )

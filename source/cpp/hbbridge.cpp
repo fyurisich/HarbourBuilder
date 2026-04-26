@@ -46,12 +46,30 @@ typedef struct {
    W32MenuNode nodes[ MAX_MENU_NODES ];
    int         nCount;
    PHB_ITEM    pOnClick;          /* aOnClick: array of codeblocks indexed by node */
+   BOOL        bIsPopup;          /* TRUE for TPopupMenu (no menu bar) */
 } HBW32Menu;
 
 #define HBW32MENU_MAGIC  0x4D454E55  /* 'MENU' */
 
-static HBW32Menu * s_pMenu  = NULL;
+#define HBW32_MAX_MENUS  64
+static HBW32Menu * s_apMenus[ HBW32_MAX_MENUS ];
+static int         s_nMenuCount = 0;
+static HBW32Menu * s_pMenu      = NULL;   /* most-recent main menu (legacy) */
 extern "C" HACCEL  g_hMenuAccel = NULL;   /* read by TForm::Run() loop */
+
+static int HBW32_IsRegistered( HBW32Menu * pm )
+{
+   int i;
+   for( i = 0; i < s_nMenuCount; i++ )
+      if( s_apMenus[ i ] == pm ) return 1;
+   return 0;
+}
+
+static void HBW32_Register( HBW32Menu * pm )
+{
+   if( s_nMenuCount < HBW32_MAX_MENUS )
+      s_apMenus[ s_nMenuCount++ ] = pm;
+}
 
 static void ParseMenuSerial( HBW32Menu * pm, const char * pSer )
 {
@@ -212,8 +230,98 @@ HB_FUNC( UI_MAINMENUNEW )
    pm->dwMagic     = HBW32MENU_MAGIC;
    pm->pParentForm = pf;
    pm->hWnd        = pf ? pf->FHandle : NULL;
+   pm->bIsPopup    = FALSE;
+   HBW32_Register( pm );
    s_pMenu         = pm;
    hb_retnint( (HB_PTRUINT) pm );
+}
+
+/* Build a standalone popup HMENU from the parsed nodes (level 0 = popup root) */
+static HMENU BuildPopupHMenu( HBW32Menu * pm )
+{
+   HMENU hRoot = CreatePopupMenu();
+   HMENU hStack[ 8 ];
+   int   nNextId = MENU_ID_BASE, i;
+
+   memset( hStack, 0, sizeof( hStack ) );
+   hStack[ 0 ] = hRoot;
+
+   for( i = 0; i < pm->nCount; i++ )
+   {
+      W32MenuNode * pN = &pm->nodes[ i ];
+      int nLv  = pN->nLevel;
+      int bSub = ( i + 1 < pm->nCount && pm->nodes[ i + 1 ].nLevel > nLv );
+      HMENU hPar = ( nLv >= 0 && nLv < 8 ) ? hStack[ nLv ] : hRoot;
+      if( !hPar ) hPar = hRoot;
+
+      if( pN->bSeparator ) {
+         AppendMenuA( hPar, MF_SEPARATOR, 0, NULL );
+      } else if( bSub ) {
+         HMENU hSub = CreatePopupMenu();
+         if( nLv + 1 < 8 ) hStack[ nLv + 1 ] = hSub;
+         AppendMenuA( hPar, MF_POPUP, (UINT_PTR) hSub, pN->szCaption );
+      } else {
+         DWORD dwF = MF_STRING | ( pN->bEnabled ? 0 : MF_GRAYED );
+         pN->nCmdId = nNextId++;
+         AppendMenuA( hPar, dwF, (UINT_PTR) pN->nCmdId, pN->szCaption );
+      }
+   }
+   return hRoot;
+}
+
+/* UI_PopupMenuNew( hParentForm ) → HBW32Menu * (non-visual popup) */
+HB_FUNC( UI_POPUPMENUNEW )
+{
+   TControl * pf = (TControl *)(HB_PTRUINT) hb_parnint( 1 );
+   HBW32Menu * pm = (HBW32Menu *) calloc( 1, sizeof( HBW32Menu ) );
+   pm->dwMagic     = HBW32MENU_MAGIC;
+   pm->pParentForm = pf;
+   pm->hWnd        = pf ? pf->FHandle : NULL;
+   pm->bIsPopup    = TRUE;
+   HBW32_Register( pm );
+   hb_retnint( (HB_PTRUINT) pm );
+}
+
+/* UI_PopupMenuShow( hPopup ) — build HMENU and TrackPopupMenu at cursor */
+HB_FUNC( UI_POPUPMENUSHOW )
+{
+   HBW32Menu * pm = (HBW32Menu *)(HB_PTRUINT) hb_parnint( 1 );
+   if( !pm || !HBW32_IsRegistered( pm ) ||
+       pm->dwMagic != HBW32MENU_MAGIC || !pm->bIsPopup )
+      return;
+
+   HMENU hMenu = BuildPopupHMenu( pm );
+   if( !hMenu ) return;
+
+   HWND hWnd = pm->pParentForm ? pm->pParentForm->FHandle : GetForegroundWindow();
+   if( !hWnd ) hWnd = GetActiveWindow();
+   POINT pt;
+   GetCursorPos( &pt );
+
+   /* TrackPopupMenu requires the owner window to be foreground */
+   if( hWnd ) SetForegroundWindow( hWnd );
+
+   int nCmd = TrackPopupMenu( hMenu,
+      TPM_RETURNCMD | TPM_LEFTALIGN | TPM_TOPALIGN | TPM_RIGHTBUTTON,
+      pt.x, pt.y, 0, hWnd, NULL );
+
+   if( nCmd >= MENU_ID_BASE && pm->pOnClick ) {
+      HB_SIZE nLen = hb_arrayLen( pm->pOnClick );
+      int ii;
+      for( ii = 0; ii < pm->nCount; ii++ ) {
+         if( pm->nodes[ ii ].nCmdId == nCmd && (HB_SIZE)( ii + 1 ) <= nLen ) {
+            PHB_ITEM pBlk = hb_arrayGetItemPtr( pm->pOnClick, ii + 1 );
+            if( pBlk && HB_IS_BLOCK( pBlk ) ) {
+               hb_vmPushEvalSym();
+               hb_vmPush( pBlk );
+               hb_vmSend( 0 );
+            }
+            break;
+         }
+      }
+   }
+
+   DestroyMenu( hMenu );
 }
 
 /* HBMenu_AttachPending — TForm::Run/Show calls this after CreateHandle so
@@ -1507,17 +1615,17 @@ HB_FUNC( UI_SETPROP )
 {
    const char * szProp = hb_parc(2);
 
-   /* TMainMenu fast-path: detect HBW32Menu* by global identity check */
+   /* TMainMenu / TPopupMenu fast-path: registered HBW32Menu* */
    {
       HBW32Menu * pm = (HBW32Menu *)(HB_PTRUINT) hb_parnint(1);
-      if( pm && pm == s_pMenu &&
+      if( pm && HBW32_IsRegistered( pm ) &&
           pm->dwMagic == HBW32MENU_MAGIC && szProp )
       {
          if( strcmp( szProp, "aMenuItems" ) == 0 && HB_ISCHAR(3) ) {
             const char * pSer = hb_parc(3);
             if( pSer && *pSer ) {
                ParseMenuSerial( pm, pSer );
-               BuildHMenu( pm );
+               if( !pm->bIsPopup ) BuildHMenu( pm );
             }
             return;
          }

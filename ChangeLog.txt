@@ -1,6 +1,59 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-26k
+
+  - feat(ide-win): Proportional Windows IDE layout. Introduced
+    nUIScale (clamped 0.85..1.20 from nScreenW / 1920) and nUIFont
+    (Int(11 * nUIScale), min 9pt) statics in hbbuilder_win.prg.
+    Bar height, inspector width, designer-form footprint and the
+    IDE menu/title font now derive from nUIScale instead of fixed
+    pixel constants. CreateDesignForm uses the same proportional
+    sizing and clamps X/Y so the designer always fits the work
+    area; the previous hardcoded (1129, 456) origin is replaced by
+    "centered in editor area, biased 35% from top". Ratios match
+    the classic 1024x768 reference (Inspector 24%, Bar 140px) but
+    grow/shrink coherently with the screen.
+
+  - feat(toolbar-win): DPI-aware toolbar icon + button scaling.
+    TToolBar::LoadImages reads system DPI via GetDeviceCaps and
+    rescales the 32x32 source bitmap with HALFTONE StretchBlt
+    onto a larger ImageList cell when DPI > 96 (32 -> 48 at 200%,
+    button 40 -> 60). A 50% dampening factor keeps icons
+    proportional without dominating the bar at high DPI. Falls
+    back to the original 32/40 sizes at 96 DPI so legacy displays
+    are unchanged.
+
+  - feat(inspector-win): DPI-aware Inspector font + name column.
+    INS_CREATE now picks lf.lfHeight from MulDiv( 9, dampedDpi,
+    72 ) with the same 50% dampening (96 at 96 DPI, 144 at 192
+    DPI), and scales the property/event name column from 205 px
+    to MulDiv( 205, dampedDpi, 96 ) (308 px at 200%). COL_NAME_W
+    became a runtime variable (s_colNameW) so the rest of the
+    inspector keeps reading a single source of truth.
+
+  - feat(win): TPopupMenu — port of the Linux/macOS non-visual
+    context-menu component to Win32. Adds UI_PopupMenuNew /
+    UI_PopupMenuShow Harbour entry points in hbbridge.cpp.
+    BuildPopupHMenu assembles a standalone HMENU on demand from
+    the parsed nodes (level 0 = root) and TrackPopupMenu pops it
+    at the cursor with the parent form raised to foreground first
+    so the keyboard focus dance does not eat the click. Replaced
+    the single s_pMenu global with a fixed-size registry
+    (s_apMenus[64] + HBW32_IsRegistered/Register) so popups and
+    the main menu coexist on the same form. UI_SetProp fast-path
+    accepts both kinds and skips BuildHMenu for popups (they are
+    rebuilt per show).
+
+  - feat(build-win): MSVC x64 in build_win.bat. vswhere detection
+    now offers x86 and x64 as separate compiler choices when both
+    cl.exe (Hostx86\x86 + Hostx64\x64) and the matching Harbour
+    lib dirs (lib\win\msvc + lib\win\msvc64) are present.
+    :build_msvc routes HBLIB / MSVC_BIN / MSVC_LIB / SDK arch
+    based on COMPILER_ARCH; UCRT/UM lib paths follow SDK_ARCH.
+    Also probes vswhere under both "Program Files" and "Program
+    Files (x86)".
+
 2026-04-26j
 
   - feat(macos-palette): Wired Lazarus VCL-style component icons (44

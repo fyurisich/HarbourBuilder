@@ -425,14 +425,56 @@ void TToolBar::LoadImages( const char * szBmpPath )
    TBLog( "LoadImageA: hBmp=%p error=%lu", (void*)hBmp, GetLastError() );
    if( !hBmp ) return;
 
-   FImageList = ImageList_Create( 32, 32, ILC_COLOR24 | ILC_MASK, 16, 4 );
-   int nAdded = ImageList_AddMasked( FImageList, hBmp, RGB(255, 0, 255) );
-   int nCount = ImageList_GetImageCount( FImageList );
-   TBLog( "ImageList: handle=%p added=%d count=%d", (void*)FImageList, nAdded, nCount );
-   DeleteObject( hBmp );
+   /* Scale icon + button size by current system DPI so toolbar buttons look
+      proportional on high-DPI displays. Apply a 50% dampening factor so
+      icons grow with DPI but don't dominate (32->48 at 200%, not 32->64).
+      Source bitmap is 32x32 cells; we stretch onto a larger bitmap when
+      DPI > 96 so icons render crisp. */
+   {
+      int dpi = 96;
+      HDC hScr = GetDC( NULL );
+      if( hScr ) { dpi = GetDeviceCaps( hScr, LOGPIXELSY ); ReleaseDC( NULL, hScr ); }
+      int icoSz = 32 + MulDiv( 32, dpi - 96, 192 );  /* 32 at 96, 48 at 192 */
+      int btnSz = 40 + MulDiv( 40, dpi - 96, 192 );  /* 40 at 96, 60 at 192 */
+      if( icoSz < 32 ) icoSz = 32;
+      if( btnSz < 40 ) btnSz = 40;
 
-   SendMessage( FHandle, TB_SETIMAGELIST, 0, (LPARAM) FImageList );
-   SendMessage( FHandle, TB_SETBUTTONSIZE, 0, MAKELONG(40, 40) );
+      HBITMAP hBmpScaled = hBmp;
+      if( icoSz != 32 ) {
+         BITMAP bmpInfo;
+         if( GetObject( hBmp, sizeof(bmpInfo), &bmpInfo ) ) {
+            int srcW = bmpInfo.bmWidth, srcH = bmpInfo.bmHeight;
+            int dstW = MulDiv( srcW, icoSz, 32 );
+            int dstH = MulDiv( srcH, icoSz, 32 );
+            HDC hdcS = GetDC( NULL );
+            HDC hSrc = CreateCompatibleDC( hdcS );
+            HDC hDst = CreateCompatibleDC( hdcS );
+            HBITMAP hOut = CreateCompatibleBitmap( hdcS, dstW, dstH );
+            HGDIOBJ oS = SelectObject( hSrc, hBmp );
+            HGDIOBJ oD = SelectObject( hDst, hOut );
+            SetStretchBltMode( hDst, HALFTONE );
+            SetBrushOrgEx( hDst, 0, 0, NULL );
+            StretchBlt( hDst, 0, 0, dstW, dstH, hSrc, 0, 0, srcW, srcH, SRCCOPY );
+            SelectObject( hSrc, oS );
+            SelectObject( hDst, oD );
+            DeleteDC( hSrc );
+            DeleteDC( hDst );
+            ReleaseDC( NULL, hdcS );
+            DeleteObject( hBmp );
+            hBmpScaled = hOut;
+         }
+      }
+
+      FImageList = ImageList_Create( icoSz, icoSz, ILC_COLOR24 | ILC_MASK, 16, 4 );
+      int nAdded = ImageList_AddMasked( FImageList, hBmpScaled, RGB(255, 0, 255) );
+      int nCount = ImageList_GetImageCount( FImageList );
+      TBLog( "ImageList: handle=%p added=%d count=%d dpi=%d ico=%d btn=%d",
+             (void*)FImageList, nAdded, nCount, dpi, icoSz, btnSz );
+      DeleteObject( hBmpScaled );
+
+      SendMessage( FHandle, TB_SETIMAGELIST, 0, (LPARAM) FImageList );
+      SendMessage( FHandle, TB_SETBUTTONSIZE, 0, MAKELONG(btnSz, btnSz) );
+   }
    TBLog( "TB_SETIMAGELIST and TB_SETBUTTONSIZE sent" );
 
    /* Remove LIST style and MIXEDBUTTONS so buttons show only icons */

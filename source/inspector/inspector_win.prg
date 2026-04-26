@@ -224,7 +224,10 @@ HB_FUNC( W32_SETIDEDARKMODE ) { s_bDarkIDE = hb_parl(1) ? 1 : 0; g_bDarkIDE = s_
 #define CLR_WND_BG    ( s_bDarkIDE ? RGB(30,30,30) : GetSysColor(COLOR_BTNFACE) )
 
 #define MAX_ROWS 64
-#define COL_NAME_W 205
+/* Scaled at runtime in INS_Init: 205px at 96 DPI, doubled at 192 DPI etc.
+   Used for "Property"/"Event" name column width. */
+static int s_colNameW = 205;
+#define COL_NAME_W (s_colNameW)
 
 /* Debug log to file */
 static void INSLOG( const char * fmt, ... )
@@ -2340,10 +2343,22 @@ HB_FUNC( INS_CREATE )
    d->pOnEventDblClick = NULL;
    d->pOnPropChanged = NULL;
 
-   { LOGFONTA lf = {0}; lf.lfHeight = -18; lf.lfCharSet = DEFAULT_CHARSET;
+   { LOGFONTA lf = {0};
+     /* Scale font + name-column width by current system DPI with a 50%
+        dampening factor so they grow with DPI but don't dominate
+        (font 9pt -> 12pt at 200% DPI; col 205 -> 308 at 200%). */
+     int sysDpi = 96;
+     { HDC hScreen = GetDC( NULL );
+       sysDpi = GetDeviceCaps( hScreen, LOGPIXELSY );
+       ReleaseDC( NULL, hScreen ); }
+     int dampedDpi = 96 + ( sysDpi - 96 ) / 2;  /* 96 at 96, 144 at 192 */
+     if( dampedDpi < 96 ) dampedDpi = 96;
+     lf.lfHeight = -MulDiv( 9, dampedDpi, 72 );
+     lf.lfCharSet = DEFAULT_CHARSET;
      lstrcpyA(lf.lfFaceName, "Segoe UI");
      d->hFont = CreateFontIndirectA(&lf);
-     lf.lfWeight = FW_BOLD; d->hBold = CreateFontIndirectA(&lf); }
+     lf.lfWeight = FW_BOLD; d->hBold = CreateFontIndirectA(&lf);
+     s_colNameW = MulDiv( 205, dampedDpi, 96 ); }
 
    d->hBrush = CreateSolidBrush( CLR_WND_BG );
 
