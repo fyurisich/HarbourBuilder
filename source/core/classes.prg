@@ -4054,13 +4054,222 @@ METHOD GetVar( cName ) CLASS TPython
 return PY_GetVar( cName )
 
 CLASS TNode INHERIT TInteropRuntime
+   DATA cNodePath  INIT ""
+   DATA cStdOut    INIT ""
+   DATA hVars      INIT {=>}
+
+   METHOD Start()
+   METHOD Stop()
+   METHOD Exec( cCode )
+   METHOD Eval( cExpr )
+   METHOD SetVar( cName, xValue )
+   METHOD GetVar( cName )
 ENDCLASS
+
+//----------------------------------------------------------------------------//
+METHOD Start() CLASS TNode
+
+   local aPaths := { ::cRuntimePath, ;
+                     "/opt/homebrew/bin/node", ;
+                     "/usr/local/bin/node", ;
+                     "/usr/bin/node", ;
+                     "node" }
+   local cPath, cOut := "", cErr := "", nRc
+
+   for each cPath in aPaths
+      if Empty( cPath ); loop; endif
+      if cPath != "node" .and. ! hb_FileExists( cPath ); loop; endif
+      nRc := hb_processRun( cPath + " --version", , @cOut, @cErr )
+      if nRc == 0
+         ::cNodePath  := cPath
+         ::lRunning   := .T.
+         ::cLastError := ""
+         ::cLastResult := AllTrim( cOut )
+         if ValType( ::bOnReady ) == "B"; Eval( ::bOnReady, Self ); endif
+         return Self
+      endif
+   next
+
+   ::cLastError := "node not found. Install via https://nodejs.org"
+   ::lRunning   := .F.
+   if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+
+return Self
+
+METHOD Stop() CLASS TNode
+   ::lRunning := .F.
+return Self
+
+METHOD Exec( cCode ) CLASS TNode
+
+   local cName, xVal, cLets := "", cFull, cOut := "", cErr := "", nRc, cFile
+
+   if ! ::lRunning; ::Start(); endif
+   if ! ::lRunning; return .F.; endif
+
+   for each cName in hb_HKeys( ::hVars )
+      xVal   := ::hVars[ cName ]
+      cLets += "let " + cName + " = " + JsLit( xVal ) + ";" + Chr(10)
+   next
+
+   cFull := cLets + cCode
+   cFile := hb_DirTemp() + "hbnode_" + hb_StrFormat( "%d", hb_milliSeconds() ) + ".js"
+   hb_MemoWrit( cFile, cFull )
+
+   nRc := hb_processRun( ::cNodePath + " " + cFile + " 2>&1", , @cOut, @cErr )
+   FErase( cFile )
+
+   ::cStdOut     := cOut + cErr
+   ::cLastResult := ::cStdOut
+
+   if nRc != 0
+      ::cLastError := ::cStdOut
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+      return .F.
+   endif
+   if ! Empty( ::cStdOut ) .and. ValType( ::bOnOutput ) == "B"
+      Eval( ::bOnOutput, Self, ::cStdOut )
+   endif
+
+return .T.
+
+METHOD Eval( cExpr ) CLASS TNode
+
+   local cWrap := "console.log(JSON.stringify(" + cExpr + "));"
+
+   if ! ::Exec( cWrap ); return ""; endif
+
+return AllTrim( ::cStdOut )
+
+METHOD SetVar( cName, xValue ) CLASS TNode
+   ::hVars[ cName ] := xValue
+return .T.
+
+METHOD GetVar( cName ) CLASS TNode
+   if hb_HHasKey( ::hVars, cName ); return ::hVars[ cName ]; endif
+return nil
+
+//----------------------------------------------------------------------------//
+// JS literal helper (for TNode SetVar injection)
+static function JsLit( x )
+   local cT := ValType( x )
+   do case
+   case cT == "C"; return '"' + hb_StrReplace( x, '"', '\"' ) + '"'
+   case cT == "N"; return hb_ntos( x )
+   case cT == "L"; return iif( x, "true", "false" )
+   case cT == "D"; return '"' + DToC( x ) + '"'
+   endcase
+return '""'
 
 CLASS TLua INHERIT TInteropRuntime
 ENDCLASS
 
 CLASS TRuby INHERIT TInteropRuntime
+   DATA cRubyPath INIT ""
+   DATA cStdOut   INIT ""
+   DATA hVars     INIT {=>}
+
+   METHOD Start()
+   METHOD Stop()
+   METHOD Exec( cCode )
+   METHOD Eval( cExpr )
+   METHOD SetVar( cName, xValue )
+   METHOD GetVar( cName )
 ENDCLASS
+
+//----------------------------------------------------------------------------//
+METHOD Start() CLASS TRuby
+
+   local aPaths := { ::cRuntimePath, ;
+                     "/opt/homebrew/bin/ruby", ;
+                     "/usr/local/bin/ruby", ;
+                     "/usr/bin/ruby", ;
+                     "ruby" }
+   local cPath, cOut := "", cErr := "", nRc
+
+   for each cPath in aPaths
+      if Empty( cPath ); loop; endif
+      if cPath != "ruby" .and. ! hb_FileExists( cPath ); loop; endif
+      nRc := hb_processRun( cPath + " --version", , @cOut, @cErr )
+      if nRc == 0
+         ::cRubyPath  := cPath
+         ::lRunning   := .T.
+         ::cLastError := ""
+         ::cLastResult := AllTrim( cOut )
+         if ValType( ::bOnReady ) == "B"; Eval( ::bOnReady, Self ); endif
+         return Self
+      endif
+   next
+
+   ::cLastError := "ruby not found. Install via brew or rvm."
+   ::lRunning   := .F.
+   if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+
+return Self
+
+METHOD Stop() CLASS TRuby
+   ::lRunning := .F.
+return Self
+
+METHOD Exec( cCode ) CLASS TRuby
+
+   local cName, xVal, cLets := "", cFull, cFile, cOut := "", cErr := "", nRc
+
+   if ! ::lRunning; ::Start(); endif
+   if ! ::lRunning; return .F.; endif
+
+   for each cName in hb_HKeys( ::hVars )
+      xVal   := ::hVars[ cName ]
+      cLets += cName + " = " + RubyLit( xVal ) + Chr(10)
+   next
+
+   cFull := cLets + cCode
+   cFile := hb_DirTemp() + "hbruby_" + hb_StrFormat( "%d", hb_milliSeconds() ) + ".rb"
+   hb_MemoWrit( cFile, cFull )
+
+   nRc := hb_processRun( ::cRubyPath + " " + cFile + " 2>&1", , @cOut, @cErr )
+   FErase( cFile )
+
+   ::cStdOut     := cOut + cErr
+   ::cLastResult := ::cStdOut
+
+   if nRc != 0
+      ::cLastError := ::cStdOut
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+      return .F.
+   endif
+   if ! Empty( ::cStdOut ) .and. ValType( ::bOnOutput ) == "B"
+      Eval( ::bOnOutput, Self, ::cStdOut )
+   endif
+
+return .T.
+
+METHOD Eval( cExpr ) CLASS TRuby
+
+   local cWrap := "puts (" + cExpr + ").inspect"
+
+   if ! ::Exec( cWrap ); return ""; endif
+
+return AllTrim( ::cStdOut )
+
+METHOD SetVar( cName, xValue ) CLASS TRuby
+   ::hVars[ cName ] := xValue
+return .T.
+
+METHOD GetVar( cName ) CLASS TRuby
+   if hb_HHasKey( ::hVars, cName ); return ::hVars[ cName ]; endif
+return nil
+
+//----------------------------------------------------------------------------//
+static function RubyLit( x )
+   local cT := ValType( x )
+   do case
+   case cT == "C"; return '"' + hb_StrReplace( x, '"', '\"' ) + '"'
+   case cT == "N"; return hb_ntos( x )
+   case cT == "L"; return iif( x, "true", "false" )
+   case cT == "D"; return '"' + DToC( x ) + '"'
+   endcase
+return '""'
 
 // Compiled languages: add build flags + Build() / OnBuild hook
 
@@ -4072,11 +4281,180 @@ CLASS TGo INHERIT TInteropRuntime
 ENDCLASS
 
 CLASS TRust INHERIT TInteropRuntime
-   DATA cCompileFlags INIT ""
-   DATA bOnBuild      INIT nil
-   METHOD Build()    VIRTUAL
+   DATA cCompileFlags INIT ""        // extra rustc flags (e.g. "-O")
+   DATA cRustcPath    INIT ""        // resolved rustc binary
+   DATA cWorkDir      INIT ""        // build working dir (auto = temp)
+   DATA cBinPath      INIT ""        // last compiled binary
+   DATA cBuildOutput  INIT ""        // stderr from last rustc invocation
+   DATA cStdOut       INIT ""        // stdout from last Run()
+   DATA hVars         INIT {=>}      // SetVar storage (injected into Eval)
+   DATA bOnBuild      INIT nil       // block( oSelf, lOk, cBuildOutput )
+
+   METHOD Start()
+   METHOD Stop()
+   METHOD Build( cSource )
+   METHOD Run( cArgs )
+   METHOD Exec( cCode )
+   METHOD Eval( cExpr )
+   METHOD SetVar( cName, xValue )
+   METHOD GetVar( cName )
+   METHOD AddCrate( cName )
+
    ASSIGN OnBuild( b ) INLINE ::bOnBuild := b
 ENDCLASS
+
+//----------------------------------------------------------------------------//
+METHOD Start() CLASS TRust
+
+   local aPaths := { ::cRuntimePath, ;
+                     hb_GetEnv( "HOME" ) + "/.cargo/bin/rustc", ;
+                     "/opt/homebrew/bin/rustc", ;
+                     "/usr/local/bin/rustc", ;
+                     "/usr/bin/rustc", ;
+                     "rustc" }
+   local cPath, cOut := "", cErr := "", nRc
+
+   for each cPath in aPaths
+      if Empty( cPath ); loop; endif
+      if cPath != "rustc" .and. ! hb_FileExists( cPath ); loop; endif
+      nRc := hb_processRun( cPath + " --version", , @cOut, @cErr )
+      if nRc == 0
+         ::cRustcPath := cPath
+         ::lRunning   := .T.
+         ::cLastError := ""
+         ::cLastResult := AllTrim( cOut )
+         if Empty( ::cWorkDir )
+            ::cWorkDir := hb_DirTemp() + "hbrust_" + ;
+                          hb_StrFormat( "%d", hb_milliSeconds() )
+            hb_DirCreate( ::cWorkDir )
+         endif
+         if ValType( ::bOnReady ) == "B"; Eval( ::bOnReady, Self ); endif
+         return Self
+      endif
+   next
+
+   ::cLastError := "rustc not found. Install via https://rustup.rs"
+   ::lRunning   := .F.
+   if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+
+return Self
+
+//----------------------------------------------------------------------------//
+METHOD Stop() CLASS TRust
+   ::lRunning := .F.
+   if ! Empty( ::cBinPath ) .and. hb_FileExists( ::cBinPath )
+      FErase( ::cBinPath )
+   endif
+   ::cBinPath := ""
+return Self
+
+//----------------------------------------------------------------------------//
+METHOD Build( cSource ) CLASS TRust
+
+   local cSrcFile, cBin, cCmd, cOut := "", cErr := "", nRc, lOk
+
+   if ! ::lRunning; ::Start(); endif
+   if ! ::lRunning; return .F.; endif
+
+   cSrcFile := ::cWorkDir + "/main_" + hb_StrFormat( "%d", hb_milliSeconds() ) + ".rs"
+   cBin     := hb_StrReplace( cSrcFile, ".rs", "" )
+   hb_MemoWrit( cSrcFile, cSource )
+
+   cCmd := ::cRustcPath + " " + ::cCompileFlags + " " + ;
+           "-o " + cBin + " " + cSrcFile + " 2>&1"
+   nRc  := hb_processRun( cCmd, , @cOut, @cErr )
+   lOk  := ( nRc == 0 .and. hb_FileExists( cBin ) )
+
+   ::cBuildOutput := cOut + cErr
+   ::cBinPath     := iif( lOk, cBin, "" )
+
+   if ! lOk
+      ::cLastError := "rustc failed: " + ::cBuildOutput
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+   endif
+   if ValType( ::bOnBuild ) == "B"; Eval( ::bOnBuild, Self, lOk, ::cBuildOutput ); endif
+
+return lOk
+
+//----------------------------------------------------------------------------//
+METHOD Run( cArgs ) CLASS TRust
+
+   local cCmd, cOut := "", cErr := "", nRc
+
+   if Empty( ::cBinPath ) .or. ! hb_FileExists( ::cBinPath )
+      ::cLastError := "No binary. Call Build() / Exec() first."
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+      return ""
+   endif
+
+   if cArgs == nil; cArgs := ""; endif
+   cCmd := ::cBinPath + " " + cArgs
+   nRc  := hb_processRun( cCmd, , @cOut, @cErr )
+
+   ::cStdOut     := cOut
+   ::cLastResult := cOut
+
+   if nRc != 0 .and. ! Empty( cErr )
+      ::cLastError := cErr
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, cErr ); endif
+   endif
+   if ! Empty( cOut ) .and. ValType( ::bOnOutput ) == "B"
+      Eval( ::bOnOutput, Self, cOut )
+   endif
+
+return cOut
+
+//----------------------------------------------------------------------------//
+METHOD Exec( cCode ) CLASS TRust
+
+   if ! ::Build( cCode ); return .F.; endif
+   ::Run()
+
+return .T.
+
+//----------------------------------------------------------------------------//
+METHOD Eval( cExpr ) CLASS TRust
+
+   local cName, xVal, cLets := "", cWrap
+
+   for each cName in hb_HKeys( ::hVars )
+      xVal   := ::hVars[ cName ]
+      cLets += "    let " + cName + " = " + RustLit( xVal ) + ";" + Chr(10)
+   next
+
+   cWrap := "fn main() {" + Chr(10) + ;
+            cLets + ;
+            '    println!("{:?}", { ' + cExpr + " });" + Chr(10) + ;
+            "}" + Chr(10)
+
+   if ! ::Build( cWrap ); return ""; endif
+
+return AllTrim( ::Run() )
+
+//----------------------------------------------------------------------------//
+METHOD SetVar( cName, xValue ) CLASS TRust
+   ::hVars[ cName ] := xValue
+return .T.
+
+METHOD GetVar( cName ) CLASS TRust
+   if hb_HHasKey( ::hVars, cName ); return ::hVars[ cName ]; endif
+return nil
+
+METHOD AddCrate( cName ) CLASS TRust
+   AAdd( ::aModules, cName )
+return Self
+
+//----------------------------------------------------------------------------//
+// Format Harbour value as Rust literal (used by Eval var injection)
+static function RustLit( x )
+   local cT := ValType( x )
+   do case
+   case cT == "C"; return '"' + hb_StrReplace( x, '"', '\"' ) + '"'
+   case cT == "N"; return hb_ntos( x )
+   case cT == "L"; return iif( x, "true", "false" )
+   case cT == "D"; return '"' + DToC( x ) + '"'
+   endcase
+return '""'
 
 CLASS TSwift INHERIT TInteropRuntime
    DATA cCompileFlags INIT ""
@@ -4086,20 +4464,349 @@ CLASS TSwift INHERIT TInteropRuntime
 ENDCLASS
 
 CLASS TJava INHERIT TInteropRuntime
-   DATA cCompileFlags INIT ""
-   DATA cClassPath    INIT ""
+   DATA cCompileFlags INIT ""        // extra javac flags
+   DATA cClassPath    INIT ""        // -cp argument extension
+   DATA cJavacPath    INIT ""        // resolved javac
+   DATA cJavaPath     INIT ""        // resolved java
+   DATA cWorkDir      INIT ""        // build dir (auto = temp)
+   DATA cClassDir     INIT ""        // dir holding compiled .class
+   DATA cMainClass    INIT "Main"    // class name to run
+   DATA cBuildOutput  INIT ""        // javac stderr
+   DATA cStdOut       INIT ""        // run stdout
+   DATA hVars         INIT {=>}
    DATA bOnBuild      INIT nil
-   METHOD Build()    VIRTUAL
+
+   METHOD Start()
+   METHOD Stop()
+   METHOD Build( cSource )
+   METHOD Run( cArgs )
+   METHOD Exec( cCode )
+   METHOD Eval( cExpr )
+   METHOD SetVar( cName, xValue )
+   METHOD GetVar( cName )
+
    ASSIGN OnBuild( b ) INLINE ::bOnBuild := b
 ENDCLASS
 
+//----------------------------------------------------------------------------//
+METHOD Start() CLASS TJava
+
+   local aJavac := { ::cRuntimePath, ;
+                     "/opt/homebrew/opt/openjdk/bin/javac", ;
+                     "/usr/local/opt/openjdk/bin/javac", ;
+                     "/usr/bin/javac", ;
+                     "javac" }
+   local cPath, cOut := "", cErr := "", nRc
+
+   for each cPath in aJavac
+      if Empty( cPath ); loop; endif
+      if cPath != "javac" .and. ! hb_FileExists( cPath ); loop; endif
+      nRc := hb_processRun( cPath + " -version", , @cOut, @cErr )
+      if nRc == 0
+         ::cJavacPath := cPath
+         ::cJavaPath  := hb_StrReplace( cPath, "javac", "java" )
+         ::lRunning   := .T.
+         ::cLastError := ""
+         ::cLastResult := AllTrim( cOut + cErr )
+         if Empty( ::cWorkDir )
+            ::cWorkDir := hb_DirTemp() + "hbjava_" + hb_StrFormat( "%d", hb_milliSeconds() )
+            hb_DirCreate( ::cWorkDir )
+         endif
+         if ValType( ::bOnReady ) == "B"; Eval( ::bOnReady, Self ); endif
+         return Self
+      endif
+   next
+
+   ::cLastError := "javac not found. Install JDK (brew install openjdk)."
+   ::lRunning   := .F.
+   if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+
+return Self
+
+METHOD Stop() CLASS TJava
+   ::lRunning := .F.
+return Self
+
+METHOD Build( cSource ) CLASS TJava
+
+   local cDir, cFile, cOut := "", cErr := "", nRc, lOk
+
+   if ! ::lRunning; ::Start(); endif
+   if ! ::lRunning; return .F.; endif
+
+   cDir := ::cWorkDir + "/build_" + hb_StrFormat( "%d", hb_milliSeconds() )
+   hb_DirCreate( cDir )
+   cFile := cDir + "/" + ::cMainClass + ".java"
+   hb_MemoWrit( cFile, cSource )
+
+   nRc := hb_processRun( ::cJavacPath + " " + ::cCompileFlags + ;
+                         iif( Empty( ::cClassPath ), "", " -cp " + ::cClassPath ) + ;
+                         " -d " + cDir + " " + cFile + " 2>&1", , @cOut, @cErr )
+   lOk := ( nRc == 0 )
+
+   ::cBuildOutput := cOut + cErr
+   ::cClassDir    := iif( lOk, cDir, "" )
+
+   if ! lOk
+      ::cLastError := "javac failed: " + ::cBuildOutput
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+   endif
+   if ValType( ::bOnBuild ) == "B"; Eval( ::bOnBuild, Self, lOk, ::cBuildOutput ); endif
+
+return lOk
+
+METHOD Run( cArgs ) CLASS TJava
+
+   local cCmd, cOut := "", cErr := "", nRc, cCp
+
+   if Empty( ::cClassDir )
+      ::cLastError := "No compiled class. Call Build() / Exec() first."
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+      return ""
+   endif
+
+   if cArgs == nil; cArgs := ""; endif
+   cCp  := ::cClassDir + iif( Empty( ::cClassPath ), "", ":" + ::cClassPath )
+   cCmd := ::cJavaPath + " -cp " + cCp + " " + ::cMainClass + " " + cArgs
+   nRc  := hb_processRun( cCmd, , @cOut, @cErr )
+
+   ::cStdOut     := cOut
+   ::cLastResult := cOut
+
+   if nRc != 0 .and. ! Empty( cErr )
+      ::cLastError := cErr
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, cErr ); endif
+   endif
+   if ! Empty( cOut ) .and. ValType( ::bOnOutput ) == "B"
+      Eval( ::bOnOutput, Self, cOut )
+   endif
+
+return cOut
+
+METHOD Exec( cCode ) CLASS TJava
+   if ! ::Build( cCode ); return .F.; endif
+   ::Run()
+return .T.
+
+METHOD Eval( cExpr ) CLASS TJava
+
+   local cName, xVal, cLets := "", cWrap
+
+   for each cName in hb_HKeys( ::hVars )
+      xVal   := ::hVars[ cName ]
+      cLets += "        var " + cName + " = " + JavaLit( xVal ) + ";" + Chr(10)
+   next
+
+   cWrap := "public class " + ::cMainClass + " {" + Chr(10) + ;
+            "    public static void main(String[] args) {" + Chr(10) + ;
+            cLets + ;
+            "        System.out.println(" + cExpr + ");" + Chr(10) + ;
+            "    }" + Chr(10) + ;
+            "}" + Chr(10)
+
+   if ! ::Build( cWrap ); return ""; endif
+
+return AllTrim( ::Run() )
+
+METHOD SetVar( cName, xValue ) CLASS TJava
+   ::hVars[ cName ] := xValue
+return .T.
+
+METHOD GetVar( cName ) CLASS TJava
+   if hb_HHasKey( ::hVars, cName ); return ::hVars[ cName ]; endif
+return nil
+
+//----------------------------------------------------------------------------//
+static function JavaLit( x )
+   local cT := ValType( x )
+   do case
+   case cT == "C"; return '"' + hb_StrReplace( x, '"', '\"' ) + '"'
+   case cT == "N"; return hb_ntos( x )
+   case cT == "L"; return iif( x, "true", "false" )
+   case cT == "D"; return '"' + DToC( x ) + '"'
+   endcase
+return '""'
+
 CLASS TDotNet INHERIT TInteropRuntime
-   DATA cCompileFlags INIT ""
-   DATA cAssemblyPath INIT ""
+   DATA cCompileFlags INIT ""        // extra flags to dotnet script
+   DATA cAssemblyPath INIT ""        // path to compiled .dll (when Build() used)
+   DATA cDotNetPath   INIT ""        // resolved dotnet binary
+   DATA cWorkDir      INIT ""        // build dir (auto = temp)
+   DATA cBuildOutput  INIT ""        // stderr from last build
+   DATA cStdOut       INIT ""        // stdout from last Run()
+   DATA hVars         INIT {=>}      // SetVar storage
    DATA bOnBuild      INIT nil
-   METHOD Build()    VIRTUAL
+
+   METHOD Start()
+   METHOD Stop()
+   METHOD Build( cSource )
+   METHOD Run( cArgs )
+   METHOD Exec( cCode )
+   METHOD Eval( cExpr )
+   METHOD SetVar( cName, xValue )
+   METHOD GetVar( cName )
+   METHOD AddPackage( cName )
+
    ASSIGN OnBuild( b ) INLINE ::bOnBuild := b
 ENDCLASS
+
+//----------------------------------------------------------------------------//
+METHOD Start() CLASS TDotNet
+
+   local aPaths := { ::cRuntimePath, ;
+                     "/usr/local/share/dotnet/dotnet", ;
+                     "/opt/homebrew/bin/dotnet", ;
+                     "/usr/local/bin/dotnet", ;
+                     hb_GetEnv( "HOME" ) + "/.dotnet/dotnet", ;
+                     "dotnet" }
+   local cPath, cOut := "", cErr := "", nRc
+
+   for each cPath in aPaths
+      if Empty( cPath ); loop; endif
+      if cPath != "dotnet" .and. ! hb_FileExists( cPath ); loop; endif
+      nRc := hb_processRun( cPath + " --version", , @cOut, @cErr )
+      if nRc == 0
+         ::cDotNetPath := cPath
+         ::lRunning    := .T.
+         ::cLastError  := ""
+         ::cLastResult := AllTrim( cOut )
+         if Empty( ::cWorkDir )
+            ::cWorkDir := hb_DirTemp() + "hbdotnet_" + ;
+                          hb_StrFormat( "%d", hb_milliSeconds() )
+            hb_DirCreate( ::cWorkDir )
+         endif
+         if ValType( ::bOnReady ) == "B"; Eval( ::bOnReady, Self ); endif
+         return Self
+      endif
+   next
+
+   ::cLastError := "dotnet not found. Install from https://dotnet.microsoft.com"
+   ::lRunning   := .F.
+   if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+
+return Self
+
+METHOD Stop() CLASS TDotNet
+   ::lRunning := .F.
+return Self
+
+// Build expects a full C# program (Program.cs style with top-level statements).
+// Compiles via `dotnet build` on a synthesized csproj. Slow first time.
+METHOD Build( cSource ) CLASS TDotNet
+
+   local cProj, cCs, cCsproj, cOut := "", cErr := "", nRc, lOk
+   local cPkg, cPkgs := ""
+
+   if ! ::lRunning; ::Start(); endif
+   if ! ::lRunning; return .F.; endif
+
+   cProj := ::cWorkDir + "/proj_" + hb_StrFormat( "%d", hb_milliSeconds() )
+   hb_DirCreate( cProj )
+   cCs     := cProj + "/Program.cs"
+   cCsproj := cProj + "/proj.csproj"
+
+   for each cPkg in ::aModules
+      cPkgs += '    <PackageReference Include="' + cPkg + '" Version="*" />' + Chr(10)
+   next
+
+   hb_MemoWrit( cCsproj, ;
+      '<Project Sdk="Microsoft.NET.Sdk">' + Chr(10) + ;
+      '  <PropertyGroup>' + Chr(10) + ;
+      '    <OutputType>Exe</OutputType>' + Chr(10) + ;
+      '    <TargetFramework>net8.0</TargetFramework>' + Chr(10) + ;
+      '    <Nullable>disable</Nullable>' + Chr(10) + ;
+      '  </PropertyGroup>' + Chr(10) + ;
+      iif( Empty( cPkgs ), "", '  <ItemGroup>' + Chr(10) + cPkgs + '  </ItemGroup>' + Chr(10) ) + ;
+      '</Project>' + Chr(10) )
+   hb_MemoWrit( cCs, cSource )
+
+   nRc := hb_processRun( ::cDotNetPath + " build " + cProj + " -c Release " + ;
+                         ::cCompileFlags + " 2>&1", , @cOut, @cErr )
+   lOk := ( nRc == 0 )
+
+   ::cBuildOutput := cOut + cErr
+   ::cAssemblyPath := iif( lOk, cProj + "/bin/Release/net8.0/proj.dll", "" )
+
+   if ! lOk
+      ::cLastError := "dotnet build failed: " + ::cBuildOutput
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+   endif
+   if ValType( ::bOnBuild ) == "B"; Eval( ::bOnBuild, Self, lOk, ::cBuildOutput ); endif
+
+return lOk
+
+METHOD Run( cArgs ) CLASS TDotNet
+
+   local cCmd, cOut := "", cErr := "", nRc
+
+   if Empty( ::cAssemblyPath ) .or. ! hb_FileExists( ::cAssemblyPath )
+      ::cLastError := "No assembly. Call Build() / Exec() first."
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, ::cLastError ); endif
+      return ""
+   endif
+
+   if cArgs == nil; cArgs := ""; endif
+   cCmd := ::cDotNetPath + " " + ::cAssemblyPath + " " + cArgs
+   nRc  := hb_processRun( cCmd, , @cOut, @cErr )
+
+   ::cStdOut     := cOut
+   ::cLastResult := cOut
+
+   if nRc != 0 .and. ! Empty( cErr )
+      ::cLastError := cErr
+      if ValType( ::bOnError ) == "B"; Eval( ::bOnError, Self, cErr ); endif
+   endif
+   if ! Empty( cOut ) .and. ValType( ::bOnOutput ) == "B"
+      Eval( ::bOnOutput, Self, cOut )
+   endif
+
+return cOut
+
+METHOD Exec( cCode ) CLASS TDotNet
+   if ! ::Build( cCode ); return .F.; endif
+   ::Run()
+return .T.
+
+METHOD Eval( cExpr ) CLASS TDotNet
+
+   local cName, xVal, cLets := "", cWrap
+
+   for each cName in hb_HKeys( ::hVars )
+      xVal   := ::hVars[ cName ]
+      cLets += "var " + cName + " = " + CSharpLit( xVal ) + ";" + Chr(10)
+   next
+
+   cWrap := "using System;" + Chr(10) + ;
+            cLets + ;
+            "Console.WriteLine(" + cExpr + ");" + Chr(10)
+
+   if ! ::Build( cWrap ); return ""; endif
+
+return AllTrim( ::Run() )
+
+METHOD SetVar( cName, xValue ) CLASS TDotNet
+   ::hVars[ cName ] := xValue
+return .T.
+
+METHOD GetVar( cName ) CLASS TDotNet
+   if hb_HHasKey( ::hVars, cName ); return ::hVars[ cName ]; endif
+return nil
+
+METHOD AddPackage( cName ) CLASS TDotNet
+   AAdd( ::aModules, cName )
+return Self
+
+//----------------------------------------------------------------------------//
+// C# literal helper
+static function CSharpLit( x )
+   local cT := ValType( x )
+   do case
+   case cT == "C"; return '"' + hb_StrReplace( x, '"', '\"' ) + '"'
+   case cT == "N"; return hb_ntos( x )
+   case cT == "L"; return iif( x, "true", "false" )
+   case cT == "D"; return '"' + DToC( x ) + '"'
+   endcase
+return '""'
 
 //----------------------------------------------------------------------------//
 

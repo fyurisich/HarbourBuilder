@@ -1,6 +1,65 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-27a
+
+  - feat(interop): Real implementations for TRust, TNode, TDotNet,
+    TJava and TRuby in source/core/classes.prg. All five inherit
+    TInteropRuntime and follow the TPython pattern (Start, Stop,
+    Exec, Eval, SetVar, GetVar) plus Build/Run for compiled
+    runtimes. Auto-detection probes ~/.cargo/bin, /opt/homebrew,
+    /usr/local, /usr/bin and PATH; missing toolchains set
+    cLastError with the install URL and fire bOnError instead of
+    crashing. SetVar values are injected as language-native
+    declarations (let/var/=) ahead of the next Eval/Exec so
+    Harbour-side state crosses into the foreign runtime without
+    extra plumbing. TRust Eval wraps the expression in
+    `println!("{:?}", { expr });` (single-quoted string to dodge
+    the Harbour preprocessor's `\"` non-escape). TDotNet Build
+    synthesizes a one-shot net8.0 csproj with optional
+    PackageReference entries (aModules / AddPackage). TJava uses
+    a configurable cMainClass and infers the `java` binary from
+    cJavacPath. TNode and TRuby write the script to a temp file
+    and remove it after run.
+
+  - sample(connectivity): New sample projects for each runtime
+    under samples/projects/{rust,node,dotnet,java,ruby}. Layout
+    mirrors samples/projects/python: ComboBox samples loader,
+    editable script memo, Run / Eval / Build / Clear buttons and
+    output log wired to OnReady / OnError / OnOutput / OnBuild.
+    TRust sample also exercises SetVar + Eval round-trip so users
+    can see Harbour values appearing inside the generated Rust
+    main.
+
+  - sample(postgresql): Rebuilt samples/projects/postgresql/
+    Form1.prg + Project1.prg to exercise every TPostgreSQL
+    surface: cServer / nPort / cUser / cPassword / cDatabase /
+    cCharSet plus cTable / cSQL / cIdSequence; bOnConnect /
+    bOnDisconnect / bOnError; Open / Close / IsConnected /
+    LastError / Tables / TableExists; Execute / direct Query /
+    LoadCursor + FieldCount / FieldName / FieldGet / GoTop / Skip
+    / Eof for cursor navigation; LastInsertId driven by an
+    editable cIdSequence GET. Tables list, SQL editor, cursor
+    nav buttons and a per-record memo land on a 820x620 form.
+
+  - docs(connectivity): docs/{en,es,pt}/controls-connectivity.html
+    gain a "Runtime Requirements" section after the supported
+    languages table. Each row lists the required tool, the macOS
+    install command (rustup, brew install node, brew install
+    --cask dotnet-sdk, brew install openjdk, brew install ruby,
+    brew install go, xcode-select --install, brew install lua)
+    and the auto-detect search order. Three follow-up subsections
+    document the Execution Model (compile+run vs interpret vs
+    embedded, with $TMPDIR artefact paths), Common Events
+    (bOnReady/bOnError/bOnOutput/bOnBuild signatures) and the
+    Shared API surface (Start/Stop/Exec/Eval/Build/Run/SetVar/
+    GetVar). TOC rails updated in all three locales.
+
+  - chore(bin): bin/HbBuilder, bin/HbBuilder.app/Contents/MacOS/
+    HbBuilder and bin/HbBuilder.app/Contents/Resources/classes.prg
+    rebuilt so Form Designer / Run pipeline pick up the new
+    interop runtimes immediately.
+
 2026-04-26l
 
   - fix(macos-palette): UI_PaletteSetCompIcon overrides now apply to

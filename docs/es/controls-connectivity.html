@@ -108,6 +108,123 @@ que proporciona una API unificada para llamadas entre lenguajes.</p>
   <tr><td><strong>TRuby</strong></td><td>Ruby</td><td>API C de Ruby (libruby)</td><td>Web scraping, procesamiento de texto, DSLs.</td></tr>
 </table>
 
+<h2 id="runtime-requirements">Requisitos de Runtime</h2>
+
+<p>Cada componente de conectividad requiere su correspondiente toolchain instalado en
+la maquina host. El componente <strong>auto-detecta</strong> el binario buscando en rutas
+comunes; <code>cRuntimePath</code> sobrescribe la deteccion si esta definida.</p>
+
+<div class="info-box warning">
+  <strong>Toolchain no instalado?</strong>
+  <p>Si falta el toolchain, <code>Start()</code> falla, asigna <code>cLastError</code> con
+  la URL de instalacion y dispara <code>bOnError</code>. El componente no se cuelga &mdash;
+  simplemente devuelve <code>.F.</code> / salida vacia.</p>
+</div>
+
+<table>
+  <tr>
+    <th>Componente</th>
+    <th>Herramienta</th>
+    <th>Instalacion (macOS)</th>
+    <th>Rutas auto-detectadas</th>
+  </tr>
+  <tr>
+    <td><strong>TPython</strong></td>
+    <td><code>libpython</code> (embebido)</td>
+    <td>Pre-instalado en macOS, o <code>brew install python</code></td>
+    <td><code>/usr/bin/python3</code>, <code>/opt/homebrew/bin/python3</code></td>
+  </tr>
+  <tr>
+    <td><strong>TRust</strong></td>
+    <td><code>rustc</code></td>
+    <td><code>curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh</code></td>
+    <td><code>~/.cargo/bin/rustc</code>, <code>/opt/homebrew/bin/rustc</code>, <code>/usr/local/bin/rustc</code>, PATH</td>
+  </tr>
+  <tr>
+    <td><strong>TNode</strong></td>
+    <td><code>node</code></td>
+    <td><code>brew install node</code></td>
+    <td><code>/opt/homebrew/bin/node</code>, <code>/usr/local/bin/node</code>, <code>/usr/bin/node</code>, PATH</td>
+  </tr>
+  <tr>
+    <td><strong>TDotNet</strong></td>
+    <td>SDK <code>dotnet</code> 8+</td>
+    <td><code>brew install --cask dotnet-sdk</code></td>
+    <td><code>/usr/local/share/dotnet/dotnet</code>, <code>/opt/homebrew/bin/dotnet</code>, <code>~/.dotnet/dotnet</code>, PATH</td>
+  </tr>
+  <tr>
+    <td><strong>TJava</strong></td>
+    <td><code>javac</code> + <code>java</code> (JDK)</td>
+    <td><code>brew install openjdk</code></td>
+    <td><code>/opt/homebrew/opt/openjdk/bin/javac</code>, <code>/usr/local/opt/openjdk/bin/javac</code>, PATH</td>
+  </tr>
+  <tr>
+    <td><strong>TRuby</strong></td>
+    <td><code>ruby</code></td>
+    <td>Pre-instalado en macOS, o <code>brew install ruby</code></td>
+    <td><code>/opt/homebrew/bin/ruby</code>, <code>/usr/local/bin/ruby</code>, <code>/usr/bin/ruby</code>, PATH</td>
+  </tr>
+  <tr>
+    <td><strong>TGo</strong></td>
+    <td>Compilador <code>go</code></td>
+    <td><code>brew install go</code></td>
+    <td>PATH</td>
+  </tr>
+  <tr>
+    <td><strong>TSwift</strong></td>
+    <td><code>swiftc</code> (Xcode CLT)</td>
+    <td><code>xcode-select --install</code></td>
+    <td><code>/usr/bin/swiftc</code></td>
+  </tr>
+  <tr>
+    <td><strong>TLua</strong></td>
+    <td><code>lua</code></td>
+    <td><code>brew install lua</code></td>
+    <td><code>/opt/homebrew/bin/lua</code>, <code>/usr/local/bin/lua</code>, PATH</td>
+  </tr>
+</table>
+
+<h3 id="execution-model">Modelo de Ejecucion</h3>
+
+<p>Los lenguajes compilados (Rust, Go, Java, .NET, Swift) siguen un pipeline
+<strong>compilar-luego-ejecutar</strong>: fuente &rarr; binario en directorio temporal &rarr;
+ejecucion como subproceso. Los interpretados (Node, Ruby, Lua) saltan el paso de build.
+Python usa <code>libpython</code> embebido para llamadas in-process directas (menor overhead).</p>
+
+<table>
+  <tr><th>Componente</th><th>Modo</th><th>Ubicacion del artefacto</th></tr>
+  <tr><td>TRust</td><td>Compilar + ejecutar</td><td><code>$TMPDIR/hbrust_*/main_*</code></td></tr>
+  <tr><td>TDotNet</td><td>Compilar + ejecutar</td><td><code>$TMPDIR/hbdotnet_*/proj_*/bin/Release/net8.0/proj.dll</code></td></tr>
+  <tr><td>TJava</td><td>Compilar + ejecutar</td><td><code>$TMPDIR/hbjava_*/build_*/Main.class</code></td></tr>
+  <tr><td>TNode</td><td>Interpretar</td><td><code>$TMPDIR/hbnode_*.js</code> (eliminado tras ejecutar)</td></tr>
+  <tr><td>TRuby</td><td>Interpretar</td><td><code>$TMPDIR/hbruby_*.rb</code> (eliminado tras ejecutar)</td></tr>
+  <tr><td>TPython</td><td>Embebido</td><td>In-process</td></tr>
+</table>
+
+<h3 id="events-shared">Eventos Comunes</h3>
+
+<table>
+  <tr><th>Evento</th><th>Firma</th><th>Cuando se dispara</th></tr>
+  <tr><td><code>bOnReady</code></td><td><code>{|oSelf|}</code></td><td><code>Start()</code> termina con exito.</td></tr>
+  <tr><td><code>bOnError</code></td><td><code>{|oSelf, cMsg|}</code></td><td>Falta toolchain, falla build, falla ejecucion.</td></tr>
+  <tr><td><code>bOnOutput</code></td><td><code>{|oSelf, cText|}</code></td><td>Stdout producido por <code>Run()</code> / <code>Exec()</code>.</td></tr>
+  <tr><td><code>bOnBuild</code></td><td><code>{|oSelf, lOk, cBuildOutput|}</code></td><td>Tras <code>Build()</code> en runtimes compilados (TRust, TDotNet, TJava, TGo, TSwift).</td></tr>
+</table>
+
+<h3 id="api-methods-shared">Metodos API Compartidos</h3>
+
+<table>
+  <tr><th>Metodo</th><th>Devuelve</th><th>Descripcion</th></tr>
+  <tr><td><code>Start()</code></td><td>Self</td><td>Auto-detecta toolchain. Asigna <code>lRunning</code>, dispara <code>bOnReady</code> o <code>bOnError</code>.</td></tr>
+  <tr><td><code>Stop()</code></td><td>Self</td><td>Marca como detenido, libera binarios temporales (langs compilados).</td></tr>
+  <tr><td><code>Exec( cCode )</code></td><td>Logico</td><td>Compila (si necesita) + ejecuta fuente completa. <code>.T.</code> en exito.</td></tr>
+  <tr><td><code>Eval( cExpr )</code></td><td>Cadena</td><td>Envuelve expresion, ejecuta, devuelve stdout (trim). Inyecta valores de <code>SetVar</code>.</td></tr>
+  <tr><td><code>Build( cSource )</code></td><td>Logico</td><td>(Solo compilados) Compila a binario temporal, almacena en <code>cBinPath</code>/<code>cAssemblyPath</code>/<code>cClassDir</code>.</td></tr>
+  <tr><td><code>Run( cArgs )</code></td><td>Cadena</td><td>(Solo compilados) Ejecuta el ultimo build con args opcionales. Devuelve stdout.</td></tr>
+  <tr><td><code>SetVar( cName, x )</code></td><td>Logico</td><td>Almacena valor inyectado como <code>let/var/=</code> antes del proximo <code>Eval</code>/<code>Exec</code>.</td></tr>
+  <tr><td><code>GetVar( cName )</code></td><td>Cualquiera</td><td>Recupera valor almacenado (cache lado Harbour).</td></tr>
+</table>
+
 <h2 id="interop-runtime">Clase Base TInteropRuntime</h2>
 
 <p>Los 9 controles de conectividad heredan de <strong>TInteropRuntime</strong>, una clase base abstracta
@@ -343,6 +460,10 @@ graph TB
 <div class="toc-rail">
   <h4>En Esta Página</h4>
   <a href="#lenguajes-soportados" class="toc-h2">Lenguajes Soportados</a>
+  <a href="#runtime-requirements" class="toc-h2">Requisitos de Runtime</a>
+  <a href="#execution-model" class="toc-h3">Modelo de Ejecucion</a>
+  <a href="#events-shared" class="toc-h3">Eventos Comunes</a>
+  <a href="#api-methods-shared" class="toc-h3">Metodos API Compartidos</a>
   <a href="#interop-runtime" class="toc-h2">Clase Base TInteropRuntime</a>
   <a href="#propiedades-heredadas" class="toc-h3">Propiedades Heredadas</a>
   <a href="#metodos-abstractos" class="toc-h3">Metodos Abstractos</a>
