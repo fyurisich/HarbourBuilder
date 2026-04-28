@@ -137,31 +137,64 @@ oRaiz:<span class="fn">Expand</span>()</pre>
 
 <!-- TListView -->
 <h2 id="listview">TListView <span class="badge new">CT_LISTVIEW = 21</span></h2>
-<p>Lista multi-coluna com icones. Suporta modos de exibicao icone, icone pequeno, lista e detalhe/relatorio.</p>
+<p>Lista multi-coluna em modo relatorio (LVS_REPORT). Cada item e uma linha com N celulas; os cabecalhos vem de <code>aColumns</code>.</p>
 
 <table>
   <tr><th>Propriedade</th><th>Tipo</th><th>Padrao</th><th>Descricao</th></tr>
-  <tr><td><code>nViewStyle</code></td><td>Numerico</td><td>3</td><td>0=Icone, 1=IconePequeno, 2=Lista, 3=Relatorio</td></tr>
-  <tr><td><code>lGridLines</code></td><td>Logico</td><td>.F.</td><td>Exibir linhas de grade na visao de relatorio</td></tr>
-  <tr><td><code>lCheckBoxes</code></td><td>Logico</td><td>.F.</td><td>Exibir caixas de selecao</td></tr>
-  <tr><td><code>lMultiSelect</code></td><td>Logico</td><td>.F.</td><td>Permitir selecao multipla</td></tr>
-  <tr><td><code>nSortColumn</code></td><td>Numerico</td><td>-1</td><td>Coluna para ordenacao (-1 = nenhuma)</td></tr>
+  <tr><td><code>aColumns</code></td><td>Array</td><td>{"Column1","Column2","Column3"}</td><td>Cabecalhos de coluna (max 8)</td></tr>
+  <tr><td><code>aItems</code></td><td>Array</td><td>{}</td><td>Linhas; cada elemento e array de strings, uma por coluna (max 64)</td></tr>
+  <tr><td><code>nViewStyle</code></td><td>Numerico</td><td>2</td><td>0=Icone, 1=Lista, 2=Relatorio, 3=IconePequeno</td></tr>
+</table>
+
+<table>
+  <tr><th>Metodo</th><th>Descricao</th></tr>
+  <tr><td><code>SetColumns( aCols )</code></td><td>Define cabecalhos a partir de array de strings</td></tr>
+  <tr><td><code>SetItems( aRows )</code></td><td>Substitui todas as linhas; <code>SetItems({})</code> limpa</td></tr>
+  <tr><td><code>AddItem( aCells )</code></td><td>Adiciona uma linha no final</td></tr>
 </table>
 
 <table>
   <tr><th>Evento</th><th>Categoria</th><th>Descricao</th></tr>
-  <tr><td><code>OnSelectItem</code></td><td>Acao</td><td>Item selecionado</td></tr>
+  <tr><td><code>OnClick</code></td><td>Acao</td><td>Item clicado</td></tr>
   <tr><td><code>OnDblClick</code></td><td>Acao</td><td>Item clicado duas vezes</td></tr>
   <tr><td><code>OnColumnClick</code></td><td>Acao</td><td>Cabecalho de coluna clicado (para ordenacao)</td></tr>
-  <tr><td><code>OnEdited</code></td><td>Acao</td><td>Rotulo do item editado</td></tr>
+  <tr><td><code>OnChange</code></td><td>Acao</td><td>Selecao alterada</td></tr>
 </table>
 
 <table>
   <tr><th>Plataforma</th><th>Widget Nativo</th></tr>
-  <tr><td><span class="badge win">Windows</span></td><td>WC_LISTVIEW (SysListView32)</td></tr>
-  <tr><td><span class="badge mac">macOS</span></td><td>NSTableView (multi-coluna)</td></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>WC_LISTVIEW (SysListView32) com LVS_REPORT + LVS_EX_FULLROWSELECT|GRIDLINES</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTableView multi-coluna</td></tr>
   <tr><td><span class="badge linux">Linux</span></td><td>GtkTreeView + GtkListStore</td></tr>
 </table>
+
+<h3>Sintaxe xBase</h3>
+<pre><span class="cm">// Definir ListView com 3 colunas</span>
+@ <span class="nb">50</span>, <span class="nb">20</span> <span class="cmd">LISTVIEW</span> oLV <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">480</span>, <span class="nb">250</span> ;
+   <span class="cmd">COLUMNS</span> <span class="st">"Nome"</span>, <span class="st">"Idade"</span>, <span class="st">"Cidade"</span>
+
+oLV:<span class="fn">AddItem</span>( { <span class="st">"Alice"</span>,   <span class="st">"30"</span>, <span class="st">"New York"</span>    } )
+oLV:<span class="fn">AddItem</span>( { <span class="st">"Bob"</span>,     <span class="st">"25"</span>, <span class="st">"Los Angeles"</span> } )
+oLV:<span class="fn">AddItem</span>( { <span class="st">"Charlie"</span>, <span class="st">"40"</span>, <span class="st">"Chicago"</span>     } )
+</pre>
+
+<h3>Editar no Inspector</h3>
+<p>Ao selecionar um controle TListView no designer, o inspector expoe duas propriedades editaveis:</p>
+<ul>
+  <li><strong>aColumns</strong> &mdash; clicar no botao <code>...</code> abre o editor de array. Um cabecalho de coluna por linha.</li>
+  <li><strong>aItems</strong> &mdash; clicar no botao <code>...</code> abre o <em>ListView Items Editor</em> dedicado: uma grade com as colunas de <code>aColumns</code>, uma linha por item, duplo clique em qualquer celula para edita-la no local. Botoes <code>+ Add</code> / <code>- Del</code> / <code>Up</code> / <code>Down</code> gerenciam linhas. Enter confirma, Esc cancela.</li>
+</ul>
+<p>O gerador de codigo emite o comando <code>@ ... LISTVIEW ... COLUMNS ...</code> seguido de uma chamada <code>:AddItem({...})</code> por linha.</p>
+
+<h3>Formato de armazenamento</h3>
+<p>Internamente <code>aColumns</code> e <code>aItems</code> sao serializados como strings:</p>
+<ul>
+  <li><code>aColumns</code>: cabecalhos separados por <code>|</code> &mdash; ex. <code>"Nome|Idade|Cidade"</code></li>
+  <li><code>aItems</code>: linhas separadas por <code>|</code>, celulas dentro de cada linha por <code>;</code> &mdash; ex. <code>"Alice;30;NY|Bob;25;LA"</code></li>
+</ul>
+
+<h3>Modos de exibicao</h3>
+<p>A propriedade <code>nViewStyle</code> aparece no inspector como dropdown com os valores enumerados (<code>vsIcon</code>, <code>vsList</code>, <code>vsReport</code>, <code>vsSmallIcon</code>). Alterar o valor em runtime atualiza o controle imediatamente. Os modos <strong>Icon</strong> e <strong>SmallIcon</strong> requerem um ImageList associado para exibir icones; sem ImageList os itens aparecem apenas com texto.</p>
 
 <!-- TProgressBar -->
 <h2 id="progressbar">TProgressBar <span class="badge new">CT_PROGRESSBAR = 22</span></h2>

@@ -818,14 +818,28 @@ public:
 
 /*
  * TListView - List/report control (C++Builder Win32 tab)
+ *
+ * aColumns: pipe-separated header titles ("Name|Age|City")
+ * aItems:   pipe-separated rows; cells in each row separated by ';'
+ *           ("John;30;NY|Mary;25;LA")
  */
+#define LV_MAX_COLS  8
+#define LV_MAX_ROWS  64
+#define LV_TXT_LEN   64
+
 class TListView : public TControl
 {
 public:
-   int FViewStyle;  /* 0=vsIcon, 1=vsList, 2=vsReport, 3=vsSmallIcon */
+   int  FViewStyle;  /* 0=vsIcon, 1=vsList, 2=vsReport, 3=vsSmallIcon */
+   int  FColCount;
+   int  FRowCount;
+   char FColumns[LV_MAX_COLS][LV_TXT_LEN];
+   char FCells[LV_MAX_ROWS][LV_MAX_COLS][LV_TXT_LEN];
 
    TListView();
    void CreateParams( DWORD * pdwStyle, DWORD * pdwExStyle, const char ** pszClass );
+   void CreateHandle( HWND hParent );
+   void Repopulate();
    const PROPDESC * GetPropDescs( int * pnCount );
 };
 

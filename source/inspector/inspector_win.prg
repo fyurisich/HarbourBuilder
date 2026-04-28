@@ -295,6 +295,8 @@ static void InsPopulateEvents( INSDATA * d );
 static void InsUpdateCombo( INSDATA * d );  /* updates combo from current rows data */
 static void InsArrayEdit( INSDATA * d, int nLVRow );
 static void InsMenuEdit( INSDATA * d, int nLVRow );
+static void InsListViewItemsEdit( INSDATA * d, int nLVRow );
+static int  InsGetCtrlType( HB_PTRUINT hCtrl );
 
 /* Sentinel message IDs for MLEdit dialog internal signaling */
 #define WM_MLEDIT_OK     (WM_USER + 501)
@@ -461,7 +463,15 @@ static LRESULT CALLBACK InsBtnProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM l
       else if( cType == 'F' )
          InsFontPick( d, nLV );
       else if( cType == 'A' )
-         InsArrayEdit( d, nLV );
+      {
+         /* aItems on TListView (CT_LISTVIEW=21) gets the dedicated grid editor;
+            other arrays use the plain pipe-separated array dialog. */
+         if( lstrcmpiA( szName, "aItems" ) == 0 && d &&
+             InsGetCtrlType( d->hCtrl ) == 21 )
+            InsListViewItemsEdit( d, nLV );
+         else
+            InsArrayEdit( d, nLV );
+      }
       else if( cType == 'M' )
          InsMenuEdit( d, nLV );
       else if( cType == 'S' && lstrcmpiA( szName, "cFileName" ) == 0 )
@@ -825,6 +835,491 @@ static void InsArrayEdit( INSDATA * d, int nLVRow )
          }
       }
    }
+}
+
+/* ===== Helper: get FControlType for a control via UI_GetType reentrant ====
+ * Used by InsBtnProc to dispatch property editors per control type.
+ * ====================================================================== */
+static int InsGetCtrlType( HB_PTRUINT hCtrl )
+{
+   PHB_DYNS pDyn;
+   int nType = -1;
+   if( !hCtrl ) return -1;
+   pDyn = hb_dynsymFindName( "UI_GETTYPE" );
+   if( !pDyn ) return -1;
+   if( hb_vmRequestReenter() )
+   {
+      hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+      hb_vmPushNumInt( hCtrl );
+      hb_vmDo( 1 );
+      nType = hb_itemGetNI( hb_stackReturnItem() );
+      hb_vmRequestRestore();
+   }
+   return nType;
+}
+
+/* ===== ListView Items Editor (CT_LISTVIEW aItems) ========================
+ * Modal grid editor: aColumns drives headers, each row = one item, cells
+ * editable inline by double-click. Add/Delete/Up/Down toolbar.
+ * Wire format on save: rows separated by '|', cells by ';'.
+ * Example: "Alice;30;NY|Bob;25;LA"
+ * ====================================================================== */
+
+#define LVID_MAX_ROWS  256
+#define LVID_MAX_COLS  8
+#define LVID_TXT_LEN   128
+#define LVID_IDC_LIST  3001
+#define LVID_IDC_ADD   3010
+#define LVID_IDC_DEL   3011
+#define LVID_IDC_UP    3012
+#define LVID_IDC_DN    3013
+#define LVID_IDC_OK    3014
+#define LVID_IDC_CAN   3015
+
+typedef struct _LVID {
+   HWND  hDlg;
+   HWND  hList;
+   HWND  hEdit;        /* in-place edit, NULL when not editing */
+   int   nEditRow;     /* row being edited via inplace */
+   int   nEditCol;     /* col being edited via inplace */
+   WNDPROC oldEditProc;
+   int   nColCount;
+   int   nRowCount;
+   char  szColumns[LVID_MAX_COLS][LVID_TXT_LEN];
+   char  szCells[LVID_MAX_ROWS][LVID_MAX_COLS][LVID_TXT_LEN];
+   BOOL  bOK;
+} LVID;
+
+static LVID * s_pLVID = NULL;
+
+/* Parse input strings into LVID */
+static void LVID_Parse( LVID * v, const char * szCols, const char * szItems )
+{
+   const char * s; char buf[LVID_TXT_LEN]; int j;
+
+   memset( v->szColumns, 0, sizeof(v->szColumns) );
+   memset( v->szCells,   0, sizeof(v->szCells) );
+   v->nColCount = 0;
+   v->nRowCount = 0;
+
+   /* Columns: pipe-separated */
+   s = szCols ? szCols : "";
+   j = 0;
+   while( *s && v->nColCount < LVID_MAX_COLS ) {
+      if( *s == '|' ) {
+         buf[j] = 0;
+         lstrcpynA( v->szColumns[v->nColCount++], buf, LVID_TXT_LEN );
+         j = 0;
+      } else if( j < LVID_TXT_LEN - 1 ) buf[j++] = *s;
+      s++;
+   }
+   if( j > 0 && v->nColCount < LVID_MAX_COLS ) {
+      buf[j] = 0;
+      lstrcpynA( v->szColumns[v->nColCount++], buf, LVID_TXT_LEN );
+   }
+   if( v->nColCount == 0 ) {
+      lstrcpynA( v->szColumns[0], "Column1", LVID_TXT_LEN );
+      v->nColCount = 1;
+   }
+
+   /* Items: pipe rows, semicolon cells */
+   s = szItems ? szItems : "";
+   j = 0;
+   { int col = 0;
+     while( *s && v->nRowCount < LVID_MAX_ROWS ) {
+        if( *s == '|' ) {
+           buf[j] = 0;
+           if( col < LVID_MAX_COLS )
+              lstrcpynA( v->szCells[v->nRowCount][col], buf, LVID_TXT_LEN );
+           v->nRowCount++; col = 0; j = 0;
+        } else if( *s == ';' ) {
+           buf[j] = 0;
+           if( col < LVID_MAX_COLS )
+              lstrcpynA( v->szCells[v->nRowCount][col], buf, LVID_TXT_LEN );
+           col++; j = 0;
+        } else if( j < LVID_TXT_LEN - 1 ) buf[j++] = *s;
+        s++;
+     }
+     if( v->nRowCount < LVID_MAX_ROWS ) {
+        if( j > 0 && col < LVID_MAX_COLS ) {
+           buf[j] = 0;
+           lstrcpynA( v->szCells[v->nRowCount][col], buf, LVID_TXT_LEN );
+        }
+        if( j > 0 || col > 0 ) v->nRowCount++;
+     }
+   }
+}
+
+/* Serialize LVID rows back to "cell;cell|cell;cell..." */
+static void LVID_Serialize( LVID * v, char * out, int outSz )
+{
+   int r, c, o = 0;
+   out[0] = 0;
+   for( r = 0; r < v->nRowCount; r++ ) {
+      if( r > 0 && o < outSz - 1 ) out[o++] = '|';
+      for( c = 0; c < v->nColCount; c++ ) {
+         const char * t = v->szCells[r][c];
+         if( c > 0 && o < outSz - 1 ) out[o++] = ';';
+         while( *t && o < outSz - 1 ) out[o++] = *t++;
+      }
+   }
+   out[o] = 0;
+}
+
+/* Refresh ListView control from LVID state (cols + rows) */
+static void LVID_Refresh( LVID * v )
+{
+   int c, r;
+   /* Clear cols */
+   while( SendMessage( v->hList, LVM_DELETECOLUMN, 0, 0 ) ) { }
+   ListView_DeleteAllItems( v->hList );
+
+   /* Insert columns */
+   for( c = 0; c < v->nColCount; c++ ) {
+      LVCOLUMNA col;
+      memset( &col, 0, sizeof(col) );
+      col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+      col.pszText = v->szColumns[c];
+      col.cx = 110;
+      col.iSubItem = c;
+      SendMessageA( v->hList, LVM_INSERTCOLUMNA, c, (LPARAM) &col );
+   }
+   /* Insert rows */
+   for( r = 0; r < v->nRowCount; r++ ) {
+      LVITEMA item;
+      memset( &item, 0, sizeof(item) );
+      item.mask = LVIF_TEXT;
+      item.iItem = r;
+      item.iSubItem = 0;
+      item.pszText = v->szCells[r][0];
+      SendMessageA( v->hList, LVM_INSERTITEMA, 0, (LPARAM) &item );
+      for( c = 1; c < v->nColCount; c++ )
+         ListView_SetItemText( v->hList, r, c, v->szCells[r][c] );
+   }
+}
+
+static int LVID_GetSel( LVID * v )
+{
+   return (int) SendMessage( v->hList, LVM_GETNEXTITEM,
+      (WPARAM) -1, MAKELPARAM( LVNI_SELECTED, 0 ) );
+}
+
+static void LVID_SetSel( LVID * v, int row )
+{
+   if( row < 0 || row >= v->nRowCount ) return;
+   ListView_SetItemState( v->hList, row,
+      LVIS_SELECTED | LVIS_FOCUSED, LVIS_SELECTED | LVIS_FOCUSED );
+   ListView_EnsureVisible( v->hList, row, FALSE );
+}
+
+/* Subclass for in-place edit: capture Enter/Esc/focus loss */
+static LRESULT CALLBACK LVID_EditProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+   LVID * v = s_pLVID;
+   WNDPROC old = v ? v->oldEditProc : NULL;
+
+   if( msg == WM_KEYDOWN && wParam == VK_ESCAPE ) {
+      if( v && v->hEdit ) { DestroyWindow( v->hEdit ); v->hEdit = NULL; }
+      return 0;
+   }
+   if( msg == WM_KEYDOWN && wParam == VK_RETURN ) {
+      if( v && v->hEdit ) {
+         char buf[LVID_TXT_LEN];
+         GetWindowTextA( v->hEdit, buf, sizeof(buf) );
+         if( v->nEditRow >= 0 && v->nEditRow < v->nRowCount &&
+             v->nEditCol >= 0 && v->nEditCol < v->nColCount )
+         {
+            lstrcpynA( v->szCells[v->nEditRow][v->nEditCol], buf, LVID_TXT_LEN );
+            ListView_SetItemText( v->hList, v->nEditRow, v->nEditCol, buf );
+         }
+         DestroyWindow( v->hEdit ); v->hEdit = NULL;
+      }
+      return 0;
+   }
+   if( msg == WM_KILLFOCUS ) {
+      if( v && v->hEdit ) {
+         char buf[LVID_TXT_LEN];
+         GetWindowTextA( v->hEdit, buf, sizeof(buf) );
+         if( v->nEditRow >= 0 && v->nEditRow < v->nRowCount &&
+             v->nEditCol >= 0 && v->nEditCol < v->nColCount )
+         {
+            lstrcpynA( v->szCells[v->nEditRow][v->nEditCol], buf, LVID_TXT_LEN );
+            ListView_SetItemText( v->hList, v->nEditRow, v->nEditCol, buf );
+         }
+         DestroyWindow( v->hEdit ); v->hEdit = NULL;
+      }
+   }
+   return old ? CallWindowProc( old, hWnd, msg, wParam, lParam )
+              : DefWindowProc( hWnd, msg, wParam, lParam );
+}
+
+static void LVID_BeginEdit( LVID * v, int row, int col )
+{
+   RECT rc;
+   if( v->hEdit ) { DestroyWindow( v->hEdit ); v->hEdit = NULL; }
+   if( row < 0 || row >= v->nRowCount ) return;
+   if( col < 0 || col >= v->nColCount ) return;
+
+   /* Get cell rect */
+   if( col == 0 ) {
+      rc.left = LVIR_LABEL;
+      ListView_GetItemRect( v->hList, row, &rc, LVIR_LABEL );
+   } else {
+      ListView_GetSubItemRect( v->hList, row, col, LVIR_LABEL, &rc );
+   }
+
+   v->nEditRow = row;
+   v->nEditCol = col;
+   v->hEdit = CreateWindowExA( 0, "EDIT", v->szCells[row][col],
+      WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL,
+      rc.left, rc.top, rc.right - rc.left, rc.bottom - rc.top,
+      v->hList, NULL, GetModuleHandle( NULL ), NULL );
+   SendMessage( v->hEdit, WM_SETFONT,
+      (WPARAM) GetStockObject( DEFAULT_GUI_FONT ), TRUE );
+   SetFocus( v->hEdit );
+   SendMessage( v->hEdit, EM_SETSEL, 0, -1 );
+   v->oldEditProc = (WNDPROC) SetWindowLongPtr(
+      v->hEdit, GWLP_WNDPROC, (LONG_PTR) LVID_EditProc );
+}
+
+static LRESULT CALLBACK LVIDDlgProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+   LVID * v = s_pLVID;
+
+   switch( msg )
+   {
+      case WM_COMMAND:
+      {
+         int id = LOWORD( wParam );
+         if( id == LVID_IDC_OK ) {
+            v->bOK = TRUE; DestroyWindow( hWnd ); return 0;
+         }
+         if( id == LVID_IDC_CAN ) {
+            v->bOK = FALSE; DestroyWindow( hWnd ); return 0;
+         }
+         if( id == LVID_IDC_ADD ) {
+            int c, sel = LVID_GetSel( v );
+            int ins = ( sel >= 0 ) ? sel + 1 : v->nRowCount;
+            if( v->nRowCount >= LVID_MAX_ROWS ) return 0;
+            /* Shift rows down from ins */
+            { int r;
+              for( r = v->nRowCount; r > ins; r-- ) {
+                 for( c = 0; c < LVID_MAX_COLS; c++ )
+                    lstrcpynA( v->szCells[r][c], v->szCells[r-1][c], LVID_TXT_LEN );
+              } }
+            for( c = 0; c < LVID_MAX_COLS; c++ )
+               v->szCells[ins][c][0] = 0;
+            v->nRowCount++;
+            LVID_Refresh( v );
+            LVID_SetSel( v, ins );
+            LVID_BeginEdit( v, ins, 0 );
+            return 0;
+         }
+         if( id == LVID_IDC_DEL ) {
+            int c, r, sel = LVID_GetSel( v );
+            if( sel < 0 || sel >= v->nRowCount ) return 0;
+            for( r = sel; r < v->nRowCount - 1; r++ )
+               for( c = 0; c < LVID_MAX_COLS; c++ )
+                  lstrcpynA( v->szCells[r][c], v->szCells[r+1][c], LVID_TXT_LEN );
+            for( c = 0; c < LVID_MAX_COLS; c++ )
+               v->szCells[v->nRowCount-1][c][0] = 0;
+            v->nRowCount--;
+            LVID_Refresh( v );
+            if( sel >= v->nRowCount ) sel = v->nRowCount - 1;
+            if( sel >= 0 ) LVID_SetSel( v, sel );
+            return 0;
+         }
+         if( id == LVID_IDC_UP ) {
+            int c, sel = LVID_GetSel( v );
+            char tmp[LVID_TXT_LEN];
+            if( sel <= 0 ) return 0;
+            for( c = 0; c < LVID_MAX_COLS; c++ ) {
+               lstrcpynA( tmp, v->szCells[sel-1][c], LVID_TXT_LEN );
+               lstrcpynA( v->szCells[sel-1][c], v->szCells[sel][c], LVID_TXT_LEN );
+               lstrcpynA( v->szCells[sel][c], tmp, LVID_TXT_LEN );
+            }
+            LVID_Refresh( v ); LVID_SetSel( v, sel - 1 );
+            return 0;
+         }
+         if( id == LVID_IDC_DN ) {
+            int c, sel = LVID_GetSel( v );
+            char tmp[LVID_TXT_LEN];
+            if( sel < 0 || sel >= v->nRowCount - 1 ) return 0;
+            for( c = 0; c < LVID_MAX_COLS; c++ ) {
+               lstrcpynA( tmp, v->szCells[sel+1][c], LVID_TXT_LEN );
+               lstrcpynA( v->szCells[sel+1][c], v->szCells[sel][c], LVID_TXT_LEN );
+               lstrcpynA( v->szCells[sel][c], tmp, LVID_TXT_LEN );
+            }
+            LVID_Refresh( v ); LVID_SetSel( v, sel + 1 );
+            return 0;
+         }
+         break;
+      }
+      case WM_NOTIFY:
+      {
+         NMHDR * nm = (NMHDR *) lParam;
+         if( nm->idFrom == LVID_IDC_LIST && nm->code == NM_DBLCLK )
+         {
+            LPNMITEMACTIVATE pia = (LPNMITEMACTIVATE) lParam;
+            LVHITTESTINFO ht;
+            ht.pt = pia->ptAction;
+            SendMessage( v->hList, LVM_SUBITEMHITTEST, 0, (LPARAM) &ht );
+            if( ht.iItem >= 0 && ht.iSubItem >= 0 )
+               LVID_BeginEdit( v, ht.iItem, ht.iSubItem );
+            return 0;
+         }
+         break;
+      }
+      case WM_CLOSE:
+         v->bOK = FALSE; DestroyWindow( hWnd ); return 0;
+      case WM_DESTROY:
+         return 0;
+   }
+   return DefWindowProcA( hWnd, msg, wParam, lParam );
+}
+
+static void InsListViewItemsEdit( INSDATA * d, int nLVRow )
+{
+   HINSTANCE hInst = GetModuleHandle( NULL );
+   WNDCLASSA wc = {0};
+   static BOOL bReg = FALSE;
+   HWND hDlg, hPar = d->hWnd;
+   int sw, sh, x, y;
+   const int dlgW = 600, dlgH = 380;
+   int nReal;
+   char szColsBuf[1024] = "";
+   LVID * v;
+   MSG msg;
+   BOOL bDone = FALSE;
+
+   if( nLVRow < 0 || nLVRow >= d->nVisible ) return;
+   nReal = d->map[nLVRow];
+
+   /* Fetch current aColumns via UI_GetProp */
+   {
+      PHB_DYNS pDyn = hb_dynsymFindName( "UI_GETPROP" );
+      if( pDyn && hb_vmRequestReenter() ) {
+         hb_vmPushDynSym( pDyn ); hb_vmPushNil();
+         hb_vmPushNumInt( d->hCtrl );
+         hb_vmPushString( "aColumns", 8 );
+         hb_vmDo( 2 );
+         { const char * s = hb_itemGetCPtr( hb_stackReturnItem() );
+           if( s ) lstrcpynA( szColsBuf, s, sizeof(szColsBuf) ); }
+         hb_vmRequestRestore();
+      }
+   }
+
+   v = (LVID *) calloc( 1, sizeof(LVID) );
+   if( !v ) return;
+   LVID_Parse( v, szColsBuf, d->rows[nReal].szValue );
+   s_pLVID = v;
+
+   if( !bReg ) {
+      wc.lpfnWndProc = LVIDDlgProc;
+      wc.hInstance = hInst;
+      wc.hCursor = LoadCursor( NULL, IDC_ARROW );
+      wc.hbrBackground = (HBRUSH)( COLOR_BTNFACE + 1 );
+      wc.lpszClassName = "HBLVIDDlg";
+      RegisterClassA( &wc );
+      bReg = TRUE;
+   }
+
+   sw = GetSystemMetrics( SM_CXSCREEN );
+   sh = GetSystemMetrics( SM_CYSCREEN );
+   x = ( sw - dlgW ) / 2; if( x < 0 ) x = 50;
+   y = ( sh - dlgH ) / 2; if( y < 0 ) y = 50;
+   hDlg = CreateWindowExA( WS_EX_DLGMODALFRAME | WS_EX_APPWINDOW,
+      "HBLVIDDlg", "ListView Items Editor",
+      WS_OVERLAPPED | WS_CAPTION | WS_SYSMENU,
+      x, y, dlgW, dlgH, NULL, NULL, hInst, NULL );
+   if( !hDlg ) { free( v ); s_pLVID = NULL; return; }
+   v->hDlg = hDlg;
+   if( s_bDarkIDE ) {
+      BOOL bDark = TRUE;
+      DwmSetWindowAttribute( hDlg, DWMWA_USE_IMMERSIVE_DARK_MODE,
+         &bDark, sizeof(bDark) );
+   }
+
+   /* Toolbar buttons */
+   {
+      struct { const char * txt; int id; int x; int w; } btns[] = {
+         { "+ Add",   LVID_IDC_ADD, 8,    60 },
+         { "- Del",   LVID_IDC_DEL, 72,   60 },
+         { "Up",      LVID_IDC_UP,  136,  40 },
+         { "Down",    LVID_IDC_DN,  180,  50 }
+      };
+      int i;
+      for( i = 0; i < 4; i++ )
+         CreateWindowExA( 0, "BUTTON", btns[i].txt,
+            WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+            btns[i].x, 8, btns[i].w, 26,
+            hDlg, (HMENU)(LONG_PTR) btns[i].id, hInst, NULL );
+   }
+
+   /* ListView grid */
+   v->hList = CreateWindowExA( WS_EX_CLIENTEDGE, WC_LISTVIEWA, "",
+      WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT | LVS_SHOWSELALWAYS |
+      LVS_SINGLESEL,
+      8, 44, dlgW - 32, dlgH - 120,
+      hDlg, (HMENU)(LONG_PTR) LVID_IDC_LIST, hInst, NULL );
+   SendMessage( v->hList, LVM_SETEXTENDEDLISTVIEWSTYLE, 0,
+      LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES );
+   if( s_bDarkIDE ) {
+      ListView_SetBkColor( v->hList, RGB(45,45,48) );
+      ListView_SetTextBkColor( v->hList, RGB(45,45,48) );
+      ListView_SetTextColor( v->hList, RGB(212,212,212) );
+   }
+   LVID_Refresh( v );
+
+   /* OK / Cancel */
+   CreateWindowExA( 0, "BUTTON", "OK",
+      WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON,
+      dlgW - 180, dlgH - 70, 70, 28,
+      hDlg, (HMENU)(LONG_PTR) LVID_IDC_OK, hInst, NULL );
+   CreateWindowExA( 0, "BUTTON", "Cancel",
+      WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON,
+      dlgW - 100, dlgH - 70, 70, 28,
+      hDlg, (HMENU)(LONG_PTR) LVID_IDC_CAN, hInst, NULL );
+
+   /* Hint text */
+   CreateWindowExA( 0, "STATIC",
+      "Double-click a cell to edit. Enter to commit, Esc to cancel.",
+      WS_CHILD | WS_VISIBLE | SS_LEFT,
+      8, dlgH - 64, dlgW - 200, 18,
+      hDlg, NULL, hInst, NULL );
+
+   ShowWindow( hDlg, SW_SHOW );
+   UpdateWindow( hDlg );
+   EnableWindow( hPar, FALSE );
+
+   /* Modal loop */
+   while( !bDone && GetMessage( &msg, NULL, 0, 0 ) ) {
+      if( !IsWindow( hDlg ) ) { bDone = TRUE; break; }
+      if( !IsDialogMessageA( hDlg, &msg ) ) {
+         TranslateMessage( &msg );
+         DispatchMessage( &msg );
+      }
+   }
+   EnableWindow( hPar, TRUE );
+   SetForegroundWindow( hPar );
+
+   if( v->bOK ) {
+      char result[8192];
+      LVID_Serialize( v, result, sizeof(result) );
+      lstrcpynA( d->rows[nReal].szValue, result, sizeof(d->rows[0].szValue) );
+      InsApplyValue( d, nReal, result );
+      InsRebuild( d );
+      if( d->pOnPropChanged && HB_IS_BLOCK( d->pOnPropChanged ) ) {
+         if( hb_vmRequestReenter() ) {
+            hb_vmPushEvalSym();
+            hb_vmPush( d->pOnPropChanged );
+            hb_vmSend( 0 );
+            hb_vmRequestRestore();
+         }
+      }
+   }
+   free( v );
+   s_pLVID = NULL;
 }
 
 /* ===== Menu Items Editor (CT_MAINMENU) ===================================

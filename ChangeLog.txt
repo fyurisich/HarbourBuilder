@@ -1,6 +1,78 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-28
+
+  - feat(win-listview): Real TListView implementation with editable
+    aColumns / aItems / nViewStyle properties. Backing storage in
+    TListView struct (FColumns[8][64], FCells[64][8][64], FColCount,
+    FRowCount, FViewStyle). CreateHandle now wires LVS_EX_FULLROWSELECT
+    + LVS_EX_GRIDLINES and calls Repopulate() to push columns and rows
+    into the WC_LISTVIEW HWND. Repopulate() rebuilds via LVM_DELETECOLUMN
+    / LVM_INSERTCOLUMNA / LVM_INSERTITEMA / LVM_SETITEMTEXT. Wire format:
+    aColumns is pipe-separated headers ("Name|Age|City"); aItems is
+    pipe-separated rows with semicolon cells ("Alice;30;NY|Bob;25;LA").
+
+  - feat(win-listview): hbbridge UI_SetProp / UI_GetProp / UI_GetAllProps
+    handle CT_LISTVIEW for aColumns, aItems, nViewStyle. UI_SetProp
+    parser increments FRowCount on '|' and end-of-string; the end-of-
+    string flush now commits the trailing row when it ends with ';'
+    (col > 0 || j > 0) which previously dropped the last item.
+
+  - feat(win-listview): TListView class in source/core/classes.prg with
+    DATA aColumns / aItems INIT {}, ACCESS / ASSIGN nViewStyle, METHOD
+    New / SetColumns / SetItems / AddItem. SetItems({}) clears (no
+    Len > 0 guard). xcommand in include/hbbuilder.ch supports:
+      @ <Y>, <X> LISTVIEW <oCtrl> [OF <oParent>] [SIZE <w>, <h>]
+         [COLUMNS <cols,...>] [ITEMS <items,...>]
+    where each ITEMS string is a row pre-encoded with ';' cells.
+
+  - feat(win-listview): Codegen in hbbuilder_win.prg emits LISTVIEW with
+    COLUMNS + ITEMS clause (single line, ";"-encoded rows) instead of
+    one :AddItem per row. Restore parser RestoreFormFromCode handles:
+    a) " LISTVIEW " case extracting COLUMNS and ITEMS, b) ":AddItem("
+    method-style line accumulating rows on the last hCtrl, c) PRG ';'
+    line continuation (joins next line into current cTrim). The
+    continuation join also fixes any other multi-line @ commands.
+
+  - feat(win-inspector): Dedicated ListView Items Editor dialog
+    (InsListViewItemsEdit in source/inspector/inspector_win.prg) replaces
+    the generic Array dialog when editing aItems on a CT_LISTVIEW.
+    Custom modal popup (HBLVIDDlg) with grid (LVS_REPORT|GRIDLINES)
+    showing aColumns headers, +Add / -Del / Up / Down toolbar, OK /
+    Cancel. Double-click a cell to edit in place (Enter commit, Esc
+    cancel, KILLFOCUS commit). Add inserts a blank row after the
+    selection and starts inplace edit on column 0. Dispatch lives in
+    InsBtnProc; new helper InsGetCtrlType uses UI_GETTYPE via
+    hb_vmRequestReenter.
+
+  - feat(win-listview): nViewStyle dropdown enum already wired in
+    s_enums (vsIcon|vsList|vsReport|vsSmallIcon). UI_SetProp now applies
+    SetWindowPos with SWP_FRAMECHANGED, calls Repopulate() and
+    InvalidateRect after switching LVS_* style so live changes refresh
+    the Win32 ListView (which otherwise caches the old style).
+
+  - fix(win-rubberband): Reverted XOR-on-screen-DC drawing
+    (R2_NOT, black 2px) that flickered to the older blue dashed
+    style: PS_DASH 2px RGB(0,120,215) on the form HDC. Erase of the
+    previous frame uses 4 narrow InvalidateRect bands (top/bottom/
+    left/right) instead of full-form repaint, keeping flicker minimal.
+    Mouse-up clears via single InvalidateRect(NULL). Trade-off: rubber
+    band no longer paints over band child HWNDs in Report Designer.
+
+  - feat(samples): New samples/projects/listview/ project demonstrates
+    TListView with 3 cols (Name/Age/City), 3 initial rows, plus
+    "Add row" / "Clear" buttons wired to BtnAddClick / BtnClearClick
+    methods following the IDE handler convention (control name without
+    leading 'o' + event suffix).
+
+  - docs: ES / EN / PT controls-native.html: TListView section rewritten
+    with current properties (aColumns, aItems, nViewStyle), method
+    table (SetColumns / SetItems / AddItem), xBase syntax example,
+    "Editing in the Inspector" section describing the dedicated dialog,
+    storage format (pipe rows / semicolon cells), and view styles note
+    on Icon/SmallIcon ImageList requirement.
+
 2026-04-27b
 
   - fix(build_win.bat): MSVC branch HBBIN was set to %HBDIR%\bin

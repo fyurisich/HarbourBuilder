@@ -1742,6 +1742,76 @@ HB_FUNC( UI_SETPROP )
          cb->FItemCount++;
       }
    }
+   else if( lstrcmpi( szProp, "aColumns" ) == 0 && p->FControlType == CT_LISTVIEW && HB_ISCHAR(3) )
+   {  TListView * lv = (TListView*)p;
+      const char * s = hb_parc(3); char buf[LV_TXT_LEN]; int j = 0;
+      lv->FColCount = 0;
+      memset( lv->FColumns, 0, sizeof(lv->FColumns) );
+      while( *s && lv->FColCount < LV_MAX_COLS ) {
+         if( *s == '|' ) {
+            buf[j] = 0; lstrcpynA( lv->FColumns[lv->FColCount++], buf, LV_TXT_LEN ); j = 0;
+         } else if( j < LV_TXT_LEN - 1 ) { buf[j++] = *s; }
+         s++;
+      }
+      if( j > 0 && lv->FColCount < LV_MAX_COLS ) {
+         buf[j] = 0; lstrcpynA( lv->FColumns[lv->FColCount++], buf, LV_TXT_LEN );
+      }
+      if( lv->FColCount == 0 ) {
+         lstrcpynA( lv->FColumns[0], "Column1", LV_TXT_LEN ); lv->FColCount = 1;
+      }
+      lv->Repopulate();
+   }
+   else if( lstrcmpi( szProp, "aItems" ) == 0 && p->FControlType == CT_LISTVIEW && HB_ISCHAR(3) )
+   {  TListView * lv = (TListView*)p;
+      const char * s = hb_parc(3); char buf[LV_TXT_LEN]; int j = 0, col = 0;
+      lv->FRowCount = 0;
+      memset( lv->FCells, 0, sizeof(lv->FCells) );
+      while( *s && lv->FRowCount < LV_MAX_ROWS ) {
+         if( *s == '|' ) {
+            buf[j] = 0;
+            if( col < LV_MAX_COLS ) lstrcpynA( lv->FCells[lv->FRowCount][col], buf, LV_TXT_LEN );
+            lv->FRowCount++; col = 0; j = 0;
+         } else if( *s == ';' ) {
+            buf[j] = 0;
+            if( col < LV_MAX_COLS ) lstrcpynA( lv->FCells[lv->FRowCount][col], buf, LV_TXT_LEN );
+            col++; j = 0;
+         } else if( j < LV_TXT_LEN - 1 ) { buf[j++] = *s; }
+         s++;
+      }
+      /* End of input: flush pending cell, commit row if any data on it */
+      if( lv->FRowCount < LV_MAX_ROWS ) {
+         if( j > 0 && col < LV_MAX_COLS ) {
+            buf[j] = 0;
+            lstrcpynA( lv->FCells[lv->FRowCount][col], buf, LV_TXT_LEN );
+         }
+         if( j > 0 || col > 0 ) {
+            lv->FRowCount++;
+         }
+      }
+      lv->Repopulate();
+   }
+   else if( lstrcmpi( szProp, "nViewStyle" ) == 0 && p->FControlType == CT_LISTVIEW )
+   {  TListView * lv = (TListView*)p;
+      lv->FViewStyle = hb_parni(3);
+      if( lv->FHandle ) {
+         DWORD dw = (DWORD) GetWindowLongPtr( lv->FHandle, GWL_STYLE );
+         dw &= ~(LVS_ICON | LVS_LIST | LVS_REPORT | LVS_SMALLICON);
+         switch( lv->FViewStyle ) {
+            case 0: dw |= LVS_ICON; break;
+            case 1: dw |= LVS_LIST; break;
+            case 3: dw |= LVS_SMALLICON; break;
+            default: dw |= LVS_REPORT; break;
+         }
+         SetWindowLongPtr( lv->FHandle, GWL_STYLE, dw );
+         /* Force frame recompute + redraw — Win32 ListView ignores style
+            changes without an SWP_FRAMECHANGED kick. Repopulate also
+            re-attaches columns since LVS_REPORT requires them. */
+         SetWindowPos( lv->FHandle, NULL, 0, 0, 0, 0,
+            SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER | SWP_FRAMECHANGED );
+         lv->Repopulate();
+         InvalidateRect( lv->FHandle, NULL, TRUE );
+      }
+   }
    else if( lstrcmpi( szProp, "cName" ) == 0 && HB_ISCHAR(3) )
       lstrcpynA( p->FName, hb_parc(3), sizeof(p->FName) );
    else if( lstrcmpi( szProp, "lSizable" ) == 0 && p->FControlType == CT_FORM )
@@ -2187,6 +2257,27 @@ HB_FUNC( UI_GETPROP )
    }
    else if( lstrcmpi( szProp, "aMenuItems" ) == 0 && p->FControlType == CT_MAINMENU )
       hb_retc( p->FData );
+   else if( lstrcmpi( szProp, "aColumns" ) == 0 && p->FControlType == CT_LISTVIEW )
+   {  TListView * lv = (TListView*)p; char szAll[1024] = ""; int ci;
+      for( ci = 0; ci < lv->FColCount; ci++ ) {
+         if( ci > 0 ) lstrcatA( szAll, "|" );
+         lstrcatA( szAll, lv->FColumns[ci] );
+      }
+      hb_retc( szAll );
+   }
+   else if( lstrcmpi( szProp, "aItems" ) == 0 && p->FControlType == CT_LISTVIEW )
+   {  TListView * lv = (TListView*)p; char szAll[8192] = ""; int ri, ci;
+      for( ri = 0; ri < lv->FRowCount; ri++ ) {
+         if( ri > 0 ) lstrcatA( szAll, "|" );
+         for( ci = 0; ci < lv->FColCount; ci++ ) {
+            if( ci > 0 ) lstrcatA( szAll, ";" );
+            lstrcatA( szAll, lv->FCells[ri][ci] );
+         }
+      }
+      hb_retc( szAll );
+   }
+   else if( lstrcmpi( szProp, "nViewStyle" ) == 0 && p->FControlType == CT_LISTVIEW )
+      hb_retni( ((TListView*)p)->FViewStyle );
    else if( lstrcmpi( szProp, "aColumns" ) == 0 && p->FControlType == CT_BROWSE )
    {
       TBrowse * br = (TBrowse *) p;
@@ -2945,6 +3036,38 @@ HB_FUNC( UI_GETALLPROPS )
          hb_arraySetC( pRow, 4, "M" );
          hb_arrayAdd( pArray, pRow );
          hb_itemRelease( pRow );
+         break;
+      }
+      case CT_LISTVIEW:
+      {  TListView * lv = (TListView*)p;
+         char szCols[1024] = ""; char szItems[8192] = "";
+         int ci, ri;
+         for( ci = 0; ci < lv->FColCount; ci++ ) {
+            if( ci > 0 ) lstrcatA( szCols, "|" );
+            lstrcatA( szCols, lv->FColumns[ci] );
+         }
+         for( ri = 0; ri < lv->FRowCount; ri++ ) {
+            if( ri > 0 ) lstrcatA( szItems, "|" );
+            for( ci = 0; ci < lv->FColCount; ci++ ) {
+               if( ci > 0 ) lstrcatA( szItems, ";" );
+               lstrcatA( szItems, lv->FCells[ri][ci] );
+            }
+         }
+         pRow = hb_itemArrayNew(4);
+         hb_arraySetC( pRow, 1, "aColumns" );
+         hb_arraySetC( pRow, 2, szCols );
+         hb_arraySetC( pRow, 3, "Data" );
+         hb_arraySetC( pRow, 4, "A" );
+         hb_arrayAdd( pArray, pRow );
+         hb_itemRelease( pRow );
+         pRow = hb_itemArrayNew(4);
+         hb_arraySetC( pRow, 1, "aItems" );
+         hb_arraySetC( pRow, 2, szItems );
+         hb_arraySetC( pRow, 3, "Data" );
+         hb_arraySetC( pRow, 4, "A" );
+         hb_arrayAdd( pArray, pRow );
+         hb_itemRelease( pRow );
+         ADD_PROP_N( "nViewStyle", lv->FViewStyle, "Appearance" );
          break;
       }
       case CT_REPORTLABEL:

@@ -1122,12 +1122,25 @@ const PROPDESC * TTreeView::GetPropDescs( int * pnCount )
  * TListView (C++Builder Win32 tab)
  * ====================================================================== */
 
+static PROPDESC aListViewProps[] = {
+   { "aColumns",   PT_STRING, 0, "Data" },
+   { "aItems",     PT_STRING, 0, "Data" },
+   { "nViewStyle", PT_NUMBER, 0, "Appearance" },
+};
+
 TListView::TListView()
 {
    lstrcpy( FClassName, "TListView" );
    FControlType = CT_LISTVIEW;
    FViewStyle = 2;  /* vsReport */
    FWidth = 200; FHeight = 150;
+   FColCount = 3;
+   FRowCount = 0;
+   memset( FColumns, 0, sizeof(FColumns) );
+   memset( FCells,   0, sizeof(FCells) );
+   lstrcpynA( FColumns[0], "Column1", LV_TXT_LEN );
+   lstrcpynA( FColumns[1], "Column2", LV_TXT_LEN );
+   lstrcpynA( FColumns[2], "Column3", LV_TXT_LEN );
 }
 
 void TListView::CreateParams( DWORD * pdwStyle, DWORD * pdwExStyle, const char ** pszClass )
@@ -1137,9 +1150,59 @@ void TListView::CreateParams( DWORD * pdwStyle, DWORD * pdwExStyle, const char *
    *pdwExStyle = WS_EX_CLIENTEDGE;
 }
 
+void TListView::CreateHandle( HWND hParent )
+{
+   TControl::CreateHandle( hParent );
+   if( FHandle )
+   {
+      SendMessage( FHandle, LVM_SETEXTENDEDLISTVIEWSTYLE, 0,
+         LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES );
+      Repopulate();
+   }
+}
+
+void TListView::Repopulate()
+{
+   int i, c;
+   if( !FHandle ) return;
+
+   /* Clear columns + items */
+   while( SendMessage( FHandle, LVM_DELETECOLUMN, 0, 0 ) ) { /* drop col 0 until empty */ }
+   ListView_DeleteAllItems( FHandle );
+
+   /* Insert columns */
+   for( c = 0; c < FColCount; c++ )
+   {
+      LVCOLUMNA col;
+      memset( &col, 0, sizeof(col) );
+      col.mask = LVCF_TEXT | LVCF_WIDTH | LVCF_SUBITEM;
+      col.pszText = FColumns[c];
+      col.cx = FWidth / ( FColCount > 0 ? FColCount : 1 );
+      col.iSubItem = c;
+      SendMessageA( FHandle, LVM_INSERTCOLUMNA, c, (LPARAM) &col );
+   }
+
+   /* Insert rows */
+   for( i = 0; i < FRowCount; i++ )
+   {
+      LVITEMA item;
+      memset( &item, 0, sizeof(item) );
+      item.mask = LVIF_TEXT;
+      item.iItem = i;
+      item.iSubItem = 0;
+      item.pszText = FCells[i][0];
+      SendMessageA( FHandle, LVM_INSERTITEMA, 0, (LPARAM) &item );
+      for( c = 1; c < FColCount; c++ )
+      {
+         ListView_SetItemText( FHandle, i, c, FCells[i][c] );
+      }
+   }
+}
+
 const PROPDESC * TListView::GetPropDescs( int * pnCount )
 {
-   return TControl::GetPropDescs( pnCount );
+   *pnCount = sizeof(aListViewProps) / sizeof(aListViewProps[0]);
+   return aListViewProps;
 }
 
 /* ======================================================================

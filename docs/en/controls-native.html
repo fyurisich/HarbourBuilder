@@ -137,31 +137,64 @@ oRoot:<span class="fn">Expand</span>()</pre>
 
 <!-- TListView -->
 <h2 id="listview">TListView <span class="badge new">CT_LISTVIEW = 21</span></h2>
-<p>Multi-column list with icons. Supports icon, small icon, list, and detail/report view modes.</p>
+<p>Multi-column list in report mode (LVS_REPORT). Each item is a row with N cells; column headers come from <code>aColumns</code>.</p>
 
 <table>
   <tr><th>Property</th><th>Type</th><th>Default</th><th>Description</th></tr>
-  <tr><td><code>nViewStyle</code></td><td>Numeric</td><td>3</td><td>0=Icon, 1=SmallIcon, 2=List, 3=Report</td></tr>
-  <tr><td><code>lGridLines</code></td><td>Logical</td><td>.F.</td><td>Show grid lines in report view</td></tr>
-  <tr><td><code>lCheckBoxes</code></td><td>Logical</td><td>.F.</td><td>Show checkboxes</td></tr>
-  <tr><td><code>lMultiSelect</code></td><td>Logical</td><td>.F.</td><td>Allow multiple selection</td></tr>
-  <tr><td><code>nSortColumn</code></td><td>Numeric</td><td>-1</td><td>Column to sort by (-1 = none)</td></tr>
+  <tr><td><code>aColumns</code></td><td>Array</td><td>{"Column1","Column2","Column3"}</td><td>Column headers (max 8)</td></tr>
+  <tr><td><code>aItems</code></td><td>Array</td><td>{}</td><td>Rows; each element is an array of strings, one per column (max 64 rows)</td></tr>
+  <tr><td><code>nViewStyle</code></td><td>Numeric</td><td>2</td><td>0=Icon, 1=List, 2=Report, 3=SmallIcon</td></tr>
+</table>
+
+<table>
+  <tr><th>Method</th><th>Description</th></tr>
+  <tr><td><code>SetColumns( aCols )</code></td><td>Set headers from string array</td></tr>
+  <tr><td><code>SetItems( aRows )</code></td><td>Replace all rows; <code>SetItems({})</code> clears</td></tr>
+  <tr><td><code>AddItem( aCells )</code></td><td>Append a row at the end</td></tr>
 </table>
 
 <table>
   <tr><th>Event</th><th>Category</th><th>Description</th></tr>
-  <tr><td><code>OnSelectItem</code></td><td>Action</td><td>Item selected</td></tr>
+  <tr><td><code>OnClick</code></td><td>Action</td><td>Item clicked</td></tr>
   <tr><td><code>OnDblClick</code></td><td>Action</td><td>Item double-clicked</td></tr>
   <tr><td><code>OnColumnClick</code></td><td>Action</td><td>Column header clicked (for sorting)</td></tr>
-  <tr><td><code>OnEdited</code></td><td>Action</td><td>Item label edited</td></tr>
+  <tr><td><code>OnChange</code></td><td>Action</td><td>Selection changed</td></tr>
 </table>
 
 <table>
   <tr><th>Platform</th><th>Native Widget</th></tr>
-  <tr><td><span class="badge win">Windows</span></td><td>WC_LISTVIEW (SysListView32)</td></tr>
-  <tr><td><span class="badge mac">macOS</span></td><td>NSTableView (multi-column)</td></tr>
+  <tr><td><span class="badge win">Windows</span></td><td>WC_LISTVIEW (SysListView32) with LVS_REPORT + LVS_EX_FULLROWSELECT|GRIDLINES</td></tr>
+  <tr><td><span class="badge mac">macOS</span></td><td>NSTableView multi-column</td></tr>
   <tr><td><span class="badge linux">Linux</span></td><td>GtkTreeView + GtkListStore</td></tr>
 </table>
+
+<h3>xBase syntax</h3>
+<pre><span class="cm">// Define ListView with 3 columns</span>
+@ <span class="nb">50</span>, <span class="nb">20</span> <span class="cmd">LISTVIEW</span> oLV <span class="cmd">OF</span> oForm <span class="cmd">SIZE</span> <span class="nb">480</span>, <span class="nb">250</span> ;
+   <span class="cmd">COLUMNS</span> <span class="st">"Name"</span>, <span class="st">"Age"</span>, <span class="st">"City"</span>
+
+oLV:<span class="fn">AddItem</span>( { <span class="st">"Alice"</span>,   <span class="st">"30"</span>, <span class="st">"New York"</span>    } )
+oLV:<span class="fn">AddItem</span>( { <span class="st">"Bob"</span>,     <span class="st">"25"</span>, <span class="st">"Los Angeles"</span> } )
+oLV:<span class="fn">AddItem</span>( { <span class="st">"Charlie"</span>, <span class="st">"40"</span>, <span class="st">"Chicago"</span>     } )
+</pre>
+
+<h3>Editing in the Inspector</h3>
+<p>When a TListView control is selected in the designer, the inspector exposes two editable properties:</p>
+<ul>
+  <li><strong>aColumns</strong> &mdash; click the <code>...</code> button to open the array editor. One column header per line.</li>
+  <li><strong>aItems</strong> &mdash; click the <code>...</code> button to open the dedicated <em>ListView Items Editor</em>: a grid showing the columns from <code>aColumns</code>, one row per item, double-click any cell to edit it in place. Buttons <code>+ Add</code> / <code>- Del</code> / <code>Up</code> / <code>Down</code> manage rows. Enter commits, Esc cancels.</li>
+</ul>
+<p>The code generator emits the <code>@ ... LISTVIEW ... COLUMNS ...</code> command followed by one <code>:AddItem({...})</code> call per row.</p>
+
+<h3>Storage format</h3>
+<p>Internally <code>aColumns</code> and <code>aItems</code> are serialized as strings:</p>
+<ul>
+  <li><code>aColumns</code>: headers separated by <code>|</code> &mdash; e.g. <code>"Name|Age|City"</code></li>
+  <li><code>aItems</code>: rows separated by <code>|</code>, cells within each row by <code>;</code> &mdash; e.g. <code>"Alice;30;NY|Bob;25;LA"</code></li>
+</ul>
+
+<h3>View styles</h3>
+<p>The <code>nViewStyle</code> property appears in the inspector as a dropdown with the enumerated values (<code>vsIcon</code>, <code>vsList</code>, <code>vsReport</code>, <code>vsSmallIcon</code>). Changing the value at runtime refreshes the control immediately. The <strong>Icon</strong> and <strong>SmallIcon</strong> modes require an ImageList to display icons; without one items render as text only.</p>
 
 <!-- TProgressBar -->
 <h2 id="progressbar">TProgressBar <span class="badge new">CT_PROGRESSBAR = 22</span></h2>

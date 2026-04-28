@@ -882,7 +882,7 @@ static function RegenerateFormCode( cName, hForm )
    local nL, nT, nCW, nCH, cText, nCtrlClr
    local cDatas := "", cCreate := "", cEvents := ""
    local cExistingCode, aEvents, j, cEvName, cEvSuffix, cHandlerName
-   local cVal, aHdrs, kk, nColCount, aColProps, nColW, nInterval
+   local cVal, aHdrs, kk, nn, nColCount, aColProps, nColW, nInterval
    local aCtrlMap := {}, cOf, hOwner, nPg, kk2, nLen0, cSlice, lRealCreate, nVal
    local cBandFields, aBandField, cBandFldLine, aBandRec
    local aMenuHandlers := {}, nMI, aMFields, lHasHandlers, cHndl, aMenuNodes
@@ -1077,9 +1077,26 @@ static function RegenerateFormCode( cName, hForm )
                   LTrim(Str(nL)) + ',' + LTrim(Str(nT)) + ' SIZE ' + ;
                   LTrim(Str(nCW)) + ',' + LTrim(Str(nCH)) + e
             case nType == 21  // ListView
-               cCreate += '   // ::o' + cCtrlName + ' (TListView) at ' + ;
-                  LTrim(Str(nL)) + ',' + LTrim(Str(nT)) + ' SIZE ' + ;
-                  LTrim(Str(nCW)) + ',' + LTrim(Str(nCH)) + e
+               cCreate += '   @ ' + LTrim(Str(nT)) + ", " + LTrim(Str(nL)) + ;
+                  ' LISTVIEW ::o' + cCtrlName + ' OF Self SIZE ' + ;
+                  LTrim(Str(nCW)) + ", " + LTrim(Str(nCH))
+               cVal := UI_GetProp( hCtrl, "aColumns" )
+               if ValType( cVal ) == "C" .and. ! Empty( cVal )
+                  cCreate += ' COLUMNS '
+                  for kk := 1 to Len( hb_ATokens( cVal, "|" ) )
+                     if kk > 1; cCreate += ', '; endif
+                     cCreate += '"' + hb_ATokens( cVal, "|" )[ kk ] + '"'
+                  next
+               endif
+               cVal := UI_GetProp( hCtrl, "aItems" )
+               if ValType( cVal ) == "C" .and. ! Empty( cVal )
+                  cCreate += ' ITEMS '
+                  for kk := 1 to Len( hb_ATokens( cVal, "|" ) )
+                     if kk > 1; cCreate += ', '; endif
+                     cCreate += '"' + hb_ATokens( cVal, "|" )[ kk ] + '"'
+                  next
+               endif
+               cCreate += e
             case nType == 22  // ProgressBar
                cCreate += '   // ::o' + cCtrlName + ' (TProgressBar) at ' + ;
                   LTrim(Str(nL)) + ',' + LTrim(Str(nT)) + ' SIZE ' + ;
@@ -2350,11 +2367,50 @@ static function RestoreFormFromCode( hForm, cCode )
       cLine := aLines[i]
       cTrim := StrTran( AllTrim( cLine ), Chr(13), "" )
 
+      // Join PRG continuation lines: trailing ';' means next line is part
+      // of the same statement (e.g., '@ Y,X LISTVIEW ::oLV ... SIZE w,h ;'
+      // followed by '   COLUMNS "a","b","c"').
+      do while Right( cTrim, 1 ) == ";" .and. i < Len( aLines )
+         cTrim := Left( cTrim, Len( cTrim ) - 1 )
+         i++
+         cTrim += " " + StrTran( AllTrim( aLines[ i ] ), Chr(13), "" )
+      enddo
+
       // ::oCtrlName:Value := N  — restore nItemIndex for ListBox/ComboBox
       if "::o" $ cTrim .and. ":Value :=" $ cTrim .and. hCtrl != 0
          nPos := At( ":=", cTrim )
          if nPos > 0
             UI_SetProp( hCtrl, "nItemIndex", Val( AllTrim( SubStr( cTrim, nPos + 2 ) ) ) )
+         endif
+         loop
+      endif
+
+      // ::oCtrlName:AddItem( { "cell1", "cell2", ... } ) — restore ListView rows
+      if "::o" $ cTrim .and. ":AddItem(" $ cTrim .and. hCtrl != 0
+         nPos := At( "{", cTrim )
+         nPos2 := RAt( "}", cTrim )
+         if nPos > 0 .and. nPos2 > nPos
+            cText := SubStr( cTrim, nPos + 1, nPos2 - nPos - 1 )
+            cVal := ""    // cells joined by ';'
+            do while ! Empty( cText )
+               nPos := At( '"', cText )
+               if nPos == 0; exit; endif
+               cText := SubStr( cText, nPos + 1 )
+               nPos := At( '"', cText )
+               if nPos == 0; exit; endif
+               if ! Empty( cVal ); cVal += ";"; endif
+               cVal += Left( cText, nPos - 1 )
+               cText := SubStr( cText, nPos + 1 )
+            enddo
+            // Append row to existing aItems
+            cText := UI_GetProp( hCtrl, "aItems" )
+            if ValType( cText ) != "C"; cText := ""; endif
+            if ! Empty( cText )
+               cText += "|" + cVal
+            else
+               cText := cVal
+            endif
+            UI_SetProp( hCtrl, "aItems", cText )
          endif
          loop
       endif
@@ -2900,6 +2956,49 @@ static function RestoreFormFromCode( hForm, cCode )
             nPos := At( "ITEMS ", Upper( cTrim ) )
             if nPos > 0 .and. hCtrl != 0
                cText := SubStr( cTrim, nPos + 6 )
+               cVal := ""
+               do while ! Empty( cText )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  cText := SubStr( cText, nPos2 + 1 )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  if ! Empty( cVal ); cVal += "|"; endif
+                  cVal += Left( cText, nPos2 - 1 )
+                  cText := SubStr( cText, nPos2 + 1 )
+               enddo
+               if ! Empty( cVal )
+                  UI_SetProp( hCtrl, "aItems", cVal )
+               endif
+            endif
+         case " LISTVIEW " $ Upper( cTrim )
+            hCtrl := UI_ListViewNew( hForm, nL, nT, nW, nH )
+            // Extract COLUMNS "Name","Age" — stop at ITEMS keyword
+            nPos := At( "COLUMNS ", Upper( cTrim ) )
+            if nPos > 0 .and. hCtrl != 0
+               cText := SubStr( cTrim, nPos + 8 )
+               nPos2 := At( " ITEMS ", Upper( cText ) )
+               if nPos2 > 0; cText := Left( cText, nPos2 - 1 ); endif
+               cVal := ""
+               do while ! Empty( cText )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  cText := SubStr( cText, nPos2 + 1 )
+                  nPos2 := At( '"', cText )
+                  if nPos2 == 0; exit; endif
+                  if ! Empty( cVal ); cVal += "|"; endif
+                  cVal += Left( cText, nPos2 - 1 )
+                  cText := SubStr( cText, nPos2 + 1 )
+               enddo
+               if ! Empty( cVal )
+                  UI_SetProp( hCtrl, "aColumns", cVal )
+               endif
+            endif
+            // Extract ITEMS "row1cells", "row2cells" — each item already
+            // semicolon-separated cells; join rows with '|' for backend.
+            nPos := At( " ITEMS ", Upper( cTrim ) )
+            if nPos > 0 .and. hCtrl != 0
+               cText := SubStr( cTrim, nPos + 7 )
                cVal := ""
                do while ! Empty( cText )
                   nPos2 := At( '"', cText )

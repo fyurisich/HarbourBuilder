@@ -1129,30 +1129,49 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
 
       case WM_MOUSEMOVE:
       {
-         /* Rubber band — R2_NOT on screen DC: draw twice at same pos = erase */
+         /* Rubber band — 2px dashed blue line, erase prior frame via
+            narrow InvalidateRect bands so background under prior rect
+            repaints (avoids full-form flash). */
          if( FDesignMode && FRubberBand )
          {
             int mx = (short)LOWORD(lParam), my = (short)HIWORD(lParam) - FClientTop;
+            HDC  hDC; HPEN hPen, hOld;
 
-            #define DRAW_RUBBERBAND(hWnd, ct, x1,y1,x2,y2) \
-            { POINT _p1, _p2; HDC _dc; HPEN _pn, _op; \
-              _p1.x=(x1); _p1.y=(y1)+(ct); _p2.x=(x2); _p2.y=(y2)+(ct); \
-              ClientToScreen((hWnd),&_p1); ClientToScreen((hWnd),&_p2); \
-              _dc=GetDC(NULL); _pn=CreatePen(PS_SOLID,2,RGB(0,0,0)); \
-              _op=(HPEN)SelectObject(_dc,_pn); \
-              SelectObject(_dc,GetStockObject(NULL_BRUSH)); \
-              SetROP2(_dc,R2_NOT); Rectangle(_dc,_p1.x,_p1.y,_p2.x,_p2.y); \
-              SelectObject(_dc,_op); DeleteObject(_pn); ReleaseDC(NULL,_dc); }
-
-            /* Erase previous rect if one is on screen */
             if( FRubberDrawn )
-               DRAW_RUBBERBAND( FHandle, FClientTop, FRubberX1, FRubberY1, FRubberX2, FRubberY2 )
+            {
+               int ex1 = FRubberX1 < FRubberX2 ? FRubberX1 : FRubberX2;
+               int ey1 = FRubberY1 < FRubberY2 ? FRubberY1 : FRubberY2;
+               int ex2 = FRubberX1 > FRubberX2 ? FRubberX1 : FRubberX2;
+               int ey2 = FRubberY1 > FRubberY2 ? FRubberY1 : FRubberY2;
+               RECT rT, rB, rL, rR;
+               rT.left = ex1 - 2; rT.right = ex2 + 3;
+               rT.top = ey1 - 2 + FClientTop; rT.bottom = ey1 + 3 + FClientTop;
+               rB.left = ex1 - 2; rB.right = ex2 + 3;
+               rB.top = ey2 - 2 + FClientTop; rB.bottom = ey2 + 3 + FClientTop;
+               rL.left = ex1 - 2; rL.right = ex1 + 3;
+               rL.top = ey1 - 2 + FClientTop; rL.bottom = ey2 + 3 + FClientTop;
+               rR.left = ex2 - 2; rR.right = ex2 + 3;
+               rR.top = ey1 - 2 + FClientTop; rR.bottom = ey2 + 3 + FClientTop;
+               InvalidateRect( FHandle, &rT, TRUE );
+               InvalidateRect( FHandle, &rB, TRUE );
+               InvalidateRect( FHandle, &rL, TRUE );
+               InvalidateRect( FHandle, &rR, TRUE );
+               UpdateWindow( FHandle );
+            }
 
             FRubberX2 = mx;
             FRubberY2 = my;
 
-            /* Draw new rect */
-            DRAW_RUBBERBAND( FHandle, FClientTop, FRubberX1, FRubberY1, FRubberX2, FRubberY2 )
+            hDC = GetDC( FHandle );
+            hPen = CreatePen( PS_DASH, 2, RGB( 0, 120, 215 ) );
+            hOld = (HPEN) SelectObject( hDC, hPen );
+            SelectObject( hDC, GetStockObject( NULL_BRUSH ) );
+            Rectangle( hDC, FRubberX1, FRubberY1 + FClientTop,
+                            FRubberX2, FRubberY2 + FClientTop );
+            SelectObject( hDC, hOld );
+            DeleteObject( hPen );
+            ReleaseDC( FHandle, hDC );
+
             FRubberDrawn = TRUE;
             return 0;
          }
@@ -1326,12 +1345,8 @@ LRESULT TForm::HandleMessage( UINT msg, WPARAM wParam, LPARAM lParam )
             rx2 = FRubberX1 > FRubberX2 ? FRubberX1 : FRubberX2;
             ry2 = FRubberY1 > FRubberY2 ? FRubberY1 : FRubberY2;
 
-            /* Erase rubber band from screen */
-            if( FRubberDrawn )
-            {
-               DRAW_RUBBERBAND( FHandle, FClientTop, FRubberX1, FRubberY1, FRubberX2, FRubberY2 )
-               FRubberDrawn = FALSE;
-            }
+            /* Full repaint clears the rubber band frame */
+            FRubberDrawn = FALSE;
             InvalidateRect( FHandle, NULL, TRUE );
 
             /* Component drop from palette */
