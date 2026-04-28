@@ -57,10 +57,4 @@ METHOD BtnClearClick() CLASS TForm1
    ::oLV1:SetItems( {} )
 return nil
 //--------------------------------------------------------------------
-FUNCTION Form1()
-   LOCAL oForm := TForm1():New()
-   oForm:CreateForm()
-   oForm:Activate()
-RETURN oForm
-//--------------------------------------------------------------------
 

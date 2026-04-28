@@ -1,6 +1,17 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-04-28c
+
+  - chore(win-codegen): SyncDesignerToCode no longer auto-emits the
+    "FUNCTION FormN() ... RETURN oForm" launcher block at the end of
+    each form .prg, and no longer strips an existing one from
+    cMethods. Forms are expected to be wired through TApplication in
+    Project1.prg (oApp:CreateForm + oApp:Run); user-written launchers
+    survive verbatim if needed for multi-form scenarios.
+    samples/projects/listview/Form1.prg cleaned of the leftover
+    launcher.
+
 2026-04-28b
 
   - feat(win-listview): ImageList runtime support for vsIcon and

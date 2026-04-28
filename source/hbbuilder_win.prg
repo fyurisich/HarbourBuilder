@@ -1989,8 +1989,6 @@ static function SyncDesignerToCode()
 
    local cNewCode, cOldCode, cMethods, nPos, nPos2
    local cSep := "//" + Replicate( "-", 68 )
-   local cLauncher, nLPos
-   local cSepLine, cFormName, cFormClass
 
    if nActiveForm < 1 .or. nActiveForm > Len( aForms )
       return nil
@@ -2035,43 +2033,13 @@ static function SyncDesignerToCode()
    // Regenerate CLASS + CreateForm
    cNewCode := RegenerateFormCode( aForms[ nActiveForm ][ 1 ], oDesignForm:hCpp )
 
-   // Strip the auto-generated launcher FUNCTION FormN() from preserved code
-   // (RegenerateFormCode re-appends a fresh one; keeping old copies causes duplicates).
-   // Harbour RTrim only strips spaces — strip CR/LF/space explicitly so trailing
-   // newlines don't accumulate (each click would add a CRLF and trigger SCI_SETTEXT
-   // flash on Scintilla).
-   if ! Empty( cMethods )
-      cLauncher := "FUNCTION " + aForms[ nActiveForm ][ 1 ] + "()"
-      nLPos := At( Upper( cLauncher ), Upper( cMethods ) )
-      if nLPos > 0
-         cMethods := Left( cMethods, nLPos - 1 )
-      endif
-      do while Len( cMethods ) > 0 .and. ;
-         ( Right( cMethods, 1 ) == Chr(10) .or. ;
-           Right( cMethods, 1 ) == Chr(13) .or. ;
-           Right( cMethods, 1 ) == " "    .or. ;
-           Right( cMethods, 1 ) == Chr(9) )
-         cMethods := Left( cMethods, Len( cMethods ) - 1 )
-      enddo
-   endif
-
-   // Append preserved METHOD implementations (before the launcher)
+   // Append preserved METHOD implementations (and any user-written
+   // FUNCTION FormN() launcher kept verbatim — codegen no longer
+   // auto-emits a launcher; project entry uses TApplication or the
+   // user wires it manually).
    if ! Empty( cMethods )
       cNewCode += Chr(13) + Chr(10) + cMethods
    endif
-
-   // Append the form launcher function at the very end (after user methods)
-   // so subsequent saves can find it and strip it from cMethods cleanly
-   cSepLine  := "//" + Replicate( "-", 68 ) + Chr(13) + Chr(10)
-   cFormName := aForms[ nActiveForm ][ 1 ]
-   cFormClass := "T" + cFormName
-   cNewCode += Chr(13) + Chr(10)
-   cNewCode += "FUNCTION " + cFormName + "()" + Chr(13) + Chr(10)
-   cNewCode += "   LOCAL oForm := " + cFormClass + "():New()" + Chr(13) + Chr(10)
-   cNewCode += "   oForm:CreateForm()" + Chr(13) + Chr(10)
-   cNewCode += "   oForm:Activate()" + Chr(13) + Chr(10)
-   cNewCode += "RETURN oForm" + Chr(13) + Chr(10)
-   cNewCode += cSepLine
 
    // Skip the editor update when regenerated code matches stored — common
    // case for plain mouse clicks that change selection but not layout.
