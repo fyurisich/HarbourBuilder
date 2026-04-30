@@ -3,6 +3,20 @@ HarbourBuilder - Cross-platform visual IDE for Harbour
 
 2026-04-30
 
+  - feat(linux-toolbar): Speedbar icons rendered at 28x28 (was 20x20)
+    via gdk_pixbuf_scale_simple in HBToolBar_ApplyIcons. Matches the
+    bigger 44x44 palette icons.
+
+  - feat(linux-layout): Inspector top moved 15px down (from
+    nInsTop - 50 to nInsTop - 35; height adjusted -15) so its title
+    bar no longer hides behind the main bar after the nBarH 72 -> 90
+    bump. Code editor top moved 17px down (nEditorTop = nInsTop + 17)
+    so its window decoration doesn't overlap the main bar bottom.
+
+  - feat(linux-designform): Default design form size 400x300 -> 562x315
+    and default position pinned to (877, 373) so the freshly opened
+    Form1 lands inside the editor area on standard 1920x1080 layouts.
+
   - feat(linux-palette): Per-component PNG icons for the Git tab
     (CT 121-130 → menu_icons/menu_git_*.png) wired in
     hbbuilder_linux.prg AEval table. Mirrors the macOS port.

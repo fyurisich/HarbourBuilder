@@ -66,15 +66,15 @@ function Main()
 
    // Inspector: right below IDE window
    nInsTop  := GTK_GetWindowBottom( oIDE:hCpp )
-   nEditorTop := nInsTop + 1
+   nEditorTop := nInsTop + 17
    nEditorX := nInsW
    nEditorW := nScreenW - nEditorX
    nBottomY := nScreenH
    nEditorH := nBottomY - nEditorTop
 
-   // Form Designer: centered in editor area
-   nFormX := nEditorX + Int( ( nEditorW - 400 ) / 2 )
-   nFormY := nEditorTop + Int( ( nEditorH - 300 ) * 0.35 )
+   // Form Designer: default position/size
+   nFormX := 877
+   nFormY := 373
 
    // Menu bar
    DEFINE MENUBAR OF oIDE
@@ -300,7 +300,7 @@ function Main()
    INS_SetOnEventDblClick( _InsGetData(), ;
       { |hCtrl, cEvent| OnEventDblClick( hCtrl, cEvent ) } )
    INS_SetOnPropChanged( _InsGetData(), { || SyncDesignerToCode() } )
-   INS_SetPos( _InsGetData(), 0, nInsTop - 50, nInsW, nBottomY - nInsTop + 50 - 50 )
+   INS_SetPos( _InsGetData(), 0, nInsTop - 35, nInsW, nBottomY - nInsTop - 15 )
 
    WireDesignForm()
 
@@ -630,7 +630,7 @@ static function CreateDesignForm( nX, nY )
    nIdx := Len( aForms ) + 1
    cName := "Form" + LTrim( Str( nIdx ) )
 
-   DEFINE FORM oDesignForm TITLE cName SIZE 400, 300 FONT "Sans", 11
+   DEFINE FORM oDesignForm TITLE cName SIZE 562, 315 FONT "Sans", 11
    UI_FormSetPos( oDesignForm:hCpp, nX, nY )
 
    AAdd( aForms, { cName, oDesignForm, GenerateFormCode( cName ), nX, nY } )

@@ -7524,7 +7524,7 @@ static void HBToolBar_ApplyIcons( HBToolBar * tb )
       GtkWidget * item = GTK_WIDGET( l->data );
       if( !GTK_IS_TOOL_BUTTON(item) ) continue;  /* skip separators */
 
-      GdkPixbuf * scaled = gdk_pixbuf_scale_simple( tb->FIconImages[imgIdx], 20, 20, GDK_INTERP_BILINEAR );
+      GdkPixbuf * scaled = gdk_pixbuf_scale_simple( tb->FIconImages[imgIdx], 28, 28, GDK_INTERP_BILINEAR );
       GtkWidget * img = gtk_image_new_from_pixbuf( scaled );
       g_object_unref( scaled );
 
