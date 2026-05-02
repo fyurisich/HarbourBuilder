@@ -46,10 +46,20 @@ echo "Using Harbour: $HBDIR"
 echo "Building: $PROG"
 echo ""
 
-# Helper: compile only if source is newer than object
+# Helper: rebuild if any source content changed (sha1-based, mtime-proof).
+# Survives git pulls preserving mtime, manual .o copies, clock skew.
+# Usage: needs_rebuild <obj> <src1> [<src2> ...]
+# Sidecar <obj>.sha stores combined hash of all sources used to build <obj>.
 needs_rebuild() {
-   [ ! -f "$2" ] && return 0
-   [ "$1" -nt "$2" ] && return 0
+   local obj="$1"; shift
+   local stamp="${obj}.sha"
+   [ ! -f "$obj" ] && { sha1sum "$@" | sha1sum | awk '{print $1}' > "$stamp"; return 0; }
+   local cur
+   cur="$(sha1sum "$@" | sha1sum | awk '{print $1}')"
+   if [ ! -f "$stamp" ] || [ "$cur" != "$(cat "$stamp")" ]; then
+      echo "$cur" > "$stamp"
+      return 0
+   fi
    return 1
 }
 
@@ -68,10 +78,11 @@ if [ ! -f "$RESDIR/libscintilla.so" ] || [ ! -f "$RESDIR/liblexilla.so" ]; then
 fi
 
 # [1/6] Harbour -> C (only if .prg changed)
-if needs_rebuild "${PROG}.prg" "${PROG}.c" || \
-   needs_rebuild "$PROJDIR/source/core/classes.prg" "${PROG}.c" || \
-   needs_rebuild "$PROJDIR/source/inspector/inspector_gtk.prg" "${PROG}.c" || \
-   needs_rebuild "$PROJDIR/include/hbbuilder.ch" "${PROG}.c"; then
+if needs_rebuild "${PROG}.c" \
+      "${PROG}.prg" \
+      "$PROJDIR/source/core/classes.prg" \
+      "$PROJDIR/source/inspector/inspector_gtk.prg" \
+      "$PROJDIR/include/hbbuilder.ch"; then
    echo "[1/6] Compiling ${PROG}.prg..."
    "$HBBIN/harbour" ${PROG}.prg -n -w -q \
       -I"$HBINC" \
@@ -84,7 +95,7 @@ else
 fi
 
 # [2/6] C -> Object (only if .c changed)
-if needs_rebuild "${PROG}.c" "${PROG}.o"; then
+if needs_rebuild "${PROG}.o" "${PROG}.c"; then
    echo "[2/6] Compiling ${PROG}.c..."
    gcc -c -g -Wno-unused-value \
       -I"$HBINC" \
@@ -115,7 +126,7 @@ else
 fi
 
 # [3/6] GTK3 core (only if .c changed)
-if needs_rebuild "$PROJDIR/source/backends/gtk3/gtk3_core.c" gtk3_core.o; then
+if needs_rebuild gtk3_core.o "$PROJDIR/source/backends/gtk3/gtk3_core.c"; then
    echo "[3/6] Compiling GTK3 core..."
    gcc -c -g \
       -I"$HBINC" \
@@ -128,7 +139,7 @@ else
 fi
 
 # [4/6] GTK3 inspector (only if .c changed)
-if needs_rebuild "$PROJDIR/source/backends/gtk3/gtk3_inspector.c" gtk3_inspector.o; then
+if needs_rebuild gtk3_inspector.o "$PROJDIR/source/backends/gtk3/gtk3_inspector.c"; then
    echo "[4/6] Compiling GTK3 inspector..."
    gcc -c -g \
       -I"$HBINC" \
@@ -143,7 +154,7 @@ fi
 # time. Mirrors Win hb_db_real.cpp pattern. libmysqlclient.so / libpq.so
 # resolved at launch; missing libs return safe defaults.
 rm -f hbmysql.o hbpgsql.o hbdb_stub.o
-if needs_rebuild "$PROJDIR/source/backends/gtk3/gtk3_db_real.c" hbdb_real.o; then
+if needs_rebuild hbdb_real.o "$PROJDIR/source/backends/gtk3/gtk3_db_real.c"; then
    echo "[4b] Compiling DB bindings (dlopen-based)..."
    gcc -c -O2 -I"$HBINC" \
       "$PROJDIR/source/backends/gtk3/gtk3_db_real.c" -o hbdb_real.o
