@@ -1,6 +1,71 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-05-02e
+
+  - feat(linux-designform): default form geometry tuned to
+    Left=823, Top=392, Width=562, Height=315 so Form1 lands
+    consistently inside the editor area on 1920x1080 displays.
+
+  - feat(linux-ai-default-model): AI Assistant panel now lists
+    deepseek-v4-flash + deepseek-chat unconditionally at the top
+    of the model combo, with deepseek-v4-flash selected by default.
+    Ollama models still appear after them when the daemon is up.
+    `/key sk-...` saves the DeepSeek API key without re-shuffling
+    the combo (entries are already there).
+
+  - feat(linux-ai): port the macOS AI Assistant rework to GTK3.
+    hbbuilder_linux.prg gains AIRunProject / AIResizeForm / AIFitForm /
+    AIDescribeDbf / AIDescribeActiveForm / AIGetActiveFormClass /
+    AIAddCode / AIBuildForm plus AI_FindCtrlByName +
+    AI_RewriteClassName helpers — same shape as the Cocoa port so
+    the same skill prompt routes through hb_dynsymFindName +
+    hb_vmFunction. AIBuildForm uses upsert-by-name, accepts
+    items/text/x/y/w/h/title/code, and dispatches to all 24 control
+    types reachable from the macOS palette.
+
+  - feat(linux-ai-controls): four new HB_FUNCs in gtk3_core.c —
+    UI_StaticTextNew / UI_ScrollBoxNew / UI_LabeledEditNew /
+    UI_ProgressBarNew — using existing CT_STATICTEXT / CT_SCROLLBOX /
+    CT_LABELEDEDIT / CT_PROGRESSBAR widget paths. Plus
+    UI_FormRealizeChildren( hForm ) so AI-driven runtime additions
+    materialize their GtkWidgets when the form was already shown.
+    Plus CodeEditorMarkLines / CodeEditorClearMarks (Scintilla
+    SCI_MARKERDEFINE + SC_MARK_BACKGROUND, marker 5) so AIAddCode
+    can highlight the inserted lines with an olive background.
+
+  - feat(linux-ai-panel): GTK AI Assistant panel rebuilt around the
+    same FORM / CODE / RUN / ADD_CODE / CHAT skill as macOS.
+    Singleton GtkWindow auto-opens at IDE startup, anchored right
+    side of the primary monitor and vertically centered (450x600).
+    Top bar: model combo populated from /api/tags (curl) plus
+    deepseek-v4-flash + deepseek-chat when a key is configured;
+    GtkSpinner + Clear button. Suggestion-chip row above the input
+    refreshes per turn from the model's "next":[...] field, with
+    context-aware defaults (form-mod vs form-create) when the model
+    omits it. Click a chip → fills + sends.
+
+  - feat(linux-ai-deepseek): DeepSeek backend alongside Ollama.
+    Reads DEEPSEEK_API_KEY env var or ~/.hbbuilder_deepseek_key.
+    Inline `/key sk-...` saves the key and unlocks the deepseek
+    models (combo prepends them, default selection switches). Routing
+    by selected model: deepseek* → POST api.deepseek.com (OpenAI
+    shape, Bearer auth); otherwise Ollama localhost:11434/api/chat.
+    Response parser handles Ollama (`message.content`), OpenAI
+    (`choices[0].message.content`) and `error.message` shapes, with
+    balanced-brace recovery for malformed JSON.
+
+  - feat(linux-ai-context): every send prepends ACTIVE FORM
+    (AIDescribeActiveForm) and DBF FIELDS (AIDescribeDbf when the
+    prompt mentions a *.dbf path) so the LLM operates on the real
+    designer state and uses real field names. Dispatch:
+    {"action":"run"} → AIRunProject; {"action":"add_code","code":"…"}
+    → AIAddCode + olive line markers; controls/w/h/title → AIBuildForm
+    (followed by AIAddCode if "code" is present); text → chat reply.
+    LLM call runs through a self-contained Python helper written to
+    ${TMPDIR}/hbbuilder_ai_helper.py at panel-open time; payload
+    transported via base64-encoded env vars (AI_SYS_B64 / AI_USR_B64).
+
 2026-05-02d
 
   - feat(macos-ai-additional): Additional-palette controls reachable

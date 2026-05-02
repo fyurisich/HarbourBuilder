@@ -5465,6 +5465,7 @@ HB_FUNC( GTK_GETWINDOWBOTTOM )
 #define SCI_MARKERADD          2043
 #define SCI_MARKERDELETE       2044
 #define SCI_MARKERDELETEALL    2046
+#define SCI_MARKERSETALPHA     2476
 #define SCI_GETFIRSTVISIBLELINE 2152
 #define SCI_SETFIRSTVISIBLELINE 2613
 #define SC_MARK_CIRCLE         0
@@ -9135,92 +9136,631 @@ HB_FUNC( GTK_PROJECTINSPECTOR )
 }
 
 /* ======================================================================
- * AI Assistant Panel - Ollama chat interface
+ * AI Assistant Panel — FORM/CODE/RUN/ADD_CODE/CHAT dispatch.
+ * Backends: Ollama (localhost:11434) + DeepSeek (api.deepseek.com).
+ * Routing by model prefix; LLM responds in JSON. Form/code dispatched
+ * to AIBuildForm / AIAddCode / AIRunProject in hbbuilder_linux.prg.
  * ====================================================================== */
 
-static GtkWidget * s_hAIWnd = NULL;
-static GtkWidget * s_aiWidgets[4];  /* entry, output, combo, statusLbl */
+static GtkWidget * s_hAIWnd       = NULL;
+static GtkWidget * s_aiOutput     = NULL;
+static GtkWidget * s_aiInput      = NULL;
+static GtkWidget * s_aiCombo      = NULL;
+static GtkWidget * s_aiStatus     = NULL;
+static GtkWidget * s_aiSpinner    = NULL;
+static GtkWidget * s_aiChipsBox   = NULL;
+static char      * s_aiDeepseekKey = NULL;
+static char      * s_aiHelperPath  = NULL;
 
+static char * s_aiKeyPath( void )
+{
+   return g_strdup_printf( "%s/.hbbuilder_deepseek_key", g_get_home_dir() );
+}
+
+static void s_aiLoadKey( void )
+{
+   if( s_aiDeepseekKey ) return;
+   const char * env = getenv( "DEEPSEEK_API_KEY" );
+   if( env && *env ) { s_aiDeepseekKey = g_strdup( env ); return; }
+   char * path = s_aiKeyPath();
+   gchar * c = NULL; gsize l = 0;
+   if( g_file_get_contents( path, &c, &l, NULL ) ) {
+      if( c ) {
+         g_strstrip( c );
+         if( *c ) s_aiDeepseekKey = g_strdup( c );
+         g_free( c );
+      }
+   }
+   g_free( path );
+}
+
+static void s_aiSaveKey( const char * key )
+{
+   if( !key || !*key ) return;
+   if( s_aiDeepseekKey ) g_free( s_aiDeepseekKey );
+   s_aiDeepseekKey = g_strdup( key );
+   char * path = s_aiKeyPath();
+   g_file_set_contents( path, key, -1, NULL );
+   g_free( path );
+}
+
+static gboolean s_aiIsDeepseek( const char * model )
+{
+   if( !model ) return FALSE;
+   gchar * lc = g_ascii_strdown( model, -1 );
+   gboolean r = g_str_has_prefix( lc, "deepseek" );
+   g_free( lc );
+   return r;
+}
+
+static void s_aiAppend( const char * txt )
+{
+   if( !s_aiOutput || !txt ) return;
+   GtkTextBuffer * buf = gtk_text_view_get_buffer( GTK_TEXT_VIEW(s_aiOutput) );
+   GtkTextIter it; gtk_text_buffer_get_end_iter( buf, &it );
+   gtk_text_buffer_insert( buf, &it, txt, -1 );
+   gtk_text_buffer_get_end_iter( buf, &it );
+   GtkTextMark * mk = gtk_text_buffer_get_mark( buf, "insert" );
+   gtk_text_buffer_move_mark( buf, mk, &it );
+   gtk_text_view_scroll_mark_onscreen( GTK_TEXT_VIEW(s_aiOutput), mk );
+   while( gtk_events_pending() ) gtk_main_iteration_do( FALSE );
+}
+
+/* Call a Harbour function by name with optional string arg, return retval as
+ * newly-allocated UTF-8 (g_strdup) or NULL. */
+static char * s_aiCallHbStr( const char * fnName, const char * arg )
+{
+   PHB_DYNS pSym = hb_dynsymFindName( fnName );
+   if( !pSym ) return NULL;
+   hb_vmPushDynSym( pSym );
+   hb_vmPushNil();
+   if( arg ) {
+      hb_vmPushString( arg, strlen( arg ) );
+      hb_vmFunction( 1 );
+   } else {
+      hb_vmFunction( 0 );
+   }
+   PHB_ITEM pRet = hb_stackReturnItem();
+   if( pRet && HB_IS_STRING( pRet ) ) {
+      const char * s = hb_itemGetCPtr( pRet );
+      if( s && *s ) return g_strdup( s );
+   }
+   return NULL;
+}
+
+static void s_aiCallHbVoid( const char * fnName, const char * arg )
+{
+   PHB_DYNS pSym = hb_dynsymFindName( fnName );
+   if( !pSym ) {
+      s_aiAppend( "[" );
+      s_aiAppend( fnName );
+      s_aiAppend( " not registered]\n" );
+      return;
+   }
+   hb_vmPushDynSym( pSym );
+   hb_vmPushNil();
+   if( arg ) {
+      hb_vmPushString( arg, strlen( arg ) );
+      hb_vmFunction( 1 );
+   } else {
+      hb_vmFunction( 0 );
+   }
+}
+
+/* System prompt skill — copied verbatim from cocoa_editor.mm so the LLM
+ * follows the same FORM / CODE / RUN / ADD_CODE / CHAT routing rules. */
+static const char * AI_SYS_PROMPT =
+   "You are HbBuilder AI Assistant inside a Harbour IDE with a Delphi-style form designer.\n"
+   "Classify each user message into exactly ONE category and respond strictly in its format.\n"
+   "\n"
+   "CATEGORIES:\n"
+   "FORM — user wants to create or modify a UI form, dialog, window, or its controls.\n"
+   "        Response format: a single JSON object, NOTHING else. No prose. No code fence. No comments.\n"
+   "        JSON schema (optional \"code\" field for event handler methods):\n"
+   "        {\"title\":string,\"w\":int,\"h\":int,\"controls\":["
+   "{\"type\":string,\"x\":int,\"y\":int,\"w\":int,\"h\":int,\"text\":string,\"name\":string}],"
+   "\"code\":string}\n"
+   "        type ∈ {TLabel,TEdit,TButton,TCheckBox,TComboBox,TGroupBox,TRadioButton,TMemo,"
+   "TTreeView,TListView,TListBox,TProgressBar,TImage,TBevel,TShape,TBitBtn,TTabControl,"
+   "TMaskEdit,TStringGrid,TSpeedButton,TStaticText,TScrollBox,TLabeledEdit}.\n"
+   "        HBBUILDER PALETTE CATALOG (use ONLY these):\n"
+   "          • Standard tab: TLabel, TEdit, TButton, TCheckBox, TComboBox, TListBox, "
+   "TGroupBox, TRadioButton, TMemo.\n"
+   "          • Additional tab: TBitBtn, TSpeedButton, TImage, TShape, TBevel, TMaskEdit, "
+   "TStringGrid, TScrollBox, TStaticText, TLabeledEdit.\n"
+   "          • Win32/GTK tab: TTabControl, TTreeView, TListView, TProgressBar.\n"
+   "        For TMaskEdit, the \"text\" field is the input MASK (e.g. \"99/99/9999\").\n"
+   "\n"
+   "        FOLLOW-UP SUGGESTIONS: every JSON response MUST include a \"next\" field — array of "
+   "3-4 short Spanish/English follow-up prompts shown as one-click chips. Each ≤ 30 chars, action-oriented.\n"
+   "        For TTreeView, TListBox, TComboBox, TListView: include \"items\":[\"a\",\"b\"] inline. "
+   "TreeView indents children with two leading spaces per level.\n"
+   "        Sizes: label 80x20, edit 180x22, button 80x28. Step y=30. Labels x=20, fields x=110.\n"
+   "        Names: lblXxx, edtXxx, btnXxx, chkXxx, cboXxx, grpXxx, rbXxx, memXxx.\n"
+   "        BEHAVIOR → emit METHOD <ctrlName><Event>() CLASS TFormN ... in \"code\". "
+   "Form events: <FormName><Event>() (e.g. Form1Click). Use METHOD ... CLASS ... return nil.\n"
+   "\n"
+   "        DBF DATA-ENTRY: when message includes a DBF FIELDS list, generate one TLabel + TEdit row "
+   "per field (label x=20 w=100; edit x=130 w=180; y starts 20 step 30). Add 5 nav buttons row "
+   "(btnFirst<<, btnPrev<, btnNext>, btnLast>>, btnSave). In \"code\", METHOD <FormName>Show() "
+   "USEs the DBF and refreshes edits from current record.\n"
+   "\n"
+   "        EXISTING-CONTROL AWARENESS: when user message includes an \"ACTIVE FORM (currently open "
+   "in the designer): {...}\" block, the IDE matches by \"name\" — emitting a control whose name "
+   "exists UPDATES it. To MOVE/CENTER/RESIZE/RELABEL: emit it in \"controls\" with EXISTING name + "
+   "new x/y/w/h/text. To WIRE BEHAVIOR onto existing controls: emit ADD_CODE. Never refuse a move/center.\n"
+   "\n"
+   "        TARGET FORM (shape-based, no \"action\" key):\n"
+   "        * NEW form: include \"title\", \"w\", \"h\" + \"controls\".\n"
+   "        * RESIZE current: emit ONLY {\"w\":int,\"h\":int}.\n"
+   "        * CURRENT form (add controls): emit ONLY {\"controls\":[...]}.\n"
+   "\n"
+   "RUN — user wants to BUILD AND RUN the project. Triggers: \"run\", \"ejecuta\", \"corre\", "
+   "\"compila y ejecuta\", \"build and run\", \"F9\", \"start\".\n"
+   "        Response format: EXACTLY {\"action\":\"run\"}\n"
+   "\n"
+   "ADD_CODE — user wants to ADD Harbour code into current form's .prg. Triggers: \"añade la función\", "
+   "\"add a function\", \"escribe el código\", \"insert helper\", event-handler requests on existing "
+   "controls (\"form1 onclick muestra form2\", \"btnOk onclick guardar\").\n"
+   "        Response format: {\"action\":\"add_code\",\"code\":\"...\"} where code is full Harbour "
+   "source as properly-escaped string (\\n for newlines, \\\" for inner quotes). NOTHING else.\n"
+   "\n"
+   "CODE — user asks ABOUT Harbour code (explain, ask how, refactor pasted snippet). NO insertion implied.\n"
+   "        Response format: {\"text\":\"<short context>\\n```harbour\\n<code>\\n```\","
+   "\"next\":[\"...\",\"...\"]}.\n"
+   "\n"
+   "CHAT — anything else. Format: {\"text\":\"<reply>\",\"next\":[\"...\",\"...\"]}. Inside \"text\" "
+   "escape inner quotes and newlines. ALL responses are JSON.\n"
+   "\n"
+   "FORM EXAMPLES:\n"
+   "USER: dos botones ok y cancel\n"
+   "ASSISTANT: {\"title\":\"Dialog\",\"w\":300,\"h\":120,\"controls\":["
+   "{\"type\":\"TButton\",\"x\":110,\"y\":40,\"w\":80,\"h\":28,\"text\":\"OK\",\"name\":\"btnOk\"},"
+   "{\"type\":\"TButton\",\"x\":200,\"y\":40,\"w\":80,\"h\":28,\"text\":\"Cancel\",\"name\":\"btnCancel\"}],"
+   "\"next\":[\"centra los botones\",\"añade un edit\",\"run\",\"cambia título\"]}\n"
+   "\n"
+   "USER: haz un login\n"
+   "ASSISTANT: {\"title\":\"Login\",\"w\":380,\"h\":200,\"controls\":["
+   "{\"type\":\"TLabel\",\"x\":20,\"y\":20,\"w\":80,\"h\":20,\"text\":\"User:\",\"name\":\"lblUser\"},"
+   "{\"type\":\"TEdit\",\"x\":110,\"y\":20,\"w\":180,\"h\":22,\"text\":\"\",\"name\":\"edtUser\"},"
+   "{\"type\":\"TLabel\",\"x\":20,\"y\":50,\"w\":80,\"h\":20,\"text\":\"Password:\",\"name\":\"lblPass\"},"
+   "{\"type\":\"TEdit\",\"x\":110,\"y\":50,\"w\":180,\"h\":22,\"text\":\"\",\"name\":\"edtPass\"},"
+   "{\"type\":\"TButton\",\"x\":200,\"y\":130,\"w\":80,\"h\":28,\"text\":\"OK\",\"name\":\"btnOk\"},"
+   "{\"type\":\"TButton\",\"x\":290,\"y\":130,\"w\":80,\"h\":28,\"text\":\"Cancel\",\"name\":\"btnCancel\"}],"
+   "\"next\":[\"añade remember me\",\"centra los botones\",\"run\",\"cambia título\"]}\n"
+   "\n"
+   "USER: run\n"
+   "ASSISTANT: {\"action\":\"run\",\"next\":[\"añade un control\",\"refactor\",\"otra ventana\"]}\n"
+   "\n"
+   "USER: añade un boton ok al form actual\n"
+   "ASSISTANT: {\"controls\":["
+   "{\"type\":\"TButton\",\"x\":110,\"y\":120,\"w\":80,\"h\":28,\"text\":\"OK\",\"name\":\"btnOk\"}],"
+   "\"next\":[\"centra el botón\",\"añade cancel\",\"run\"]}\n"
+   "\n"
+   "USER: añade la función fibonacci\n"
+   "ASSISTANT: {\"action\":\"add_code\",\"code\":\"function Fibonacci( n )\\n   if n < 2\\n      return n\\n   endif\\nreturn Fibonacci( n - 1 ) + Fibonacci( n - 2 )\","
+   "\"next\":[\"añade otro método\",\"run\",\"explica el código\"]}\n"
+   "\n"
+   "USER: form1 onclick muestra form2\n"
+   "ASSISTANT: {\"action\":\"add_code\",\"code\":\"METHOD Form1Click() CLASS TForm1\\n   local oForm2 := TForm2():New()\\n   oForm2:Show()\\nreturn nil\","
+   "\"next\":[\"otro evento\",\"run\",\"explica el código\"]}\n"
+   "\n"
+   "USER: ajusta tamaño form\n"
+   "ASSISTANT: {\"w\":500,\"h\":350,\"next\":[\"centra los controles\",\"añade un boton\",\"run\"]}\n";
+
+/* Embedded Python helper. Reads env: AI_SYS_B64, AI_USR_B64, AI_MODEL,
+ * AI_KEY, AI_BACKEND. POSTs to ollama or deepseek, parses response with
+ * 3-shape recovery + balanced-brace recovery, and emits structured stdout:
+ *   KIND:<run|add_code|form|chat|error>
+ *   PAYLOAD:<base64>      (skipped for "run")
+ *   CODE:<base64>         (only for "form" with embedded code)
+ *   REPLY:<base64>        (raw reply, optional)
+ *   NEXT:<base64>         (one per chip, repeated)                                      */
+static const char * AI_HELPER_PY =
+   "import os, json, base64, sys, urllib.request\n"
+   "def b64(s):\n"
+   "    if isinstance(s, str): s = s.encode('utf-8')\n"
+   "    return base64.b64encode(s).decode('ascii')\n"
+   "def db64(s):\n"
+   "    if not s: return ''\n"
+   "    return base64.b64decode(s.encode('ascii')).decode('utf-8','ignore')\n"
+   "sysp = db64(os.environ.get('AI_SYS_B64',''))\n"
+   "usr  = db64(os.environ.get('AI_USR_B64',''))\n"
+   "model = os.environ.get('AI_MODEL','codellama')\n"
+   "key   = os.environ.get('AI_KEY','')\n"
+   "backend = os.environ.get('AI_BACKEND','ollama')\n"
+   "if backend == 'deepseek':\n"
+   "    url = 'https://api.deepseek.com/v1/chat/completions'\n"
+   "    payload = {'model':model,'stream':False,'temperature':0.2,'messages':[{'role':'system','content':sysp},{'role':'user','content':usr}]}\n"
+   "    headers = {'Content-Type':'application/json','Authorization':'Bearer '+key}\n"
+   "else:\n"
+   "    url = 'http://localhost:11434/api/chat'\n"
+   "    payload = {'model':model,'stream':False,'options':{'temperature':0.2},'messages':[{'role':'system','content':sysp},{'role':'user','content':usr}]}\n"
+   "    headers = {'Content-Type':'application/json'}\n"
+   "try:\n"
+   "    req = urllib.request.Request(url, data=json.dumps(payload).encode('utf-8'), headers=headers, method='POST')\n"
+   "    with urllib.request.urlopen(req, timeout=180) as r:\n"
+   "        j = json.loads(r.read().decode('utf-8','ignore'))\n"
+   "except Exception as e:\n"
+   "    print('KIND:error'); print('PAYLOAD:'+b64('Network error: '+str(e))); sys.exit(0)\n"
+   "reply = None\n"
+   "ch = j.get('choices') if isinstance(j, dict) else None\n"
+   "if isinstance(ch, list) and ch:\n"
+   "    m = ch[0].get('message') if isinstance(ch[0], dict) else None\n"
+   "    if isinstance(m, dict): reply = m.get('content')\n"
+   "if not reply:\n"
+   "    m = j.get('message') if isinstance(j, dict) else None\n"
+   "    if isinstance(m, dict): reply = m.get('content')\n"
+   "if not reply:\n"
+   "    e = j.get('error') if isinstance(j, dict) else None\n"
+   "    if isinstance(e, dict) and e.get('message'):\n"
+   "        print('KIND:error'); print('PAYLOAD:'+b64('API error: '+e['message'])); sys.exit(0)\n"
+   "if not reply:\n"
+   "    print('KIND:error'); print('PAYLOAD:'+b64('Empty response')); sys.exit(0)\n"
+   "trimmed = reply.strip()\n"
+   "if trimmed.startswith('```'):\n"
+   "    nl = trimmed.find('\\n')\n"
+   "    if nl >= 0: trimmed = trimmed[nl+1:]\n"
+   "    if trimmed.endswith('```'): trimmed = trimmed[:-3]\n"
+   "    trimmed = trimmed.strip()\n"
+   "spec = None\n"
+   "if trimmed.startswith('{'):\n"
+   "    try: spec = json.loads(trimmed)\n"
+   "    except Exception:\n"
+   "        depth=0; start=-1; in_str=False; esc=False; end=-1\n"
+   "        for i,c in enumerate(trimmed):\n"
+   "            if in_str:\n"
+   "                if esc: esc=False; continue\n"
+   "                if c=='\\\\': esc=True; continue\n"
+   "                if c=='\"': in_str=False\n"
+   "                continue\n"
+   "            if c=='\"': in_str=True; continue\n"
+   "            if c=='{':\n"
+   "                if start<0: start=i\n"
+   "                depth+=1\n"
+   "            elif c=='}':\n"
+   "                depth-=1\n"
+   "                if depth==0 and start>=0: end=i; break\n"
+   "        if start>=0 and end>start:\n"
+   "            try: spec = json.loads(trimmed[start:end+1])\n"
+   "            except Exception: spec = None\n"
+   "nexts = []\n"
+   "if isinstance(spec, dict):\n"
+   "    nl = spec.get('next')\n"
+   "    if isinstance(nl, list):\n"
+   "        for s in nl:\n"
+   "            if isinstance(s, str) and s and len(nexts) < 4:\n"
+   "                nexts.append(s)\n"
+   "def emit(kind, payload=None, code=None):\n"
+   "    print('KIND:'+kind)\n"
+   "    if payload is not None: print('PAYLOAD:'+b64(payload))\n"
+   "    if code is not None and code: print('CODE:'+b64(code))\n"
+   "    for n in nexts: print('NEXT:'+b64(n))\n"
+   "if isinstance(spec, dict):\n"
+   "    action = spec.get('action')\n"
+   "    if action in ('run','build_run'): emit('run'); sys.exit(0)\n"
+   "    if action == 'add_code':\n"
+   "        code = spec.get('code')\n"
+   "        if isinstance(code, str) and code: emit('add_code', payload=code); sys.exit(0)\n"
+   "        emit('error', payload='add_code: missing code field'); sys.exit(0)\n"
+   "    text = spec.get('text')\n"
+   "    has_form = any(k in spec for k in ('controls','w','h','title'))\n"
+   "    if isinstance(text, str) and text and not has_form and not action:\n"
+   "        emit('chat', payload=text); sys.exit(0)\n"
+   "    if has_form:\n"
+   "        c = spec.get('code') if isinstance(spec.get('code'), str) else None\n"
+   "        emit('form', payload=json.dumps(spec), code=c); sys.exit(0)\n"
+   "emit('chat', payload=reply)\n";
+
+static void s_aiEnsureHelper( void )
+{
+   if( s_aiHelperPath ) return;
+   s_aiHelperPath = g_strdup_printf( "%s/hbbuilder_ai_helper.py", g_get_tmp_dir() );
+   g_file_set_contents( s_aiHelperPath, AI_HELPER_PY, -1, NULL );
+}
+
+/* Forward decls */
+static void s_aiClearChips( void );
+static void on_ai_chip_clicked( GtkButton * btn, gpointer data );
+static void on_ai_send( GtkButton * btn, gpointer data );
+
+static void s_aiClearChips( void )
+{
+   if( !s_aiChipsBox ) return;
+   GList * kids = gtk_container_get_children( GTK_CONTAINER(s_aiChipsBox) );
+   for( GList * l = kids; l; l = l->next )
+      gtk_widget_destroy( GTK_WIDGET(l->data) );
+   g_list_free( kids );
+}
+
+static void s_aiAddChip( const char * label )
+{
+   if( !s_aiChipsBox || !label || !*label ) return;
+   GtkWidget * btn = gtk_button_new_with_label( label );
+   gtk_widget_set_can_focus( btn, FALSE );
+   g_signal_connect( btn, "clicked", G_CALLBACK(on_ai_chip_clicked), NULL );
+   gtk_box_pack_start( GTK_BOX(s_aiChipsBox), btn, FALSE, FALSE, 0 );
+   gtk_widget_show( btn );
+}
+
+static void s_aiSetDefaultChips( void )
+{
+   s_aiClearChips();
+   char * actCls = s_aiCallHbStr( "AIGETACTIVEFORMCLASS", NULL );
+   gboolean hasForm = ( actCls && *actCls );
+   if( actCls ) g_free( actCls );
+   if( hasForm ) {
+      s_aiAddChip( "añade ok y cancel" );
+      s_aiAddChip( "centralos" );
+      s_aiAddChip( "ajusta tamaño form" );
+      s_aiAddChip( "run" );
+   } else {
+      s_aiAddChip( "haz un login" );
+      s_aiAddChip( "haz un signup" );
+      s_aiAddChip( "form de búsqueda" );
+      s_aiAddChip( "run" );
+   }
+}
+
+static void on_ai_chip_clicked( GtkButton * btn, gpointer data )
+{
+   const char * txt = gtk_button_get_label( btn );
+   if( !txt || !*txt ) return;
+   gtk_entry_set_text( GTK_ENTRY(s_aiInput), txt );
+   on_ai_send( NULL, NULL );
+   (void)data;
+}
+
+/* Send pipeline: handles /key, builds context, runs python helper, dispatches. */
 static void on_ai_send( GtkButton * btn, gpointer data )
 {
-   GtkWidget ** w = (GtkWidget **) data;
-   GtkWidget * entry  = w[0];
-   GtkWidget * output = w[1];
-   GtkWidget * combo  = w[2];
-   GtkWidget * status = w[3];
-
-   const char * prompt = gtk_entry_get_text( GTK_ENTRY(entry) );
+   const char * prompt = gtk_entry_get_text( GTK_ENTRY(s_aiInput) );
    if( !prompt || !prompt[0] ) return;
 
-   char * model = gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(combo) );
-   if( !model ) model = g_strdup( "codellama" );
+   char * userPrompt = g_strdup( prompt );
+   gtk_entry_set_text( GTK_ENTRY(s_aiInput), "" );
 
-   GtkTextBuffer * buf = gtk_text_view_get_buffer( GTK_TEXT_VIEW(output) );
-   GtkTextIter endIter;
-   gtk_text_buffer_get_end_iter( buf, &endIter );
+   /* Echo user msg */
+   char * echo = g_strdup_printf( "\n> %s\n", userPrompt );
+   s_aiAppend( echo );
+   g_free( echo );
 
-   char * userMsg = g_strdup_printf( "\n> %s\n", prompt );
-   gtk_text_buffer_insert( buf, &endIter, userMsg, -1 );
-   g_free( userMsg );
-
-   gtk_label_set_text( GTK_LABEL(status), "Status: Sending..." );
-
-   /* Call Ollama via curl */
-   char * escaped = g_strescape( prompt, NULL );
-   char * cmd = g_strdup_printf(
-      "curl -s -m 30 http://localhost:11434/api/generate "
-      "-d '{\"model\":\"%s\",\"prompt\":\"%s\",\"stream\":false}' 2>/dev/null "
-      "| python3 -c \"import sys,json; d=json.load(sys.stdin); print(d.get('response',''))\" 2>/dev/null",
-      model, escaped );
-   g_free( escaped );
-
-   char * response = NULL;
-   g_spawn_command_line_sync( cmd, &response, NULL, NULL, NULL );
-   g_free( cmd );
-
-   gtk_text_buffer_get_end_iter( buf, &endIter );
-   if( response && response[0] ) {
-      gtk_text_buffer_insert( buf, &endIter, response, -1 );
-      if( response[strlen(response)-1] != '\n' )
-         gtk_text_buffer_insert( buf, &endIter, "\n", -1 );
-      { char * s = g_strdup_printf( "Status: Ready | Model: %s | Ollama: localhost:11434", model );
-        gtk_label_set_text( GTK_LABEL(status), s );
-        g_free( s );
+   /* /key sk-... — save and stop */
+   if( g_str_has_prefix( userPrompt, "/key " ) ) {
+      const char * k = userPrompt + 5;
+      while( *k == ' ' ) k++;
+      if( g_str_has_prefix( k, "sk-" ) ) {
+         s_aiSaveKey( k );
+         s_aiAppend( "DeepSeek API key saved.\n" );
+         gtk_combo_box_set_active( GTK_COMBO_BOX(s_aiCombo), 0 );
+      } else {
+         s_aiAppend( "Invalid key.\n" );
       }
-   } else {
-      gtk_text_buffer_insert( buf, &endIter,
-         "[No response - check Ollama is running on localhost:11434]\n", -1 );
-      gtk_label_set_text( GTK_LABEL(status), "Status: Error - Ollama not responding" );
+      g_free( userPrompt );
+      return;
    }
-   if( response ) g_free( response );
 
-   /* Scroll to bottom */
-   gtk_text_buffer_get_end_iter( buf, &endIter );
-   GtkTextMark * mark = gtk_text_buffer_get_mark( buf, "insert" );
-   gtk_text_buffer_move_mark( buf, mark, &endIter );
-   gtk_text_view_scroll_mark_onscreen( GTK_TEXT_VIEW(output), mark );
+   gchar * model = gtk_combo_box_text_get_active_text( GTK_COMBO_BOX_TEXT(s_aiCombo) );
+   if( !model ) model = g_strdup( "codellama" );
+   gboolean useDeep = s_aiIsDeepseek( model );
+   if( useDeep && (!s_aiDeepseekKey || !*s_aiDeepseekKey) ) {
+      s_aiAppend( "\nDeepSeek API key not set. Type `/key sk-...` first.\n" );
+      g_free( model ); g_free( userPrompt );
+      return;
+   }
 
-   gtk_entry_set_text( GTK_ENTRY(entry), "" );
+   gtk_label_set_text( GTK_LABEL(s_aiStatus), "Status: Sending..." );
+   gtk_spinner_start( GTK_SPINNER(s_aiSpinner) );
+   gtk_widget_show( s_aiSpinner );
+   while( gtk_events_pending() ) gtk_main_iteration_do( FALSE );
+
+   /* Build extended user message: prompt + ACTIVE FORM ctx + DBF ctx */
+   GString * userMsg = g_string_new( userPrompt );
+   char * actCtx = s_aiCallHbStr( "AIDESCRIBEACTIVEFORM", NULL );
+   if( actCtx && *actCtx ) {
+      g_string_append_printf( userMsg,
+         "\n\nACTIVE FORM (currently open in the designer): %s\n"
+         "If the user mentions any control listed above by name or text, those controls "
+         "ALREADY EXIST — do NOT redefine them in \"controls\". Only emit \"controls\" for "
+         "genuinely new ones. Use the \"class\" value verbatim in METHOD <Name>() CLASS ... .\n",
+         actCtx );
+   }
+   if( actCtx ) g_free( actCtx );
+
+   /* Detect *.dbf in prompt */
+   const char * dot = strstr( userPrompt, ".dbf" );
+   if( !dot ) dot = strstr( userPrompt, ".DBF" );
+   if( dot ) {
+      const char * s = dot;
+      while( s > userPrompt && ( g_ascii_isalnum(s[-1]) || s[-1] == '_' || s[-1] == '/' || s[-1] == '.' || s[-1] == '-' ) )
+         s--;
+      char * dbfPath = g_strndup( s, ( dot - s ) + 4 );
+      char * schema = s_aiCallHbStr( "AIDESCRIBEDBF", dbfPath );
+      if( schema && *schema ) {
+         g_string_append_printf( userMsg,
+            "\n\nDBF FIELDS (real schema of %s): %s\n"
+            "Use these field names verbatim. Build TLabel + TEdit for each, plus nav buttons "
+            "(Prev/Next/Save). Y-step 30, label width 100.\n", dbfPath, schema );
+      }
+      if( schema ) g_free( schema );
+      g_free( dbfPath );
+   }
+
+   /* Spawn python helper with payload via env vars (b64) */
+   s_aiEnsureHelper();
+   gchar * sysB64 = g_base64_encode( (const guchar *) AI_SYS_PROMPT, strlen( AI_SYS_PROMPT ) );
+   gchar * usrB64 = g_base64_encode( (const guchar *) userMsg->str, userMsg->len );
+   const char * argv[] = { "python3", s_aiHelperPath, NULL };
+   GPtrArray * envp = g_ptr_array_new_with_free_func( g_free );
+   /* Inherit current environment */
+   for( gchar ** e = g_get_environ(); *e; e++ )
+      g_ptr_array_add( envp, g_strdup( *e ) );
+   g_ptr_array_add( envp, g_strdup_printf( "AI_SYS_B64=%s", sysB64 ) );
+   g_ptr_array_add( envp, g_strdup_printf( "AI_USR_B64=%s", usrB64 ) );
+   g_ptr_array_add( envp, g_strdup_printf( "AI_MODEL=%s", model ) );
+   g_ptr_array_add( envp, g_strdup_printf( "AI_KEY=%s", s_aiDeepseekKey ? s_aiDeepseekKey : "" ) );
+   g_ptr_array_add( envp, g_strdup_printf( "AI_BACKEND=%s", useDeep ? "deepseek" : "ollama" ) );
+   g_ptr_array_add( envp, NULL );
+
+   gchar * stdoutBuf = NULL;
+   gint exitStatus = 0;
+   GError * err = NULL;
+   gboolean ok = g_spawn_sync( NULL, (gchar **) argv, (gchar **) envp->pdata,
+      G_SPAWN_SEARCH_PATH, NULL, NULL,
+      &stdoutBuf, NULL, &exitStatus, &err );
+
+   g_free( sysB64 ); g_free( usrB64 );
+   g_ptr_array_free( envp, TRUE );
+   g_string_free( userMsg, TRUE );
+
+   gtk_spinner_stop( GTK_SPINNER(s_aiSpinner) );
+   gtk_widget_hide( s_aiSpinner );
+
+   if( !ok || !stdoutBuf ) {
+      s_aiAppend( "\n[Error launching helper" );
+      if( err ) { s_aiAppend( ": " ); s_aiAppend( err->message ); g_error_free( err ); }
+      s_aiAppend( "]\n" );
+      g_free( model ); g_free( userPrompt );
+      if( stdoutBuf ) g_free( stdoutBuf );
+      return;
+   }
+
+   /* Parse helper output line by line */
+   char * kind = NULL;
+   char * payload = NULL;
+   char * codeStr = NULL;
+   GPtrArray * chips = g_ptr_array_new_with_free_func( g_free );
+   gchar ** lines = g_strsplit( stdoutBuf, "\n", -1 );
+   for( int i = 0; lines[i]; i++ ) {
+      const char * ln = lines[i];
+      if( g_str_has_prefix( ln, "KIND:" ) ) {
+         if( kind ) g_free( kind );
+         kind = g_strdup( ln + 5 );
+      } else if( g_str_has_prefix( ln, "PAYLOAD:" ) ) {
+         gsize l = 0;
+         guchar * d = g_base64_decode( ln + 8, &l );
+         if( payload ) g_free( payload );
+         payload = g_strndup( (const char *) d, l );
+         g_free( d );
+      } else if( g_str_has_prefix( ln, "CODE:" ) ) {
+         gsize l = 0;
+         guchar * d = g_base64_decode( ln + 5, &l );
+         if( codeStr ) g_free( codeStr );
+         codeStr = g_strndup( (const char *) d, l );
+         g_free( d );
+      } else if( g_str_has_prefix( ln, "NEXT:" ) ) {
+         gsize l = 0;
+         guchar * d = g_base64_decode( ln + 5, &l );
+         g_ptr_array_add( chips, g_strndup( (const char *) d, l ) );
+         g_free( d );
+      }
+   }
+   g_strfreev( lines );
+   g_free( stdoutBuf );
+
+   /* Dispatch */
+   if( kind ) {
+      if( g_strcmp0( kind, "run" ) == 0 ) {
+         s_aiAppend( "\nBuilding and running project...\n" );
+         s_aiCallHbVoid( "AIRUNPROJECT", NULL );
+      } else if( g_strcmp0( kind, "add_code" ) == 0 && payload ) {
+         s_aiAppend( "\nAdding code to current form...\n```harbour\n" );
+         s_aiAppend( payload );
+         s_aiAppend( "\n```\n" );
+         s_aiCallHbVoid( "AIADDCODE", payload );
+         s_aiAppend( "Code appended to active editor tab.\n" );
+      } else if( g_strcmp0( kind, "form" ) == 0 && payload ) {
+         s_aiAppend( "\nBuilding form...\n" );
+         s_aiCallHbVoid( "AIBUILDFORM", payload );
+         s_aiAppend( "Form built — see design view.\n" );
+         if( codeStr && *codeStr ) {
+            s_aiAppend( "Adding event handler code...\n```harbour\n" );
+            s_aiAppend( codeStr );
+            s_aiAppend( "\n```\n" );
+            s_aiCallHbVoid( "AIADDCODE", codeStr );
+         }
+      } else if( g_strcmp0( kind, "chat" ) == 0 && payload ) {
+         s_aiAppend( "\n" );
+         s_aiAppend( payload );
+         s_aiAppend( "\n" );
+      } else if( g_strcmp0( kind, "error" ) == 0 ) {
+         s_aiAppend( "\n[" );
+         s_aiAppend( payload ? payload : "unknown error" );
+         s_aiAppend( "]\n" );
+      }
+   }
+
+   /* Refresh chips */
+   s_aiClearChips();
+   if( chips->len > 0 ) {
+      for( guint i = 0; i < chips->len; i++ )
+         s_aiAddChip( (const char *) g_ptr_array_index( chips, i ) );
+   } else {
+      s_aiSetDefaultChips();
+   }
+   g_ptr_array_free( chips, TRUE );
+
+   /* Status */
+   { char * st = g_strdup_printf( "Status: Ready | Model: %s%s",
+        model, useDeep ? " | DeepSeek" : " | Ollama" );
+     gtk_label_set_text( GTK_LABEL(s_aiStatus), st );
+     g_free( st );
+   }
+
+   if( kind )    g_free( kind );
+   if( payload ) g_free( payload );
+   if( codeStr ) g_free( codeStr );
    g_free( model );
-   (void)btn;
+   g_free( userPrompt );
+   (void)btn; (void)data;
 }
 
 static void on_ai_clear( GtkButton * btn, gpointer data )
 {
-   GtkWidget * output = (GtkWidget *) data;
-   GtkTextBuffer * buf = gtk_text_view_get_buffer( GTK_TEXT_VIEW(output) );
-   gtk_text_buffer_set_text( buf, "AI Assistant ready.\nType a question and press Send.\n", -1 );
-   (void)btn;
+   GtkTextBuffer * buf = gtk_text_view_get_buffer( GTK_TEXT_VIEW(s_aiOutput) );
+   gtk_text_buffer_set_text( buf, "AI Assistant ready.\n", -1 );
+   s_aiSetDefaultChips();
+   (void)btn; (void)data;
 }
 
 static gboolean on_ai_entry_key( GtkWidget * w, GdkEventKey * ev, gpointer data )
 {
    if( ev->keyval == GDK_KEY_Return || ev->keyval == GDK_KEY_KP_Enter ) {
-      on_ai_send( NULL, data );
+      on_ai_send( NULL, NULL );
       return TRUE;
    }
-   (void)w;
+   (void)w; (void)data;
    return FALSE;
+}
+
+/* Probe http://localhost:11434/api/tags via curl. Returns NULL or newline-
+ * separated model names. Allocated buffer, caller frees. */
+static const char * AI_TAGS_PY =
+   "import sys, json, urllib.request\n"
+   "try:\n"
+   "    with urllib.request.urlopen('http://localhost:11434/api/tags', timeout=2) as r:\n"
+   "        j = json.loads(r.read().decode('utf-8','ignore'))\n"
+   "    for m in j.get('models', []):\n"
+   "        if isinstance(m, dict) and m.get('name'):\n"
+   "            print(m['name'])\n"
+   "except Exception:\n"
+   "    pass\n";
+
+static char * s_aiTagsHelperPath = NULL;
+
+static char * s_aiFetchOllamaModels( void )
+{
+   if( !s_aiTagsHelperPath ) {
+      s_aiTagsHelperPath = g_strdup_printf( "%s/hbbuilder_ai_tags.py",
+                                            g_get_tmp_dir() );
+      g_file_set_contents( s_aiTagsHelperPath, AI_TAGS_PY, -1, NULL );
+   }
+   const char * argv[] = { "python3", s_aiTagsHelperPath, NULL };
+   gchar * out = NULL;
+   g_spawn_sync( NULL, (gchar **) argv, NULL,
+      G_SPAWN_SEARCH_PATH, NULL, NULL,
+      &out, NULL, NULL, NULL );
+   return out;
 }
 
 HB_FUNC( GTK_AIASSISTANTPANEL )
@@ -9232,10 +9772,24 @@ HB_FUNC( GTK_AIASSISTANTPANEL )
       return;
    }
 
+   s_aiLoadKey();
+
    s_hAIWnd = gtk_window_new( GTK_WINDOW_TOPLEVEL );
    gtk_window_set_title( GTK_WINDOW(s_hAIWnd), "AI Assistant" );
-   gtk_window_set_default_size( GTK_WINDOW(s_hAIWnd), 420, 550 );
+   gtk_window_set_default_size( GTK_WINDOW(s_hAIWnd), 450, 600 );
    gtk_window_set_type_hint( GTK_WINDOW(s_hAIWnd), GDK_WINDOW_TYPE_HINT_UTILITY );
+   /* Anchor right side, vertically centered on primary screen (matches macOS) */
+   {
+      GdkDisplay * disp = gdk_display_get_default();
+      GdkMonitor * mon  = disp ? gdk_display_get_primary_monitor( disp ) : NULL;
+      if( mon ) {
+         GdkRectangle wa; gdk_monitor_get_workarea( mon, &wa );
+         int panW = 450, panH = 600;
+         int panX = wa.x + wa.width  - panW - 40;
+         int panY = wa.y + ( wa.height - panH ) / 2;
+         gtk_window_move( GTK_WINDOW(s_hAIWnd), panX, panY );
+      }
+   }
    g_signal_connect( s_hAIWnd, "delete-event",
       G_CALLBACK(gtk_widget_hide_on_delete), NULL );
 
@@ -9243,18 +9797,39 @@ HB_FUNC( GTK_AIASSISTANTPANEL )
    gtk_container_set_border_width( GTK_CONTAINER(vbox), 6 );
    gtk_container_add( GTK_CONTAINER(s_hAIWnd), vbox );
 
-   /* Top bar: Model selector + Clear */
+   /* Top bar: Model selector + Spinner + Clear */
    GtkWidget * topBox = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
    gtk_box_pack_start( GTK_BOX(vbox), topBox, FALSE, FALSE, 0 );
    gtk_box_pack_start( GTK_BOX(topBox), gtk_label_new("Model:"), FALSE, FALSE, 4 );
 
-   GtkWidget * combo = gtk_combo_box_text_new();
-   { const char * mdl[] = { "codellama","llama3","deepseek-coder","mistral","phi3","gemma2",NULL };
-     int m; for( m = 0; mdl[m]; m++ )
-       gtk_combo_box_text_append_text( GTK_COMBO_BOX_TEXT(combo), mdl[m] );
+   s_aiCombo = gtk_combo_box_text_new();
+   /* DeepSeek models always available; key prompted on first send if missing */
+   gtk_combo_box_text_append_text( GTK_COMBO_BOX_TEXT(s_aiCombo), "deepseek-v4-flash" );
+   gtk_combo_box_text_append_text( GTK_COMBO_BOX_TEXT(s_aiCombo), "deepseek-chat" );
+   /* Try installed ollama models */
+   gchar * ollamaModels = s_aiFetchOllamaModels();
+   if( ollamaModels && *ollamaModels ) {
+      gchar ** mlines = g_strsplit( ollamaModels, "\n", -1 );
+      for( int i = 0; mlines[i]; i++ )
+         if( mlines[i][0] )
+            gtk_combo_box_text_append_text( GTK_COMBO_BOX_TEXT(s_aiCombo), mlines[i] );
+      g_strfreev( mlines );
+   } else {
+      const char * fallback[] = { "codellama", "llama3", "deepseek-coder",
+                                  "mistral", "phi3", "gemma3", "gemma2", NULL };
+      for( int m = 0; fallback[m]; m++ )
+         gtk_combo_box_text_append_text( GTK_COMBO_BOX_TEXT(s_aiCombo), fallback[m] );
    }
-   gtk_combo_box_set_active( GTK_COMBO_BOX(combo), 0 );
-   gtk_box_pack_start( GTK_BOX(topBox), combo, TRUE, TRUE, 0 );
+   if( ollamaModels ) g_free( ollamaModels );
+   gtk_combo_box_set_active( GTK_COMBO_BOX(s_aiCombo), 0 );
+   gtk_box_pack_start( GTK_BOX(topBox), s_aiCombo, TRUE, TRUE, 0 );
+
+   s_aiSpinner = gtk_spinner_new();
+   gtk_box_pack_start( GTK_BOX(topBox), s_aiSpinner, FALSE, FALSE, 0 );
+
+   GtkWidget * clearBtn = gtk_button_new_with_label( "Clear" );
+   gtk_box_pack_start( GTK_BOX(topBox), clearBtn, FALSE, FALSE, 0 );
+   g_signal_connect( clearBtn, "clicked", G_CALLBACK(on_ai_clear), NULL );
 
    /* Chat output */
    GtkWidget * sw = gtk_scrolled_window_new( NULL, NULL );
@@ -9262,55 +9837,59 @@ HB_FUNC( GTK_AIASSISTANTPANEL )
       GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC );
    gtk_box_pack_start( GTK_BOX(vbox), sw, TRUE, TRUE, 0 );
 
-   GtkWidget * output = gtk_text_view_new();
-   gtk_text_view_set_editable( GTK_TEXT_VIEW(output), FALSE );
-   gtk_text_view_set_wrap_mode( GTK_TEXT_VIEW(output), GTK_WRAP_WORD );
-   gtk_text_view_set_left_margin( GTK_TEXT_VIEW(output), 6 );
-   { GtkTextBuffer * tbuf = gtk_text_view_get_buffer( GTK_TEXT_VIEW(output) );
-     gtk_text_buffer_set_text( tbuf,
-        "AI Assistant ready.\nType a question and press Send.\n", -1 );
+   s_aiOutput = gtk_text_view_new();
+   gtk_text_view_set_editable( GTK_TEXT_VIEW(s_aiOutput), FALSE );
+   gtk_text_view_set_wrap_mode( GTK_TEXT_VIEW(s_aiOutput), GTK_WRAP_WORD );
+   gtk_text_view_set_left_margin( GTK_TEXT_VIEW(s_aiOutput), 6 );
+   {
+      GtkTextBuffer * tbuf = gtk_text_view_get_buffer( GTK_TEXT_VIEW(s_aiOutput) );
+      gtk_text_buffer_set_text( tbuf, "AI Assistant ready.\n", -1 );
    }
-   /* Monospace dark theme for chat */
-   { GtkCssProvider * cp = gtk_css_provider_new();
-     gtk_css_provider_load_from_data( cp,
-        "textview text { background-color: #1E1E1E; color: #D4D4D4;"
-        "  font-family: Monospace; font-size: 11pt; }", -1, NULL );
-     gtk_style_context_add_provider( gtk_widget_get_style_context(output),
-        GTK_STYLE_PROVIDER(cp), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
-     g_object_unref( cp );
+   {
+      GtkCssProvider * cp = gtk_css_provider_new();
+      gtk_css_provider_load_from_data( cp,
+         "textview text { background-color: #1E1E1E; color: #D4D4D4;"
+         "  font-family: Monospace; font-size: 11pt; }", -1, NULL );
+      gtk_style_context_add_provider( gtk_widget_get_style_context(s_aiOutput),
+         GTK_STYLE_PROVIDER(cp), GTK_STYLE_PROVIDER_PRIORITY_APPLICATION );
+      g_object_unref( cp );
    }
-   gtk_container_add( GTK_CONTAINER(sw), output );
+   gtk_container_add( GTK_CONTAINER(sw), s_aiOutput );
 
-   GtkWidget * clearBtn = gtk_button_new_with_label( "Clear" );
-   gtk_box_pack_start( GTK_BOX(topBox), clearBtn, FALSE, FALSE, 0 );
-   g_signal_connect( clearBtn, "clicked", G_CALLBACK(on_ai_clear), output );
+   /* Suggestion chip row above input */
+   GtkWidget * chipsScroll = gtk_scrolled_window_new( NULL, NULL );
+   gtk_scrolled_window_set_policy( GTK_SCROLLED_WINDOW(chipsScroll),
+      GTK_POLICY_AUTOMATIC, GTK_POLICY_NEVER );
+   gtk_widget_set_size_request( chipsScroll, -1, 38 );
+   gtk_box_pack_start( GTK_BOX(vbox), chipsScroll, FALSE, FALSE, 0 );
+   s_aiChipsBox = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
+   gtk_container_add( GTK_CONTAINER(chipsScroll), s_aiChipsBox );
 
    /* Input bar */
    GtkWidget * inputBox = gtk_box_new( GTK_ORIENTATION_HORIZONTAL, 4 );
    gtk_box_pack_start( GTK_BOX(vbox), inputBox, FALSE, FALSE, 0 );
 
-   GtkWidget * entry = gtk_entry_new();
-   gtk_entry_set_placeholder_text( GTK_ENTRY(entry), "Ask a question..." );
-   gtk_box_pack_start( GTK_BOX(inputBox), entry, TRUE, TRUE, 0 );
+   s_aiInput = gtk_entry_new();
+   gtk_entry_set_placeholder_text( GTK_ENTRY(s_aiInput),
+      s_aiDeepseekKey ? "Ask anything…" : "Ask anything… (or /key sk-... for DeepSeek)" );
+   gtk_box_pack_start( GTK_BOX(inputBox), s_aiInput, TRUE, TRUE, 0 );
 
    GtkWidget * sendBtn = gtk_button_new_with_label( "Send" );
    gtk_box_pack_start( GTK_BOX(inputBox), sendBtn, FALSE, FALSE, 0 );
 
    /* Status bar */
-   GtkWidget * statusLbl = gtk_label_new( "Status: Ready | Ollama: localhost:11434" );
-   gtk_label_set_xalign( GTK_LABEL(statusLbl), 0.0 );
-   gtk_box_pack_start( GTK_BOX(vbox), statusLbl, FALSE, FALSE, 0 );
+   s_aiStatus = gtk_label_new( s_aiDeepseekKey
+      ? "Status: Ready | DeepSeek configured"
+      : "Status: Ready | Ollama localhost:11434" );
+   gtk_label_set_xalign( GTK_LABEL(s_aiStatus), 0.0 );
+   gtk_box_pack_start( GTK_BOX(vbox), s_aiStatus, FALSE, FALSE, 0 );
 
-   /* Wire callbacks */
-   s_aiWidgets[0] = entry;
-   s_aiWidgets[1] = output;
-   s_aiWidgets[2] = combo;
-   s_aiWidgets[3] = statusLbl;
-
-   g_signal_connect( sendBtn, "clicked", G_CALLBACK(on_ai_send), s_aiWidgets );
-   g_signal_connect( entry, "key-press-event", G_CALLBACK(on_ai_entry_key), s_aiWidgets );
+   g_signal_connect( sendBtn,   "clicked",         G_CALLBACK(on_ai_send),     NULL );
+   g_signal_connect( s_aiInput, "key-press-event", G_CALLBACK(on_ai_entry_key), NULL );
 
    gtk_widget_show_all( s_hAIWnd );
+   gtk_widget_hide( s_aiSpinner );
+   s_aiSetDefaultChips();
 }
 
 /* ======================================================================
@@ -13275,4 +13854,127 @@ HB_FUNC( HIX_SERVESTATIC )
       free( buf );
    }
    fclose( f );
+}
+
+/* ======================================================================
+ * AI-driven palette additions: TStaticText, TScrollBox, TLabeledEdit,
+ * TProgressBar (UI_*New wrappers) + UI_FormRealizeChildren +
+ * CodeEditor AI-line markers.
+ * ====================================================================== */
+
+HB_FUNC( UI_STATICTEXTNEW )
+{
+   HBForm * pForm = GetForm(1);
+   HBControl * p = (HBControl *) calloc( 1, sizeof(HBControl) );
+   HBControl_Init( p );
+   strcpy( p->FClassName, "TStaticText" );
+   p->FControlType = CT_STATICTEXT;
+   p->FWidth = 65; p->FHeight = 17; p->FTabStop = 0;
+   if( HB_ISCHAR(2) ) HBControl_SetText( p, hb_parc(2) );
+   if( HB_ISNUM(3) ) p->FLeft = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FTop = hb_parni(4);
+   if( HB_ISNUM(5) ) p->FWidth = hb_parni(5);
+   if( HB_ISNUM(6) ) p->FHeight = hb_parni(6);
+   if( pForm ) HBControl_AddChild( &pForm->base, p );
+   RetCtrl( p );
+}
+
+HB_FUNC( UI_SCROLLBOXNEW )
+{
+   HBForm * pForm = GetForm(1);
+   HBControl * p = (HBControl *) calloc( 1, sizeof(HBControl) );
+   HBControl_Init( p );
+   strcpy( p->FClassName, "TScrollBox" );
+   p->FControlType = CT_SCROLLBOX;
+   p->FWidth = 185; p->FHeight = 140; p->FTabStop = 0;
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);
+   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);
+   if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( pForm ) HBControl_AddChild( &pForm->base, p );
+   RetCtrl( p );
+}
+
+HB_FUNC( UI_LABELEDEDITNEW )
+{
+   HBForm * pForm = GetForm(1);
+   HBEdit * p = (HBEdit *) calloc( 1, sizeof(HBEdit) );
+   HBControl_Init( &p->base );
+   strcpy( p->base.FClassName, "TLabeledEdit" );
+   p->base.FControlType = CT_LABELEDEDIT;
+   p->base.FWidth = 120; p->base.FHeight = 24;
+   if( HB_ISCHAR(2) ) HBControl_SetText( &p->base, hb_parc(2) );
+   if( HB_ISNUM(3) ) p->base.FLeft = hb_parni(3);
+   if( HB_ISNUM(4) ) p->base.FTop = hb_parni(4);
+   if( HB_ISNUM(5) ) p->base.FWidth = hb_parni(5);
+   if( HB_ISNUM(6) ) p->base.FHeight = hb_parni(6);
+   if( pForm ) HBControl_AddChild( &pForm->base, &p->base );
+   RetCtrl( &p->base );
+}
+
+HB_FUNC( UI_PROGRESSBARNEW )
+{
+   HBForm * pForm = GetForm(1);
+   HBControl * p = (HBControl *) calloc( 1, sizeof(HBControl) );
+   HBControl_Init( p );
+   strcpy( p->FClassName, "TProgressBar" );
+   p->FControlType = CT_PROGRESSBAR;
+   p->FWidth = 200; p->FHeight = 18; p->FTabStop = 0;
+   if( HB_ISNUM(2) ) p->FLeft = hb_parni(2);
+   if( HB_ISNUM(3) ) p->FTop = hb_parni(3);
+   if( HB_ISNUM(4) ) p->FWidth = hb_parni(4);
+   if( HB_ISNUM(5) ) p->FHeight = hb_parni(5);
+   if( pForm ) HBControl_AddChild( &pForm->base, p );
+   RetCtrl( p );
+}
+
+/* UI_FormRealizeChildren( hForm ) — create GTK widgets for any child controls
+ * that were appended after the form was already shown (e.g. by AIBuildForm).
+ * HBControl_AddChild already auto-realizes when FFixed exists, so this is a
+ * safety pass that catches any child whose FWidget is still NULL and shows
+ * the form to ensure new widgets become visible. */
+HB_FUNC( UI_FORMREALIZECHILDREN )
+{
+   HBForm * f = GetForm(1);
+   if( !f || !f->FFixed ) return;
+   for( int i = 0; i < f->base.FChildCount; i++ )
+   {
+      HBControl * c = f->base.FChildren[i];
+      if( !c || c->FWidget ) continue;
+      GtkWidget * container = f->FFixed;
+      if( c->FPageOwner )
+      {
+         GtkWidget * page = HBTabControl2_GetPageFixed(
+            c->FPageOwner, c->FPageIndex );
+         if( page ) container = page;
+      }
+      HBControl_CreateWidget( c, container, f->FFormFontDesc );
+   }
+   gtk_widget_show_all( f->FFixed );
+}
+
+/* CodeEditorMarkLines( hEditor, nFromLine, nToLine, nBgrColor )
+ * Highlights line range with a background marker (AI-inserted code).
+ * Marker 5 reserved for AI markers. */
+HB_FUNC( CODEEDITORMARKLINES )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   if( !ed || !ed->sciWidget ) return;
+   int nFrom = hb_parni(2);
+   int nTo   = hb_parni(3);
+   long nColor = HB_ISNUM(4) ? hb_parnl(4) : 0x90EE90L;  /* light green BGR */
+   const int MARKER_AI = 5;
+   SciMsg( ed->sciWidget, SCI_MARKERDEFINE, MARKER_AI, SC_MARK_BACKGROUND );
+   SciMsg( ed->sciWidget, SCI_MARKERSETBACK, MARKER_AI, (intptr_t) nColor );
+   SciMsg( ed->sciWidget, SCI_MARKERSETALPHA, MARKER_AI, 90 );
+   for( int line = nFrom; line <= nTo; line++ )
+      SciMsg( ed->sciWidget, SCI_MARKERADD, line, MARKER_AI );
+}
+
+HB_FUNC( CODEEDITORCLEARMARKS )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   if( !ed || !ed->sciWidget ) return;
+   const int MARKER_AI = 5;
+   SciMsg( ed->sciWidget, SCI_MARKERDELETEALL, MARKER_AI, 0 );
 }

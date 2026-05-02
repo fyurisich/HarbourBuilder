@@ -73,8 +73,8 @@ function Main()
    nEditorH := nBottomY - nEditorTop
 
    // Form Designer: default position/size
-   nFormX := 877
-   nFormY := 373
+   nFormX := 823
+   nFormY := 392
 
    // Menu bar
    DEFINE MENUBAR OF oIDE
@@ -303,6 +303,9 @@ function Main()
    INS_SetPos( _InsGetData(), 0, nInsTop - 35, nInsW, nBottomY - nInsTop - 15 )
 
    WireDesignForm()
+
+   // Show AI Assistant by default at startup
+   ShowAIAssistant()
 
    oIDE:OnClose := { || DestroyAllForms(), InspectorClose(), ;
                        CodeEditorDestroy( hCodeEditor ) }
@@ -3496,6 +3499,370 @@ return nil
 
 static function ShowAIAssistant()
    GTK_AIAssistantPanel()
+return nil
+
+// AIRunProject() - public wrapper called from C when LLM emits {"action":"run"}
+function AIRunProject()
+   TBRun()
+return nil
+
+// AIResizeForm( nW, nH ) - resize current design form to given size.
+function AIResizeForm( nW, nH )
+   local hForm
+   if oDesignForm == nil
+      return nil
+   endif
+   hForm := oDesignForm:hCpp
+   if HB_ISNUMERIC( nW ) .and. nW > 50
+      UI_SetProp( hForm, "nWidth",  nW )
+   endif
+   if HB_ISNUMERIC( nH ) .and. nH > 50
+      UI_SetProp( hForm, "nHeight", nH )
+   endif
+   InspectorRefresh( hForm )
+   SyncDesignerToCode()
+return nil
+
+// AIFitForm() - resize current form to fit all its child controls.
+function AIFitForm()
+   local hForm, nCount, i, hCtrl, nMaxR := 0, nMaxB := 0, nR, nB
+   if oDesignForm == nil
+      return nil
+   endif
+   hForm := oDesignForm:hCpp
+   nCount := UI_GetChildCount( hForm )
+   for i := 1 to nCount
+      hCtrl := UI_GetChild( hForm, i )
+      if hCtrl == 0
+         loop
+      endif
+      nR := UI_GetProp( hCtrl, "nLeft" ) + UI_GetProp( hCtrl, "nWidth" )
+      nB := UI_GetProp( hCtrl, "nTop" )  + UI_GetProp( hCtrl, "nHeight" )
+      if nR > nMaxR; nMaxR := nR; endif
+      if nB > nMaxB; nMaxB := nB; endif
+   next
+   if nMaxR > 0
+      UI_SetProp( hForm, "nWidth",  nMaxR + 30 )
+   endif
+   if nMaxB > 0
+      UI_SetProp( hForm, "nHeight", nMaxB + 60 )
+   endif
+   InspectorRefresh( hForm )
+   SyncDesignerToCode()
+return nil
+
+// AIDescribeDbf( cPath ) - return JSON array describing fields of a DBF file.
+// Tries cPath as-is, then relative to project dir. Returns "" on failure.
+function AIDescribeDbf( cPath )
+   local aStruct, i, cJson, hField
+   local aFields := {}
+   local cTried := cPath
+   local oErr
+
+   if ! HB_ISCHAR( cPath ) .or. Empty( cPath )
+      return ""
+   endif
+
+   if ! File( cTried )
+      cTried := hb_DirBase() + cPath
+      if ! File( cTried )
+         cTried := "./" + cPath
+      endif
+   endif
+   if ! File( cTried )
+      return ""
+   endif
+
+   begin sequence with { | e | break( e ) }
+      dbUseArea( .T., , cTried, "AIDESCRIBE_TMP", .T., .T. )
+      aStruct := dbStruct()
+      dbCloseArea()
+   recover using oErr
+      aStruct := nil
+   end sequence
+
+   if aStruct == nil .or. ! HB_ISARRAY( aStruct )
+      return ""
+   endif
+
+   for i := 1 to Len( aStruct )
+      hField := { => }
+      hField[ "name" ] := aStruct[i][1]
+      hField[ "type" ] := aStruct[i][2]
+      hField[ "len"  ] := aStruct[i][3]
+      hField[ "dec"  ] := aStruct[i][4]
+      AAdd( aFields, hField )
+   next
+
+   cJson := hb_jsonEncode( aFields )
+return cJson
+
+// AIDescribeActiveForm() - return JSON description of the active design form:
+// title, size, and array of existing controls. Empty string if no active form.
+// Lets the LLM know what controls already exist so it modifies instead of
+// recreating them.
+function AIDescribeActiveForm()
+   local hForm, hSpec, aCtrls := {}, hCtrl, hChild, i, nCount, cType, cName
+   if oDesignForm == nil
+      return ""
+   endif
+   hForm := oDesignForm:hCpp
+   hSpec := { => }
+   hSpec[ "class" ] := AIGetActiveFormClass()
+   hSpec[ "title" ] := UI_GetProp( hForm, "cText" )
+   hSpec[ "w"     ] := UI_GetProp( hForm, "nWidth"  )
+   hSpec[ "h"     ] := UI_GetProp( hForm, "nHeight" )
+   nCount := UI_GetChildCount( hForm )
+   for i := 1 to nCount
+      hChild := UI_GetChild( hForm, i )
+      if hChild == 0
+         loop
+      endif
+      cName := UI_GetProp( hChild, "cName" )
+      if Empty( cName )
+         loop
+      endif
+      cType := UI_GetProp( hChild, "cClassName" )
+      if Empty( cType )
+         cType := "T?"
+      endif
+      hCtrl := { => }
+      hCtrl[ "type" ] := cType
+      hCtrl[ "name" ] := cName
+      hCtrl[ "x"    ] := UI_GetProp( hChild, "nLeft"   )
+      hCtrl[ "y"    ] := UI_GetProp( hChild, "nTop"    )
+      hCtrl[ "w"    ] := UI_GetProp( hChild, "nWidth"  )
+      hCtrl[ "h"    ] := UI_GetProp( hChild, "nHeight" )
+      hCtrl[ "text" ] := UI_GetProp( hChild, "cText"   )
+      AAdd( aCtrls, hCtrl )
+   next
+   hSpec[ "controls" ] := aCtrls
+return hb_jsonEncode( hSpec )
+
+// AIGetActiveFormClass() - return the Harbour CLASS name of the active design
+// form (e.g. "TForm2"). Empty string if there is no active form.
+function AIGetActiveFormClass()
+   local cName
+   if oDesignForm == nil .or. nActiveForm == nil .or. nActiveForm < 1 .or. ;
+      nActiveForm > Len( aForms )
+      return ""
+   endif
+   cName := aForms[ nActiveForm ][ 1 ]
+   if Empty( cName )
+      return ""
+   endif
+return "T" + cName
+
+// Find an existing child control on hForm by its cName property.
+// Returns the control handle or 0.
+static function AI_FindCtrlByName( hForm, cName )
+   local i, nCount, hChild
+   if Empty( cName ) .or. hForm == 0
+      return 0
+   endif
+   nCount := UI_GetChildCount( hForm )
+   for i := 1 to nCount
+      hChild := UI_GetChild( hForm, i )
+      if hChild != 0 .and. UI_GetProp( hChild, "cName" ) == cName
+         return hChild
+      endif
+   next
+return 0
+
+// Replace every occurrence of "CLASS T<identifier>" in cCode with "CLASS <cNew>"
+// (where cNew already includes the leading T).
+static function AI_RewriteClassName( cCode, cNew )
+   local cResult := "", nPos, nEnd, cChar, nLen
+   nLen := Len( cCode )
+   nPos := 1
+   do while nPos <= nLen
+      nEnd := hb_At( "CLASS T", cCode, nPos )
+      if nEnd == 0
+         cResult += SubStr( cCode, nPos )
+         exit
+      endif
+      cResult += SubStr( cCode, nPos, nEnd - nPos ) + "CLASS " + cNew
+      nPos := nEnd + 7
+      do while nPos <= nLen
+         cChar := SubStr( cCode, nPos, 1 )
+         if ! ( ( cChar >= "A" .and. cChar <= "Z" ) .or. ;
+                ( cChar >= "a" .and. cChar <= "z" ) .or. ;
+                ( cChar >= "0" .and. cChar <= "9" ) .or. ;
+                cChar == "_" )
+            exit
+         endif
+         nPos++
+      enddo
+   enddo
+return cResult
+
+// AIAddCode( cCode ) - append code to the current form's .prg tab and
+// highlight the inserted lines with an olive background marker.
+function AIAddCode( cCode )
+   local cExisting, cNew, nTab, nFromLine, nToLine, cActiveCls
+   if ! HB_ISCHAR( cCode ) .or. Empty( cCode )
+      return nil
+   endif
+   nTab := CodeEditorGetActiveTab( hCodeEditor )
+   if nTab < 1
+      return nil
+   endif
+   cActiveCls := AIGetActiveFormClass()
+   if ! Empty( cActiveCls )
+      cCode := AI_RewriteClassName( cCode, cActiveCls )
+   endif
+   cExisting := CodeEditorGetText2( hCodeEditor, nTab )
+   if ! HB_ISCHAR( cExisting )
+      cExisting := ""
+   endif
+   if ! ( Right( cExisting, 1 ) == Chr(10) )
+      cExisting += Chr(10)
+   endif
+   nFromLine := Len( hb_ATokens( cExisting + Chr(10), Chr(10) ) ) - 2
+   cNew := cExisting + Chr(10) + cCode + Chr(10)
+   CodeEditorSetTabText( hCodeEditor, nTab, cNew )
+   nToLine := Len( hb_ATokens( cNew, Chr(10) ) ) - 2
+   CodeEditorClearMarks( hCodeEditor )
+   CodeEditorMarkLines( hCodeEditor, nFromLine, nToLine, 32896 )
+
+   SyncDesignerToCode()
+return nil
+
+// AIBuildForm( cJson ) - called from C after LLM returns JSON form spec.
+// Public so it's reachable via hb_dynsymFindName from gtk3_core.c.
+function AIBuildForm( cJson )
+
+   local hSpec, aCtrls, hCtrlSpec, cType, nL, nT, nW, nH, cText, cName
+   local hForm, hCtrlNew, i, oErr
+
+   if ! HB_ISCHAR( cJson ) .or. Empty( cJson )
+      return nil
+   endif
+
+   begin sequence with { | e | break( e ) }
+      hSpec := hb_jsonDecode( cJson )
+   recover using oErr
+      hSpec := nil
+   end sequence
+
+   if ! HB_ISHASH( hSpec )
+      return nil
+   endif
+
+   if "title" $ hSpec
+      MenuNewForm()
+   endif
+   if oDesignForm == nil
+      return nil
+   endif
+   hForm := oDesignForm:hCpp
+
+   if "title" $ hSpec .and. HB_ISCHAR( hSpec[ "title" ] )
+      UI_SetProp( hForm, "cText", hSpec[ "title" ] )
+   endif
+   if "w" $ hSpec .and. HB_ISNUMERIC( hSpec[ "w" ] ) .and. hSpec[ "w" ] > 50
+      UI_SetProp( hForm, "nWidth", hSpec[ "w" ] )
+   endif
+   if "h" $ hSpec .and. HB_ISNUMERIC( hSpec[ "h" ] ) .and. hSpec[ "h" ] > 50
+      UI_SetProp( hForm, "nHeight", hSpec[ "h" ] )
+   endif
+
+   if "controls" $ hSpec .and. HB_ISARRAY( hSpec[ "controls" ] )
+      aCtrls := hSpec[ "controls" ]
+      for i := 1 to Len( aCtrls )
+         hCtrlSpec := aCtrls[ i ]
+         if ! HB_ISHASH( hCtrlSpec )
+            loop
+         endif
+         cType := iif( "type" $ hCtrlSpec .and. HB_ISCHAR( hCtrlSpec[ "type" ] ), Upper( hCtrlSpec[ "type" ] ), "" )
+         nL    := iif( "x" $ hCtrlSpec .and. HB_ISNUMERIC( hCtrlSpec[ "x" ] ), hCtrlSpec[ "x" ], 10 )
+         nT    := iif( "y" $ hCtrlSpec .and. HB_ISNUMERIC( hCtrlSpec[ "y" ] ), hCtrlSpec[ "y" ], 10 )
+         nW    := iif( "w" $ hCtrlSpec .and. HB_ISNUMERIC( hCtrlSpec[ "w" ] ), hCtrlSpec[ "w" ], 80 )
+         nH    := iif( "h" $ hCtrlSpec .and. HB_ISNUMERIC( hCtrlSpec[ "h" ] ), hCtrlSpec[ "h" ], 24 )
+         cText := iif( "text" $ hCtrlSpec .and. HB_ISCHAR( hCtrlSpec[ "text" ] ), hCtrlSpec[ "text" ], "" )
+         cName := iif( "name" $ hCtrlSpec .and. HB_ISCHAR( hCtrlSpec[ "name" ] ), hCtrlSpec[ "name" ], "" )
+
+         hCtrlNew := AI_FindCtrlByName( hForm, cName )
+         if hCtrlNew != 0
+            if "x" $ hCtrlSpec; UI_SetProp( hCtrlNew, "nLeft",   nL ); endif
+            if "y" $ hCtrlSpec; UI_SetProp( hCtrlNew, "nTop",    nT ); endif
+            if "w" $ hCtrlSpec; UI_SetProp( hCtrlNew, "nWidth",  nW ); endif
+            if "h" $ hCtrlSpec; UI_SetProp( hCtrlNew, "nHeight", nH ); endif
+            if "text" $ hCtrlSpec .and. ! Empty( cText )
+               UI_SetProp( hCtrlNew, "cText", cText )
+            endif
+            if "items" $ hCtrlSpec .and. HB_ISARRAY( hCtrlSpec[ "items" ] )
+               UI_SetProp( hCtrlNew, "aItems", hCtrlSpec[ "items" ] )
+            endif
+            loop
+         endif
+
+         do case
+         case cType == "TLABEL"
+            hCtrlNew := UI_LabelNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TEDIT"
+            hCtrlNew := UI_EditNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TBUTTON"
+            hCtrlNew := UI_ButtonNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TCHECKBOX"
+            hCtrlNew := UI_CheckBoxNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TCOMBOBOX"
+            hCtrlNew := UI_ComboBoxNew( hForm, nL, nT, nW, nH )
+         case cType == "TGROUPBOX"
+            hCtrlNew := UI_GroupBoxNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TRADIOBUTTON"
+            hCtrlNew := UI_RadioButtonNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TMEMO"
+            hCtrlNew := UI_MemoNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TTREEVIEW"
+            hCtrlNew := UI_TreeViewNew( hForm, nL, nT, nW, nH )
+         case cType == "TLISTVIEW"
+            hCtrlNew := UI_ListViewNew( hForm, nL, nT, nW, nH )
+         case cType == "TLISTBOX"
+            hCtrlNew := UI_ListBoxNew( hForm, nL, nT, nW, nH )
+         case cType == "TPROGRESSBAR"
+            hCtrlNew := UI_ProgressBarNew( hForm, nL, nT, nW, nH )
+         case cType == "TIMAGE"
+            hCtrlNew := UI_ImageNew( hForm, nL, nT, nW, nH )
+         case cType == "TBEVEL"
+            hCtrlNew := UI_BevelNew( hForm, nL, nT, nW, nH )
+         case cType == "TSHAPE"
+            hCtrlNew := UI_ShapeNew( hForm, nL, nT, nW, nH )
+         case cType == "TBITBTN"
+            hCtrlNew := UI_BitBtnNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TTABCONTROL"
+            hCtrlNew := UI_TabControlNew( hForm, nL, nT, nW, nH )
+         case cType == "TMASKEDIT"
+            hCtrlNew := UI_MaskEditNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TSTRINGGRID"
+            hCtrlNew := UI_StringGridNew( hForm, nL, nT, nW, nH )
+         case cType == "TSPEEDBUTTON"
+            hCtrlNew := UI_SpeedBtnNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TSTATICTEXT"
+            hCtrlNew := UI_StaticTextNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TSCROLLBOX"
+            hCtrlNew := UI_ScrollBoxNew( hForm, nL, nT, nW, nH )
+         case cType == "TLABELEDEDIT"
+            hCtrlNew := UI_LabeledEditNew( hForm, cText, nL, nT, nW, nH )
+         endcase
+
+         if hCtrlNew != nil .and. hCtrlNew != 0
+            if ! Empty( cName )
+               UI_SetProp( hCtrlNew, "cName", cName )
+            endif
+            if "items" $ hCtrlSpec .and. HB_ISARRAY( hCtrlSpec[ "items" ] )
+               UI_SetProp( hCtrlNew, "aItems", hCtrlSpec[ "items" ] )
+            endif
+         endif
+      next
+   endif
+
+   UI_FormRealizeChildren( hForm )
+
+   InspectorPopulateCombo( hForm )
+   InspectorRefresh( hForm )
+   SyncDesignerToCode()
+
 return nil
 
 // === Project Inspector ===
