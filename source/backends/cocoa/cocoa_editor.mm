@@ -2670,6 +2670,40 @@ static NSTextView * s_aiOutput = nil;
 static NSTextField * s_aiInput = nil;
 static NSPopUpButton * s_aiModelBtn = nil;
 static NSProgressIndicator * s_aiSpinner = nil;
+static NSString * s_aiDeepseekKey = nil;
+
+static NSString * s_aiDeepseekKeyPath( void )
+{
+   NSString * home = NSHomeDirectory();
+   return [home stringByAppendingPathComponent:@".hbbuilder_deepseek_key"];
+}
+
+static void s_aiLoadDeepseekKey( void )
+{
+   const char * env = getenv("DEEPSEEK_API_KEY");
+   if( env && *env ) {
+      s_aiDeepseekKey = [NSString stringWithUTF8String:env];
+      return;
+   }
+   NSString * path = s_aiDeepseekKeyPath();
+   NSString * key = [NSString stringWithContentsOfFile:path encoding:NSUTF8StringEncoding error:nil];
+   if( key ) {
+      key = [key stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+      if( [key length] > 0 ) s_aiDeepseekKey = key;
+   }
+}
+
+static void s_aiSaveDeepseekKey( NSString * key )
+{
+   if( !key || [key length] == 0 ) return;
+   s_aiDeepseekKey = key;
+   [key writeToFile:s_aiDeepseekKeyPath() atomically:YES encoding:NSUTF8StringEncoding error:nil];
+}
+
+static BOOL s_aiIsDeepseekModel( NSString * model )
+{
+   return [[model lowercaseString] hasPrefix:@"deepseek"];
+}
 
 static NSDictionary * s_aiTextAttrs( void )
 {
@@ -2839,6 +2873,16 @@ static void s_aiPullModel( NSString * model )
 
 static void s_aiInitOllamaAsync( void )
 {
+   /* If DeepSeek is configured, prefer it and skip the Ollama probe entirely. */
+   if( s_aiDeepseekKey ) {
+      dispatch_async( dispatch_get_main_queue(), ^{
+         [s_aiModelBtn removeAllItems];
+         [s_aiModelBtn addItemWithTitle:@"deepseek-v4-flash"];
+         [s_aiModelBtn addItemWithTitle:@"deepseek-chat"];
+         [s_aiModelBtn selectItemAtIndex:0];
+      });
+      return;
+   }
    dispatch_async( dispatch_get_global_queue( QOS_CLASS_USER_INITIATED, 0 ), ^{
       BOOL up = s_aiOllamaUp();
       if( !up ) {
@@ -2883,9 +2927,18 @@ static void s_aiInitOllamaAsync( void )
       if( names && [names count] > 0 ) {
          dispatch_async( dispatch_get_main_queue(), ^{
             [s_aiModelBtn removeAllItems];
+            if( s_aiDeepseekKey ) {
+               [s_aiModelBtn addItemWithTitle:@"deepseek-v4-flash"];
+               [s_aiModelBtn addItemWithTitle:@"deepseek-chat"];
+               [[s_aiModelBtn menu] addItem:[NSMenuItem separatorItem]];
+            }
             for( NSString * n in names ) [s_aiModelBtn addItemWithTitle:n];
-            s_aiAppend( [NSString stringWithFormat:@"Loaded %lu model(s) from Ollama.\n",
-                                                  (unsigned long)[names count]] );
+            s_aiAppend( [NSString stringWithFormat:@"Loaded %lu model(s) from Ollama%@.\n",
+                                                  (unsigned long)[names count],
+                                                  s_aiDeepseekKey ? @" (+ DeepSeek)" : @""] );
+            if( !s_aiDeepseekKey ) {
+               s_aiAppend( @"DeepSeek not configured. Type `/key sk-...` to enable deepseek-v4-flash.\n" );
+            }
          });
       } else {
          dispatch_async( dispatch_get_main_queue(), ^{
@@ -2902,7 +2955,31 @@ static void s_aiInitOllamaAsync( void )
 - (void)sendMessage:(id)sender;
 - (void)clearChat:(id)sender;
 - (void)designFormFromPrompt:(NSString *)userDesc model:(NSString *)model;
+- (void)suggestionClicked:(id)sender;
 @end
+
+static NSStackView * s_aiSuggestRow = nil;
+
+static NSArray * s_aiDefaultSuggestions( void )
+{
+   return @[ @"haz un login", @"añade ok y cancel", @"ajusta tamaño form", @"run" ];
+}
+
+static void s_aiSetSuggestions( NSArray<NSString*> * items, id target );
+
+static void s_aiSetSuggestions( NSArray<NSString*> * items, id target )
+{
+   if( !s_aiSuggestRow ) return;
+   for( NSView * v in [[s_aiSuggestRow arrangedSubviews] copy] )
+      [s_aiSuggestRow removeArrangedSubview:v], [v removeFromSuperview];
+   for( NSString * s in items ) {
+      NSButton * b = [NSButton buttonWithTitle:s target:target action:@selector(suggestionClicked:)];
+      [b setBezelStyle:NSBezelStyleRounded];
+      [b setControlSize:NSControlSizeSmall];
+      [b setFont:[NSFont systemFontOfSize:11]];
+      [s_aiSuggestRow addArrangedSubview:b];
+   }
+}
 
 @implementation HBAISendTarget
 
@@ -2916,7 +2993,54 @@ static void s_aiInitOllamaAsync( void )
    NSString * userMsg = [NSString stringWithFormat:@"\n> %@\n", prompt];
    s_aiAppend( userMsg );
    [s_aiInput setStringValue:@""];
+
+   /* /key sk-... — store DeepSeek API key, enable deepseek models */
+   if( [prompt hasPrefix:@"/key "] ) {
+      NSString * key = [[prompt substringFromIndex:5] stringByTrimmingCharactersInSet:
+         [NSCharacterSet whitespaceAndNewlineCharacterSet]];
+      if( [key length] < 8 ) {
+         s_aiAppend( @"Invalid key.\n" );
+         return;
+      }
+      s_aiSaveDeepseekKey( key );
+      /* Insert deepseek items if not already present */
+      BOOL hasDeepseek = NO;
+      for( NSMenuItem * it in [[s_aiModelBtn menu] itemArray] )
+         if( [[it title] hasPrefix:@"deepseek"] ) { hasDeepseek = YES; break; }
+      if( !hasDeepseek ) {
+         [s_aiModelBtn insertItemWithTitle:@"deepseek-v4-flash" atIndex:0];
+         [s_aiModelBtn insertItemWithTitle:@"deepseek-chat"     atIndex:1];
+         [[s_aiModelBtn menu] insertItem:[NSMenuItem separatorItem] atIndex:2];
+         [s_aiModelBtn selectItemAtIndex:0];
+      }
+      s_aiAppend( @"DeepSeek API key saved. Select deepseek-v4-flash from the model menu.\n" );
+      return;
+   }
+
    [s_aiSpinner startAnimation:nil];
+
+   /* Active form context — feed full description (class, title, size, controls)
+      so the LLM knows what already exists and acts on it instead of recreating. */
+   NSString * activeFormCtx = nil;
+   {
+      PHB_DYNS pSym = hb_dynsymFindName( "AIDESCRIBEACTIVEFORM" );
+      if( pSym ) {
+         hb_vmPushDynSym( pSym );
+         hb_vmPushNil();
+         hb_vmFunction( 0 );
+         PHB_ITEM pRet = hb_stackReturnItem();
+         const char * res = ( pRet && HB_IS_STRING(pRet) ) ? hb_itemGetCPtr( pRet ) : NULL;
+         if( res && *res ) {
+            activeFormCtx = [NSString stringWithFormat:
+               @"\n\nACTIVE FORM (currently open in the designer): %s\n"
+               @"If the user mentions any control listed above by its name or text, "
+               @"those controls ALREADY EXIST — do NOT redefine them in \"controls\". "
+               @"Only emit \"controls\" for genuinely new ones. Use the \"class\" value "
+               @"verbatim in any METHOD <Name>() CLASS ... declaration.\n",
+               res];
+         }
+      }
+   }
 
    /* If the message references a .dbf file, ask Harbour to describe its
       schema and prepend the field list as context for the LLM so it doesn't
@@ -2962,7 +3086,13 @@ static void s_aiInitOllamaAsync( void )
       @"        {\"title\":string,\"w\":int,\"h\":int,\"controls\":["
       @"{\"type\":string,\"x\":int,\"y\":int,\"w\":int,\"h\":int,\"text\":string,\"name\":string}],"
       @"\"code\":string}\n"
-      @"        type ∈ {TLabel,TEdit,TButton,TCheckBox,TComboBox,TGroupBox,TRadioButton,TMemo}.\n"
+      @"        type ∈ {TLabel,TEdit,TButton,TCheckBox,TComboBox,TGroupBox,TRadioButton,TMemo,"
+      @"TTreeView,TListView,TListBox,TProgressBar,TImage,TBevel,TShape,TBitBtn,TTabControl}.\n"
+      @"        For TTreeView, TListBox, TComboBox, TListView (anything with rows): include an "
+      @"\"items\":[\"a\",\"b\",\"c\"] field in the control spec to populate it. The IDE shows "
+      @"those items in the design preview AND at runtime — never emit a Form1Show method that "
+      @"populates rows when you can use \"items\" inline. For TTreeView, indent child rows with "
+      @"two leading spaces per level (\"Parent\", \"  Child1\", \"  Child2\").\n"
       @"        Sizes: label 80x20, edit 180x22, button 80x28. Step y=30. Labels x=20, fields x=110.\n"
       @"        Names: lblXxx, edtXxx, btnXxx, chkXxx, cboXxx, grpXxx, rbXxx, memXxx.\n"
       @"        When the user describes a control with BEHAVIOR (e.g. \"button OK that runs "
@@ -2984,10 +3114,38 @@ static void s_aiInitOllamaAsync( void )
       @"In \"code\", emit METHOD <FormName>Show() CLASS TFormN that USEs the DBF and refreshes the "
       @"edit controls from the current record.\n"
       @"\n"
-      @"        IMPORTANT — TARGET FORM:\n"
-      @"        * NEW form (full spec): include \"title\", \"w\", \"h\" + \"controls\". Use this when "
-      @"the user implies a new form: \"haz un login\", \"create a settings dialog\", \"diseña...\", "
-      @"\"new form\", or no target hint at all.\n"
+      @"        EXISTING-CONTROL AWARENESS: when the user message is followed by an "
+      @"\"ACTIVE FORM (currently open in the designer): {...}\" block, you MUST inspect the "
+      @"listed controls. The IDE matches controls by their \"name\" — emitting a control whose "
+      @"name already exists UPDATES that control (move/resize/relabel) rather than duplicating "
+      @"it. So:\n"
+      @"          • To MOVE / CENTER / RELOCATE / RESIZE / RENAME-TEXT an existing control: "
+      @"emit it in \"controls\" using its EXISTING name and the NEW x/y/w/h/text. Other fields "
+      @"may be omitted.\n"
+      @"          • To WIRE BEHAVIOR onto existing controls (\"ok cierra el form\", \"cancel "
+      @"vacía edit\"): emit ADD_CODE with the matching METHOD handler(s). DO NOT include the "
+      @"existing controls in \"controls\".\n"
+      @"          • To ADD genuinely new controls: emit them in \"controls\" with new names.\n"
+      @"        You CAN reposition existing controls. Never refuse a move/center request — emit "
+      @"the controls array with the same name + new coordinates.\n"
+      @"        Examples (assuming active form has btnOk@200,40 and btnCancel@290,40, w=400):\n"
+      @"          \"centralos\" → {\"controls\":[{\"type\":\"TButton\",\"name\":\"btnOk\","
+      @"\"x\":115,\"y\":40,\"w\":80,\"h\":28},{\"type\":\"TButton\",\"name\":\"btnCancel\","
+      @"\"x\":205,\"y\":40,\"w\":80,\"h\":28}]}\n"
+      @"          \"ambos hacia abajo\" → {\"controls\":[{\"type\":\"TButton\",\"name\":\"btnOk\","
+      @"\"x\":200,\"y\":120,\"w\":80,\"h\":28},{\"type\":\"TButton\",\"name\":\"btnCancel\","
+      @"\"x\":290,\"y\":120,\"w\":80,\"h\":28}]}\n"
+      @"\n"
+      @"        IMPORTANT — TARGET FORM (shape-based, no \"action\" key):\n"
+      @"        * NEW form: include \"title\", \"w\", \"h\" + \"controls\". Use when the user "
+      @"implies a new form: \"haz un login\", \"create a settings dialog\", \"new form\".\n"
+      @"        * RESIZE current form: emit ONLY {\"w\":int,\"h\":int} — no title, no controls. "
+      @"Use when the user wants to change the active form's size. Triggers: \"ajusta tamaño form\", "
+      @"\"resize form to 600x400\", \"redimensiona el form\", \"haz el form más grande\", "
+      @"\"adjust form size\". Pick reasonable dimensions if no explicit size is given (default to "
+      @"making the form 30-40 px larger in each direction than what would tightly enclose normal "
+      @"controls — typical 400x300, 500x350, 600x400). If the user requests fitting to content, "
+      @"emit your best estimate of w/h for the controls present.\n"
       @"        * CURRENT form (only add controls): emit ONLY {\"controls\":[...]} — omit "
       @"title/w/h entirely. Use this when the user references the existing form: \"in current form\", "
       @"\"in this form\", \"add to current\", \"en el form actual\", \"en este form\", "
@@ -3085,6 +3243,16 @@ static void s_aiInitOllamaAsync( void )
       @"USER: cuando hago click en form1 abre form2\n"
       @"ASSISTANT: {\"action\":\"add_code\",\"code\":\"METHOD Form1Click() CLASS TForm1\\n   local oForm2 := TForm2():New()\\n   oForm2:Show()\\nreturn nil\"}\n"
       @"\n"
+      @"USER: ajusta tamaño form\n"
+      @"ASSISTANT: {\"w\":500,\"h\":350}\n"
+      @"\n"
+      @"USER: define \"one, two, three\" como items para treeview\n"
+      @"ASSISTANT: {\"controls\":[{\"type\":\"TTreeView\",\"name\":\"ttvTree\","
+      @"\"items\":[\"one\",\"two\",\"three\"]}]}\n"
+      @"\n"
+      @"USER: resize form to 600x400\n"
+      @"ASSISTANT: {\"w\":600,\"h\":400}\n"
+      @"\n"
       @"USER: form para editar registros de orders.dbf\n"
       @"DBF FIELDS (real schema of orders.dbf): [{\"name\":\"ORDID\",\"type\":\"N\",\"len\":6},"
       @"{\"name\":\"CUSTNAME\",\"type\":\"C\",\"len\":30},{\"name\":\"AMOUNT\",\"type\":\"N\",\"len\":10}]\n"
@@ -3112,23 +3280,49 @@ static void s_aiInitOllamaAsync( void )
       @"   orders->CUSTNAME := ::oedtCUSTNAME:cText\\n"
       @"   orders->AMOUNT   := Val( ::oedtAMOUNT:cText )\\n   dbCommit()\\nreturn nil\"}";
 
+   BOOL useDeepseek = s_aiIsDeepseekModel( model );
+   if( useDeepseek && (!s_aiDeepseekKey || [s_aiDeepseekKey length] == 0) ) {
+      [s_aiSpinner stopAnimation:nil];
+      s_aiAppend( @"\nDeepSeek API key not set. Type `/key sk-...` first.\n" );
+      return;
+   }
+
    dispatch_async( dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-      NSMutableURLRequest * req = [NSMutableURLRequest requestWithURL:
-         [NSURL URLWithString:@"http://localhost:11434/api/chat"]];
+      NSString * urlStr = useDeepseek
+         ? @"https://api.deepseek.com/v1/chat/completions"
+         : @"http://localhost:11434/api/chat";
+      NSMutableURLRequest * req = [NSMutableURLRequest requestWithURL:[NSURL URLWithString:urlStr]];
       [req setHTTPMethod:@"POST"];
       [req setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
-      NSString * userContent = dbfContext
-         ? [NSString stringWithFormat:@"%@%@", prompt, dbfContext]
-         : prompt;
-      NSDictionary * payload = @{
-         @"model": model,
-         @"stream": @NO,
-         @"messages": @[
-            @{ @"role": @"system", @"content": sysPrompt },
-            @{ @"role": @"user",   @"content": userContent }
-         ],
-         @"options": @{ @"temperature": @0.2 }
-      };
+      if( useDeepseek ) {
+         [req setValue:[NSString stringWithFormat:@"Bearer %@", s_aiDeepseekKey]
+              forHTTPHeaderField:@"Authorization"];
+      }
+      NSMutableString * userContent = [NSMutableString stringWithString:prompt];
+      if( activeFormCtx ) [userContent appendString:activeFormCtx];
+      if( dbfContext )    [userContent appendString:dbfContext];
+      NSDictionary * payload;
+      if( useDeepseek ) {
+         payload = @{
+            @"model": model,
+            @"stream": @NO,
+            @"messages": @[
+               @{ @"role": @"system", @"content": sysPrompt },
+               @{ @"role": @"user",   @"content": userContent }
+            ],
+            @"temperature": @0.2
+         };
+      } else {
+         payload = @{
+            @"model": model,
+            @"stream": @NO,
+            @"messages": @[
+               @{ @"role": @"system", @"content": sysPrompt },
+               @{ @"role": @"user",   @"content": userContent }
+            ],
+            @"options": @{ @"temperature": @0.2 }
+         };
+      }
       NSData * body = [NSJSONSerialization dataWithJSONObject:payload options:0 error:nil];
       [req setHTTPBody:body];
       [req setTimeoutInterval:180];
@@ -3144,8 +3338,33 @@ static void s_aiInitOllamaAsync( void )
                return;
             }
             NSDictionary * j = [NSJSONSerialization JSONObjectWithData:data options:0 error:nil];
-            NSDictionary * msg = j[@"message"];
-            NSString * reply = [msg isKindOfClass:[NSDictionary class]] ? msg[@"content"] : nil;
+            NSString * reply = nil;
+            /* OpenAI-compatible shape: {"choices":[{"message":{"content":"..."}}]} */
+            NSArray * choices = j[@"choices"];
+            if( [choices isKindOfClass:[NSArray class]] && [choices count] > 0 ) {
+               NSDictionary * c0 = choices[0];
+               if( [c0 isKindOfClass:[NSDictionary class]] ) {
+                  NSDictionary * cmsg = c0[@"message"];
+                  if( [cmsg isKindOfClass:[NSDictionary class]] )
+                     reply = cmsg[@"content"];
+               }
+            }
+            /* Ollama shape: {"message":{"content":"..."}} */
+            if( !reply ) {
+               NSDictionary * msg = j[@"message"];
+               if( [msg isKindOfClass:[NSDictionary class]] ) reply = msg[@"content"];
+            }
+            /* DeepSeek/OpenAI error shape: {"error":{"message":"..."}} */
+            if( !reply ) {
+               NSDictionary * errObj = j[@"error"];
+               if( [errObj isKindOfClass:[NSDictionary class]] ) {
+                  NSString * em = errObj[@"message"];
+                  if( em ) {
+                     s_aiAppend( [NSString stringWithFormat:@"\n[API error: %@]\n", em] );
+                     return;
+                  }
+               }
+            }
             if( !reply || [reply length] == 0 ) {
                s_aiAppend( @"\n[Empty response]\n" );
                return;
@@ -3241,8 +3460,10 @@ static void s_aiInitOllamaAsync( void )
                      }
                      return;
                   }
-                  /* Form spec (optionally with event-handler code) */
-                  if( dict[@"controls"] ) {
+                  /* Form spec (optionally with event-handler code).
+                     Shape-driven: any of controls/w/h/title triggers AIBuildForm,
+                     which dispatches to new-form / add-to-current / resize-current. */
+                  if( dict[@"controls"] || dict[@"w"] || dict[@"h"] || dict[@"title"] ) {
                      s_aiAppend( @"\nBuilding form...\n" );
                      PHB_DYNS pSym = hb_dynsymFindName( "AIBUILDFORM" );
                      if( pSym ) {
@@ -3275,6 +3496,25 @@ static void s_aiInitOllamaAsync( void )
             /* Plain chat reply */
             s_aiAppend( [NSString stringWithFormat:@"\n%@\n", reply] );
          });
+         dispatch_async( dispatch_get_main_queue(), ^{
+            /* Refresh suggestion chips after each turn — vary based on form state */
+            BOOL hasForm = NO;
+            PHB_DYNS pHas = hb_dynsymFindName( "AIGETACTIVEFORMCLASS" );
+            if( pHas ) {
+               hb_vmPushDynSym( pHas );
+               hb_vmPushNil();
+               hb_vmFunction( 0 );
+               PHB_ITEM pR = hb_stackReturnItem();
+               if( pR && HB_IS_STRING(pR) ) {
+                  const char * c = hb_itemGetCPtr( pR );
+                  hasForm = ( c && *c );
+               }
+            }
+            NSArray * sugg = hasForm
+               ? @[ @"añade ok y cancel", @"centralos", @"ajusta tamaño form", @"run" ]
+               : @[ @"haz un login", @"haz un signup", @"form de búsqueda", @"run" ];
+            s_aiSetSuggestions( sugg, self );
+         });
       }];
       [task resume];
    });
@@ -3285,6 +3525,15 @@ static void s_aiInitOllamaAsync( void )
    [[s_aiOutput textStorage] replaceCharactersInRange:
       NSMakeRange(0, [[s_aiOutput textStorage] length]) withString:@""];
    s_aiAppend( @"AI Assistant ready.\n" );
+}
+
+- (void)suggestionClicked:(id)sender
+{
+   if( ![sender isKindOfClass:[NSButton class]] ) return;
+   NSString * title = [(NSButton *)sender title];
+   if( !title || [title length] == 0 ) return;
+   [s_aiInput setStringValue:title];
+   [self sendMessage:nil];
 }
 
 @end
@@ -3300,16 +3549,18 @@ HB_FUNC( MAC_AIASSISTANTPANEL )
       return;
    }
 
+   s_aiLoadDeepseekKey();
+
    /* Default: right side, vertically centered on main screen */
    NSRect scr = [[NSScreen mainScreen] visibleFrame];
-   CGFloat panW = 420, panH = 550;
+   CGFloat panW = 450, panH = 550;
    CGFloat panX = scr.origin.x + scr.size.width - panW - 40;
    CGFloat panY = scr.origin.y + (scr.size.height - panH) / 2;
    NSRect frame = NSMakeRect( panX, panY, panW, panH );
    s_aiPanel = [[NSWindow alloc] initWithContentRect:frame
       styleMask:NSWindowStyleMaskTitled | NSWindowStyleMaskClosable | NSWindowStyleMaskResizable
       backing:NSBackingStoreBuffered defer:NO];
-   [s_aiPanel setTitle:@"AI Assistant (Ollama)"];
+   [s_aiPanel setTitle:@"AI Assistant"];
    [s_aiPanel setReleasedWhenClosed:NO];
    [s_aiPanel setAppearance:[NSAppearance appearanceNamed:NSAppearanceNameDarkAqua]];
 
@@ -3323,18 +3574,30 @@ HB_FUNC( MAC_AIASSISTANTPANEL )
    [s_aiModelBtn setAutoresizingMask:NSViewMaxXMargin | NSViewMinYMargin];
    [cv addSubview:s_aiModelBtn];
 
-   /* Chat output */
-   NSScrollView * sv = [[NSScrollView alloc] initWithFrame:NSMakeRect(10, 50, w-20, h-95)];
+   /* Suggestions row (above input) */
+   s_aiSuggestRow = [[NSStackView alloc] initWithFrame:NSMakeRect(10, 46, w-20, 26)];
+   [s_aiSuggestRow setOrientation:NSUserInterfaceLayoutOrientationHorizontal];
+   [s_aiSuggestRow setSpacing:6];
+   [s_aiSuggestRow setDistribution:NSStackViewDistributionFillEqually];
+   [s_aiSuggestRow setAutoresizingMask:NSViewWidthSizable | NSViewMaxYMargin];
+   [cv addSubview:s_aiSuggestRow];
+
+   /* Chat output (room reserved at bottom: input 12+28=40, suggestions 46+26=72, gap to 84) */
+   NSScrollView * sv = [[NSScrollView alloc] initWithFrame:NSMakeRect(10, 84, w-20, h-129)];
    [sv setHasVerticalScroller:YES];
    [sv setAutoresizingMask:NSViewWidthSizable | NSViewHeightSizable];
-   s_aiOutput = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, w-20, h-95)];
+   s_aiOutput = [[NSTextView alloc] initWithFrame:NSMakeRect(0, 0, w-20, h-129)];
    [s_aiOutput setEditable:NO];
    [s_aiOutput setFont:[NSFont monospacedSystemFontOfSize:13 weight:NSFontWeightRegular]];
    [s_aiOutput setBackgroundColor:[NSColor colorWithCalibratedRed:0.12 green:0.12 blue:0.12 alpha:1]];
    [s_aiOutput setTextColor:[NSColor colorWithCalibratedRed:0.83 green:0.83 blue:0.83 alpha:1]];
    [s_aiOutput setTypingAttributes:s_aiTextAttrs()];
    [s_aiOutput setInsertionPointColor:[NSColor colorWithCalibratedRed:0.83 green:0.83 blue:0.83 alpha:1]];
-   s_aiAppend( @"AI Assistant ready.\nConnect to Ollama at localhost:11434\n" );
+   if( s_aiDeepseekKey ) {
+      s_aiAppend( @"AI Assistant ready (DeepSeek).\n" );
+   } else {
+      s_aiAppend( @"AI Assistant ready.\nConnect to Ollama at localhost:11434\n" );
+   }
    [sv setDocumentView:s_aiOutput];
    [cv addSubview:sv];
 
@@ -3367,6 +3630,9 @@ HB_FUNC( MAC_AIASSISTANTPANEL )
    [cv addSubview:s_aiSpinner];
 
    [s_aiPanel makeKeyAndOrderFront:nil];
+
+   /* Populate suggestion chips */
+   s_aiSetSuggestions( s_aiDefaultSuggestions(), s_aiTarget );
 
    /* Detect / launch Ollama and populate model list in background */
    s_aiInitOllamaAsync();

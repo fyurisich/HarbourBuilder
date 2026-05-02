@@ -1,6 +1,77 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-05-02c
+
+  - feat(macos-ai-deepseek): DeepSeek backend alongside Ollama. Reads
+    DEEPSEEK_API_KEY env var or ~/.hbbuilder_deepseek_key. Inline
+    command "/key sk-..." stores the key and unlocks the model. The
+    model combo gets "deepseek-v4-flash" + "deepseek-chat" when a key
+    is present. Routing decided by selected model name: deepseek* →
+    POST https://api.deepseek.com/v1/chat/completions with Bearer auth
+    and OpenAI-shape payload; otherwise → Ollama as before. Response
+    parser handles both shapes (Ollama {"message":{"content":...}} and
+    OpenAI {"choices":[{"message":{"content":...}}]}) plus error shape
+    {"error":{"message":...}}. When DeepSeek is configured the Ollama
+    probe + banner is skipped — title shows "AI Assistant" only.
+
+  - feat(macos-ai-ctx): Active-form context fed to LLM on every send.
+    * AIDescribeActiveForm() returns JSON of active form (class, title,
+      size, controls with name/type/text/bounds). Obj-C prepends
+      "ACTIVE FORM (currently open in the designer): {...}" to the
+      user message.
+    * Skill rule: emitting a control whose name already exists UPDATES
+      that control (move/center/resize/relabel). Emit ADD_CODE for
+      handlers on existing controls. Only emit new "controls" entries
+      for genuinely new controls. Skill explicitly forbids refusing
+      move/center requests with concrete few-shot examples.
+
+  - feat(macos-ai-formspec): AIBuildForm consolidated into a single
+    path — no resize/fit/add-current branches. Rule: "title" key
+    signals NEW form (MenuNewForm); otherwise the active form is the
+    target. Form-level title/w/h applied when present. Each control
+    in "controls" is upserted by name via new AI_FindCtrlByName helper:
+    if a child with the same cName exists, props are updated in place;
+    otherwise a new control is created.
+
+  - feat(macos-ai-types): Allowed control types expanded to TTreeView,
+    TListView, TListBox, TProgressBar, TImage, TBevel, TShape, TBitBtn,
+    TTabControl. Each dispatches to the corresponding UI_*New entry
+    point.
+
+  - feat(macos-ai-items): Control spec accepts an "items":[...] array
+    for TTreeView/TListBox/TComboBox/TListView. AIBuildForm calls
+    UI_SetProp(hCtrl, "aItems", items) which pipes through to FHeaders
+    + reload-data, so items appear in the design preview AND at
+    runtime. Skill instructs the model to use "items" inline rather
+    than emitting a Form1Show populator.
+
+  - feat(macos-ai-dbf-context): Regex-detect ".dbf" in user message,
+    call AIDescribeDbf(cPath) which dbUseArea + dbStruct, prepend the
+    JSON field list to the user message so the model uses real names.
+    Few-shot example for orders.dbf shows correct Harbour syntax
+    (orders->FIELD, dbSkip/dbCommit, ::oedtX:cText).
+
+  - feat(macos-ai-class-rewrite): Active-form class context fed to LLM
+    so generated METHODs target the right TFormN class. Defensive
+    backstop: AI_RewriteClassName scans the generated code for
+    "CLASS T<identifier>" patterns and rewrites each to the actual
+    active class (manual char-loop — hb_regexReplace is not linked).
+    AIAddCode triggers SyncDesignerToCode after appending so events
+    auto-wire by name (Form1Click, btnOkClick, ::OnClick := { || ::X() }).
+
+  - feat(macos-ai-suggestions): NSStackView suggestion-chip row above
+    the input. Chips populated at startup with starter prompts
+    ("haz un login", "añade ok y cancel", "ajusta tamaño form", "run")
+    and refreshed after each turn — when an active form exists, chips
+    show form-mod prompts; otherwise form-creation prompts. Click a
+    chip → fills the input and sends.
+
+  - feat(macos-ai-panel): Panel +30px wider (420 → 450). Title
+    simplified to "AI Assistant" (no "(Ollama)" suffix). Bottom row
+    layout adjusted: input shrinks 20px to make room for spinner;
+    chat scroll moves up 34px to make room for the suggestion row.
+
 2026-05-02b
 
   - feat(macos-ai-skill): AI Assistant skill expanded — single LLM

@@ -4897,6 +4897,51 @@ function AIRunProject()
    TBRun()
 return nil
 
+// AIResizeForm( nW, nH ) - resize current design form to given size.
+function AIResizeForm( nW, nH )
+   local hForm
+   if oDesignForm == nil
+      return nil
+   endif
+   hForm := oDesignForm:hCpp
+   if HB_ISNUMERIC( nW ) .and. nW > 50
+      UI_SetProp( hForm, "nWidth",  nW )
+   endif
+   if HB_ISNUMERIC( nH ) .and. nH > 50
+      UI_SetProp( hForm, "nHeight", nH )
+   endif
+   InspectorRefresh( hForm )
+   SyncDesignerToCode()
+return nil
+
+// AIFitForm() - resize current form to fit all its child controls.
+function AIFitForm()
+   local hForm, nCount, i, hCtrl, nMaxR := 0, nMaxB := 0, nR, nB
+   if oDesignForm == nil
+      return nil
+   endif
+   hForm := oDesignForm:hCpp
+   nCount := UI_GetChildCount( hForm )
+   for i := 1 to nCount
+      hCtrl := UI_GetChild( hForm, i )
+      if hCtrl == 0
+         loop
+      endif
+      nR := UI_GetProp( hCtrl, "nLeft" ) + UI_GetProp( hCtrl, "nWidth" )
+      nB := UI_GetProp( hCtrl, "nTop" )  + UI_GetProp( hCtrl, "nHeight" )
+      if nR > nMaxR; nMaxR := nR; endif
+      if nB > nMaxB; nMaxB := nB; endif
+   next
+   if nMaxR > 0
+      UI_SetProp( hForm, "nWidth",  nMaxR + 30 )
+   endif
+   if nMaxB > 0
+      UI_SetProp( hForm, "nHeight", nMaxB + 60 )   // extra room for title bar
+   endif
+   InspectorRefresh( hForm )
+   SyncDesignerToCode()
+return nil
+
 // AIDescribeDbf( cPath ) - return JSON array describing fields of a DBF file.
 // Tries cPath as-is, then relative to project dir. Returns "" on failure.
 function AIDescribeDbf( cPath )
@@ -4943,17 +4988,124 @@ function AIDescribeDbf( cPath )
    cJson := hb_jsonEncode( aFields )
 return cJson
 
+// AIDescribeActiveForm() - return JSON description of the active design form:
+// title, size, and array of existing controls. Empty string if no active form.
+// Lets the LLM know what controls already exist so it modifies instead of
+// recreating them.
+function AIDescribeActiveForm()
+   local hForm, hSpec, aCtrls := {}, hCtrl, hChild, i, nCount, cType, cName
+   if oDesignForm == nil
+      return ""
+   endif
+   hForm := oDesignForm:hCpp
+   hSpec := { => }
+   hSpec[ "class" ] := AIGetActiveFormClass()
+   hSpec[ "title" ] := UI_GetProp( hForm, "cText" )
+   hSpec[ "w"     ] := UI_GetProp( hForm, "nWidth"  )
+   hSpec[ "h"     ] := UI_GetProp( hForm, "nHeight" )
+   nCount := UI_GetChildCount( hForm )
+   for i := 1 to nCount
+      hChild := UI_GetChild( hForm, i )
+      if hChild == 0
+         loop
+      endif
+      cName := UI_GetProp( hChild, "cName" )
+      if Empty( cName )
+         loop
+      endif
+      cType := UI_GetProp( hChild, "cClassName" )
+      if Empty( cType )
+         cType := "T?"
+      endif
+      hCtrl := { => }
+      hCtrl[ "type" ] := cType
+      hCtrl[ "name" ] := cName
+      hCtrl[ "x"    ] := UI_GetProp( hChild, "nLeft"   )
+      hCtrl[ "y"    ] := UI_GetProp( hChild, "nTop"    )
+      hCtrl[ "w"    ] := UI_GetProp( hChild, "nWidth"  )
+      hCtrl[ "h"    ] := UI_GetProp( hChild, "nHeight" )
+      hCtrl[ "text" ] := UI_GetProp( hChild, "cText"   )
+      AAdd( aCtrls, hCtrl )
+   next
+   hSpec[ "controls" ] := aCtrls
+return hb_jsonEncode( hSpec )
+
+// AIGetActiveFormClass() - return the Harbour CLASS name of the active design
+// form (e.g. "TForm2"). Empty string if there is no active form.
+function AIGetActiveFormClass()
+   local cName
+   if oDesignForm == nil .or. nActiveForm == nil .or. nActiveForm < 1 .or. ;
+      nActiveForm > Len( aForms )
+      return ""
+   endif
+   cName := aForms[ nActiveForm ][ 1 ]   // e.g. "Form2"
+   if Empty( cName )
+      return ""
+   endif
+return "T" + cName
+
 // AIAddCode( cCode ) - append code to the current form's .prg tab and
 // highlight the inserted lines with a green background marker.
 // Triggered when LLM emits {"action":"add_code","code":"..."}.
+// Find an existing child control on hForm by its cName property.
+// Returns the control handle or 0.
+static function AI_FindCtrlByName( hForm, cName )
+   local i, nCount, hChild
+   if Empty( cName ) .or. hForm == 0
+      return 0
+   endif
+   nCount := UI_GetChildCount( hForm )
+   for i := 1 to nCount
+      hChild := UI_GetChild( hForm, i )
+      if hChild != 0 .and. UI_GetProp( hChild, "cName" ) == cName
+         return hChild
+      endif
+   next
+return 0
+
+// Replace every occurrence of "CLASS T<identifier>" in cCode with "CLASS <cNew>"
+// (where cNew already includes the leading T). Identifier = letters/digits/_.
+static function AI_RewriteClassName( cCode, cNew )
+   local cResult := "", nPos, nEnd, cChar, nLen
+   nLen := Len( cCode )
+   nPos := 1
+   do while nPos <= nLen
+      nEnd := hb_At( "CLASS T", cCode, nPos )
+      if nEnd == 0
+         cResult += SubStr( cCode, nPos )
+         exit
+      endif
+      cResult += SubStr( cCode, nPos, nEnd - nPos ) + "CLASS " + cNew
+      nPos := nEnd + 7   // past "CLASS T"
+      // skip the rest of the identifier characters
+      do while nPos <= nLen
+         cChar := SubStr( cCode, nPos, 1 )
+         if ! ( ( cChar >= "A" .and. cChar <= "Z" ) .or. ;
+                ( cChar >= "a" .and. cChar <= "z" ) .or. ;
+                ( cChar >= "0" .and. cChar <= "9" ) .or. ;
+                cChar == "_" )
+            exit
+         endif
+         nPos++
+      enddo
+   enddo
+return cResult
+
 function AIAddCode( cCode )
-   local cExisting, cNew, nTab, nFromLine, nToLine
+   local cExisting, cNew, nTab, nFromLine, nToLine, cActiveCls
    if ! HB_ISCHAR( cCode ) .or. Empty( cCode )
       return nil
    endif
    nTab := CodeEditorGetActiveTab( hCodeEditor )
    if nTab < 1
       return nil
+   endif
+   // Defensive: rewrite any stale "CLASS TFormN" the model emitted to match
+   // the actual active form's class. Catches cases where the few-shot used
+   // TForm1 but the active form is TForm2.
+   cActiveCls := AIGetActiveFormClass()
+   if ! Empty( cActiveCls )
+      cCode := AI_RewriteClassName( cCode, cActiveCls )
    endif
    cExisting := CodeEditorGetText2( hCodeEditor, nTab )
    if ! HB_ISCHAR( cExisting )
@@ -4980,7 +5132,7 @@ return nil
 function AIBuildForm( cJson )
 
    local hSpec, aCtrls, hCtrlSpec, cType, nL, nT, nW, nH, cText, cName
-   local hForm, hCtrlNew, i, oErr, lUseCurrent
+   local hForm, hCtrlNew, i, oErr
 
    if ! HB_ISCHAR( cJson ) .or. Empty( cJson )
       return nil
@@ -4996,33 +5148,28 @@ function AIBuildForm( cJson )
       return nil
    endif
 
-   // If spec omits title/w/h, the model is signalling "add to current form"
-   lUseCurrent := !( "title" $ hSpec ) .and. !( "w" $ hSpec ) .and. !( "h" $ hSpec ) .and. ;
-                  oDesignForm != nil
-
-   if lUseCurrent
-      hForm := oDesignForm:hCpp
-   else
-      // Create a fresh design form
+   // Single rule: "title" key signals a NEW form. Otherwise operate on the
+   // currently-active form. Skill is responsible for choosing the right shape.
+   if "title" $ hSpec
       MenuNewForm()
-      if oDesignForm == nil
-         return nil
-      endif
-      hForm := oDesignForm:hCpp
+   endif
+   if oDesignForm == nil
+      return nil
+   endif
+   hForm := oDesignForm:hCpp
 
-      // Apply form-level properties on new forms
-      if "title" $ hSpec .and. HB_ISCHAR( hSpec[ "title" ] )
-         UI_SetProp( hForm, "cText", hSpec[ "title" ] )
-      endif
-      if "w" $ hSpec .and. HB_ISNUMERIC( hSpec[ "w" ] ) .and. hSpec[ "w" ] > 50
-         UI_SetProp( hForm, "nWidth", hSpec[ "w" ] )
-      endif
-      if "h" $ hSpec .and. HB_ISNUMERIC( hSpec[ "h" ] ) .and. hSpec[ "h" ] > 50
-         UI_SetProp( hForm, "nHeight", hSpec[ "h" ] )
-      endif
+   // Apply form-level properties when present
+   if "title" $ hSpec .and. HB_ISCHAR( hSpec[ "title" ] )
+      UI_SetProp( hForm, "cText", hSpec[ "title" ] )
+   endif
+   if "w" $ hSpec .and. HB_ISNUMERIC( hSpec[ "w" ] ) .and. hSpec[ "w" ] > 50
+      UI_SetProp( hForm, "nWidth", hSpec[ "w" ] )
+   endif
+   if "h" $ hSpec .and. HB_ISNUMERIC( hSpec[ "h" ] ) .and. hSpec[ "h" ] > 50
+      UI_SetProp( hForm, "nHeight", hSpec[ "h" ] )
    endif
 
-   // Add controls
+   // Add or update controls
    if "controls" $ hSpec .and. HB_ISARRAY( hSpec[ "controls" ] )
       aCtrls := hSpec[ "controls" ]
       for i := 1 to Len( aCtrls )
@@ -5038,7 +5185,23 @@ function AIBuildForm( cJson )
          cText := iif( "text" $ hCtrlSpec .and. HB_ISCHAR( hCtrlSpec[ "text" ] ), hCtrlSpec[ "text" ], "" )
          cName := iif( "name" $ hCtrlSpec .and. HB_ISCHAR( hCtrlSpec[ "name" ] ), hCtrlSpec[ "name" ], "" )
 
-         hCtrlNew := 0
+         // If a control with this name already exists on the form, UPDATE it
+         // (move/resize/relabel) instead of creating a duplicate.
+         hCtrlNew := AI_FindCtrlByName( hForm, cName )
+         if hCtrlNew != 0
+            if "x" $ hCtrlSpec; UI_SetProp( hCtrlNew, "nLeft",   nL ); endif
+            if "y" $ hCtrlSpec; UI_SetProp( hCtrlNew, "nTop",    nT ); endif
+            if "w" $ hCtrlSpec; UI_SetProp( hCtrlNew, "nWidth",  nW ); endif
+            if "h" $ hCtrlSpec; UI_SetProp( hCtrlNew, "nHeight", nH ); endif
+            if "text" $ hCtrlSpec .and. ! Empty( cText )
+               UI_SetProp( hCtrlNew, "cText", cText )
+            endif
+            if "items" $ hCtrlSpec .and. HB_ISARRAY( hCtrlSpec[ "items" ] )
+               UI_SetProp( hCtrlNew, "aItems", hCtrlSpec[ "items" ] )
+            endif
+            loop
+         endif
+
          do case
          case cType == "TLABEL"
             hCtrlNew := UI_LabelNew( hForm, cText, nL, nT, nW, nH )
@@ -5056,11 +5219,32 @@ function AIBuildForm( cJson )
             hCtrlNew := UI_RadioButtonNew( hForm, cText, nL, nT, nW, nH )
          case cType == "TMEMO"
             hCtrlNew := UI_MemoNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TTREEVIEW"
+            hCtrlNew := UI_TreeViewNew( hForm, nL, nT, nW, nH )
+         case cType == "TLISTVIEW"
+            hCtrlNew := UI_ListViewNew( hForm, nL, nT, nW, nH )
+         case cType == "TLISTBOX"
+            hCtrlNew := UI_ListBoxNew( hForm, nL, nT, nW, nH )
+         case cType == "TPROGRESSBAR"
+            hCtrlNew := UI_ProgressBarNew( hForm, nL, nT, nW, nH )
+         case cType == "TIMAGE"
+            hCtrlNew := UI_ImageNew( hForm, nL, nT, nW, nH )
+         case cType == "TBEVEL"
+            hCtrlNew := UI_BevelNew( hForm, nL, nT, nW, nH )
+         case cType == "TSHAPE"
+            hCtrlNew := UI_ShapeNew( hForm, nL, nT, nW, nH )
+         case cType == "TBITBTN"
+            hCtrlNew := UI_BitBtnNew( hForm, cText, nL, nT, nW, nH )
+         case cType == "TTABCONTROL"
+            hCtrlNew := UI_TabControlNew( hForm, nL, nT, nW, nH )
          endcase
 
          if hCtrlNew != nil .and. hCtrlNew != 0
             if ! Empty( cName )
                UI_SetProp( hCtrlNew, "cName", cName )
+            endif
+            if "items" $ hCtrlSpec .and. HB_ISARRAY( hCtrlSpec[ "items" ] )
+               UI_SetProp( hCtrlNew, "aItems", hCtrlSpec[ "items" ] )
             endif
          endif
       next
