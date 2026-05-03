@@ -6551,98 +6551,100 @@ HB_FUNC( W32_PROJECTINSPECTOR )
    }
 }
 
-/* W32_AIAssistantPanel() - AI coding assistant with Ollama/LM Studio */
+/* AI Assistant panel - constants, globals, forward decl */
+#define WM_AI_REPLY     (WM_USER + 100)   /* worker -> UI: full reply ready,  lParam = char* heap buffer */
+#define WM_AI_APPEND    (WM_USER + 101)   /* worker -> UI: append text,       lParam = char* heap buffer */
+#define WM_AI_SETCHIPS  (WM_USER + 102)   /* PRG    -> UI: replace chips,     lParam = HGLOBAL of strings */
+
+static HWND  s_hAIWnd       = NULL;
+static HWND  s_hAIOutput    = NULL;
+static HWND  s_hAIInput     = NULL;
+static HWND  s_hAICombo     = NULL;
+static HWND  s_hAIChipsBar  = NULL;
+static HWND  s_hAISend      = NULL;
+static HWND  s_hAIClear     = NULL;
+static HWND  s_hAIStatus    = NULL;
+static HFONT s_hAIChatFont  = NULL;
+static HFONT s_hAIUiFont    = NULL;
+static HBRUSH s_hAIChatBrush = NULL;
+static char * s_aiDeepseekKey = NULL;
+
+static LRESULT CALLBACK AIPanelWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
+
+static LRESULT CALLBACK AIPanelWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
+{
+   switch( msg )
+   {
+   case WM_CTLCOLOREDIT:
+   case WM_CTLCOLORSTATIC:
+      if( (HWND)lParam == s_hAIOutput ) {
+         HDC hdc = (HDC)wParam;
+         SetBkColor( hdc, RGB(0x1E,0x1E,0x1E) );
+         SetTextColor( hdc, RGB(0xD4,0xD4,0xD4) );
+         if( !s_hAIChatBrush )
+            s_hAIChatBrush = CreateSolidBrush( RGB(0x1E,0x1E,0x1E) );
+         return (LRESULT) s_hAIChatBrush;
+      }
+      break;
+   case WM_CLOSE:
+      ShowWindow( hWnd, SW_HIDE );
+      return 0;
+   case WM_DESTROY:
+      s_hAIWnd = NULL;
+      return 0;
+   }
+   return DefWindowProc( hWnd, msg, wParam, lParam );
+}
+
+/* W32_AIAssistantPanel() - AI coding assistant (Ollama + DeepSeek) */
 HB_FUNC( W32_AIASSISTANTPANEL )
 {
-   static HWND s_hAIWnd = NULL;
-   HWND hOwner, hOutput, hInput, hSend, hModel, hLbl;
-   HFONT hFont, hMonoFont;
+   static BOOL bReg = FALSE;
+   WNDCLASSA wc = {0};
+   HWND hOwner;
    RECT rc;
    LOGFONTA lf = {0};
+   int panW = 420, panH = 560;
 
    if( s_hAIWnd && IsWindow(s_hAIWnd) ) {
-      SetWindowPos(s_hAIWnd,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE);
+      ShowWindow( s_hAIWnd, SW_SHOW );
+      SetForegroundWindow( s_hAIWnd );
       return;
    }
 
-   hOwner = GetActiveWindow();
-   GetWindowRect(hOwner, &rc);
-   hFont = (HFONT)GetStockObject(DEFAULT_GUI_FONT);
-
-   /* Monospace font for chat */
-   lf.lfHeight = -18; lf.lfCharSet = DEFAULT_CHARSET;
-   lf.lfPitchAndFamily = FIXED_PITCH;
-   lstrcpyA(lf.lfFaceName, "Consolas");
-   hMonoFont = CreateFontIndirectA(&lf);
-
-   s_hAIWnd = CreateWindowExA(WS_EX_TOOLWINDOW,
-      "STATIC","AI Assistant (Ollama)",
-      WS_POPUP|WS_CAPTION|WS_SYSMENU|WS_THICKFRAME|WS_VISIBLE,
-      rc.right-420, rc.top+80, 400, 550,
-      NULL,NULL,GetModuleHandle(NULL),NULL);
-
-   /* Model selector */
-   hLbl = CreateWindowExA(0,"STATIC","Model:",WS_CHILD|WS_VISIBLE,
-      8,8,45,20,s_hAIWnd,NULL,GetModuleHandle(NULL),NULL);
-   SendMessage(hLbl,WM_SETFONT,(WPARAM)hFont,TRUE);
-
-   hModel = CreateWindowExA(0,"COMBOBOX",NULL,
-      WS_CHILD|WS_VISIBLE|CBS_DROPDOWNLIST|WS_VSCROLL,
-      55,6,180,200,s_hAIWnd,NULL,GetModuleHandle(NULL),NULL);
-   SendMessage(hModel,WM_SETFONT,(WPARAM)hFont,TRUE);
-   SendMessageA(hModel,CB_ADDSTRING,0,(LPARAM)"codellama");
-   SendMessageA(hModel,CB_ADDSTRING,0,(LPARAM)"llama3");
-   SendMessageA(hModel,CB_ADDSTRING,0,(LPARAM)"deepseek-coder");
-   SendMessageA(hModel,CB_ADDSTRING,0,(LPARAM)"mistral");
-   SendMessageA(hModel,CB_ADDSTRING,0,(LPARAM)"phi3");
-   SendMessageA(hModel,CB_ADDSTRING,0,(LPARAM)"gemma2");
-   SendMessage(hModel,CB_SETCURSEL,0,0);
-
-   { HWND hClear = CreateWindowExA(0,"BUTTON","Clear",
-      WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
-      245,6,60,22,s_hAIWnd,(HMENU)800,GetModuleHandle(NULL),NULL);
-     SendMessage(hClear,WM_SETFONT,(WPARAM)hFont,TRUE);
+   if( !bReg ) {
+      wc.lpfnWndProc   = AIPanelWndProc;
+      wc.hInstance     = GetModuleHandle(NULL);
+      wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+      wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+      wc.lpszClassName = "HbAIPanel";
+      RegisterClassA( &wc );
+      bReg = TRUE;
    }
 
-   /* Chat output (read-only rich text area) */
-   hOutput = CreateWindowExA(WS_EX_CLIENTEDGE,"EDIT",
-      "AI Assistant ready.\r\n"
-      "Connected to: localhost:11434 (Ollama)\r\n"
-      "Model: codellama\r\n"
-      "\r\n"
-      "Type a question about Harbour, xBase, or your code.\r\n"
-      "Examples:\r\n"
-      "  - How do I create a database browser?\r\n"
-      "  - Explain this error: 'undefined function'\r\n"
-      "  - Refactor this code to use classes\r\n"
-      "  - Write a function to sort an array\r\n"
-      "\r\n"
-      "Shortcuts:\r\n"
-      "  Right-click code > Explain / Refactor / Fix\r\n"
-      "  Ctrl+Shift+A: Ask AI\r\n",
-      WS_CHILD|WS_VISIBLE|WS_VSCROLL|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL,
-      4,34,388,410,s_hAIWnd,NULL,GetModuleHandle(NULL),NULL);
-   SendMessage(hOutput,WM_SETFONT,(WPARAM)hMonoFont,TRUE);
-   /* Dark background for chat */
-   /* Note: standard EDIT doesn't support EM_SETBKGNDCOLOR, but we set it via WM_CTLCOLOREDIT */
+   hOwner = GetActiveWindow();
+   GetWindowRect( hOwner, &rc );
 
-   /* Input field */
-   hInput = CreateWindowExA(WS_EX_CLIENTEDGE,"EDIT","",
-      WS_CHILD|WS_VISIBLE|ES_AUTOHSCROLL,
-      4,450,310,24,s_hAIWnd,(HMENU)801,GetModuleHandle(NULL),NULL);
-   SendMessage(hInput,WM_SETFONT,(WPARAM)hFont,TRUE);
+   s_hAIWnd = CreateWindowExA( WS_EX_TOOLWINDOW,
+      "HbAIPanel", "AI Assistant",
+      WS_POPUP|WS_CAPTION|WS_SYSMENU|WS_THICKFRAME|WS_VISIBLE,
+      rc.right - panW - 16, rc.top + 60, panW, panH,
+      NULL, NULL, GetModuleHandle(NULL), NULL );
 
-   /* Send button */
-   hSend = CreateWindowExA(0,"BUTTON","Send",
-      WS_CHILD|WS_VISIBLE|BS_DEFPUSHBUTTON,
-      320,449,72,26,s_hAIWnd,(HMENU)802,GetModuleHandle(NULL),NULL);
-   SendMessage(hSend,WM_SETFONT,(WPARAM)hFont,TRUE);
+   if( g_bDarkIDE ) {
+      BOOL bDark = TRUE;
+      DwmSetWindowAttribute( s_hAIWnd, DWMWA_USE_IMMERSIVE_DARK_MODE,
+                             &bDark, sizeof(bDark) );
+   }
 
-   /* Status bar */
-   hLbl = CreateWindowExA(0,"STATIC","Status: Ready | Ollama: localhost:11434",
-      WS_CHILD|WS_VISIBLE|SS_LEFT,
-      4,480,388,18,s_hAIWnd,NULL,GetModuleHandle(NULL),NULL);
-   SendMessage(hLbl,WM_SETFONT,(WPARAM)hFont,TRUE);
+   s_hAIUiFont = (HFONT) GetStockObject( DEFAULT_GUI_FONT );
+   lf.lfHeight = -14;
+   lf.lfCharSet = DEFAULT_CHARSET;
+   lf.lfPitchAndFamily = FIXED_PITCH;
+   lstrcpyA( lf.lfFaceName, "Consolas" );
+   s_hAIChatFont = CreateFontIndirectA( &lf );
+
+   /* Children created in later tasks. For now leave as bare panel. */
 }
 
 /* W32_SetDarkMode( hWnd, lDark ) - enable Windows 10/11 dark title bar */
