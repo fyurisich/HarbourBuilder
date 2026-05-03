@@ -7236,6 +7236,87 @@ static LRESULT CALLBACK s_aiChipsProc( HWND hWnd, UINT msg, WPARAM wParam, LPARA
    return CallWindowProc( s_aiChipsOldProc, hWnd, msg, wParam, lParam );
 }
 
+/* Run a command, capture stdout to caller-allocated buffer. Returns bytes read. */
+static int s_aiRunCapture( const char * cmd, char * out, int outMax, DWORD timeoutMs )
+{
+   HANDLE hRd = NULL, hWr = NULL;
+   SECURITY_ATTRIBUTES sa;
+   STARTUPINFOA si;
+   PROCESS_INFORMATION pi;
+   DWORD got, total = 0;
+   char tmp[4096];
+   char cmdBuf[2048];
+
+   sa.nLength = sizeof(sa); sa.bInheritHandle = TRUE; sa.lpSecurityDescriptor = NULL;
+   if( !CreatePipe( &hRd, &hWr, &sa, 0 ) ) return 0;
+   SetHandleInformation( hRd, HANDLE_FLAG_INHERIT, 0 );
+
+   memset( &si, 0, sizeof(si) );
+   si.cb = sizeof(si);
+   si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+   si.hStdOutput = hWr;
+   si.hStdError  = hWr;
+   si.hStdInput  = GetStdHandle( STD_INPUT_HANDLE );
+   si.wShowWindow = SW_HIDE;
+
+   lstrcpynA( cmdBuf, cmd, sizeof(cmdBuf) );
+   if( !CreateProcessA( NULL, cmdBuf, NULL, NULL, TRUE,
+                        CREATE_NO_WINDOW, NULL, NULL, &si, &pi ) ) {
+      CloseHandle(hRd); CloseHandle(hWr); return 0;
+   }
+   CloseHandle( hWr );
+
+   while( total + 1 < (DWORD)outMax &&
+          ReadFile( hRd, tmp, sizeof(tmp), &got, NULL ) && got > 0 ) {
+      DWORD copy = got;
+      if( total + copy + 1 > (DWORD)outMax ) copy = outMax - 1 - total;
+      memcpy( out + total, tmp, copy );
+      total += copy;
+   }
+   out[total] = 0;
+   CloseHandle( hRd );
+   WaitForSingleObject( pi.hProcess, timeoutMs );
+   CloseHandle( pi.hProcess ); CloseHandle( pi.hThread );
+   return (int) total;
+}
+
+static BOOL s_aiOllamaInstalled( void )
+{
+   char buf[1024];
+   int n = s_aiRunCapture( "where ollama", buf, sizeof(buf), 2000 );
+   return n > 0 && strstr( buf, "ollama" ) != NULL;
+}
+
+static BOOL s_aiTryStartOllama( void )
+{
+   ShellExecuteA( NULL, "open", "ollama", "serve", NULL, SW_HIDE );
+   /* Brief wait for daemon */
+   {
+      int i;
+      char buf[256];
+      for( i = 0; i < 10; i++ ) {
+         Sleep( 300 );
+         if( s_aiRunCapture(
+              "curl.exe -s -m 1 http://localhost:11434/api/tags",
+              buf, sizeof(buf), 2000 ) > 0 &&
+             strstr( buf, "models" ) ) return TRUE;
+      }
+   }
+   return FALSE;
+}
+
+/* Returns a heap buffer with the /api/tags JSON, or NULL if unreachable. */
+static char * s_aiFetchOllamaTags( void )
+{
+   char * buf = (char *) malloc( 16384 );
+   int n = s_aiRunCapture(
+      "curl.exe -s -m 2 http://localhost:11434/api/tags",
+      buf, 16384, 3000 );
+   if( n > 0 && strstr( buf, "models" ) ) return buf;
+   free( buf );
+   return NULL;
+}
+
 static LRESULT CALLBACK AIPanelWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
    switch( msg )
@@ -7411,6 +7492,80 @@ HB_FUNC( W32_AIASSISTANTPANEL )
       SendMessageA( s_hAICombo, CB_ADDSTRING, 0, (LPARAM)"deepseek-coder" );
       SendMessageA( s_hAICombo, CB_ADDSTRING, 0, (LPARAM)"gemma3" );
       SendMessage( s_hAICombo, CB_SETCURSEL, 0, 0 );
+
+      /* Replace hardcoded list with DeepSeek + actual Ollama tags */
+      {
+         char * tags = s_aiFetchOllamaTags();
+         if( tags ) {
+            PHB_DYNS pSym = hb_dynsymFindName( "AIPARSEOLLAMATAGS" );
+            if( pSym ) {
+               PHB_ITEM pRet;
+               hb_vmPushDynSym( pSym );
+               hb_vmPushNil();
+               hb_vmPushString( tags, strlen(tags) );
+               hb_vmFunction( 1 );
+               pRet = hb_stackReturnItem();
+               if( pRet && HB_IS_ARRAY( pRet ) ) {
+                  HB_SIZE i, n = hb_arrayLen( pRet );
+                  SendMessage( s_hAICombo, CB_RESETCONTENT, 0, 0 );
+                  if( s_aiDeepseekKey ) {
+                     SendMessageA( s_hAICombo, CB_ADDSTRING, 0, (LPARAM)"deepseek-v4-flash" );
+                     SendMessageA( s_hAICombo, CB_ADDSTRING, 0, (LPARAM)"deepseek-chat" );
+                  }
+                  for( i = 1; i <= n; i++ ) {
+                     const char * m = hb_arrayGetCPtr( pRet, i );
+                     if( m && *m )
+                        SendMessageA( s_hAICombo, CB_ADDSTRING, 0, (LPARAM)m );
+                  }
+                  SendMessage( s_hAICombo, CB_SETCURSEL, 0, 0 );
+               }
+            }
+            free( tags );
+         } else if( s_aiOllamaInstalled() ) {
+            /* Ollama installed but daemon down or no models. Try to start. */
+            BOOL up = s_aiTryStartOllama();
+            if( up ) {
+               char * tags2 = s_aiFetchOllamaTags();
+               if( tags2 ) {
+                  /* If there are zero models, kick off background pull of default */
+                  if( !strstr( tags2, "\"name\"" ) ) {
+                     s_aiAppend( "No models installed. Pulling default model gemma3...\r\n" );
+                     {
+                        STARTUPINFOA si2 = {0};
+                        PROCESS_INFORMATION pi2 = {0};
+                        char cmd[256];
+                        si2.cb = sizeof(si2);
+                        si2.dwFlags = STARTF_USESHOWWINDOW;
+                        si2.wShowWindow = SW_HIDE;
+                        lstrcpynA( cmd, "ollama pull gemma3", sizeof(cmd) );
+                        if( CreateProcessA( NULL, cmd, NULL, NULL, FALSE,
+                                            CREATE_NO_WINDOW, NULL, NULL, &si2, &pi2 ) ) {
+                           CloseHandle( pi2.hProcess ); CloseHandle( pi2.hThread );
+                        }
+                     }
+                  }
+                  free( tags2 );
+               }
+            } else {
+               s_aiAppend( "Ollama installed but daemon not reachable. "
+                           "Run `ollama serve` in a terminal.\r\n" );
+            }
+         } else if( !s_aiDeepseekKey ) {
+            /* Neither backend available -- prompt to install Ollama */
+            int r = MessageBoxA( s_hAIWnd,
+               "Ollama is not installed.\n\n"
+               "The AI Assistant needs Ollama (local LLMs) or a DeepSeek API key.\n\n"
+               "Open the Ollama download page now?",
+               "AI Assistant -- backend missing",
+               MB_YESNO | MB_ICONINFORMATION );
+            if( r == IDYES ) {
+               ShellExecuteA( NULL, "open",
+                  "https://ollama.com/download", NULL, NULL, SW_SHOW );
+               s_aiAppend( "Opened https://ollama.com/download. "
+                           "Reopen this panel after install.\r\n" );
+            }
+         }
+      }
    }
 }
 
