@@ -5515,6 +5515,150 @@ static function ShowAIAssistant()
 
 return nil
 
+// AIRunProject() - public wrapper called from C when LLM emits {"action":"run"}
+function AIRunProject()
+   TBRun()
+return nil
+
+// AIResizeForm( nW, nH ) - resize current design form to given size.
+function AIResizeForm( nW, nH )
+   local hForm
+   if oDesignForm == nil
+      return nil
+   endif
+   hForm := oDesignForm:hCpp
+   if HB_ISNUMERIC( nW ) .and. nW > 50
+      UI_SetProp( hForm, "nWidth",  nW )
+   endif
+   if HB_ISNUMERIC( nH ) .and. nH > 50
+      UI_SetProp( hForm, "nHeight", nH )
+   endif
+   InspectorRefresh( hForm )
+   SyncDesignerToCode()
+return nil
+
+// AIFitForm() - resize current form to fit all its child controls.
+function AIFitForm()
+   local hForm, nCount, i, hCtrl, nMaxR := 0, nMaxB := 0, nR, nB
+   if oDesignForm == nil
+      return nil
+   endif
+   hForm := oDesignForm:hCpp
+   nCount := UI_GetChildCount( hForm )
+   for i := 1 to nCount
+      hCtrl := UI_GetChild( hForm, i )
+      if hCtrl == 0
+         loop
+      endif
+      nR := UI_GetProp( hCtrl, "nLeft" ) + UI_GetProp( hCtrl, "nWidth" )
+      nB := UI_GetProp( hCtrl, "nTop" )  + UI_GetProp( hCtrl, "nHeight" )
+      if nR > nMaxR; nMaxR := nR; endif
+      if nB > nMaxB; nMaxB := nB; endif
+   next
+   if nMaxR > 0
+      UI_SetProp( hForm, "nWidth",  nMaxR + 30 )
+   endif
+   if nMaxB > 0
+      UI_SetProp( hForm, "nHeight", nMaxB + 60 )
+   endif
+   InspectorRefresh( hForm )
+   SyncDesignerToCode()
+return nil
+
+function AIDescribeDbf( cPath )
+   local aStruct, i, cJson, hField
+   local aFields := {}
+   local cTried := cPath
+   local oErr
+
+   if ! HB_ISCHAR( cPath ) .or. Empty( cPath )
+      return ""
+   endif
+
+   if ! File( cTried )
+      cTried := hb_DirBase() + cPath
+      if ! File( cTried )
+         cTried := "./" + cPath
+      endif
+   endif
+   if ! File( cTried )
+      return ""
+   endif
+
+   begin sequence with { | e | break( e ) }
+      dbUseArea( .T., , cTried, "AIDESCRIBE_TMP", .T., .T. )
+      aStruct := dbStruct()
+      dbCloseArea()
+   recover using oErr
+      aStruct := nil
+   end sequence
+
+   if aStruct == nil .or. ! HB_ISARRAY( aStruct )
+      return ""
+   endif
+
+   for i := 1 to Len( aStruct )
+      hField := { => }
+      hField[ "name" ] := aStruct[i][1]
+      hField[ "type" ] := aStruct[i][2]
+      hField[ "len"  ] := aStruct[i][3]
+      hField[ "dec"  ] := aStruct[i][4]
+      AAdd( aFields, hField )
+   next
+
+   cJson := hb_jsonEncode( aFields )
+return cJson
+
+function AIDescribeActiveForm()
+   local hForm, hSpec, aCtrls := {}, hCtrl, hChild, i, nCount, cType, cName
+   if oDesignForm == nil
+      return ""
+   endif
+   hForm := oDesignForm:hCpp
+   hSpec := { => }
+   hSpec[ "class" ] := AIGetActiveFormClass()
+   hSpec[ "title" ] := UI_GetProp( hForm, "cText" )
+   hSpec[ "w"     ] := UI_GetProp( hForm, "nWidth"  )
+   hSpec[ "h"     ] := UI_GetProp( hForm, "nHeight" )
+   nCount := UI_GetChildCount( hForm )
+   for i := 1 to nCount
+      hChild := UI_GetChild( hForm, i )
+      if hChild == 0
+         loop
+      endif
+      cName := UI_GetProp( hChild, "cName" )
+      if Empty( cName )
+         loop
+      endif
+      cType := UI_GetProp( hChild, "cClassName" )
+      if Empty( cType )
+         cType := "T?"
+      endif
+      hCtrl := { => }
+      hCtrl[ "type" ] := cType
+      hCtrl[ "name" ] := cName
+      hCtrl[ "x"    ] := UI_GetProp( hChild, "nLeft"   )
+      hCtrl[ "y"    ] := UI_GetProp( hChild, "nTop"    )
+      hCtrl[ "w"    ] := UI_GetProp( hChild, "nWidth"  )
+      hCtrl[ "h"    ] := UI_GetProp( hChild, "nHeight" )
+      hCtrl[ "text" ] := UI_GetProp( hChild, "cText"   )
+      AAdd( aCtrls, hCtrl )
+   next
+   hSpec[ "controls" ] := aCtrls
+return hb_jsonEncode( hSpec )
+
+function AIGetActiveFormClass()
+   local cName
+   if oDesignForm == nil .or. nActiveForm == nil .or. nActiveForm < 1 .or. ;
+      nActiveForm > Len( aForms )
+      return ""
+   endif
+   cName := aForms[ nActiveForm ][ 1 ]
+   if Empty( cName )
+      return ""
+   endif
+return "T" + cName
+
 // === C Compiler Not Found Dialog ===
 
 static function ShowNoCompilerDialog()
