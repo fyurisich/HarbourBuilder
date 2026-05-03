@@ -9505,6 +9505,15 @@ HB_FUNC( W32_ABOUTDIALOG )
 #define SCI_MARKERDELETE       2044
 #define SCI_MARKERDELETEALL    2045
 #define SCI_MARKERGET          2046
+#ifndef SCI_MARKERSETBACK
+#define SCI_MARKERSETBACK      2042
+#endif
+#ifndef SCI_MARKERSETALPHA
+#define SCI_MARKERSETALPHA     2476
+#endif
+#ifndef SC_MARK_BACKGROUND
+#define SC_MARK_BACKGROUND     22
+#endif
 #define SCI_SETAUTOMATICFOLD   2663
 #define SC_AUTOMATICFOLD_SHOW  0x01
 #define SC_AUTOMATICFOLD_CLICK 0x02
@@ -11515,6 +11524,75 @@ HB_FUNC( CODEEDITORGETTABTEXT )
    {
       hb_retc( "" );
    }
+}
+
+/* CodeEditorGetActiveTab( hEditor ) --> nTab (1-based) */
+HB_FUNC( CODEEDITORGETACTIVETAB )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   if( !ed ) { hb_retni(0); return; }
+   hb_retni( ed->nActiveTab + 1 );
+}
+
+/* CodeEditorGetText2( hEditor [, nTab] ) --> cText
+ * If nTab omitted, returns text of active tab from Scintilla.
+ * If nTab given (1-based), returns cached text for that tab. */
+HB_FUNC( CODEEDITORGETTEXT2 )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   int nTab;
+   if( !ed ) { hb_retc(""); return; }
+   if( HB_ISNUM(2) ) {
+      nTab = hb_parni(2) - 1;  /* convert to 0-based */
+      if( nTab < 0 || nTab >= ed->nTabs ) { hb_retc(""); return; }
+      if( nTab == ed->nActiveTab && ed->hEdit ) {
+         /* Live text from Scintilla */
+         int nLen = (int) SciMsg( ed->hEdit, SCI_GETLENGTH, 0, 0 );
+         char * buf = (char *) malloc( nLen + 1 );
+         SciMsg( ed->hEdit, SCI_GETTEXT, nLen + 1, (LPARAM) buf );
+         hb_retclen( buf, nLen );
+         free( buf );
+      } else {
+         hb_retc( ed->aTexts[nTab] ? ed->aTexts[nTab] : "" );
+      }
+   } else if( ed->hEdit ) {
+      int nLen = (int) SciMsg( ed->hEdit, SCI_GETLENGTH, 0, 0 );
+      char * buf = (char *) malloc( nLen + 1 );
+      SciMsg( ed->hEdit, SCI_GETTEXT, nLen + 1, (LPARAM) buf );
+      hb_retclen( buf, nLen );
+      free( buf );
+   } else {
+      hb_retc( "" );
+   }
+}
+
+/* CodeEditorMarkLines( hEditor, nFromLine, nToLine [, nBgrColor] )
+ * Highlight line range with a background marker (AI-inserted code).
+ * Marker 5 reserved for AI markers. */
+HB_FUNC( CODEEDITORMARKLINES )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   int nFrom, nTo, line;
+   long nColor;
+   const int MARKER_AI = 5;
+   if( !ed || !ed->hEdit ) return;
+   nFrom = hb_parni(2);
+   nTo   = hb_parni(3);
+   nColor = HB_ISNUM(4) ? hb_parnl(4) : 0x90EE90L;  /* light green BGR */
+   SciMsg( ed->hEdit, SCI_MARKERDEFINE,  MARKER_AI, SC_MARK_BACKGROUND );
+   SciMsg( ed->hEdit, SCI_MARKERSETBACK, MARKER_AI, (LPARAM) nColor );
+   SciMsg( ed->hEdit, SCI_MARKERSETALPHA, MARKER_AI, 90 );
+   for( line = nFrom; line <= nTo; line++ )
+      SciMsg( ed->hEdit, SCI_MARKERADD, line, MARKER_AI );
+}
+
+/* CodeEditorClearMarks( hEditor ) - remove all AI line markers */
+HB_FUNC( CODEEDITORCLEARMARKS )
+{
+   CODEEDITOR * ed = (CODEEDITOR *)(HB_PTRUINT) hb_parnint(1);
+   const int MARKER_AI = 5;
+   if( !ed || !ed->hEdit ) return;
+   SciMsg( ed->hEdit, SCI_MARKERDELETEALL, MARKER_AI, 0 );
 }
 
 /* CodeEditorAddTab( hEditor, cTitle ) - add a new tab */
