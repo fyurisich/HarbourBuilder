@@ -6803,6 +6803,60 @@ static const char * AI_SYS_PROMPT =
 
 static LRESULT CALLBACK AIPanelWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam );
 
+static void s_aiKeyPath( char * out, int max )
+{
+   char prof[MAX_PATH] = "";
+   DWORD n = GetEnvironmentVariableA( "USERPROFILE", prof, MAX_PATH );
+   if( n == 0 ) lstrcpynA( prof, ".", MAX_PATH );
+   _snprintf( out, max, "%s\\.hbbuilder_deepseek_key", prof );
+   out[max-1] = 0;
+}
+
+static void s_aiLoadKey( void )
+{
+   char path[MAX_PATH], buf[256];
+   const char * env;
+   HANDLE h;
+   DWORD got = 0;
+   int i;
+   if( s_aiDeepseekKey ) return;
+   env = getenv("DEEPSEEK_API_KEY");
+   if( env && *env ) { s_aiDeepseekKey = _strdup(env); return; }
+   s_aiKeyPath( path, MAX_PATH );
+   h = CreateFileA( path, GENERIC_READ, FILE_SHARE_READ, NULL,
+                    OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL );
+   if( h == INVALID_HANDLE_VALUE ) return;
+   if( ReadFile( h, buf, sizeof(buf)-1, &got, NULL ) && got > 0 ) {
+      buf[got] = 0;
+      for( i = (int)got - 1; i >= 0 && (buf[i]=='\n'||buf[i]=='\r'||buf[i]==' '); i-- )
+         buf[i] = 0;
+      if( buf[0] ) s_aiDeepseekKey = _strdup(buf);
+   }
+   CloseHandle(h);
+}
+
+static void s_aiSaveKey( const char * key )
+{
+   char path[MAX_PATH];
+   HANDLE h;
+   DWORD wr = 0;
+   if( !key || !*key ) return;
+   if( s_aiDeepseekKey ) { free( s_aiDeepseekKey ); s_aiDeepseekKey = NULL; }
+   s_aiDeepseekKey = _strdup( key );
+   s_aiKeyPath( path, MAX_PATH );
+   h = CreateFileA( path, GENERIC_WRITE, 0, NULL,
+                    CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL );
+   if( h != INVALID_HANDLE_VALUE ) {
+      WriteFile( h, key, (DWORD)strlen(key), &wr, NULL );
+      CloseHandle( h );
+   }
+}
+
+static BOOL s_aiIsDeepseek( const char * model )
+{
+   return model && _strnicmp( model, "deepseek", 8 ) == 0;
+}
+
 static void s_aiAppend( const char * txt )
 {
    int n;
@@ -6854,6 +6908,8 @@ HB_FUNC( W32_AIASSISTANTPANEL )
    RECT rc;
    LOGFONTA lf = {0};
    int panW = 420, panH = 560;
+
+   s_aiLoadKey();
 
    if( s_hAIWnd && IsWindow(s_hAIWnd) ) {
       ShowWindow( s_hAIWnd, SW_SHOW );
@@ -6979,6 +7035,17 @@ HB_FUNC( W32_AIAPPENDCHAT )
       *p = 0;
       s_aiAppend( buf );
       free( buf );
+   }
+}
+
+HB_FUNC( W32_AIDEEPSEEKKEY )
+{
+   if( HB_ISCHAR(1) ) {
+      s_aiSaveKey( hb_parc(1) );
+      hb_retc( s_aiDeepseekKey ? s_aiDeepseekKey : "" );
+   } else {
+      if( !s_aiDeepseekKey ) s_aiLoadKey();
+      hb_retc( s_aiDeepseekKey ? s_aiDeepseekKey : "" );
    }
 }
 
