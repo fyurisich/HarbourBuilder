@@ -7105,12 +7105,12 @@ static const char * AI_SYS_PROMPT =
    "\"code\":string}\n"
    "        type ∈ {TLabel,TEdit,TButton,TCheckBox,TComboBox,TGroupBox,TRadioButton,TMemo,"
    "TTreeView,TListView,TListBox,TProgressBar,TImage,TBevel,TShape,TBitBtn,TTabControl,"
-   "TMaskEdit,TStringGrid,TSpeedButton,TStaticText,TScrollBox,TLabeledEdit}.\n"
+   "TMaskEdit,TStringGrid,TSpeedButton}.\n"
    "        HBBUILDER PALETTE CATALOG (use ONLY these — do not invent component names):\n"
    "          • Standard tab: TLabel, TEdit, TButton, TCheckBox, TComboBox, TListBox, "
    "TGroupBox, TRadioButton, TMemo.\n"
    "          • Additional tab: TBitBtn, TSpeedButton, TImage, TShape, TBevel, TMaskEdit, "
-   "TStringGrid, TScrollBox, TStaticText, TLabeledEdit.\n"
+   "TStringGrid.\n"
    "          • Win32 tab: TTabControl, TTreeView, TListView, TProgressBar.\n"
    "        If the user asks to LIST/SHOW the palette controls, respond as CHAT (plain text) "
    "using exactly this catalog — never describe Delphi-specific controls (TTrayIcon, "
@@ -7508,10 +7508,14 @@ static DWORD WINAPI ai_send_thread( LPVOID p )
    CloseHandle( hWr );  /* parent must close write end */
 
    buf = (char *) malloc( bufCap );
+   if( !buf ) { CloseHandle(hRd); CloseHandle(pi.hProcess); CloseHandle(pi.hThread); goto fail; }
    while( ReadFile( hRd, tmp, sizeof(tmp), &got, NULL ) && got > 0 ) {
       if( bufLen + got + 1 > bufCap ) {
+         char * newBuf;
          bufCap = (bufCap + got) * 2;
-         buf = (char *) realloc( buf, bufCap );
+         newBuf = (char *) realloc( buf, bufCap );
+         if( !newBuf ) { free(buf); buf = _strdup("[OOM during reply read]"); bufLen = (DWORD) strlen(buf); break; }
+         buf = newBuf;
       }
       memcpy( buf + bufLen, tmp, got );
       bufLen += got;
