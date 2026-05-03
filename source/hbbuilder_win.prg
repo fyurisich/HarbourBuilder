@@ -7997,13 +7997,24 @@ HB_FUNC( W32_AIASSISTANTPANEL )
    }
 
    hOwner = GetActiveWindow();
-   GetWindowRect( hOwner, &rc );
-
-   s_hAIWnd = CreateWindowExA( WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
-      "HbAIPanel", "AI Assistant",
-      WS_POPUP|WS_CAPTION|WS_SYSMENU|WS_THICKFRAME|WS_VISIBLE,
-      rc.right - panW - 16, rc.top + 60, panW, panH,
-      NULL, NULL, GetModuleHandle(NULL), NULL );
+   /* Right side of screen workarea, vertically centered (matches Mac/Linux). */
+   {
+      RECT wa;
+      int panX, panY;
+      if( SystemParametersInfoA( SPI_GETWORKAREA, 0, &wa, 0 ) ) {
+         panX = wa.right - panW - 16;
+         panY = wa.top + ( wa.bottom - wa.top - panH ) / 2;
+      } else {
+         GetWindowRect( hOwner, &rc );
+         panX = rc.right - panW - 16;
+         panY = rc.top + 60;
+      }
+      s_hAIWnd = CreateWindowExA( WS_EX_TOOLWINDOW | WS_EX_TOPMOST,
+         "HbAIPanel", "AI Assistant",
+         WS_POPUP|WS_CAPTION|WS_SYSMENU|WS_THICKFRAME|WS_VISIBLE,
+         panX, panY, panW, panH,
+         NULL, NULL, GetModuleHandle(NULL), NULL );
+   }
 
    if( g_bDarkIDE ) {
       BOOL bDark = TRUE;
