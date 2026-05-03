@@ -390,6 +390,9 @@ function Main()
 
    WireDesignForm()
 
+   // === Window 4: AI Assistant (always visible, topmost) ===
+   ShowAIAssistant()
+
    // When IDE closes, destroy all secondary windows
    oIDE:OnClose := { || DestroyAllForms(), InspectorClose(), ;
                        CodeEditorDestroy( hCodeEditor ) }
