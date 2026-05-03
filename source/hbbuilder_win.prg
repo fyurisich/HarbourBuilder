@@ -6857,6 +6857,168 @@ static BOOL s_aiIsDeepseek( const char * model )
    return model && _strnicmp( model, "deepseek", 8 ) == 0;
 }
 
+typedef struct {
+   HWND  hPanel;
+   char  cmdline[ 8192 ];
+} AICTX;
+
+static DWORD WINAPI ai_send_thread( LPVOID p );
+
+static void s_aiJsonEsc( const char * in, char * out, int max )
+{
+   int o = 0;
+   while( *in && o < max - 8 ) {
+      unsigned char c = (unsigned char)*in++;
+      switch( c ) {
+         case '"':  out[o++] = '\\'; out[o++] = '"';  break;
+         case '\\': out[o++] = '\\'; out[o++] = '\\'; break;
+         case '\n': out[o++] = '\\'; out[o++] = 'n';  break;
+         case '\r': out[o++] = '\\'; out[o++] = 'r';  break;
+         case '\t': out[o++] = '\\'; out[o++] = 't';  break;
+         default:
+            if( c < 0x20 ) {
+               o += _snprintf( out + o, max - o, "\\u%04x", c );
+            } else {
+               out[o++] = (char)c;
+            }
+      }
+   }
+   out[o] = 0;
+}
+
+static BOOL s_aiBuildPayload( BOOL useDeep, const char * model,
+                              const char * userMsg, const char * key,
+                              char * cmdOut, int cmdMax,
+                              char * pathOut, int pathMax )
+{
+   char tmpDir[MAX_PATH], path[MAX_PATH], * sysEsc, * userEsc;
+   DWORD pid = GetCurrentProcessId();
+   FILE * f;
+   int sysLen, userLen;
+
+   GetTempPathA( MAX_PATH, tmpDir );
+   _snprintf( path, MAX_PATH, "%shbb_ai_req_%lu.json", tmpDir, (unsigned long)pid );
+   path[MAX_PATH-1] = 0;
+   lstrcpynA( pathOut, path, pathMax );
+
+   sysLen  = (int)( strlen( AI_SYS_PROMPT ) * 2 + 32 );
+   userLen = (int)( strlen( userMsg ) * 2 + 32 );
+   sysEsc  = (char *) malloc( sysLen );
+   userEsc = (char *) malloc( userLen );
+   s_aiJsonEsc( AI_SYS_PROMPT, sysEsc,  sysLen );
+   s_aiJsonEsc( userMsg,       userEsc, userLen );
+
+   f = fopen( path, "wb" );
+   if( !f ) { free(sysEsc); free(userEsc); return FALSE; }
+   if( useDeep ) {
+      fprintf( f,
+         "{\"model\":\"%s\",\"stream\":false,\"temperature\":0.2,"
+         "\"messages\":["
+            "{\"role\":\"system\",\"content\":\"%s\"},"
+            "{\"role\":\"user\",\"content\":\"%s\"}"
+         "]}",
+         model, sysEsc, userEsc );
+   } else {
+      fprintf( f,
+         "{\"model\":\"%s\",\"stream\":false,"
+         "\"options\":{\"temperature\":0.2},"
+         "\"messages\":["
+            "{\"role\":\"system\",\"content\":\"%s\"},"
+            "{\"role\":\"user\",\"content\":\"%s\"}"
+         "]}",
+         model, sysEsc, userEsc );
+   }
+   fclose( f );
+   free( sysEsc ); free( userEsc );
+
+   if( useDeep ) {
+      _snprintf( cmdOut, cmdMax,
+         "curl.exe -s -m 200 -X POST "
+         "-H \"Content-Type: application/json\" "
+         "-H \"Authorization: Bearer %s\" "
+         "-d @\"%s\" "
+         "https://api.deepseek.com/v1/chat/completions",
+         key ? key : "", path );
+   } else {
+      _snprintf( cmdOut, cmdMax,
+         "curl.exe -s -m 200 -X POST "
+         "-H \"Content-Type: application/json\" "
+         "-d @\"%s\" "
+         "http://localhost:11434/api/chat",
+         path );
+   }
+   cmdOut[cmdMax-1] = 0;
+   return TRUE;
+}
+
+static DWORD WINAPI ai_send_thread( LPVOID p )
+{
+   AICTX * ctx = (AICTX *) p;
+   HANDLE hRd = NULL, hWr = NULL;
+   SECURITY_ATTRIBUTES sa;
+   STARTUPINFOA si;
+   PROCESS_INFORMATION pi;
+   char * buf;
+   DWORD bufCap = 65536, bufLen = 0;
+   DWORD got;
+   char tmp[4096];
+
+   sa.nLength = sizeof(sa);
+   sa.bInheritHandle = TRUE;
+   sa.lpSecurityDescriptor = NULL;
+   if( !CreatePipe( &hRd, &hWr, &sa, 0 ) ) goto fail;
+   SetHandleInformation( hRd, HANDLE_FLAG_INHERIT, 0 );
+
+   memset( &si, 0, sizeof(si) );
+   si.cb = sizeof(si);
+   si.dwFlags = STARTF_USESTDHANDLES | STARTF_USESHOWWINDOW;
+   si.hStdOutput = hWr;
+   si.hStdError  = hWr;
+   si.hStdInput  = GetStdHandle( STD_INPUT_HANDLE );
+   si.wShowWindow = SW_HIDE;
+
+   memset( &pi, 0, sizeof(pi) );
+   if( !CreateProcessA( NULL, ctx->cmdline, NULL, NULL, TRUE,
+                        CREATE_NO_WINDOW, NULL, NULL, &si, &pi ) ) {
+      CloseHandle(hRd); CloseHandle(hWr); goto fail;
+   }
+   CloseHandle( hWr );  /* parent must close write end */
+
+   buf = (char *) malloc( bufCap );
+   while( ReadFile( hRd, tmp, sizeof(tmp), &got, NULL ) && got > 0 ) {
+      if( bufLen + got + 1 > bufCap ) {
+         bufCap = (bufCap + got) * 2;
+         buf = (char *) realloc( buf, bufCap );
+      }
+      memcpy( buf + bufLen, tmp, got );
+      bufLen += got;
+      if( bufLen > 1024*1024 ) break;   /* 1 MB cap */
+   }
+   buf[bufLen] = 0;
+   CloseHandle( hRd );
+   WaitForSingleObject( pi.hProcess, 200000 );
+   CloseHandle( pi.hProcess ); CloseHandle( pi.hThread );
+
+   if( ctx->hPanel && IsWindow( ctx->hPanel ) ) {
+      PostMessageA( ctx->hPanel, WM_AI_REPLY, 0, (LPARAM)buf );
+   } else {
+      free( buf );
+   }
+   free( ctx );
+   return 0;
+
+fail:
+   {
+      char * err = _strdup( "[curl spawn failed]\n" );
+      if( ctx->hPanel && IsWindow( ctx->hPanel ) )
+         PostMessageA( ctx->hPanel, WM_AI_APPEND, 0, (LPARAM)err );
+      else
+         free( err );
+   }
+   free( ctx );
+   return 1;
+}
+
 static void s_aiAppend( const char * txt )
 {
    int n;
@@ -6886,6 +7048,22 @@ static LRESULT CALLBACK AIPanelWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPAR
       if( lParam ) {
          char * p = (char *) lParam;
          s_aiAppend( p );
+         free( p );
+      }
+      return 0;
+   case WM_AI_REPLY:
+      if( lParam ) {
+         char * p = (char *) lParam;
+         PHB_DYNS pSym = hb_dynsymFindName( "AIDISPATCHREPLY" );
+         if( pSym ) {
+            hb_vmPushDynSym( pSym );
+            hb_vmPushNil();
+            hb_vmPushString( p, strlen(p) );
+            hb_vmFunction( 1 );
+         } else {
+            s_aiAppend( "\r\n[AIDispatchReply not registered]\r\n" );
+            s_aiAppend( p );
+         }
          free( p );
       }
       return 0;
