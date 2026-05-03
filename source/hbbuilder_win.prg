@@ -5659,6 +5659,74 @@ function AIGetActiveFormClass()
    endif
 return "T" + cName
 
+static function AI_FindCtrlByName( hForm, cName )
+   local i, nCount, hChild
+   if Empty( cName ) .or. hForm == 0
+      return 0
+   endif
+   nCount := UI_GetChildCount( hForm )
+   for i := 1 to nCount
+      hChild := UI_GetChild( hForm, i )
+      if hChild != 0 .and. UI_GetProp( hChild, "cName" ) == cName
+         return hChild
+      endif
+   next
+return 0
+
+static function AI_RewriteClassName( cCode, cNew )
+   local cResult := "", nPos, nEnd, cChar, nLen
+   nLen := Len( cCode )
+   nPos := 1
+   do while nPos <= nLen
+      nEnd := hb_At( "CLASS T", cCode, nPos )
+      if nEnd == 0
+         cResult += SubStr( cCode, nPos )
+         exit
+      endif
+      cResult += SubStr( cCode, nPos, nEnd - nPos ) + "CLASS " + cNew
+      nPos := nEnd + 7
+      do while nPos <= nLen
+         cChar := SubStr( cCode, nPos, 1 )
+         if ! ( ( cChar >= "A" .and. cChar <= "Z" ) .or. ;
+                ( cChar >= "a" .and. cChar <= "z" ) .or. ;
+                ( cChar >= "0" .and. cChar <= "9" ) .or. ;
+                cChar == "_" )
+            exit
+         endif
+         nPos++
+      enddo
+   enddo
+return cResult
+
+function AIAddCode( cCode )
+   local cExisting, cNew, nTab, nFromLine, nToLine, cActiveCls
+   if ! HB_ISCHAR( cCode ) .or. Empty( cCode )
+      return nil
+   endif
+   nTab := CodeEditorGetActiveTab( hCodeEditor )
+   if nTab < 1
+      return nil
+   endif
+   cActiveCls := AIGetActiveFormClass()
+   if ! Empty( cActiveCls )
+      cCode := AI_RewriteClassName( cCode, cActiveCls )
+   endif
+   cExisting := CodeEditorGetText2( hCodeEditor, nTab )
+   if ! HB_ISCHAR( cExisting )
+      cExisting := ""
+   endif
+   if ! ( Right( cExisting, 1 ) == Chr(10) )
+      cExisting += Chr(10)
+   endif
+   nFromLine := Len( hb_ATokens( cExisting + Chr(10), Chr(10) ) ) - 2
+   cNew := cExisting + Chr(10) + cCode + Chr(10)
+   CodeEditorSetTabText( hCodeEditor, nTab, cNew )
+   nToLine := Len( hb_ATokens( cNew, Chr(10) ) ) - 2
+   CodeEditorClearMarks( hCodeEditor )
+   CodeEditorMarkLines( hCodeEditor, nFromLine, nToLine, 32896 )
+   SyncDesignerToCode()
+return nil
+
 // === C Compiler Not Found Dialog ===
 
 static function ShowNoCompilerDialog()
