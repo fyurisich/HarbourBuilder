@@ -7087,9 +7087,11 @@ static HWND  s_hAIChipsBar  = NULL;
 static HWND  s_hAISend      = NULL;
 static HWND  s_hAIClear     = NULL;
 static HWND  s_hAIStatus    = NULL;
+static HWND  s_hAIModelLbl  = NULL;
 static HFONT s_hAIChatFont  = NULL;
 static HFONT s_hAIUiFont    = NULL;
 static HBRUSH s_hAIChatBrush = NULL;
+static HBRUSH s_hAIPanelBrush = NULL;
 static char * s_aiDeepseekKey = NULL;
 
 static const char * AI_SYS_PROMPT =
@@ -7844,12 +7846,53 @@ static char * s_aiFetchOllamaTags( void )
    return NULL;
 }
 
+/* Recompute child layout for the given client size. Called on WM_SIZE. */
+static void s_aiRelayout( int cw, int ch )
+{
+   int topRowH = 28, chipsH = 30, inputH = 26, statusH = 18, margin = 6;
+   int chatY   = margin + topRowH + 4;
+   int chatH   = ch - chatY - chipsH - inputH - statusH - 4*margin;
+   if( chatH < 60 ) chatH = 60;
+
+   if( s_hAIModelLbl )
+      MoveWindow( s_hAIModelLbl, margin, margin + 6, 42, 18, TRUE );
+   if( s_hAICombo )
+      MoveWindow( s_hAICombo, margin + 50, margin, cw - 80 - margin*2, 240, TRUE );
+   if( s_hAIClear )
+      MoveWindow( s_hAIClear, cw - margin - 70, margin, 70, topRowH, TRUE );
+   if( s_hAIOutput )
+      MoveWindow( s_hAIOutput, margin, chatY, cw - margin*2, chatH, TRUE );
+   if( s_hAIChipsBar )
+      MoveWindow( s_hAIChipsBar, margin, chatY + chatH + margin, cw - margin*2, chipsH, TRUE );
+   if( s_hAIInput )
+      MoveWindow( s_hAIInput, margin, chatY + chatH + chipsH + margin*2,
+                  cw - margin*2 - 76, inputH, TRUE );
+   if( s_hAISend )
+      MoveWindow( s_hAISend, cw - margin - 70, chatY + chatH + chipsH + margin*2,
+                  70, inputH, TRUE );
+   if( s_hAIStatus )
+      MoveWindow( s_hAIStatus, margin, ch - statusH - margin, cw - margin*2, statusH, TRUE );
+}
+
 static LRESULT CALLBACK AIPanelWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam )
 {
    switch( msg )
    {
    case WM_CTLCOLOREDIT:
+      {
+         HDC hdc = (HDC)wParam;
+         /* Chat output + input EDIT both dark */
+         if( (HWND)lParam == s_hAIOutput || (HWND)lParam == s_hAIInput ) {
+            SetBkColor( hdc, RGB(0x1E,0x1E,0x1E) );
+            SetTextColor( hdc, RGB(0xD4,0xD4,0xD4) );
+            if( !s_hAIChatBrush )
+               s_hAIChatBrush = CreateSolidBrush( RGB(0x1E,0x1E,0x1E) );
+            return (LRESULT) s_hAIChatBrush;
+         }
+      }
+      break;
    case WM_CTLCOLORSTATIC:
+      /* Chat output as STATIC fallback (read-only EDIT may route here) */
       if( (HWND)lParam == s_hAIOutput ) {
          HDC hdc = (HDC)wParam;
          SetBkColor( hdc, RGB(0x1E,0x1E,0x1E) );
@@ -7858,7 +7901,30 @@ static LRESULT CALLBACK AIPanelWndProc( HWND hWnd, UINT msg, WPARAM wParam, LPAR
             s_hAIChatBrush = CreateSolidBrush( RGB(0x1E,0x1E,0x1E) );
          return (LRESULT) s_hAIChatBrush;
       }
+      /* Other static labels + chips bar use panel bg color in dark mode */
+      if( g_bDarkIDE ) {
+         HDC hdc = (HDC)wParam;
+         SetBkColor( hdc, RGB(0x2D,0x2D,0x30) );
+         SetTextColor( hdc, RGB(0xD4,0xD4,0xD4) );
+         if( !s_hAIPanelBrush )
+            s_hAIPanelBrush = CreateSolidBrush( RGB(0x2D,0x2D,0x30) );
+         return (LRESULT) s_hAIPanelBrush;
+      }
       break;
+   case WM_ERASEBKGND:
+      if( g_bDarkIDE ) {
+         HDC hdc = (HDC)wParam;
+         RECT rcc; GetClientRect( hWnd, &rcc );
+         if( !s_hAIPanelBrush )
+            s_hAIPanelBrush = CreateSolidBrush( RGB(0x2D,0x2D,0x30) );
+         FillRect( hdc, &rcc, s_hAIPanelBrush );
+         return 1;
+      }
+      break;
+   case WM_SIZE:
+      s_aiRelayout( LOWORD(lParam), HIWORD(lParam) );
+      InvalidateRect( hWnd, NULL, TRUE );
+      return 0;
    case WM_COMMAND:
       switch( LOWORD(wParam) ) {
          case 2011: s_aiOnClear(); return 0;
@@ -7921,7 +7987,7 @@ HB_FUNC( W32_AIASSISTANTPANEL )
       wc.lpfnWndProc   = AIPanelWndProc;
       wc.hInstance     = GetModuleHandle(NULL);
       wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
-      wc.hbrBackground = (HBRUSH)(COLOR_BTNFACE + 1);
+      wc.hbrBackground = NULL;   /* painted in WM_ERASEBKGND when dark, default otherwise */
       wc.lpszClassName = "HbAIPanel";
       RegisterClassA( &wc );
       bReg = TRUE;
@@ -7960,8 +8026,9 @@ HB_FUNC( W32_AIASSISTANTPANEL )
       int chatH   = panH - chatY - chipsH - inputH - statusH - 4*margin;
 
       /* Top row: Model label + combo + Clear */
-      CreateWindowExA( 0, "STATIC", "Model:", WS_CHILD|WS_VISIBLE,
+      s_hAIModelLbl = CreateWindowExA( 0, "STATIC", "Model:", WS_CHILD|WS_VISIBLE,
          margin, margin + 6, 42, 18, s_hAIWnd, NULL, GetModuleHandle(NULL), NULL );
+      SendMessage( s_hAIModelLbl, WM_SETFONT, (WPARAM) s_hAIUiFont, TRUE );
       s_hAICombo = CreateWindowExA( 0, "COMBOBOX", NULL,
          WS_CHILD|WS_VISIBLE|CBS_DROPDOWNLIST|WS_VSCROLL,
          margin + 50, margin, panW - 80 - margin*2, 240,
