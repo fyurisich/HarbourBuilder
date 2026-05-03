@@ -5895,7 +5895,8 @@ function AIDispatchReply( cRaw )
    endif
 
    if cReply == nil .or. ! HB_ISCHAR( cReply ) .or. Empty( cReply )
-      W32_AIAppendChat( Chr(10) + "[Empty response]" + Chr(10) )
+      W32_AIAppendChat( Chr(10) + "[Empty response — raw: " + ;
+                        Left( cRaw, 500 ) + "]" + Chr(10) )
       return nil
    endif
 
@@ -7553,12 +7554,19 @@ fail:
 
 static void s_aiAppend( const char * txt )
 {
-   int n;
+   int n, wlen;
+   wchar_t * wbuf;
    if( !s_hAIOutput || !txt || !*txt ) return;
-   n = (int) SendMessageA( s_hAIOutput, WM_GETTEXTLENGTH, 0, 0 );
-   SendMessageA( s_hAIOutput, EM_SETSEL, n, n );
-   SendMessageA( s_hAIOutput, EM_REPLACESEL, FALSE, (LPARAM)txt );
-   SendMessageA( s_hAIOutput, EM_SCROLLCARET, 0, 0 );
+   /* Convert UTF-8 -> UTF-16 so accented chars render correctly */
+   wlen = MultiByteToWideChar( CP_UTF8, 0, txt, -1, NULL, 0 );
+   if( wlen <= 0 ) return;
+   wbuf = (wchar_t *) malloc( (size_t)wlen * sizeof(wchar_t) );
+   MultiByteToWideChar( CP_UTF8, 0, txt, -1, wbuf, wlen );
+   n = (int) SendMessageW( s_hAIOutput, WM_GETTEXTLENGTH, 0, 0 );
+   SendMessageW( s_hAIOutput, EM_SETSEL, n, n );
+   SendMessageW( s_hAIOutput, EM_REPLACESEL, FALSE, (LPARAM)wbuf );
+   SendMessageW( s_hAIOutput, EM_SCROLLCARET, 0, 0 );
+   free( wbuf );
 }
 
 /* Call Harbour str-returning function. Caller frees with free(). NULL if missing/empty. */
@@ -7582,15 +7590,18 @@ static char * s_aiCallHbStr( const char * fnName, const char * arg )
 static void s_aiOnSend( void )
 {
    char prompt[8192], echo[8200], * actCtx, model[128], * userMsg, * dbfStart, * dbfEnd, * dbfPath;
+   wchar_t wprompt[4096], wmodel[128];
    int promptLen, capacity;
    AICTX * ctx;
    BOOL useDeep;
    HANDLE hThread;
    DWORD tid;
 
-   GetWindowTextA( s_hAIInput, prompt, sizeof(prompt) );
-   if( prompt[0] == 0 ) return;
-   SetWindowTextA( s_hAIInput, "" );
+   /* Read input as UTF-16, convert to UTF-8 so accented chars survive */
+   GetWindowTextW( s_hAIInput, wprompt, 4096 );
+   if( wprompt[0] == 0 ) return;
+   WideCharToMultiByte( CP_UTF8, 0, wprompt, -1, prompt, sizeof(prompt), NULL, NULL );
+   SetWindowTextW( s_hAIInput, L"" );
 
    _snprintf( echo, sizeof(echo), "\r\n> %s\r\n", prompt );
    s_aiAppend( echo );
@@ -7608,7 +7619,9 @@ static void s_aiOnSend( void )
       return;
    }
 
+   /* Combo entries are ASCII (model names) — A-form fine */
    GetWindowTextA( s_hAICombo, model, sizeof(model) );
+   (void) wmodel;
    if( model[0] == 0 ) lstrcpynA( model, "codellama", sizeof(model) );
    useDeep = s_aiIsDeepseek( model );
    if( useDeep && (!s_aiDeepseekKey || !*s_aiDeepseekKey) ) {
@@ -7684,7 +7697,7 @@ static void s_aiOnSend( void )
 
 static void s_aiOnClear( void )
 {
-   SetWindowTextA( s_hAIOutput, "AI Assistant ready.\r\n" );
+   SetWindowTextW( s_hAIOutput, L"AI Assistant ready.\r\n" );
 }
 
 static WNDPROC s_aiInputOldProc = NULL;
@@ -7731,12 +7744,17 @@ static void s_aiSetChips( const char ** labels, int n )
    SelectObject( hdc, s_hAIUiFont );
    for( i = 0; i < n; i++ ) {
       const char * t = labels[i];
+      wchar_t wt[256];
+      int wlen;
       if( !t || !*t ) continue;
-      GetTextExtentPoint32A( hdc, t, (int)strlen(t), &sz );
+      /* UTF-8 -> UTF-16 for proper rendering of Spanish chars */
+      wlen = MultiByteToWideChar( CP_UTF8, 0, t, -1, wt, 256 );
+      if( wlen <= 0 ) continue;
+      GetTextExtentPoint32W( hdc, wt, wlen - 1, &sz );
       w = sz.cx + 18;
       if( x + w > totalW ) break;
       s_aiChipText[ s_aiChipCount ] = _strdup( t );
-      CreateWindowExA( 0, "BUTTON", t,
+      CreateWindowExW( 0, L"BUTTON", wt,
          WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON,
          x, y, w, 24,
          s_hAIChipsBar, (HMENU)(LONG_PTR)(AI_CHIP_ID_BASE + s_aiChipCount),
@@ -7759,7 +7777,11 @@ static LRESULT CALLBACK s_aiChipsProc( HWND hWnd, UINT msg, WPARAM wParam, LPARA
       if( id >= AI_CHIP_ID_BASE && id < AI_CHIP_ID_BASE + AI_CHIP_MAX ) {
          int idx = id - AI_CHIP_ID_BASE;
          if( idx < s_aiChipCount && s_aiChipText[idx] ) {
-            SetWindowTextA( s_hAIInput, s_aiChipText[idx] );
+            {
+               wchar_t wchip[512];
+               MultiByteToWideChar( CP_UTF8, 0, s_aiChipText[idx], -1, wchip, 512 );
+               SetWindowTextW( s_hAIInput, wchip );
+            }
             s_aiOnSend();
          }
          return 0;
@@ -8055,8 +8077,10 @@ HB_FUNC( W32_AIASSISTANTPANEL )
          0, 0, 0, 0, s_hAIWnd, (HMENU)2011, GetModuleHandle(NULL), NULL );
       SendMessage( s_hAIClear, WM_SETFONT, (WPARAM) s_hAIUiFont, TRUE );
 
-      s_hAIOutput = CreateWindowExA( WS_EX_CLIENTEDGE, "EDIT",
-         "AI Assistant ready.\r\n",
+      /* Unicode EDIT so UTF-8 -> UTF-16 conversions in s_aiAppend show
+         accented / non-CP1252 chars correctly. */
+      s_hAIOutput = CreateWindowExW( WS_EX_CLIENTEDGE, L"EDIT",
+         L"AI Assistant ready.\r\n",
          WS_CHILD|WS_VISIBLE|WS_VSCROLL|ES_MULTILINE|ES_READONLY|ES_AUTOVSCROLL,
          0, 0, 0, 0, s_hAIWnd, NULL, GetModuleHandle(NULL), NULL );
       SendMessage( s_hAIOutput, WM_SETFONT, (WPARAM) s_hAIChatFont, TRUE );
@@ -8066,7 +8090,7 @@ HB_FUNC( W32_AIASSISTANTPANEL )
       s_aiChipsOldProc = (WNDPROC) SetWindowLongPtr( s_hAIChipsBar, GWLP_WNDPROC,
                                                      (LONG_PTR) s_aiChipsProc );
 
-      s_hAIInput = CreateWindowExA( WS_EX_CLIENTEDGE, "EDIT", "",
+      s_hAIInput = CreateWindowExW( WS_EX_CLIENTEDGE, L"EDIT", L"",
          WS_CHILD|WS_VISIBLE|ES_AUTOHSCROLL,
          0, 0, 0, 0, s_hAIWnd, (HMENU)2030, GetModuleHandle(NULL), NULL );
       SendMessage( s_hAIInput, WM_SETFONT, (WPARAM) s_hAIUiFont, TRUE );
