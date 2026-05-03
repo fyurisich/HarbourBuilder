@@ -1,6 +1,55 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-05-03b
+
+  - fix(win-ai): AI-built controls now materialize on the design form.
+    AIBuildForm called UI_*New which only added the C++ control to the
+    form's children list — the HWND was never created because
+    TForm::Show had already run. Code tab got the new METHODs but
+    buttons/edits/etc. stayed invisible. Fix: call
+    UI_FormCreateChildren( hForm ) at the end of AIBuildForm so each
+    child's CreateHandle runs. Same idea as the macOS/Linux
+    UI_FormRealizeChildren we previously stripped.
+
+  - fix(win-ai): full UTF-8 round-trip for accented characters.
+    LLM returns UTF-8; Win32 EDIT created via CreateWindowExA stored
+    bytes as ANSI codepage so "á" (0xC3 0xA1) rendered as "Ã¡" in chat.
+    Switched the chat output and input fields to CreateWindowExW (true
+    Unicode windows). s_aiAppend now MultiByteToWideChar(CP_UTF8) +
+    SendMessageW(EM_REPLACESEL). s_aiOnSend reads input via
+    GetWindowTextW + WideCharToMultiByte(CP_UTF8). Chip click writes
+    via SetWindowTextW. s_aiSetChips creates BUTTONs via
+    CreateWindowExW with wide labels.
+
+  - feat(win-ai): when AIDispatchReply hits the "[Empty response]" path
+    the chat now also dumps the first 500 chars of the raw HTTP body —
+    makes it possible to tell at a glance whether curl returned
+    nothing, an HTML error page, or a JSON shape we don't recognise.
+
+  - feat(win-ai): UI tweaks across several iterations —
+      - Panel auto-opens at IDE startup; WS_EX_TOPMOST so it floats
+        above the main IDE window.
+      - Anchored to the right edge of the screen workarea, vertically
+        centered (SystemParametersInfo SPI_GETWORKAREA), matching the
+        macOS NSScreen.visibleFrame / Linux gdk_monitor_get_workarea
+        behaviour.
+      - Default size 490x820 (was 420x560); initial layout now driven
+        from GetClientRect via s_aiRelayout so children honour the
+        title bar + frame inset and survive a user drag-resize.
+      - Full dark-mode coverage when g_bDarkIDE: panel bg via
+        WM_ERASEBKGND (#2D2D30), input EDIT joins chat in
+        WM_CTLCOLOREDIT dark scheme (#1E1E1E), labels/status/chips bar
+        repaint with panel bg in WM_CTLCOLORSTATIC.
+      - Bigger fonts: UI Segoe UI 11pt (was DEFAULT_GUI_FONT ~8pt),
+        chat Consolas 12pt (was 10pt). Layout heights bumped to fit.
+      - DeepSeek items always at the top of the model combo (default
+        deepseek-v4-flash), matching the Linux behaviour. The /key
+        sk-... command unlocks the backend; until then selecting a
+        deepseek-* model just shows the "key not set" hint.
+      - Model combo width reserves room for the Clear button (combo
+        was overshooting Clear by ~50 px at the default panel size).
+
 2026-05-03
 
   - feat(win-ai): full Win32 port of the AI Assistant, matching the
