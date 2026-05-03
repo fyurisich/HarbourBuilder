@@ -8113,10 +8113,9 @@ HB_FUNC( W32_AIASSISTANTPANEL )
                if( pRet && HB_IS_ARRAY( pRet ) ) {
                   HB_SIZE i, n = hb_arrayLen( pRet );
                   SendMessage( s_hAICombo, CB_RESETCONTENT, 0, 0 );
-                  if( s_aiDeepseekKey ) {
-                     SendMessageA( s_hAICombo, CB_ADDSTRING, 0, (LPARAM)"deepseek-v4-flash" );
-                     SendMessageA( s_hAICombo, CB_ADDSTRING, 0, (LPARAM)"deepseek-chat" );
-                  }
+                  /* DeepSeek items always at top (default deepseek-v4-flash). */
+                  SendMessageA( s_hAICombo, CB_ADDSTRING, 0, (LPARAM)"deepseek-v4-flash" );
+                  SendMessageA( s_hAICombo, CB_ADDSTRING, 0, (LPARAM)"deepseek-chat" );
                   for( i = 1; i <= n; i++ ) {
                      const char * m = hb_arrayGetCPtr( pRet, i );
                      if( m && *m )
