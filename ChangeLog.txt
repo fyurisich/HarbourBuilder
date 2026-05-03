@@ -1,6 +1,67 @@
 HarbourBuilder - Cross-platform visual IDE for Harbour
 =======================================================
 
+2026-05-03
+
+  - feat(win-ai): full Win32 port of the AI Assistant, matching the
+    macOS and GTK3 implementations. New HbAIPanel registered window
+    class with AIPanelWndProc dispatching WM_COMMAND (Send/Clear),
+    WM_AI_REPLY (worker -> UI marshaling via PostMessage),
+    WM_AI_APPEND, WM_AI_SETCHIPS, WM_CTLCOLOREDIT/STATIC/ERASEBKGND
+    for full dark-mode coverage (#1E1E1E chat + input, #2D2D30 panel
+    bg), and WM_SIZE -> s_aiRelayout for resize. Auto-opens at IDE
+    startup, anchored right side of screen workarea + vertically
+    centered, WS_EX_TOPMOST so it floats above the main IDE.
+    UI font Segoe UI 11pt, chat font Consolas 12pt. Default 490x820
+    panel; Send button + Clear; Enter-key submit via input EDIT
+    subclass; suggestion chips bar that destroys + recreates BUTTON
+    children sized to text via subclassed STATIC parent.
+
+  - feat(win-ai-backend): curl.exe-driven HTTP layer (ships with
+    Win10 1803+ — no libcurl dep, no DLL bloat). ai_send_thread
+    worker thread builds JSON payload to %TEMP%\hbb_ai_req_<pid>.json,
+    runs curl -d @file with stdout pipe, ReadFile loop with 1 MB cap,
+    posts WM_AI_REPLY back to UI thread. Ollama probe via
+    s_aiFetchOllamaTags (curl /api/tags), s_aiOllamaInstalled
+    (where ollama), s_aiTryStartOllama (ShellExecute + 3-sec poll).
+    If Ollama installed but no models: background `ollama pull
+    gemma3`. If neither Ollama nor DeepSeek key: MessageBox install
+    prompt opens https://ollama.com/download. DeepSeek key
+    persistence at %USERPROFILE%\.hbbuilder_deepseek_key (or
+    DEEPSEEK_API_KEY env). `/key sk-...` saves inline.
+
+  - feat(win-ai-skill): same FORM / CODE / RUN / ADD_CODE / CHAT
+    skill as macOS/Linux, embedded as AI_SYS_PROMPT C string literal
+    (verbatim port of cocoa_editor.mm:3078-3308 with
+    Cocoa->Win32 palette tab naming). JSON parsing on PRG side via
+    hb_jsonDecode + balanced-brace recovery in AIDispatchReply,
+    dispatching by shape to AIBuildForm / AIAddCode / AIRunProject /
+    chat. AIDescribeActiveForm + AIDescribeDbf inject context so the
+    LLM sees existing controls and real DBF schemas. AIBuildForm
+    upserts controls by name (move/resize/relabel without dupes).
+    Stripped 3 case branches Win32 lacks (TStaticText, TScrollBox,
+    TLabeledEdit) + UI_FormRealizeChildren (Cocoa-only). 21 control
+    types reachable.
+
+  - feat(win-codeeditor): four CodeEditor HB_FUNC wrappers added to
+    bring Win32 in line with macOS/Linux backends —
+    CodeEditorGetActiveTab (1-based), CodeEditorGetText2 (per-tab,
+    falls back to live Scintilla SCI_GETTEXT for active tab),
+    CodeEditorMarkLines (Scintilla SCI_MARKERDEFINE +
+    SC_MARK_BACKGROUND, marker 5 reserved for AI), CodeEditorClearMarks.
+    Required by AIAddCode to highlight the inserted code with an
+    olive background.
+
+  - chore(win-build): drop legacy bcc32 source/build_now.bat and
+    source/link_now.bat. The canonical build entry is build_win.bat
+    at repo root which auto-detects MSVC x86/x64, BCC, MinGW.
+    bcc32 path produced 32-bit binaries incompatible with the
+    project's 64-bit Scintilla/Lexilla DLLs.
+
+  - fix(win-inspector): hoist `int dampedDpi` declaration to top of
+    block in INS_CREATE — bcc32 strict C89 rejected
+    decl-after-statement (E2140).
+
 2026-05-02e
 
   - feat(linux-designform): default form geometry tuned to
